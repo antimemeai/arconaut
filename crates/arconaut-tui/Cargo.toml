@@ -1,0 +1,14 @@
+[package]
+name = "arconaut-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+arconaut-core = { workspace = true }
+arconaut-machine = { workspace = true }
+crossterm = { workspace = true }
+ratatui = { workspace = true }
+tokio = { workspace = true }
