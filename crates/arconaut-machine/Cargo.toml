@@ -18,8 +18,13 @@ reqwest = { workspace = true, features = ["json", "rustls-tls"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+tracing = "0.1"
 uuid = { workspace = true }
 
 [dev-dependencies]
+insta = "1.41"
+serial_test = "3.5.0"
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing-test = "0.2"
+wiremock = "0.6"

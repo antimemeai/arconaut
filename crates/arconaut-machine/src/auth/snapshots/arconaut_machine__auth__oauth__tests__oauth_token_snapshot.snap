@@ -1,0 +1,13 @@
+---
+source: crates/arconaut-machine/src/auth/oauth.rs
+assertion_line: 470
+expression: json
+---
+{
+  "access_token": "test_access_token",
+  "refresh_token": "test_refresh_token",
+  "expires_at": 1735689600,
+  "scope": "all",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}

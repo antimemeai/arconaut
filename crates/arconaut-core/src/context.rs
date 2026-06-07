@@ -191,4 +191,58 @@ mod tests {
             count
         );
     }
+
+    mod proptest_tests {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn arb_message_text() -> impl Strategy<Value = String> {
+            // Mix of ASCII and arbitrary Unicode to stress the estimator.
+            prop::string::string_regex(".*").unwrap()
+        }
+
+        proptest! {
+            #[test]
+            fn estimate_does_not_panic(text in arb_message_text()) {
+                let msg = Message::user(text);
+                // If estimate_tokens panics or overflows, the test fails automatically.
+                let _est = estimate_tokens(&msg);
+            }
+
+            #[test]
+            fn empty_string_yields_zero(text in "") {
+                let msg = Message::user(text);
+                prop_assert_eq!(estimate_tokens(&msg), 0);
+            }
+
+            #[test]
+            fn estimate_never_exceeds_char_count(text in arb_message_text()) {
+                let msg = Message::user(text.clone());
+                let est = estimate_tokens(&msg);
+                // Worst case: all non-ASCII => ~1.5 chars/token => tokens <= chars
+                // ASCII => ~4 chars/token => tokens <= chars
+                prop_assert!(est <= text.chars().count(),
+                    "estimate {} > char count {} for {:?}", est, text.chars().count(), text);
+            }
+
+            #[test]
+            fn appending_increases_or_preserves_estimate(
+                base in arb_message_text(),
+                suffix in arb_message_text()
+            ) {
+                let msg_base = Message::user(base.clone());
+                let est_base = estimate_tokens(&msg_base);
+
+                let combined = format!("{}{}", base, suffix);
+                let msg_combined = Message::user(combined);
+                let est_combined = estimate_tokens(&msg_combined);
+
+                prop_assert!(
+                    est_combined >= est_base,
+                    "estimate dropped from {} to {} when appending {:?} to {:?}",
+                    est_base, est_combined, suffix, base
+                );
+            }
+        }
+    }
 }

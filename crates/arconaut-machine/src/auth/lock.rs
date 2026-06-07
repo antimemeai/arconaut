@@ -95,6 +95,7 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    #[serial_test::serial]
     fn lock_uncontended() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("test.lock");
@@ -113,6 +114,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn lock_creates_file() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("new.lock");

@@ -113,6 +113,12 @@ impl KimiOAuthFlow {
         }
     }
 
+    /// Override the OAuth host (useful for testing).
+    pub fn with_host(mut self, host: impl Into<String>) -> Self {
+        self.oauth_host = host.into();
+        self
+    }
+
     /// Request device authorization from the OAuth server.
     ///
     /// Returns a `DeviceAuthorization` containing the user code and verification URL.
@@ -450,5 +456,154 @@ mod tests {
         let flow = KimiOAuthFlow::new();
         assert!(!flow.client_id.is_empty());
         assert!(!flow.oauth_host.is_empty());
+    }
+
+    #[test]
+    fn oauth_token_snapshot() {
+        // Use a fixed timestamp so the snapshot is deterministic.
+        let expires_at = DateTime::parse_from_rfc3339("2025-01-01T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let token = OAuthToken {
+            access_token: "test_access_token".to_string(),
+            refresh_token: "test_refresh_token".to_string(),
+            expires_at: Some(expires_at),
+            scope: "all".to_string(),
+            token_type: "Bearer".to_string(),
+            expires_in: 3600,
+        };
+        let json = serde_json::to_string_pretty(&token).unwrap();
+        insta::assert_snapshot!(json);
+    }
+
+    mod wiremock_tests {
+        use super::*;
+        use wiremock::{
+            matchers::{method, path},
+            Mock, MockServer, ResponseTemplate,
+        };
+
+        #[tokio::test]
+        async fn request_device_authorization_success() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/api/oauth/device_authorization"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "user_code": "ABCD-EFGH",
+                    "device_code": "dc123",
+                    "verification_uri": "https://auth.kimi.com/verify",
+                    "verification_uri_complete": "https://auth.kimi.com/verify?code=ABCD-EFGH",
+                    "expires_in": 600,
+                    "interval": 5
+                })))
+                .mount(&server)
+                .await;
+
+            let flow = KimiOAuthFlow::with_client(reqwest::Client::new())
+                .with_host(server.uri());
+            let auth = flow.request_device_authorization().await.unwrap();
+
+            assert_eq!(auth.user_code, "ABCD-EFGH");
+            assert_eq!(auth.device_code, "dc123");
+            assert_eq!(auth.verification_uri, "https://auth.kimi.com/verify");
+            assert_eq!(auth.interval, 5);
+        }
+
+        #[tokio::test]
+        async fn poll_token_success() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/api/oauth/token"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "access_token": "at_123",
+                    "refresh_token": "rt_456",
+                    "expires_in": 3600,
+                    "scope": "all",
+                    "token_type": "Bearer"
+                })))
+                .mount(&server)
+                .await;
+
+            let flow = KimiOAuthFlow::with_client(reqwest::Client::new())
+                .with_host(server.uri());
+            let device_auth = DeviceAuthorization {
+                user_code: "ABCD".to_string(),
+                device_code: "dc123".to_string(),
+                verification_uri: "https://auth.kimi.com/verify".to_string(),
+                verification_uri_complete: "https://auth.kimi.com/verify?code=ABCD".to_string(),
+                expires_in: Some(600),
+                interval: 5,
+            };
+            let token = flow.poll_token(&device_auth).await.unwrap();
+            assert_eq!(token.access_token, "at_123");
+            assert_eq!(token.refresh_token, "rt_456");
+        }
+
+        #[tokio::test]
+        async fn poll_token_pending() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/api/oauth/token"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "error": "authorization_pending",
+                    "error_description": "User has not yet authorized"
+                })))
+                .mount(&server)
+                .await;
+
+            let flow = KimiOAuthFlow::with_client(reqwest::Client::new())
+                .with_host(server.uri());
+            let device_auth = DeviceAuthorization {
+                user_code: "ABCD".to_string(),
+                device_code: "dc123".to_string(),
+                verification_uri: "https://auth.kimi.com/verify".to_string(),
+                verification_uri_complete: "https://auth.kimi.com/verify?code=ABCD".to_string(),
+                expires_in: Some(600),
+                interval: 5,
+            };
+            let result = flow.poll_token(&device_auth).await;
+            assert!(matches!(result, Err(OAuthError::PollPending)));
+        }
+
+        #[tokio::test]
+        async fn refresh_token_success() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/api/oauth/token"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "access_token": "new_at_789",
+                    "refresh_token": "new_rt_abc",
+                    "expires_in": 3600,
+                    "scope": "all",
+                    "token_type": "Bearer"
+                })))
+                .mount(&server)
+                .await;
+
+            let flow = KimiOAuthFlow::with_client(reqwest::Client::new())
+                .with_host(server.uri());
+            let token = flow.refresh_token("old_rt").await.unwrap();
+            assert_eq!(token.access_token, "new_at_789");
+            assert_eq!(token.refresh_token, "new_rt_abc");
+        }
+
+        #[tokio::test]
+        async fn refresh_token_unauthorized() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/api/oauth/token"))
+                .respond_with(ResponseTemplate::new(401).set_body_json(serde_json::json!({
+                    "error": "invalid_grant",
+                    "error_description": "Refresh token revoked"
+                })))
+                .mount(&server)
+                .await;
+
+            let flow = KimiOAuthFlow::with_client(reqwest::Client::new())
+                .with_host(server.uri());
+            let result = flow.refresh_token("bad_rt").await;
+            assert!(matches!(result, Err(OAuthError::Unauthorized(_))));
+        }
+
     }
 }

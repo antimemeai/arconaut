@@ -154,14 +154,14 @@ async fn refresh_loop(
                                                 if let Err(e) =
                                                     storage.save(&storage_key, &new_token)
                                                 {
-                                                    eprintln!(
+                                                    tracing::error!(
                                                         "refresh task: failed to save token: {}",
                                                         e
                                                     );
                                                 }
                                             }
                                             Err(e) => {
-                                                eprintln!(
+                                                tracing::error!(
                                                     "refresh task: token refresh failed: {}",
                                                     e
                                                 );
@@ -170,10 +170,13 @@ async fn refresh_loop(
                                     }
                                 }
                                 Ok(None) => {
-                                    eprintln!("refresh task: token removed from storage");
+                                    tracing::warn!("refresh task: token removed from storage");
                                 }
                                 Err(e) => {
-                                    eprintln!("refresh task: failed to re-load token: {}", e);
+                                    tracing::error!(
+                                        "refresh task: failed to re-load token: {}",
+                                        e
+                                    );
                                 }
                             }
                         }
@@ -182,7 +185,7 @@ async fn refresh_loop(
                             // We'll check again after the next interval.
                         }
                         Err(e) => {
-                            eprintln!("refresh task: failed to acquire lock: {}", e);
+                            tracing::error!("refresh task: failed to acquire lock: {}", e);
                         }
                     }
                 }
@@ -191,7 +194,7 @@ async fn refresh_loop(
                 // No token stored; nothing to refresh.
             }
             Err(e) => {
-                eprintln!("refresh task: failed to load token: {}", e);
+                tracing::error!("refresh task: failed to load token: {}", e);
             }
         }
 
@@ -233,5 +236,49 @@ mod tests {
         let tracker = ActivityTracker::new();
         // A brand-new tracker is "active", not idle
         assert!(tracker.current_interval().is_some());
+    }
+
+    use tracing_test::traced_test;
+
+    #[traced_test]
+    #[tokio::test]
+    async fn refresh_task_logs_storage_error() {
+        use super::super::storage::{CredentialStorage, StorageError};
+
+        struct FailingStorage;
+        impl CredentialStorage for FailingStorage {
+            fn load(&self, _key: &str) -> Result<Option<super::super::OAuthToken>, StorageError> {
+                Err(StorageError::Io("mock storage failure".to_string()))
+            }
+            fn save(&self, _key: &str, _token: &super::super::OAuthToken) -> Result<(), StorageError> {
+                Ok(())
+            }
+            fn delete(&self, _key: &str) -> Result<(), StorageError> {
+                Ok(())
+            }
+        }
+
+        let storage = Arc::new(FailingStorage) as Arc<dyn CredentialStorage>;
+        let flow = super::super::KimiOAuthFlow::new();
+        let activity = Arc::new(ActivityTracker::new());
+        let lock_path = tempfile::NamedTempFile::new().unwrap().into_temp_path().to_path_buf();
+
+        let mut task = RefreshTask::start(storage, flow, "test".to_string(), activity, lock_path);
+
+        // Yield so the spawned task runs through the first iteration (load → error → sleep).
+        tokio::task::yield_now().await;
+        task.stop();
+
+        // Assert the log line was captured by tracing-test's subscriber.
+        logs_assert(|lines: &[&str]| {
+            let found = lines
+                .iter()
+                .any(|l| l.contains("refresh task: failed to load token"));
+            if found {
+                Ok(())
+            } else {
+                Err("expected trace log not found".into())
+            }
+        });
     }
 }

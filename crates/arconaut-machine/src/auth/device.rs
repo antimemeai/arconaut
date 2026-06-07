@@ -180,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn device_id_is_stable() {
         let id1 = get_device_id();
         let id2 = get_device_id();

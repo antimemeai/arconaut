@@ -64,7 +64,7 @@ struct RunArgs {
     provider: Option<String>,
 
     /// Override the model for the selected provider.
-    #[arg(long, short)]
+    #[arg(long)]
     model: Option<String>,
 
     /// Assistant provider name for secondary model.

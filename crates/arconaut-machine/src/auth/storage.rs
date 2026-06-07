@@ -134,6 +134,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn save_load_roundtrip() {
         let dir = TempDir::new().unwrap();
         let storage = FileStorage::with_dir(dir.path().to_path_buf());
@@ -146,6 +147,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn load_missing_returns_none() {
         let dir = TempDir::new().unwrap();
         let storage = FileStorage::with_dir(dir.path().to_path_buf());
@@ -153,6 +155,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn delete_removes_file() {
         let dir = TempDir::new().unwrap();
         let storage = FileStorage::with_dir(dir.path().to_path_buf());
@@ -166,6 +169,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn token_fields_preserved() {
         let dir = TempDir::new().unwrap();
         let storage = FileStorage::with_dir(dir.path().to_path_buf());

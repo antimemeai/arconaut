@@ -239,6 +239,10 @@ mod tests {
         let (tx, mut rx) = mpsc::channel::<String>(100);
         let mut shell = PersistentShell::new(tx).await.unwrap();
 
+        // Allow bash -i to initialize (may emit job-control warnings in non-TTY envs).
+        sleep(Duration::from_millis(300)).await;
+        let _ = shell.take_buffer();
+
         shell.send("echo hello_from_test").await.unwrap();
         sleep(Duration::from_millis(300)).await;
 
@@ -258,10 +262,14 @@ mod tests {
         let (tx, _rx) = mpsc::channel::<String>(100);
         let mut shell = PersistentShell::new(tx).await.unwrap();
 
+        // Allow bash -i to initialize (may emit job-control warnings in non-TTY envs).
+        sleep(Duration::from_millis(300)).await;
+        let _ = shell.take_buffer();
+
         shell.send("cd /tmp").await.unwrap();
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(300)).await;
         shell.send("pwd").await.unwrap();
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(300)).await;
 
         let buf = shell.buffer();
         assert!(buf.contains("/tmp"), "expected cwd to be /tmp, got: {}", buf);
