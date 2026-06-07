@@ -49,6 +49,21 @@ crossterm = "0.28"
 # Terminal emulation — persistent shell pane, ANSI parsing
 vt100 = "0.16"
 
+# Config/variable storage — TOML parsing for system/project/session vars
+toml = "0.8"
+
+# Markdown parsing — skill content, PDF generation source
+pulldown-cmark = "0.13"
+
+# PDF generation — lightweight PDF writer for reports
+pdf-writer = "0.15"
+
+# UUID generation — utilities bin
+uuid = { version = "1.16", features = ["v4"] }
+
+# Base64 encoding/decoding — utilities bin (also pulled in by reqwest)
+base64 = "0.22"
+
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }
 arconaut-machine = { path = "crates/arconaut-machine" }

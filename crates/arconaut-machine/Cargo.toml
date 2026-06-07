@@ -9,6 +9,7 @@ license.workspace = true
 [dependencies]
 arconaut-core = { workspace = true }
 async-trait = { workspace = true }
+pulldown-cmark = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true, features = ["json", "rustls-tls"] }
 serde = { workspace = true, features = ["derive"] }

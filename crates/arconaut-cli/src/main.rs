@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod repl;
 mod terminal_bridge;
+mod utils;
 
 use arconaut_agent::{PersistentShell, Soul};
-use arconaut_core::ToolRegistry;
+use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
+    skills::{SkillLoader, SkillTool},
     tools::{BashTool, EditTool, GrepTool, ReadTool, WriteTool},
     AnthropicProvider,
 };
@@ -15,6 +17,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use std::io;
+use std::path::PathBuf;
 use tokio::sync::mpsc;
 
 #[tokio::main]
@@ -75,6 +78,29 @@ async fn run_soul(
     let (bridge_tx, mut bridge_rx) =
         mpsc::channel::<(String, tokio::sync::oneshot::Sender<String>)>(100);
 
+    // Setup skill loader.
+    let home = std::env::var("HOME").map(PathBuf::from).ok();
+    let user_skills_dir = home
+        .as_ref()
+        .map(|h| h.join(".config").join("arconaut").join("skills"))
+        .unwrap_or_else(|| std::env::current_dir().unwrap().join(".arconaut").join("skills"));
+    let project_skills_dir = std::env::current_dir()
+        .unwrap_or_default()
+        .join(".arconaut")
+        .join("skills");
+    let skill_loader = std::sync::Arc::new(SkillLoader::new(user_skills_dir, project_skills_dir));
+
+    // Setup variable store.
+    let mut vars = VariableStore::new();
+    if let Some(ref home) = home {
+        vars.load_system(home.join(".config").join("arconaut").join("vars.toml")).await;
+    }
+    let project_vars_path = std::env::current_dir()
+        .unwrap_or_default()
+        .join(".arconaut")
+        .join("vars.toml");
+    vars.load_project(project_vars_path).await;
+
     // Setup provider.
     let provider: Box<dyn arconaut_machine::ChatProvider> =
         match std::env::var("ANTHROPIC_API_KEY") {
@@ -107,6 +133,10 @@ async fn run_soul(
     registry.register(Box::new(BashTool::new()));
     registry.register(Box::new(GrepTool::new()));
     registry.register(Box::new(terminal_bridge::TerminalBridge::new(bridge_tx)));
+    registry.register(Box::new(SkillTool::new(skill_loader)));
+    for tool in utils::UtilsBin::tools() {
+        registry.register(tool);
+    }
 
     let mut soul = Soul::new(provider, registry)
         .with_max_steps(50)
