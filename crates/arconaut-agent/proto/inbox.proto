@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package arconaut.inbox;
+
+service AgentInbox {
+  rpc SendMessage (Message) returns (Empty);
+  rpc StreamMessages (StreamRequest) returns (stream Message);
+  rpc GetStatus (AgentId) returns (AgentStatus);
+}
+
+message Message {
+  string from = 1;
+  string to = 2;
+  string body = 3;
+  int64 timestamp = 4;
+}
+
+message Empty {}
+
+message StreamRequest {
+  string agent_name = 1;
+}
+
+message AgentId {
+  string name = 1;
+}
+
+message AgentStatus {
+  string name = 1;
+  bool online = 2;
+  string current_task = 3;
+}

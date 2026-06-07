@@ -64,6 +64,13 @@ uuid = { version = "1.16", features = ["v4"] }
 # Base64 encoding/decoding — utilities bin (also pulled in by reqwest)
 base64 = "0.22"
 
+# gRPC — inter-agent inbox (Phase 4)
+tonic = "0.12"
+prost = "0.13"
+
+# Async stream wrappers — tonic streaming
+tokio-stream = "0.1"
+
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }
 arconaut-machine = { path = "crates/arconaut-machine" }
