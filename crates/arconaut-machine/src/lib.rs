@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod provider;
 pub mod providers;
 pub mod skills;

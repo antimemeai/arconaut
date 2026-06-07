@@ -6,12 +6,13 @@ mod utils;
 use arconaut_agent::{AgentMode, Bus, InboxServer, PersistentShell, Session, Soul};
 use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
+    auth::{CredentialStorage, FileStorage, KimiOAuthFlow},
     skills::{SkillLoader, SkillTool},
     tools::{BashTool, EditTool, GrepTool, ReadTool, WriteTool},
     ProviderFactory,
 };
 use arconaut_tui::{ghostty, App, SoulCommand, TuiEvent};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -25,7 +26,27 @@ use tokio::sync::mpsc;
 #[derive(Parser, Debug)]
 #[command(name = "arconaut")]
 #[command(about = "AI-native dev environment")]
-struct Args {
+#[command(args_conflicts_with_subcommands = true)]
+struct Cli {
+    #[command(flatten)]
+    run: RunArgs,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Run the agent (default behavior)
+    Run(RunArgs),
+    /// Login to an LLM provider via OAuth
+    Login(LoginArgs),
+    /// Logout from an LLM provider
+    Logout(LogoutArgs),
+}
+
+#[derive(Parser, Debug)]
+struct RunArgs {
     /// Agent name to use for this session.
     #[arg(long, short)]
     agent: Option<String>,
@@ -59,10 +80,31 @@ struct Args {
     input: Vec<String>,
 }
 
+#[derive(Parser, Debug)]
+struct LoginArgs {
+    /// Provider to log in to (e.g., kimi).
+    provider: String,
+}
+
+#[derive(Parser, Debug)]
+struct LogoutArgs {
+    /// Provider to log out from (e.g., kimi).
+    provider: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
+    match cli.command {
+        None => run_main(cli.run).await,
+        Some(Commands::Run(args)) => run_main(args).await,
+        Some(Commands::Login(args)) => run_login(args).await,
+        Some(Commands::Logout(args)) => run_logout(args).await,
+    }
+}
+
+async fn run_main(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let agent_name = args.agent.unwrap_or_else(|| "default".to_string());
     let session_name = args.session.unwrap_or_else(|| "main".to_string());
     let _session = Session::new(&session_name, &agent_name);
@@ -78,11 +120,115 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let assistant_provider = args.assistant_provider;
 
     if args.no_tui {
-        run_single_turn(&agent_name, mode, &args.input, &provider_name, model_override.as_deref(), assistant_provider.as_deref()).await?;
+        run_single_turn(
+            &agent_name,
+            mode,
+            &args.input,
+            &provider_name,
+            model_override.as_deref(),
+            assistant_provider.as_deref(),
+        )
+        .await?;
         return Ok(());
     }
 
-    run_tui(&agent_name, mode, &provider_name, model_override.as_deref(), assistant_provider.as_deref()).await
+    run_tui(
+        &agent_name,
+        mode,
+        &provider_name,
+        model_override.as_deref(),
+        assistant_provider.as_deref(),
+    )
+    .await
+}
+
+async fn run_login(args: LoginArgs) -> Result<(), Box<dyn std::error::Error>> {
+    match args.provider.as_str() {
+        "kimi" | "moonshot" => login_kimi().await,
+        other => {
+            eprintln!("Unsupported provider for OAuth login: {}", other);
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn login_kimi() -> Result<(), Box<dyn std::error::Error>> {
+    let flow = KimiOAuthFlow::new();
+
+    println!("Starting Kimi OAuth login...");
+
+    let auth = flow.request_device_authorization().await?;
+
+    println!("Please visit the following URL to authorize arconaut:");
+    println!("  {}", auth.verification_uri_complete);
+    println!();
+
+    // Try to open browser.
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open")
+            .arg(&auth.verification_uri_complete)
+            .spawn();
+    }
+
+    let interval = std::time::Duration::from_secs(auth.interval.max(1));
+    let token;
+
+    loop {
+        tokio::time::sleep(interval).await;
+
+        match flow.poll_token(&auth).await {
+            Ok(t) => {
+                token = t;
+                break;
+            }
+            Err(arconaut_machine::auth::OAuthError::PollPending) => {
+                print!(".");
+                io::Write::flush(&mut io::stdout())?;
+            }
+            Err(arconaut_machine::auth::OAuthError::DeviceExpired) => {
+                println!();
+                eprintln!("Device authorization expired. Please try again.");
+                std::process::exit(1);
+            }
+            Err(e) => {
+                println!();
+                eprintln!("OAuth error: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    println!();
+
+    let storage = FileStorage::new()?;
+    storage.save("kimi", &token)?;
+
+    println!("✓ Logged in to Kimi successfully.");
+    println!();
+    println!("Add the following to your ~/.config/arconaut/vars.toml:");
+    println!("  [provider.moonshot]");
+    println!("  oauth = true");
+    println!("  api_key = \"\"  # fallback if OAuth fails");
+
+    Ok(())
+}
+
+async fn run_logout(args: LogoutArgs) -> Result<(), Box<dyn std::error::Error>> {
+    match args.provider.as_str() {
+        "kimi" | "moonshot" => logout_kimi().await,
+        other => {
+            eprintln!("Unsupported provider for OAuth logout: {}", other);
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn logout_kimi() -> Result<(), Box<dyn std::error::Error>> {
+    let storage = FileStorage::new()?;
+    storage.delete("kimi")?;
+    println!("✓ Logged out from Kimi. OAuth credentials cleared.");
+    Ok(())
 }
 
 fn parse_mode(s: &str) -> Option<AgentMode> {
@@ -277,7 +423,8 @@ async fn run_soul(
         .with_intervention(arconaut_agent::InterventionInjector::new());
 
     if let Ok(logger) = arconaut_audit::AuditLogger::new("default", audit_dir) {
-        soul.hook_engine_mut().register(Box::new(arconaut_agent::AuditHook::new(logger)));
+        soul.hook_engine_mut()
+            .register(Box::new(arconaut_agent::AuditHook::new(logger)));
     }
 
     // Setup assistant model if configured.
@@ -395,12 +542,14 @@ fn build_provider(
         };
         let api_key = cfg.get("api_key")?.as_str()?.to_string();
         let base_url = cfg.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let oauth = cfg.get("oauth").and_then(|v| v.as_bool()).unwrap_or(false);
         let new_cfg = arconaut_machine::ProviderConfig {
             kind,
             api_key,
             model: model.to_string(),
             base_url,
             extra_headers: None,
+            oauth,
         };
         provider = ProviderFactory::create(&new_cfg).ok()?;
     }

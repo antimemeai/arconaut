@@ -105,6 +105,14 @@ impl OpenAiCompatClient {
     pub fn base_url(&self) -> &str {
         &self.base_url
     }
+
+    /// Update the API key (Bearer token) used for authentication.
+    ///
+    /// This is used by OAuth-enabled providers to inject a fresh access token
+    /// before each request without reconstructing the client.
+    pub fn set_api_key(&mut self, api_key: impl Into<String>) {
+        self.api_key = api_key.into();
+    }
 }
 
 use reqwest::header::HeaderName;

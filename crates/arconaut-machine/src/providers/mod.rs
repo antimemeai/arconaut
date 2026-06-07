@@ -33,6 +33,8 @@ pub struct ProviderConfig {
     pub model: String,
     pub base_url: Option<String>,
     pub extra_headers: Option<HashMap<String, String>>,
+    /// Enable OAuth authentication instead of static API key.
+    pub oauth: bool,
 }
 
 /// Error building a provider from config.
@@ -88,6 +90,9 @@ impl ProviderFactory {
                 p = p.with_model(&cfg.model);
                 if let Some(url) = &cfg.base_url {
                     p = p.with_base_url(url);
+                }
+                if cfg.oauth {
+                    p = p.with_oauth();
                 }
                 Ok(Box::new(p))
             }
@@ -152,6 +157,7 @@ impl ProviderFactory {
             .ok_or(ProviderBuildError::MissingModel)?;
         let base_url = cfg.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string());
         let extra_headers = None; // TODO: parse extra_headers table
+        let oauth = cfg.get("oauth").and_then(|v| v.as_bool()).unwrap_or(false);
 
         Self::create(&ProviderConfig {
             kind,
@@ -159,6 +165,7 @@ impl ProviderFactory {
             model,
             base_url,
             extra_headers,
+            oauth,
         })
     }
 }
@@ -237,6 +244,7 @@ mod tests {
                 model: "test-model".to_string(),
                 base_url: None,
                 extra_headers: None,
+                oauth: false,
             };
             let result = ProviderFactory::create(&cfg);
             assert!(result.is_ok(), "failed to create {:?}: {:?}", kind, result.err());
@@ -251,9 +259,28 @@ mod tests {
             model: "test-model".to_string(),
             base_url: None,
             extra_headers: None,
+            oauth: false,
         };
         // This should succeed with valid config
         assert!(ProviderFactory::create(&cfg).is_ok());
+    }
+
+    #[test]
+    fn factory_oauth_flag() {
+        let cfg = ProviderConfig {
+            kind: ProviderKind::Moonshot,
+            api_key: "test-key".to_string(),
+            model: "test-model".to_string(),
+            base_url: None,
+            extra_headers: None,
+            oauth: true,
+        };
+        let result = ProviderFactory::create(&cfg);
+        assert!(result.is_ok());
+        // The provider is a MoonshotProvider with OAuth enabled.
+        // We verify by checking it implements ChatProvider and has the right model.
+        let provider = result.unwrap();
+        assert_eq!(provider.model_name(), "test-model");
     }
 
     #[test]
@@ -265,6 +292,7 @@ mod tests {
             model: "test-model".to_string(),
             base_url: None,
             extra_headers: None,
+            oauth: false,
         };
         let provider = ProviderFactory::create(&cfg).unwrap();
         registry.register("primary", provider).unwrap();
@@ -281,6 +309,7 @@ mod tests {
             model: "test-model".to_string(),
             base_url: None,
             extra_headers: None,
+            oauth: false,
         };
         let p1 = ProviderFactory::create(&cfg).unwrap();
         let p2 = ProviderFactory::create(&cfg).unwrap();
