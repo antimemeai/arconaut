@@ -47,6 +47,12 @@ impl Context {
         self.history.push(message);
     }
 
+    pub fn insert_message(&mut self, index: usize, message: Message) {
+        let estimated = estimate_tokens(&message);
+        self.token_count += estimated;
+        self.history.insert(index, message);
+    }
+
     pub fn clear(&mut self) {
         self.history.clear();
         self.token_count = 0;
@@ -54,6 +60,10 @@ impl Context {
 
     pub fn token_count(&self) -> usize {
         self.token_count
+    }
+
+    pub fn max_tokens(&self) -> usize {
+        self.max_tokens
     }
 
     pub fn history(&self) -> &[Message] {

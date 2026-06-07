@@ -1,3 +1,7 @@
+use crate::{
+    compaction::CompactionEngine, dedup::Deduplicator, hooks::HookEngine,
+    injection::Injector,
+};
 use arconaut_core::{Context, Message, Role, ToolCall, ToolRegistry, ToolResult};
 use arconaut_machine::{
     ChatProvider, ChatRequest, ChatResponse, ProviderError, TokenUsage, ToolDescriptor,
@@ -11,6 +15,10 @@ pub struct Soul {
     provider: Box<dyn ChatProvider>,
     context: Context,
     registry: ToolRegistry,
+    dedup: Deduplicator,
+    injector: Option<Box<dyn Injector>>,
+    hook_engine: HookEngine,
+    compaction: Option<CompactionEngine>,
     max_steps: usize,
 }
 
@@ -64,8 +72,26 @@ impl Soul {
             provider,
             context: Context::new(200_000),
             registry,
+            dedup: Deduplicator::new(),
+            injector: None,
+            hook_engine: HookEngine::new(),
+            compaction: None,
             max_steps: 50,
         }
+    }
+
+    pub fn with_injector(mut self, injector: Box<dyn Injector>) -> Self {
+        self.injector = Some(injector);
+        self
+    }
+
+    pub fn with_compaction(mut self, compaction: CompactionEngine) -> Self {
+        self.compaction = Some(compaction);
+        self
+    }
+
+    pub fn hook_engine_mut(&mut self) -> &mut HookEngine {
+        &mut self.hook_engine
     }
 
     pub fn with_max_steps(mut self, max_steps: usize) -> Self {
@@ -80,13 +106,20 @@ impl Soul {
 
     /// Run one user turn.
     ///
-    /// Appends the user message, then loops up to `max_steps`:
-    ///   1. Call the LLM with current context + registered tools.
-    ///   2. Append the assistant response.
-    ///   3. If no tool calls, return completed.
-    ///   4. Execute each tool call and append results.
+    /// Flow: inject → compact → user msg → pre-hooks → LLM loop → post-hooks
     pub async fn run_turn(&mut self, input: &str) -> Result<TurnResult, SoulError> {
+        self.dedup.clear();
+
+        if let Some(compaction) = &self.compaction {
+            compaction.compact(&mut self.context);
+        }
+
+        if let Some(injector) = &self.injector {
+            injector.inject(&mut self.context);
+        }
+
         self.context.append_message(Message::user(input));
+        self.hook_engine.pre_turn(self);
 
         for step in 0..self.max_steps {
             let request = self.build_request();
@@ -100,12 +133,14 @@ impl Soul {
 
             let tool_calls = extract_tool_calls(&response.message);
             if tool_calls.is_empty() {
-                return Ok(TurnResult {
+                let result = TurnResult {
                     message: response.message,
                     steps_taken: step + 1,
                     completed: true,
                     stop_reason: StopReason::Completed,
-                });
+                };
+                self.hook_engine.post_turn(self, &result);
+                return Ok(result);
             }
 
             for call in tool_calls {
@@ -125,12 +160,14 @@ impl Soul {
             .cloned()
             .unwrap_or_else(|| Message::assistant(""));
 
-        Ok(TurnResult {
+        let result = TurnResult {
             message: last_message,
             steps_taken: self.max_steps,
             completed: false,
             stop_reason: StopReason::MaxStepsReached,
-        })
+        };
+        self.hook_engine.post_turn(self, &result);
+        Ok(result)
     }
 
     fn build_request(&self) -> ChatRequest {
@@ -152,7 +189,7 @@ impl Soul {
         }
     }
 
-    async fn execute_tool_call(&self, call: &ToolCall) -> ToolResult {
+    async fn execute_tool_call(&mut self, call: &ToolCall) -> ToolResult {
         let args = match serde_json::from_str(&call.function.arguments) {
             Ok(v) => v,
             Err(e) => {
@@ -163,10 +200,17 @@ impl Soul {
             }
         };
 
-        match self.registry.call(&call.function.name, args).await {
+        if let Some(cached) = self.dedup.get(&call.function.name, &args) {
+            return cached;
+        }
+
+        let result = match self.registry.call(&call.function.name, args.clone()).await {
             Ok(result) => result,
             Err(e) => ToolResult::error(e.message, e.brief),
-        }
+        };
+
+        self.dedup.insert(&call.function.name, &args, result.clone());
+        result
     }
 }
 
@@ -241,6 +285,7 @@ mod tests {
     use super::*;
     use arconaut_core::{ContentPart, FunctionCall};
     use serde_json::Value;
+    use std::sync::atomic::AtomicUsize;
 
     fn text_response(text: &str) -> ChatResponse {
         ChatResponse {
@@ -350,6 +395,66 @@ mod tests {
         let mut soul = Soul::new(Box::new(ErrorProvider), ToolRegistry::new());
         let result = soul.run_turn("fail").await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn turn_deduplicates_identical_tool_calls() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let provider = MockProvider::new(vec![
+            tool_response(vec![
+                ToolCall {
+                    id: "call-1".to_string(),
+                    function: FunctionCall {
+                        name: "count".to_string(),
+                        arguments: "{}".to_string(),
+                    },
+                },
+                ToolCall {
+                    id: "call-2".to_string(),
+                    function: FunctionCall {
+                        name: "count".to_string(),
+                        arguments: "{}".to_string(),
+                    },
+                },
+            ]),
+            text_response("done"),
+        ]);
+
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(CountingTool {
+            count: Arc::clone(&call_count),
+            params: serde_json::json!({"type": "object"}),
+        }));
+        let mut soul = Soul::new(Box::new(provider), registry);
+
+        let result = soul.run_turn("dup").await.unwrap();
+        assert!(result.completed);
+        // Two identical tool calls should only execute once
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+    }
+
+    struct CountingTool {
+        count: Arc<AtomicUsize>,
+        params: Value,
+    }
+
+    #[async_trait]
+    impl arconaut_core::Tool for CountingTool {
+        fn name(&self) -> &str {
+            "count"
+        }
+        fn description(&self) -> &str {
+            "Counts calls"
+        }
+        fn parameters(&self) -> &Value {
+            &self.params
+        }
+        async fn call(&self, _args: Value) -> Result<ToolResult, arconaut_core::ToolError> {
+            self.count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(ToolResult::success(vec![ContentPart::text("ok")]))
+        }
     }
 
     struct TestEchoTool {
