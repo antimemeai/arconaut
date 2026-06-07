@@ -1,6 +1,6 @@
 use arconaut_core::{Message, Tool};
 use async_trait::async_trait;
-use serde::Serialize;
+// serde imports used by anthropic module
 use std::collections::HashSet;
 
 #[async_trait]
