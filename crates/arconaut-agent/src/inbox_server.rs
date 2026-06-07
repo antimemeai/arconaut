@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
-use tokio_stream::{wrappers::ReceiverStream, Stream};
+use tokio_stream::{wrappers::ReceiverStream, Stream, StreamExt};
 use tonic::{Request, Response, Status};
 
 use crate::inbox::agent_inbox_server::{AgentInbox, AgentInboxServer};
@@ -38,6 +38,22 @@ impl InboxServer {
         if let Some(tx) = state.subscribers.get(&msg.to) {
             let _ = tx.send(msg.clone()).await;
         }
+    }
+
+    /// Start the gRPC inbox server on the given address.
+    pub async fn start(self, addr: std::net::SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
+        let svc = self.into_service();
+        tonic::transport::Server::builder()
+            .add_service(svc)
+            .serve(addr)
+            .await?;
+        Ok(())
+    }
+}
+
+impl Default for InboxServer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

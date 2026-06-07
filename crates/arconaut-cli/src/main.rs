@@ -3,7 +3,7 @@ mod repl;
 mod terminal_bridge;
 mod utils;
 
-use arconaut_agent::{AgentMode, PersistentShell, Session, Soul};
+use arconaut_agent::{AgentMode, Bus, InboxServer, PersistentShell, Session, Soul};
 use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
     skills::{SkillLoader, SkillTool},
@@ -19,6 +19,7 @@ use crossterm::{
 };
 use std::io;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 
 #[derive(Parser, Debug)]
@@ -119,6 +120,14 @@ async fn run_single_turn(
 async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::error::Error>> {
     let _ = (agent_name, mode); // TODO: wire into TUI title/status
 
+    // Start agent bus and gRPC inbox server.
+    let bus = Arc::new(Bus::new());
+    let inbox = InboxServer::new();
+    let inbox_addr: std::net::SocketAddr = "127.0.0.1:50051".parse()?;
+    tokio::spawn(async move {
+        let _ = inbox.start(inbox_addr).await;
+    });
+
     enable_raw_mode()?;
     let _ = ghostty::push_keyboard_flags();
     ghostty::query_theme();
@@ -134,7 +143,7 @@ async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::e
     let (soul_tx, soul_rx) = mpsc::channel::<SoulCommand>(100);
     let (tui_tx, tui_rx) = mpsc::channel::<TuiEvent>(100);
 
-    let soul_handle = tokio::spawn(run_soul(soul_rx, tui_tx));
+    let soul_handle = tokio::spawn(run_soul(soul_rx, tui_tx, bus));
 
     let mut app = App::new(soul_tx, tui_rx, size.height, size.width);
     let result = app.run(&mut terminal).await;
@@ -156,6 +165,7 @@ async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::e
 async fn run_soul(
     mut soul_rx: mpsc::Receiver<SoulCommand>,
     tui_tx: mpsc::Sender<TuiEvent>,
+    bus: Arc<Bus>,
 ) {
     // Setup persistent shell.
     let (shell_out_tx, mut shell_out_rx) = mpsc::channel::<String>(100);
@@ -231,6 +241,7 @@ async fn run_soul(
     registry.register(Box::new(GrepTool::new()));
     registry.register(Box::new(terminal_bridge::TerminalBridge::new(bridge_tx)));
     registry.register(Box::new(SkillTool::new(skill_loader)));
+    registry.register(Box::new(arconaut_agent::BusTool::new(bus)));
     for tool in utils::UtilsBin::tools() {
         registry.register(tool);
     }
