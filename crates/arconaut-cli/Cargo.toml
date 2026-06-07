@@ -11,6 +11,7 @@ name = "arconaut"
 path = "src/main.rs"
 
 [dependencies]
+arconaut-audit = { workspace = true }
 arconaut-core = { workspace = true }
 arconaut-machine = { workspace = true }
 arconaut-agent = { workspace = true }

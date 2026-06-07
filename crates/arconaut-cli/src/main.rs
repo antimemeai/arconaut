@@ -8,7 +8,7 @@ use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
     skills::{SkillLoader, SkillTool},
     tools::{BashTool, EditTool, GrepTool, ReadTool, WriteTool},
-    AnthropicProvider,
+    ProviderFactory,
 };
 use arconaut_tui::{ghostty, App, SoulCommand, TuiEvent};
 use clap::Parser;
@@ -38,6 +38,18 @@ struct Args {
     #[arg(long, short)]
     mode: Option<String>,
 
+    /// LLM provider name (must be configured in vars.toml).
+    #[arg(long, short)]
+    provider: Option<String>,
+
+    /// Override the model for the selected provider.
+    #[arg(long, short)]
+    model: Option<String>,
+
+    /// Assistant provider name for secondary model.
+    #[arg(long)]
+    assistant_provider: Option<String>,
+
     /// Run one turn and exit (no TUI).
     #[arg(long)]
     no_tui: bool,
@@ -61,12 +73,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and_then(parse_mode)
         .unwrap_or(AgentMode::Assist);
 
+    let provider_name = args.provider.unwrap_or_else(|| "anthropic".to_string());
+    let model_override = args.model;
+    let assistant_provider = args.assistant_provider;
+
     if args.no_tui {
-        run_single_turn(&agent_name, mode, &args.input).await?;
+        run_single_turn(&agent_name, mode, &args.input, &provider_name, model_override.as_deref(), assistant_provider.as_deref()).await?;
         return Ok(());
     }
 
-    run_tui(&agent_name, mode).await
+    run_tui(&agent_name, mode, &provider_name, model_override.as_deref(), assistant_provider.as_deref()).await
 }
 
 fn parse_mode(s: &str) -> Option<AgentMode> {
@@ -84,6 +100,9 @@ async fn run_single_turn(
     agent_name: &str,
     mode: AgentMode,
     input: &[String],
+    provider_name: &str,
+    model_override: Option<&str>,
+    _assistant_provider: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let text = if input.is_empty() {
         use std::io::{BufRead, Write};
@@ -100,11 +119,9 @@ async fn run_single_turn(
         return Ok(());
     }
 
-    let provider: Box<dyn arconaut_machine::ChatProvider> =
-        match std::env::var("ANTHROPIC_API_KEY") {
-            Ok(key) => Box::new(AnthropicProvider::new(key)?),
-            Err(_) => Box::new(arconaut_agent::MockProvider::new(vec![])),
-        };
+    let vars = load_vars().await;
+    let provider = build_provider(provider_name, model_override, &vars)
+        .unwrap_or_else(|| Box::new(arconaut_agent::MockProvider::new(vec![])));
 
     let registry = default_registry().await;
     let mut soul = Soul::new(provider, registry);
@@ -117,7 +134,13 @@ async fn run_single_turn(
     Ok(())
 }
 
-async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_tui(
+    agent_name: &str,
+    mode: AgentMode,
+    provider_name: &str,
+    model_override: Option<&str>,
+    assistant_provider: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let _ = (agent_name, mode); // TODO: wire into TUI title/status
 
     // Start agent bus and gRPC inbox server.
@@ -143,7 +166,14 @@ async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::e
     let (soul_tx, soul_rx) = mpsc::channel::<SoulCommand>(100);
     let (tui_tx, tui_rx) = mpsc::channel::<TuiEvent>(100);
 
-    let soul_handle = tokio::spawn(run_soul(soul_rx, tui_tx, bus));
+    let soul_handle = tokio::spawn(run_soul(
+        soul_rx,
+        tui_tx,
+        bus,
+        provider_name.to_string(),
+        model_override.map(|s| s.to_string()),
+        assistant_provider.map(|s| s.to_string()),
+    ));
 
     let mut app = App::new(soul_tx, tui_rx, size.height, size.width);
     let result = app.run(&mut terminal).await;
@@ -166,6 +196,9 @@ async fn run_soul(
     mut soul_rx: mpsc::Receiver<SoulCommand>,
     tui_tx: mpsc::Sender<TuiEvent>,
     bus: Arc<Bus>,
+    provider_name: String,
+    model_override: Option<String>,
+    assistant_provider: Option<String>,
 ) {
     // Setup persistent shell.
     let (shell_out_tx, mut shell_out_rx) = mpsc::channel::<String>(100);
@@ -208,29 +241,14 @@ async fn run_soul(
         .join("vars.toml");
     vars.load_project(project_vars_path).await;
 
-    // Setup provider.
-    let provider: Box<dyn arconaut_machine::ChatProvider> =
-        match std::env::var("ANTHROPIC_API_KEY") {
-            Ok(key) => match AnthropicProvider::new(key) {
-                Ok(p) => Box::new(p),
-                Err(e) => {
-                    let _ = tui_tx
-                        .send(TuiEvent::Error {
-                            message: format!("Anthropic provider error: {}", e),
-                        })
-                        .await;
-                    return;
-                }
-            },
-            Err(_) => {
-                let _ = tui_tx
-                    .send(TuiEvent::Status(
-                        "ANTHROPIC_API_KEY not set — running in echo mode".to_string(),
-                    ))
-                    .await;
-                Box::new(arconaut_agent::MockProvider::new(vec![]))
-            }
-        };
+    // Setup primary provider.
+    let provider = build_provider(&provider_name, model_override.as_deref(), &vars)
+        .unwrap_or_else(|| {
+            let _ = tui_tx.try_send(TuiEvent::Status(
+                format!("Provider '{}' not configured — running in echo mode", provider_name),
+            ));
+            Box::new(arconaut_agent::MockProvider::new(vec![]))
+        });
 
     // Setup tool registry.
     let mut registry = ToolRegistry::new();
@@ -241,14 +259,35 @@ async fn run_soul(
     registry.register(Box::new(GrepTool::new()));
     registry.register(Box::new(terminal_bridge::TerminalBridge::new(bridge_tx)));
     registry.register(Box::new(SkillTool::new(skill_loader)));
-    registry.register(Box::new(arconaut_agent::BusTool::new(bus)));
+    registry.register(Box::new(arconaut_agent::BusTool::new(Arc::clone(&bus))));
     for tool in utils::UtilsBin::tools() {
         registry.register(tool);
     }
 
+    // Setup audit logging.
+    let audit_dir = home
+        .as_ref()
+        .map(|h| h.join(".local").join("share").join("arconaut").join("audit"))
+        .unwrap_or_else(|| std::env::current_dir().unwrap().join(".arconaut").join("audit"));
+
+    // Setup off-pulse intervention.
     let mut soul = Soul::new(provider, registry)
         .with_max_steps(50)
-        .with_context_size(200_000);
+        .with_context_size(200_000)
+        .with_intervention(arconaut_agent::InterventionInjector::new());
+
+    if let Ok(logger) = arconaut_audit::AuditLogger::new("default", audit_dir) {
+        soul.hook_engine_mut().register(Box::new(arconaut_agent::AuditHook::new(logger)));
+    }
+
+    // Setup assistant model if configured.
+    if let Some(assistant_name) = assistant_provider {
+        if let Some(assistant_provider) = build_provider(&assistant_name, None, &vars) {
+            let assistant = arconaut_agent::AssistantModel::new(assistant_provider)
+                .with_bus(Arc::clone(&bus));
+            soul = soul.with_assistant(assistant);
+        }
+    }
 
     loop {
         tokio::select! {
@@ -318,4 +357,52 @@ fn format_message(msg: &arconaut_core::Message) -> String {
         .filter_map(|part| part.as_text())
         .collect::<Vec<_>>()
         .join("")
+}
+
+/// Load system and project variables.
+async fn load_vars() -> VariableStore {
+    let mut vars = VariableStore::new();
+    if let Ok(home) = std::env::var("HOME") {
+        vars.load_system(PathBuf::from(home).join(".config").join("arconaut").join("vars.toml"))
+            .await;
+    }
+    let project_vars_path = std::env::current_dir()
+        .unwrap_or_default()
+        .join(".arconaut")
+        .join("vars.toml");
+    vars.load_project(project_vars_path).await;
+    vars
+}
+
+/// Build a provider from config, with optional model override.
+fn build_provider(
+    name: &str,
+    model_override: Option<&str>,
+    vars: &VariableStore,
+) -> Option<Box<dyn arconaut_machine::ChatProvider>> {
+    let mut provider = ProviderFactory::create_named(name, vars).ok()?;
+    if let Some(model) = model_override {
+        // Model override requires provider-specific handling.
+        // For now, we re-create the provider with the overridden model.
+        let cfg = vars.get_prefixed(&format!("provider.{}", name));
+        let kind = match name.to_lowercase().as_str() {
+            "anthropic" => arconaut_machine::ProviderKind::Anthropic,
+            "openai" => arconaut_machine::ProviderKind::OpenAi,
+            "gemini" => arconaut_machine::ProviderKind::Gemini,
+            "moonshot" => arconaut_machine::ProviderKind::Moonshot,
+            "openrouter" => arconaut_machine::ProviderKind::OpenRouter,
+            _ => return Some(provider),
+        };
+        let api_key = cfg.get("api_key")?.as_str()?.to_string();
+        let base_url = cfg.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let new_cfg = arconaut_machine::ProviderConfig {
+            kind,
+            api_key,
+            model: model.to_string(),
+            base_url,
+            extra_headers: None,
+        };
+        provider = ProviderFactory::create(&new_cfg).ok()?;
+    }
+    Some(provider)
 }

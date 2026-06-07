@@ -67,6 +67,24 @@ impl VariableStore {
         };
     }
 
+    /// Get all variables under a prefix as a flat map.
+    ///
+    /// For example, `get_prefixed("provider.anthropic")` returns
+    /// `{ "api_key": ..., "model": ... }` by collecting all keys that start
+    /// with `provider.anthropic.` and stripping the prefix.
+    pub fn get_prefixed(&self, prefix: &str) -> HashMap<String, Value> {
+        let mut result = HashMap::new();
+        let full_prefix = format!("{}.", prefix);
+        for map in [&self.system, &self.project, &self.session] {
+            for (key, value) in map {
+                if let Some(stripped) = key.strip_prefix(&full_prefix) {
+                    result.insert(stripped.to_string(), value.clone());
+                }
+            }
+        }
+        result
+    }
+
     /// Replace `{var:scope.key}` templates in a string.
     pub fn substitute(&self, input: &str) -> String {
         let mut output = input.to_string();
@@ -164,5 +182,42 @@ mod tests {
         store.set_scoped(VariableScope::System, "name", json!("world"));
         let result = store.substitute("Hello {var:system.name}!");
         assert_eq!(result, "Hello world!");
+    }
+
+    #[test]
+    fn get_prefixed_extracts_provider_config() {
+        let mut store = VariableStore::new();
+        store.set_scoped(VariableScope::System, "provider.anthropic.api_key", json!("sk-ant-123"));
+        store.set_scoped(VariableScope::System, "provider.anthropic.model", json!("claude-sonnet"));
+        store.set_scoped(VariableScope::System, "provider.openai.api_key", json!("sk-openai-456"));
+
+        let anthropic = store.get_prefixed("provider.anthropic");
+        assert_eq!(anthropic.get("api_key"), Some(&json!("sk-ant-123")));
+        assert_eq!(anthropic.get("model"), Some(&json!("claude-sonnet")));
+        assert_eq!(anthropic.len(), 2);
+
+        let openai = store.get_prefixed("provider.openai");
+        assert_eq!(openai.get("api_key"), Some(&json!("sk-openai-456")));
+        assert_eq!(openai.len(), 1);
+    }
+
+    #[test]
+    fn get_prefixed_empty_when_no_match() {
+        let store = VariableStore::new();
+        let result = store.get_prefixed("provider.nonexistent");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn get_prefixed_session_overrides_system() {
+        let mut store = VariableStore::new();
+        store.set_scoped(VariableScope::System, "provider.anthropic.api_key", json!("system-key"));
+        store.set_scoped(VariableScope::Session, "provider.anthropic.api_key", json!("session-key"));
+
+        let cfg = store.get_prefixed("provider.anthropic");
+        // Session should override system for the same key
+        // But get_prefixed collects from all scopes; the last one wins
+        // since we iterate system -> project -> session
+        assert_eq!(cfg.get("api_key"), Some(&json!("session-key")));
     }
 }

@@ -1,1 +1,5 @@
-// Audit logging — placeholder for Phase 1 infrastructure
+pub mod event;
+pub mod logger;
+
+pub use event::{AuditEvent, EventType};
+pub use logger::{AuditError, AuditLogger};

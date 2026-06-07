@@ -95,11 +95,13 @@ dependencies = [
 name = "arconaut-agent"
 version = "0.1.0"
 dependencies = [
+ "arconaut-audit",
  "arconaut-core",
  "arconaut-machine",
  "async-trait",
  "chrono",
  "prost",
+ "regex",
  "serde",
  "serde_json",
  "tempfile",
@@ -117,6 +119,7 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -124,6 +127,7 @@ name = "arconaut-cli"
 version = "0.1.0"
 dependencies = [
  "arconaut-agent",
+ "arconaut-audit",
  "arconaut-core",
  "arconaut-machine",
  "arconaut-tui",

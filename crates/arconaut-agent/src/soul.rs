@@ -1,6 +1,7 @@
 use crate::{
+    assistant::{AgentEvent, AssistantModel},
     compaction::CompactionEngine, dedup::Deduplicator, hooks::HookEngine,
-    injection::Injector,
+    injection::Injector, intervention::{ChurnLevel, InterventionInjector},
 };
 use arconaut_core::{Context, Message, Role, ToolCall, ToolRegistry, ToolResult};
 use arconaut_machine::{
@@ -17,6 +18,8 @@ pub struct Soul {
     registry: ToolRegistry,
     dedup: Deduplicator,
     injector: Option<Box<dyn Injector>>,
+    intervention: Option<InterventionInjector>,
+    assistant: Option<AssistantModel>,
     hook_engine: HookEngine,
     compaction: Option<CompactionEngine>,
     max_steps: usize,
@@ -43,6 +46,8 @@ pub enum StopReason {
     MaxStepsReached,
     /// Provider returned an error.
     ProviderError(ProviderError),
+    /// Churn detected (repeated identical tool calls or oscillation).
+    ChurnDetected,
 }
 
 /// Errors that abort a turn.
@@ -74,6 +79,8 @@ impl Soul {
             registry,
             dedup: Deduplicator::new(),
             injector: None,
+            intervention: None,
+            assistant: None,
             hook_engine: HookEngine::new(),
             compaction: None,
             max_steps: 50,
@@ -82,6 +89,16 @@ impl Soul {
 
     pub fn with_injector(mut self, injector: Box<dyn Injector>) -> Self {
         self.injector = Some(injector);
+        self
+    }
+
+    pub fn with_intervention(mut self, intervention: InterventionInjector) -> Self {
+        self.intervention = Some(intervention);
+        self
+    }
+
+    pub fn with_assistant(mut self, assistant: AssistantModel) -> Self {
+        self.assistant = Some(assistant);
         self
     }
 
@@ -131,6 +148,33 @@ impl Soul {
 
             self.context.append_message(response.message.clone());
 
+            // Off-pulse intervention: check for churn after each assistant message.
+            if let Some(ref mut intervention) = self.intervention {
+                let level = intervention.check(&response.message, &self.dedup, step + 1);
+                match level {
+                    ChurnLevel::HardStop => {
+                        let result = TurnResult {
+                            message: response.message,
+                            steps_taken: step + 1,
+                            completed: false,
+                            stop_reason: StopReason::ChurnDetected,
+                        };
+                        self.hook_engine.post_turn(self, &result);
+                        return Ok(result);
+                    }
+                    ChurnLevel::Advisory => {
+                        let prompt = if self.dedup.consecutive_count() >= 5 {
+                            InterventionInjector::tool_loop_prompt()
+                        } else {
+                            InterventionInjector::intervention_prompt()
+                        };
+                        self.context
+                            .append_message(Message::system(prompt));
+                    }
+                    ChurnLevel::None => {}
+                }
+            }
+
             let tool_calls = extract_tool_calls(&response.message);
             if tool_calls.is_empty() {
                 let result = TurnResult {
@@ -145,6 +189,12 @@ impl Soul {
 
             for call in tool_calls {
                 let result = self.execute_tool_call(&call).await;
+                if let ToolResult::Error { ref message, .. } = result {
+                    self.check_assistant(AgentEvent::ToolFailure {
+                        tool_name: call.function.name.clone(),
+                        error: message.clone(),
+                    }).await;
+                }
                 self.context
                     .append_message(Message::tool_result(&call.id, result));
             }
@@ -160,6 +210,10 @@ impl Soul {
             .cloned()
             .unwrap_or_else(|| Message::assistant(""));
 
+        self.check_assistant(AgentEvent::MaxStepsWarning {
+            steps_taken: self.max_steps,
+        }).await;
+
         let result = TurnResult {
             message: last_message,
             steps_taken: self.max_steps,
@@ -168,6 +222,31 @@ impl Soul {
         };
         self.hook_engine.post_turn(self, &result);
         Ok(result)
+    }
+
+    /// Check if the assistant should be queried for the given event.
+    async fn check_assistant(&mut self, event: AgentEvent) {
+        if let Some(ref mut assistant) = self.assistant {
+            if assistant.check_triggers(&event) {
+                let context = self.context.history()
+                    .iter()
+                    .filter_map(|m| m.content.iter().filter_map(|p| p.as_text()).next())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                match assistant.query(&context).await {
+                    Ok(message) => {
+                        assistant.deliver(&message);
+                        self.context.append_message(Message::system(
+                            format!("Assistant suggestion: {}",
+                                message.content.iter().filter_map(|p| p.as_text()).collect::<Vec<_>>().join(""))
+                        ));
+                    }
+                    Err(e) => {
+                        eprintln!("assistant query error: {}", e);
+                    }
+                }
+            }
+        }
     }
 
     fn build_request(&self) -> ChatRequest {
@@ -204,11 +283,16 @@ impl Soul {
             return cached;
         }
 
+        self.hook_engine
+            .pre_tool_use(self, &call.function.name, &args);
+
         let result = match self.registry.call(&call.function.name, args.clone()).await {
             Ok(result) => result,
             Err(e) => ToolResult::error(e.message, e.brief),
         };
 
+        self.hook_engine
+            .post_tool_use(self, &call.function.name, &result);
         self.dedup.insert(&call.function.name, &args, result.clone());
         result
     }

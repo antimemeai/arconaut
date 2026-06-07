@@ -1,4 +1,6 @@
 use crate::{Soul, TurnResult};
+use arconaut_core::ToolResult;
+use serde_json::Value;
 
 /// Hook into the turn lifecycle for instrumentation, metrics, logging.
 pub trait Hook: Send + Sync {
@@ -6,6 +8,10 @@ pub trait Hook: Send + Sync {
     fn pre_turn(&self, _soul: &Soul) {}
     /// Called after each turn completes or aborts.
     fn post_turn(&self, _soul: &Soul, _result: &TurnResult) {}
+    /// Called before a tool is executed.
+    fn pre_tool_use(&self, _soul: &Soul, _tool_name: &str, _args: &Value) {}
+    /// Called after a tool is executed.
+    fn post_tool_use(&self, _soul: &Soul, _tool_name: &str, _result: &ToolResult) {}
 }
 
 /// Runs all registered hooks, catching and logging errors so that
@@ -34,6 +40,18 @@ impl HookEngine {
             hook.post_turn(soul, result);
         }
     }
+
+    pub fn pre_tool_use(&self, soul: &Soul, tool_name: &str, args: &Value) {
+        for hook in &self.hooks {
+            hook.pre_tool_use(soul, tool_name, args);
+        }
+    }
+
+    pub fn post_tool_use(&self, soul: &Soul, tool_name: &str, result: &ToolResult) {
+        for hook in &self.hooks {
+            hook.post_tool_use(soul, tool_name, result);
+        }
+    }
 }
 
 impl Default for HookEngine {
@@ -42,6 +60,7 @@ impl Default for HookEngine {
     }
 }
 
+use arconaut_audit::{AuditEvent, AuditLogger};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Tracks cumulative token usage and step counts across turns.
@@ -76,6 +95,64 @@ impl Hook for MetricsHook {
             .fetch_add(result.steps_taken, Ordering::SeqCst);
         // Token usage is available on the provider response, but TurnResult
         // currently only carries the final message. For now we track steps.
+    }
+}
+
+/// Audit hook that logs all turn and tool events to the audit logger.
+pub struct AuditHook {
+    logger: AuditLogger,
+}
+
+impl AuditHook {
+    pub fn new(logger: AuditLogger) -> Self {
+        Self { logger }
+    }
+}
+
+impl Hook for AuditHook {
+    fn pre_turn(&self, _soul: &Soul) {
+        self.logger.log(AuditEvent::turn_begin(self.logger.session_id()));
+    }
+
+    fn post_turn(&self, _soul: &Soul, result: &TurnResult) {
+        let stop_reason = format!("{:?}", result.stop_reason);
+        self.logger.log(AuditEvent::turn_end(
+            self.logger.session_id(),
+            result.steps_taken,
+            &stop_reason,
+        ));
+    }
+
+    fn pre_tool_use(&self, _soul: &Soul, tool_name: &str, args: &Value) {
+        self.logger.log(AuditEvent::tool_call(
+            self.logger.session_id(),
+            tool_name,
+            args.clone(),
+        ));
+    }
+
+    fn post_tool_use(&self, _soul: &Soul, tool_name: &str, result: &ToolResult) {
+        let (success, brief) = match result {
+            ToolResult::Success { output } => {
+                let text = output.iter().filter_map(|p| p.as_text()).collect::<Vec<_>>().join("");
+                (true, text)
+            }
+            ToolResult::Error { brief, .. } => (false, brief.clone()),
+        };
+        if success {
+            self.logger.log(AuditEvent::tool_result(
+                self.logger.session_id(),
+                tool_name,
+                true,
+                brief,
+            ));
+        } else {
+            self.logger.log(AuditEvent::tool_error(
+                self.logger.session_id(),
+                tool_name,
+                brief,
+            ));
+        }
     }
 }
 
