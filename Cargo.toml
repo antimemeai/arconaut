@@ -42,6 +42,13 @@ regex = "1.11"
 # Testing — temp dirs for filesystem tool tests
 tempfile = "3.14"
 
+# TUI framework — Phase 2: dual-pane terminal, event loop, widgets
+ratatui = "0.30"
+crossterm = "0.28"
+
+# Terminal emulation — persistent shell pane, ANSI parsing
+vt100 = "0.16"
+
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }
 arconaut-machine = { path = "crates/arconaut-machine" }

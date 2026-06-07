@@ -8,5 +8,9 @@ license.workspace = true
 
 [dependencies]
 arconaut-core = { workspace = true }
-arconaut-machine = { workspace = true }
+arconaut-agent = { workspace = true }
+crossterm = { workspace = true }
+ratatui = { workspace = true }
+serde_json = { workspace = true }
+vt100 = { workspace = true }
 tokio = { workspace = true }

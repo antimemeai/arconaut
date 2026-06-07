@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use arconaut_core::{Context, Message};
 use arconaut_machine::{ChatProvider, ChatRequest};
 use std::io::{self, Write};
