@@ -44,7 +44,7 @@ impl CompactionEngine {
             return false;
         }
 
-        let history = context.history();
+        let history: Vec<Message> = context.history().to_vec();
         if history.len() <= self.preserve_window.saturating_add(1) {
             // Not enough messages to compact while preserving window
             return false;
@@ -59,9 +59,6 @@ impl CompactionEngine {
             summarized_count, current
         );
 
-        // We need to modify the context's history directly.
-        // Context doesn't expose mutable history, so we use a workaround:
-        // checkpoint current state, build new history, clear and rebuild.
         let preserved: Vec<Message> = history[split..].to_vec();
 
         context.clear();
@@ -69,6 +66,10 @@ impl CompactionEngine {
         for msg in preserved {
             context.append_message(msg);
         }
+
+        // Create a checkpoint at the compaction boundary so callers
+        // can revert to the compacted state if needed.
+        let _ = context.checkpoint();
 
         true
     }

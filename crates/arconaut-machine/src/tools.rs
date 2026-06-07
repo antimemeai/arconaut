@@ -296,13 +296,13 @@ impl BashTool {
     }
 
     fn is_safe_command(command: &str) -> Result<(), ToolError> {
-        let forbidden = ["&&", ";", "|", "`", "$()"];
+        let forbidden = ["&&", "||", ";", "|", "`", "$()", "\n", "\r"];
         for pat in &forbidden {
             if command.contains(pat) {
                 return Err(ToolError {
                     message: format!(
                         "command contains forbidden sequence '{}'; run single commands only",
-                        pat
+                        pat.escape_debug()
                     ),
                     brief: "unsafe command".to_string(),
                 });
@@ -433,36 +433,43 @@ impl GrepTool {
         false
     }
 
-    fn walk_dir(
+    async fn walk_dir(
         dir: &Path,
         pattern: &Regex,
         include_ignored: bool,
         gitignore_patterns: &[String],
         results: &mut Vec<String>,
     ) -> Result<(), ToolError> {
-        let entries = std::fs::read_dir(dir).map_err(|e| ToolError {
+        let mut entries = tokio::fs::read_dir(dir).await.map_err(|e| ToolError {
             message: format!("failed to read directory '{}': {}", dir.display(), e),
             brief: "read dir failed".to_string(),
         })?;
 
-        for entry in entries {
-            let entry = entry.map_err(|e| ToolError {
-                message: format!("directory entry error: {}", e),
-                brief: "read dir failed".to_string(),
-            })?;
+        while let Ok(Some(entry)) = entries.next_entry().await {
             let path = entry.path();
 
             if !include_ignored && Self::is_ignored(&path, gitignore_patterns) {
                 continue;
             }
 
-            if path.is_dir() {
+            let metadata = tokio::fs::metadata(&path).await;
+            let is_dir = metadata.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+            let is_file = metadata.as_ref().map(|m| m.is_file()).unwrap_or(false);
+
+            if is_dir {
                 if path.file_name() == Some(std::ffi::OsStr::new(".git")) {
                     continue;
                 }
-                Self::walk_dir(&path, pattern, include_ignored, gitignore_patterns, results)?;
-            } else if path.is_file() {
-                if let Ok(contents) = std::fs::read_to_string(&path) {
+                Box::pin(Self::walk_dir(
+                    &path,
+                    pattern,
+                    include_ignored,
+                    gitignore_patterns,
+                    results,
+                ))
+                .await?;
+            } else if is_file {
+                if let Ok(contents) = tokio::fs::read_to_string(&path).await {
                     let mut file_results = Vec::new();
                     for (line_num, line) in contents.lines().enumerate() {
                         if pattern.is_match(line) {
@@ -521,7 +528,7 @@ impl Tool for GrepTool {
         };
 
         let mut results = Vec::new();
-        Self::walk_dir(root, &pattern, include_ignored, &gitignore_patterns, &mut results)?;
+        Self::walk_dir(root, &pattern, include_ignored, &gitignore_patterns, &mut results).await?;
 
         if results.is_empty() {
             Ok(ToolResult::success(vec![ContentPart::text(

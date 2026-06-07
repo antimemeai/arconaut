@@ -66,6 +66,8 @@ impl AgentInbox for InboxServer {
         let (tx, rx) = mpsc::channel(100);
         {
             let mut state = self.state.write().await;
+            // Remove old subscriber for this agent to prevent channel leaks.
+            state.subscribers.remove(&agent_name);
             state.subscribers.insert(agent_name, tx);
         }
         let stream = ReceiverStream::new(rx).map(Ok);

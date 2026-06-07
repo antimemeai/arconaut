@@ -309,6 +309,18 @@ impl From<Message> for AnthropicMessage {
             .into_iter()
             .filter_map(|part| match part {
                 ContentPart::Text { text } => Some(text),
+                ContentPart::ToolResult { tool_result } => {
+                    let text = tool_result
+                        .output
+                        .into_iter()
+                        .filter_map(|p| match p {
+                            ContentPart::Text { text } => Some(text),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>()
+                        .join("");
+                    Some(text)
+                }
                 _ => None,
             })
             .collect::<Vec<_>>()
@@ -444,6 +456,19 @@ mod tests {
         let am: AnthropicMessage = msg.into();
         assert_eq!(am.role, "assistant");
         assert_eq!(am.content, "hi there");
+    }
+
+    #[test]
+    fn message_conversion_tool_result() {
+        let msg = Message::tool_result(
+            "call-1",
+            arconaut_core::ToolResult::success(vec![arconaut_core::ContentPart::text(
+                "file contents here",
+            )]),
+        );
+        let am: AnthropicMessage = msg.into();
+        assert_eq!(am.role, "user");
+        assert_eq!(am.content, "file contents here");
     }
 
     #[test]

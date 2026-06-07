@@ -168,15 +168,15 @@ impl App {
             }
             KeyCode::Up => {
                 match self.focus {
-                    Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_add(1),
-                    Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_add(1),
+                    Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_sub(1),
+                    Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_sub(1),
                     Focus::Input => {}
                 }
             }
             KeyCode::Down => {
                 match self.focus {
-                    Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_sub(1),
-                    Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_sub(1),
+                    Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_add(1),
+                    Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_add(1),
                     Focus::Input => {}
                 }
             }
@@ -245,14 +245,14 @@ impl App {
         }
         if mouse.kind == MouseEventKind::ScrollDown {
             match self.focus {
-                Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_sub(3),
-                Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_sub(3),
+                Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_add(3),
+                Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_add(3),
                 Focus::Input => {}
             }
         } else if mouse.kind == MouseEventKind::ScrollUp {
             match self.focus {
-                Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_add(3),
-                Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_add(3),
+                Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_sub(3),
+                Focus::Terminal => self.terminal_scroll = self.terminal_scroll.saturating_sub(3),
                 Focus::Input => {}
             }
         }

@@ -138,6 +138,10 @@ impl TerminalSendTool {
                     "input": {
                         "type": "string",
                         "description": "Text to send to the persistent terminal. Supports multi-line scripts."
+                    },
+                    "timeout_ms": {
+                        "type": "integer",
+                        "description": "Maximum time to wait for output in milliseconds (default 5000)"
                     }
                 },
                 "required": ["input"]
@@ -179,23 +183,50 @@ impl Tool for TerminalSendTool {
             message: "missing 'input' argument".to_string(),
             brief: "bad args".to_string(),
         })?;
+        let timeout_ms = args["timeout_ms"].as_u64().unwrap_or(5000);
 
         self.init_shell().await?;
 
         let mut guard = self.shell.lock().await;
         let shell = guard.as_mut().unwrap();
 
+        // Clear any stale output before sending.
+        let _ = shell.take_buffer();
+
         shell.send(input).await.map_err(|e| ToolError {
             message: format!("failed to send to terminal: {}", e),
             brief: "shell error".to_string(),
         })?;
 
-        // Give the shell a moment to produce output, then capture buffer
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        let output = shell.take_buffer();
+        // Poll the buffer until output stabilizes or timeout.
+        let output = poll_buffer(shell, timeout_ms).await;
 
         Ok(ToolResult::success(vec![ContentPart::text(output)]))
     }
+}
+
+async fn poll_buffer(shell: &PersistentShell, timeout_ms: u64) -> String {
+    let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_millis(timeout_ms);
+    let mut last_len = 0;
+    let mut stable_cycles = 0;
+
+    while tokio::time::Instant::now() < deadline {
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        let buf = shell.buffer();
+        if buf.len() == last_len {
+            stable_cycles += 1;
+            // Output stable for 150ms → assume command finished.
+            if stable_cycles >= 3 {
+                return shell.take_buffer();
+            }
+        } else {
+            stable_cycles = 0;
+            last_len = buf.len();
+        }
+    }
+
+    // Timeout reached — return whatever we have.
+    shell.take_buffer()
 }
 
 #[cfg(test)]
