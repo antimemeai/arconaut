@@ -391,8 +391,10 @@ async fn run_single_turn(
     input: &[String],
     provider_name: &str,
     model_override: Option<&str>,
-    _assistant_provider: Option<&str>,
+    assistant_provider: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let _ = (agent_name, mode); // TODO: wire into system prompt
+
     let text = if input.is_empty() {
         use std::io::{BufRead, Write};
         print!("{}[{:?}]> ", agent_name, mode);
@@ -414,8 +416,54 @@ async fn run_single_turn(
 
     let mut _refresh_task = provider.start_refresh_task();
 
-    let registry = default_registry().await;
-    let mut soul = Soul::new(provider, registry);
+    // Setup skill loader.
+    let home = std::env::var("HOME").map(PathBuf::from).ok();
+    let user_skills_dir = home
+        .as_ref()
+        .map(|h| h.join(".config").join("arconaut").join("skills"))
+        .unwrap_or_else(|| std::env::current_dir().unwrap().join(".arconaut").join("skills"));
+    let project_skills_dir = std::env::current_dir()
+        .unwrap_or_default()
+        .join(".arconaut")
+        .join("skills");
+    let skill_loader = std::sync::Arc::new(SkillLoader::new(user_skills_dir, project_skills_dir));
+
+    // Setup tool registry (same as TUI minus terminal bridge and bus).
+    let mut registry = ToolRegistry::new();
+    registry.register(Box::new(ReadTool::new()));
+    registry.register(Box::new(WriteTool::new()));
+    registry.register(Box::new(EditTool::new()));
+    registry.register(Box::new(BashTool::new()));
+    registry.register(Box::new(GrepTool::new()));
+    registry.register(Box::new(SkillTool::new(skill_loader)));
+    for tool in utils::UtilsBin::tools() {
+        registry.register(tool);
+    }
+
+    // Setup audit logging.
+    let audit_dir = home
+        .as_ref()
+        .map(|h| h.join(".local").join("share").join("arconaut").join("audit"))
+        .unwrap_or_else(|| std::env::current_dir().unwrap().join(".arconaut").join("audit"));
+
+    // Setup Soul with same configuration as TUI mode.
+    let mut soul = Soul::new(provider, registry)
+        .with_max_steps(50)
+        .with_context_size(200_000)
+        .with_intervention(arconaut_agent::InterventionInjector::new());
+
+    if let Ok(logger) = arconaut_audit::AuditLogger::new("default", audit_dir) {
+        soul.hook_engine_mut()
+            .register(Box::new(arconaut_agent::AuditHook::new(logger)));
+    }
+
+    // Setup assistant model if configured.
+    if let Some(assistant_name) = assistant_provider {
+        if let Some(assistant_provider) = build_provider(assistant_name, None, &vars) {
+            let assistant = arconaut_agent::AssistantModel::new(assistant_provider);
+            soul = soul.with_assistant(assistant);
+        }
+    }
 
     match soul.run_turn(&text).await {
         Ok(result) => println!("{}", format_message(&result.message)),
@@ -631,19 +679,6 @@ async fn run_soul(
             else => break,
         }
     }
-}
-
-async fn default_registry() -> ToolRegistry {
-    let mut registry = ToolRegistry::new();
-    registry.register(Box::new(ReadTool::new()));
-    registry.register(Box::new(WriteTool::new()));
-    registry.register(Box::new(EditTool::new()));
-    registry.register(Box::new(BashTool::new()));
-    registry.register(Box::new(GrepTool::new()));
-    for tool in utils::UtilsBin::tools() {
-        registry.register(tool);
-    }
-    registry
 }
 
 fn format_message(msg: &arconaut_core::Message) -> String {

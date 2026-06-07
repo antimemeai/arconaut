@@ -9,6 +9,11 @@ impl PdfGenerator {
     }
 
     /// Convert markdown text to a PDF file at `output_path`.
+    ///
+    /// # Limitations
+    ///
+    /// Single-page only. Content that exceeds one page is silently truncated.
+    /// Multi-page support is deferred to a future iteration.
     pub fn generate(&self, markdown: &str, output_path: impl AsRef<Path>) -> std::io::Result<()> {
         use pdf_writer::{Content, Name, Pdf, Rect, Ref, Str};
 

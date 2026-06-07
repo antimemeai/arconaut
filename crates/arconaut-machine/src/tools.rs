@@ -421,12 +421,38 @@ impl GrepTool {
     }
 
     fn is_ignored(path: &Path, patterns: &[String]) -> bool {
-        let path_str = path.to_string_lossy();
+        let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        let path_components: Vec<&str> = path
+            .components()
+            .filter_map(|c| c.as_os_str().to_str())
+            .collect();
+
         for pat in patterns {
-            if pat.ends_with('/') && path_str.contains(&pat[..pat.len() - 1]) {
+            // Directory pattern: match exact component name
+            if pat.ends_with('/') {
+                let dir_name = &pat[..pat.len() - 1];
+                if path_components.contains(&dir_name) {
+                    return true;
+                }
+                continue;
+            }
+
+            // File pattern with wildcard suffix (e.g., *.log)
+            if let Some(star_idx) = pat.find('*') {
+                let prefix = &pat[..star_idx];
+                let suffix = &pat[star_idx + 1..];
+                let name = file_name;
+                if name.starts_with(prefix) && name.ends_with(suffix) {
+                    return true;
+                }
+                continue;
+            }
+
+            // Exact filename or directory match
+            if file_name == pat.as_str() {
                 return true;
             }
-            if path_str.contains(pat) {
+            if path_components.contains(&pat.as_str()) {
                 return true;
             }
         }
@@ -797,5 +823,29 @@ mod tests {
         };
         assert!(output.contains("a.txt"));
         assert!(!output.contains("ignored.txt"));
+    }
+
+    #[tokio::test]
+    async fn grep_tool_gitignore_no_false_positive() {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("a.txt"), "hello world\n").unwrap();
+        fs::write(dir.path().join("not-target.txt"), "hello target\n").unwrap();
+        fs::write(dir.path().join(".gitignore"), "target/\n").unwrap();
+
+        let tool = GrepTool::new();
+        let result = tool
+            .call(serde_json::json!({
+                "pattern": "hello",
+                "path": dir.path().to_str().unwrap()
+            }))
+            .await;
+        assert!(result.is_ok());
+        let output = match result.unwrap() {
+            ToolResult::Success { output } => output[0].as_text().unwrap().to_string(),
+            _ => panic!("expected success"),
+        };
+        // `target/` in gitignore should NOT match `not-target.txt`
+        assert!(output.contains("not-target.txt"), "not-target.txt should NOT be ignored by target/ pattern");
+        assert!(output.contains("a.txt"));
     }
 }

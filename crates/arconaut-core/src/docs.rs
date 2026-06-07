@@ -64,32 +64,38 @@ impl DocumentIndex {
 
     async fn scan_dir(dir: &Path) -> Vec<Document> {
         let mut docs = Vec::new();
-        let mut entries = match tokio::fs::read_dir(dir).await {
-            Ok(e) => e,
-            Err(_) => return docs,
-        };
+        let mut stack = vec![dir.to_path_buf()];
 
-        while let Ok(Some(entry)) = entries.next_entry().await {
-            let path = entry.path();
-            if path.is_file() {
-                let name = path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-                let kind = DocumentKind::from_path(&path);
-                let created_at = entry
-                    .metadata()
-                    .await
-                    .ok()
-                    .and_then(|m| m.created().ok())
-                    .and_then(|t| DateTime::from_timestamp(t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
-                docs.push(Document {
-                    name,
-                    path,
-                    kind,
-                    created_at,
-                });
+        while let Some(current) = stack.pop() {
+            let mut entries = match tokio::fs::read_dir(&current).await {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let path = entry.path();
+                if path.is_file() {
+                    let name = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    let kind = DocumentKind::from_path(&path);
+                    let created_at = entry
+                        .metadata()
+                        .await
+                        .ok()
+                        .and_then(|m| m.created().ok())
+                        .and_then(|t| DateTime::from_timestamp(t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
+                    docs.push(Document {
+                        name,
+                        path,
+                        kind,
+                        created_at,
+                    });
+                } else if path.is_dir() {
+                    stack.push(path);
+                }
             }
         }
         docs
@@ -139,5 +145,22 @@ mod tests {
         let mut docs = index.scan().await;
         DocumentIndex::sort_by_date(&mut docs);
         // Order depends on filesystem timestamps; just verify it doesn't panic.
+    }
+
+    #[tokio::test]
+    async fn scan_recursive() {
+        let dir = TempDir::new().unwrap();
+        tokio::fs::write(dir.path().join("top.md"), "").await.unwrap();
+        tokio::fs::create_dir(dir.path().join("nested")).await.unwrap();
+        tokio::fs::write(dir.path().join("nested").join("deep.md"), "")
+            .await
+            .unwrap();
+
+        let index = DocumentIndex::new(vec![dir.path().to_path_buf()]);
+        let docs = index.scan().await;
+        assert_eq!(docs.len(), 2);
+        let names: Vec<_> = docs.iter().map(|d| d.name.as_str()).collect();
+        assert!(names.contains(&"top"));
+        assert!(names.contains(&"deep"));
     }
 }

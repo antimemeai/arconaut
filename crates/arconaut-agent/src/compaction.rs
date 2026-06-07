@@ -61,13 +61,17 @@ impl CompactionEngine {
 
         let preserved: Vec<Message> = history[split..].to_vec();
 
+        // Pre-compaction checkpoints reference history indices that no longer
+        // map to the same content after we rebuild from scratch. Clear them
+        // to prevent silent no-op reverts.
+        context.clear_checkpoints();
         context.clear();
         context.append_message(Message::system(summary_text));
         for msg in preserved {
             context.append_message(msg);
         }
 
-        // Create a checkpoint at the compaction boundary so callers
+        // Create a fresh checkpoint at the compaction boundary so callers
         // can revert to the compacted state if needed.
         let _ = context.checkpoint();
 
@@ -147,5 +151,36 @@ mod tests {
 
         assert!(!engine.compact(&mut ctx));
         assert_eq!(ctx.history().len(), 5);
+    }
+
+    #[test]
+    fn checkpoints_cleared_on_compaction() {
+        let engine = CompactionEngine::new()
+            .with_threshold(0.5)
+            .with_preserve_window(2);
+        let mut ctx = Context::new(100);
+
+        for i in 0..20 {
+            ctx.append_message(Message::user(format!(
+                "this is a much longer message number {} with lots of text",
+                i
+            )));
+        }
+
+        // Create two checkpoints before compaction
+        let _cp0 = ctx.checkpoint(); // checkpoint 0
+        let cp1 = ctx.checkpoint(); // checkpoint 1
+        assert_eq!(cp1, 1);
+
+        assert!(engine.compact(&mut ctx));
+
+        // After compaction, only the post-compaction checkpoint exists (id 0).
+        // The old checkpoints (0 and 1) are gone. Trying to revert to cp1 (1)
+        // should fail because there's only 1 checkpoint now.
+        assert!(ctx.revert_to(cp1).is_err());
+
+        // A fresh checkpoint should work
+        let post_cp = ctx.checkpoint();
+        assert!(ctx.revert_to(post_cp).is_ok());
     }
 }

@@ -148,7 +148,19 @@ impl SkillLoader {
             .find(|line| line.trim_start().starts_with(&prefix))
             .map(|line| {
                 line.split_once(':')
-                    .map(|(_, v)| v.trim().to_string())
+                    .map(|(_, v)| {
+                        let trimmed = v.trim().to_string();
+                        // Strip matching quotes (simple unquoting).
+                        // Does NOT handle escaped quotes, multiline, or indented keys.
+                        if trimmed.len() >= 2
+                            && ((trimmed.starts_with('"') && trimmed.ends_with('"'))
+                                || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
+                        {
+                            trimmed[1..trimmed.len() - 1].to_string()
+                        } else {
+                            trimmed
+                        }
+                    })
                     .unwrap_or_default()
             })
             .filter(|v| !v.is_empty())
@@ -300,5 +312,22 @@ mod tests {
         assert_eq!(skills.len(), 1);
         assert_eq!(skills[0].name, "Plain Skill");
         assert_eq!(skills[0].description, "Some description.");
+    }
+
+    #[tokio::test]
+    async fn frontmatter_quoted_values() {
+        let dir = TempDir::new().unwrap();
+        tokio::fs::write(
+            dir.path().join("quoted.md"),
+            "---\nname: \"My Skill\"\ndescription: 'A quoted description'\n---\n\n# Body\n",
+        )
+        .await
+        .unwrap();
+
+        let loader = SkillLoader::new(dir.path(), dir.path());
+        let skills = loader.discover().await;
+        assert_eq!(skills.len(), 1);
+        assert_eq!(skills[0].name, "My Skill");
+        assert_eq!(skills[0].description, "A quoted description");
     }
 }

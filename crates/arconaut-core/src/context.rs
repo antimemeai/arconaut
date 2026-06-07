@@ -58,6 +58,11 @@ impl Context {
         self.token_count = 0;
     }
 
+    /// Clear all checkpoints. Use with care — this invalidates revert targets.
+    pub fn clear_checkpoints(&mut self) {
+        self.checkpoints.clear();
+    }
+
     pub fn token_count(&self) -> usize {
         self.token_count
     }
@@ -97,15 +102,11 @@ impl Context {
 }
 
 fn estimate_tokens(msg: &Message) -> usize {
-    let text_len: usize = msg
-        .content
-        .iter()
-        .map(|part| match part {
-            crate::ContentPart::Text { text } => text.len(),
-            _ => 0,
-        })
-        .sum();
-    text_len / 4
+    let text: String = msg.content.iter().filter_map(|p| p.as_text()).collect();
+    let ascii_chars = text.chars().filter(|c| c.is_ascii()).count();
+    let non_ascii_chars = text.chars().filter(|c| !c.is_ascii()).count();
+    // ASCII: ~4 chars per token. CJK and other non-ASCII: ~1.5 chars per token.
+    (ascii_chars / 4) + (non_ascii_chars * 2 / 3)
 }
 
 #[cfg(test)]
@@ -169,6 +170,24 @@ mod tests {
         assert!(
             (90..=110).contains(&count),
             "token count {} not in range",
+            count
+        );
+    }
+
+    #[test]
+    fn cjk_token_estimate() {
+        // CJK characters are ~1.5 chars per token.
+        // 90 CJK chars ≈ 60 tokens. Old formula (bytes/4) would give ~67.
+        // New formula (chars * 2/3) gives exactly 60.
+        let cjk = "中文字符测试".repeat(10); // 60 CJK chars
+        let msg = Message::user(cjk);
+        let mut ctx = Context::new(1000);
+        ctx.append_message(msg);
+        let count = ctx.token_count();
+        // 60 CJK chars * 2/3 = 40 tokens, allow ±30%
+        assert!(
+            (28..=52).contains(&count),
+            "CJK token count {} not in reasonable range",
             count
         );
     }
