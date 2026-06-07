@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind};
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 use tokio::sync::mpsc;
@@ -128,6 +128,11 @@ impl App {
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
+        // Kitty keyboard protocol sends release/repeat events.
+        // Only act on press to avoid double-input.
+        if key.kind != KeyEventKind::Press {
+            return;
+        }
         match key.code {
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 let _ = self.soul_tx.send(SoulCommand::Quit).await;
@@ -235,6 +240,9 @@ impl App {
     }
 
     async fn handle_mouse(&mut self, mouse: crossterm::event::MouseEvent) {
+        if mouse.kind == MouseEventKind::Moved {
+            return;
+        }
         if mouse.kind == MouseEventKind::ScrollDown {
             match self.focus {
                 Focus::Chat => self.scroll_offset = self.scroll_offset.saturating_sub(3),
