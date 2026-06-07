@@ -43,14 +43,44 @@ pub struct TokenUsage {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProviderError {
-    RateLimit { status_code: u16 },
-    Auth { status_code: u16 },
+    RateLimit { status_code: u16, message: String },
+    Auth { status_code: u16, message: String },
     Network { message: String },
     ContextOverflow { message: String },
     Server { status_code: u16, message: String },
     Client { status_code: u16, message: String },
     Other { message: String },
 }
+
+impl std::fmt::Display for ProviderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ProviderError::RateLimit { status_code, message } => {
+                write!(f, "rate limit ({}): {}", status_code, message)
+            }
+            ProviderError::Auth { status_code, message } => {
+                write!(f, "auth error ({}): {}", status_code, message)
+            }
+            ProviderError::Network { message } => {
+                write!(f, "network error: {}", message)
+            }
+            ProviderError::ContextOverflow { message } => {
+                write!(f, "context overflow: {}", message)
+            }
+            ProviderError::Server { status_code, message } => {
+                write!(f, "server error ({}): {}", status_code, message)
+            }
+            ProviderError::Client { status_code, message } => {
+                write!(f, "client error ({}): {}", status_code, message)
+            }
+            ProviderError::Other { message } => {
+                write!(f, "{}", message)
+            }
+        }
+    }
+}
+
+impl std::error::Error for ProviderError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ModelCapability {

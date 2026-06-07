@@ -13,10 +13,4 @@ path = "src/main.rs"
 [dependencies]
 arconaut-core = { workspace = true }
 arconaut-machine = { workspace = true }
-arconaut-tui = { workspace = true }
-arconaut-agent = { workspace = true }
-arconaut-audit = { workspace = true }
-arconaut-eval = { workspace = true }
-arconaut-corpus = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

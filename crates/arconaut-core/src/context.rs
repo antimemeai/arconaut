@@ -17,6 +17,20 @@ pub struct Checkpoint {
     pub timestamp: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct InvalidCheckpoint {
+    pub id: usize,
+    pub max: usize,
+}
+
+impl std::fmt::Display for InvalidCheckpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid checkpoint id: {} (max: {})", self.id, self.max)
+    }
+}
+
+impl std::error::Error for InvalidCheckpoint {}
+
 impl Context {
     pub fn new(max_tokens: usize) -> Self {
         Self {
@@ -56,11 +70,14 @@ impl Context {
         id
     }
 
-    pub fn revert_to(&mut self, checkpoint_id: usize) {
-        if let Some(cp) = self.checkpoints.get(checkpoint_id) {
-            self.history.truncate(cp.history_len);
-            self.token_count = cp.token_count;
-        }
+    pub fn revert_to(&mut self, checkpoint_id: usize) -> Result<(), InvalidCheckpoint> {
+        let cp = self.checkpoints.get(checkpoint_id)
+            .ok_or(InvalidCheckpoint { id: checkpoint_id, max: self.checkpoints.len().saturating_sub(1) })?;
+        self.history.truncate(cp.history_len);
+        self.token_count = cp.token_count;
+        // Prune checkpoints after the reversion point
+        self.checkpoints.truncate(checkpoint_id + 1);
+        Ok(())
     }
 }
 
@@ -73,7 +90,7 @@ fn estimate_tokens(msg: &Message) -> usize {
             _ => 0,
         })
         .sum();
-    (text_len + 3) / 4
+    text_len / 4
 }
 
 #[cfg(test)]
@@ -84,7 +101,7 @@ mod tests {
     fn context_append_and_count() {
         let mut ctx = Context::new(1000);
         ctx.append_message(Message::user("hello world"));
-        assert_eq!(ctx.token_count(), 3); // 11 chars / 4 = 2.75 → 3
+        assert_eq!(ctx.token_count(), 2); // 11 chars / 4 = 2 (floor)
         assert_eq!(ctx.history().len(), 1);
     }
 
@@ -113,9 +130,18 @@ mod tests {
         ctx.append_message(c);
         assert_eq!(ctx.history().len(), 3);
 
-        ctx.revert_to(cp);
+        ctx.revert_to(cp).unwrap();
         assert_eq!(ctx.history().len(), 1);
-        assert_eq!(ctx.token_count(), 1); // "A" = 1 char / 4 = 1
+        assert_eq!(ctx.token_count(), 0); // "A" = 1 char / 4 = 0 (floor)
+        assert_eq!(ctx.checkpoints.len(), 1); // pruned
+    }
+
+    #[test]
+    fn context_revert_invalid_checkpoint() {
+        let mut ctx = Context::new(1000);
+        let err = ctx.revert_to(999).unwrap_err();
+        assert_eq!(err.id, 999);
+        assert_eq!(err.max, 0);
     }
 
     #[test]

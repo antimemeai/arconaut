@@ -1,14 +1,14 @@
 use arconaut_core::{Context, Message};
-use arconaut_machine::{AnthropicProvider, ChatProvider, ChatRequest};
+use arconaut_machine::{ChatProvider, ChatRequest};
 use std::io::{self, Write};
 
 pub struct Repl {
-    provider: AnthropicProvider,
+    provider: Box<dyn ChatProvider>,
     context: Context,
 }
 
 impl Repl {
-    pub fn new(provider: AnthropicProvider) -> Self {
+    pub fn new(provider: Box<dyn ChatProvider>) -> Self {
         Self {
             provider,
             context: Context::new(200_000),
@@ -58,21 +58,20 @@ impl Repl {
 
         match self.provider.chat(request).await {
             Ok(response) => {
-                let text = response
+                let text: String = response
                     .message
                     .content
                     .iter()
-                    .map(|part| match part {
-                        arconaut_core::ContentPart::Text { text } => text.clone(),
-                        _ => String::new(),
+                    .filter_map(|part| match part {
+                        arconaut_core::ContentPart::Text { text } => Some(text.as_str()),
+                        _ => None,
                     })
-                    .collect::<Vec<_>>()
-                    .join("");
+                    .collect();
 
                 self.context.append_message(response.message);
                 Ok(text)
             }
-            Err(e) => Err(format!("{:?}", e)),
+            Err(e) => Err(e.to_string()),
         }
     }
 }
