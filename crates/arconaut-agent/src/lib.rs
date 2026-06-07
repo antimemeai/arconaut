@@ -1,1 +1,3 @@
-// Agent orchestration — placeholder for Phase 4
+pub mod soul;
+
+pub use soul::{MockProvider, Soul, SoulError, StopReason, TurnResult};

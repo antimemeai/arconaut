@@ -9,4 +9,6 @@ license.workspace = true
 [dependencies]
 arconaut-core = { workspace = true }
 arconaut-machine = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }

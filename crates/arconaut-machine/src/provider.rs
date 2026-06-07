@@ -1,6 +1,6 @@
-use arconaut_core::{Message, Tool};
+use arconaut_core::Message;
 use async_trait::async_trait;
-// serde imports used by anthropic module
+use serde_json::Value;
 use std::collections::HashSet;
 
 #[async_trait]
@@ -12,9 +12,29 @@ pub trait ChatProvider: Send + Sync {
     fn thinking_effort(&self) -> Option<&str>;
 }
 
+/// Lightweight descriptor of a tool for LLM API consumption.
+/// The provider only needs name, description, and parameter schema —
+/// it never calls the tool directly.
+#[derive(Debug, Clone)]
+pub struct ToolDescriptor {
+    pub name: String,
+    pub description: String,
+    pub parameters: Value,
+}
+
+impl ToolDescriptor {
+    pub fn new(name: impl Into<String>, description: impl Into<String>, parameters: Value) -> Self {
+        Self {
+            name: name.into(),
+            description: description.into(),
+            parameters,
+        }
+    }
+}
+
 pub struct ChatRequest {
     pub messages: Vec<Message>,
-    pub tools: Vec<Box<dyn Tool>>,
+    pub tools: Vec<ToolDescriptor>,
     pub system_prompt: Option<String>,
 }
 

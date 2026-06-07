@@ -32,6 +32,8 @@ version = "0.1.0"
 dependencies = [
  "arconaut-core",
  "arconaut-machine",
+ "async-trait",
+ "serde_json",
  "tokio",
 ]
 

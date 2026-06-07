@@ -107,9 +107,9 @@ impl ChatProvider for AnthropicProvider {
             .tools
             .iter()
             .map(|t| AnthropicTool {
-                name: t.name().to_string(),
-                description: t.description().to_string(),
-                input_schema: t.parameters().clone(),
+                name: t.name.clone(),
+                description: t.description.clone(),
+                input_schema: t.parameters.clone(),
             })
             .collect();
 

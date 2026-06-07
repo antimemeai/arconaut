@@ -72,6 +72,25 @@ impl Message {
     pub fn system(text: impl Into<String>) -> Self {
         Self::new(Role::System, vec![ContentPart::text(text)])
     }
+
+    pub fn tool_result(tool_call_id: impl Into<String>, result: crate::ToolResult) -> Self {
+        let (output, is_error) = match result {
+            crate::ToolResult::Success { output } => (output, false),
+            crate::ToolResult::Error { message, .. } => {
+                (vec![ContentPart::text(message)], true)
+            }
+        };
+        Self::new(
+            Role::Tool,
+            vec![ContentPart::ToolResult {
+                tool_result: crate::ToolResultPart {
+                    tool_call_id: tool_call_id.into(),
+                    output,
+                    is_error,
+                },
+            }],
+        )
+    }
 }
 
 impl ContentPart {
