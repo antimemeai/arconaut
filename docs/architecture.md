@@ -19,7 +19,8 @@
 9. [Audit & Telemetry](#9-audit--telemetry)
 10. [Eval Integration](#10-eval-integration)
 11. [Visual Design Language](#11-visual-design-language)
-12. [Implementation Phases](#12-implementation-phases)
+12. [Terminal Semantic Zones (OSC 133)](#12-terminal-semantic-zones-osc-133)
+13. [Implementation Phases](#13-implementation-phases)
 
 ---
 
@@ -448,6 +449,13 @@ pub struct SkillLoader {
 **Synchronized Output (Mode 2026):**
 - Batch frame updates to prevent tearing
 - Essential for rapid streaming output
+
+**OSC 133 Semantic Prompts:**
+- Emit semantic zones around user input, model output, and tool calls
+- Enables native terminal jump-to-prompt between conversation turns
+- Machine-readable exit codes for bash tool results
+- Ghostty 1.3+ supports `cl=line` extension for click-to-move cursor
+- See §12 for full specification
 
 ### 5.3 Rendering Performance
 
@@ -940,7 +948,116 @@ Accent:          #8a7020 (dark gold)
 
 ---
 
-## 12. Implementation Phases
+## 12. Terminal Semantic Zones (OSC 133)
+
+arconaut emits **OSC 133 Semantic Prompt** sequences (FinalTerm / iTerm2 spec) to mark semantic boundaries in terminal output. This helps both the **model** (clear structure, machine-readable exit codes) and the **human** (native terminal navigation between turns).
+
+### 12.1 The Sequences
+
+| Sequence | When Emitted | Purpose |
+|----------|-------------|---------|
+| `OSC 133; A; cl=line ST` | Before rendering the user input prompt | Marks prompt start; `cl=line` enables click-to-move cursor in Ghostty 1.3+ |
+| `OSC 133; B ST` | After user submits input, before processing | Marks end of prompt / start of agent processing |
+| `OSC 133; C ST` | Before tool execution or model output begins | Marks start of command/output generation |
+| `OSC 133; D; <exitcode> ST` | After tool output or model response completes | Marks end of output; optional exit code for bash tools |
+
+**Format:** `\x1b]133;{type}[;{params}]\x07` (BEL terminator) or `\x1b]133;{type}[;{params}]\x1b\\` (ST terminator)
+
+### 12.2 How It Helps the Model
+
+1. **Clear boundaries** — The model knows exactly where its own output ends and a new turn begins, even in long sessions with hundreds of interactions.
+2. **Machine-readable exit codes** — When `bash` tool wraps output with `OSC 133; D; 1`, the model knows the command failed without parsing stderr heuristics.
+3. **Semantic referencing** — The model can say "check the output at the third prompt back" and the terminal can navigate there precisely.
+4. **Structured consumption** — When parsing its own audit log or scrollback, the model can use OSC 133 markers to segment conversation history into discrete turns.
+
+### 12.3 TUI Emission Points
+
+```rust
+pub struct SemanticZoneEmitter {
+    enabled: bool,  // Detected via terminal capability probe
+}
+
+impl SemanticZoneEmitter {
+    fn emit_prompt_start(&self) {
+        // \x1b]133;A;cl=line\x07
+        // cl=line tells Ghostty to translate mouse clicks into arrow keys
+    }
+
+    fn emit_prompt_end(&self) {
+        // \x1b]133;B\x07
+    }
+
+    fn emit_output_start(&self) {
+        // \x1b]133;C\x07
+    }
+
+    fn emit_output_end(&self, exit_code: Option<i32>) {
+        // \x1b]133;D;0\x07  (success)
+        // \x1b]133;D;1\x07  (failure)
+    }
+}
+```
+
+**Conversation structure with zones:**
+```
+[Prompt Zone A]  user: "fix the bug in src/main.rs"
+[Output Zone C→D] model: "I'll investigate..."
+  [Sub-zone C→D;0] bash: "cargo check" → success
+  [Sub-zone C→D;1] bash: "cargo test" → failure (exit 1)
+[Prompt Zone A]  user: "show me the test output"
+[Output Zone C→D] model: "Here is the failing test..."
+```
+
+### 12.4 Bash Tool Integration
+
+The `bash` tool wraps every command execution:
+
+```rust
+async fn run_bash(cmd: &str) -> BashResult {
+    emitter.emit_output_start();
+    let result = execute_shell(cmd).await;
+    emitter.emit_output_end(result.exit_code);
+    result
+}
+```
+
+This means:
+- Ghostty's `jump_to_prompt` jumps between arconaut conversation turns
+- Ghostty's "select command output" selects just the bash output
+- The model sees `OSC 133; D; 1` and knows immediately the command failed
+
+### 12.5 Terminal Support
+
+| Terminal | OSC 133 Support | Notes |
+|----------|----------------|-------|
+| **Ghostty** | Full + extensions | Cell-level tracking, `cl=line`, click-events, jump-to-prompt, command notifications |
+| iTerm2 | Full | Shell integration, jump-to-prompt, select output |
+| Kitty | Full | Jump-to-prompt, semantic zones |
+| WezTerm | Full | Shell integration, prompt navigation |
+| VS Code | OSC 633 variant | Microsoft's variant (`OSC 633` instead of `OSC 133`) |
+| Windows Terminal | Partial | Basic prompt marking |
+| tmux | Passthrough | Requires `allow-passthrough on` for nested terminals |
+
+**Capability detection:**
+1. Probe via `DECRQM` for mode support (indirect)
+2. Check `TERM_PROGRAM` for known supporters
+3. Attempt emission with fallback to no-op
+4. Cache result per session
+
+### 12.6 VS Code Compatibility
+
+VS Code Terminal uses `OSC 633` (their own variant):
+- `OSC 633; A ST` — Prompt start
+- `OSC 633; B ST` — Command start
+- `OSC 633; C ST` — Command output start
+- `OSC 633; D [; exitcode] ST` — Command finished
+- `OSC 633; E [; commandline] ST` — Explicit command line
+
+arconaut can emit **both** sequences when running in VS Code (`TERM_PROGRAM=vscode`) for compatibility, or detect and emit the appropriate variant.
+
+---
+
+## 13. Implementation Phases
 
 ### Phase 0: Foundation (Week 1)
 - Workspace setup, CI, test harness
