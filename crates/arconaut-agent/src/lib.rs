@@ -1,6 +1,8 @@
 pub mod agent;
+pub mod bus;
 pub mod compaction;
 pub mod dedup;
+pub mod dispatch;
 pub mod hooks;
 pub mod injection;
 pub mod persistent_shell;
@@ -8,8 +10,10 @@ pub mod session;
 pub mod soul;
 
 pub use agent::{Agent, AgentMode, AgentRegistry};
+pub use bus::{Bus, BusMessage, Presence, Target};
 pub use compaction::CompactionEngine;
 pub use dedup::Deduplicator;
+pub use dispatch::{Brief, DispatchResult, Dispatcher, Intent};
 pub use hooks::{Hook, HookEngine, MetricsHook};
 pub use injection::{CompositeInjector, Injector, SystemPromptInjector};
 pub use persistent_shell::{PersistentShell, TerminalSendTool};

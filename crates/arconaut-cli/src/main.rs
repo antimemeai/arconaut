@@ -3,7 +3,7 @@ mod repl;
 mod terminal_bridge;
 mod utils;
 
-use arconaut_agent::{PersistentShell, Soul};
+use arconaut_agent::{AgentMode, PersistentShell, Session, Soul};
 use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
     skills::{SkillLoader, SkillTool},
@@ -11,6 +11,7 @@ use arconaut_machine::{
     AnthropicProvider,
 };
 use arconaut_tui::{ghostty, App, SoulCommand, TuiEvent};
+use clap::Parser;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -20,8 +21,104 @@ use std::io;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
+#[derive(Parser, Debug)]
+#[command(name = "arconaut")]
+#[command(about = "AI-native dev environment")]
+struct Args {
+    /// Agent name to use for this session.
+    #[arg(long, short)]
+    agent: Option<String>,
+
+    /// Session name.
+    #[arg(long, short)]
+    session: Option<String>,
+
+    /// Agent mode (implement, review, explore, test, assist).
+    #[arg(long, short)]
+    mode: Option<String>,
+
+    /// Run one turn and exit (no TUI).
+    #[arg(long)]
+    no_tui: bool,
+
+    /// Input text for single-turn mode.
+    #[arg(trailing_var_arg = true)]
+    input: Vec<String>,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
+    let agent_name = args.agent.unwrap_or_else(|| "default".to_string());
+    let session_name = args.session.unwrap_or_else(|| "main".to_string());
+    let _session = Session::new(&session_name, &agent_name);
+
+    let mode = args
+        .mode
+        .as_deref()
+        .and_then(parse_mode)
+        .unwrap_or(AgentMode::Assist);
+
+    if args.no_tui {
+        run_single_turn(&agent_name, mode, &args.input).await?;
+        return Ok(());
+    }
+
+    run_tui(&agent_name, mode).await
+}
+
+fn parse_mode(s: &str) -> Option<AgentMode> {
+    match s.to_lowercase().as_str() {
+        "implement" | "impl" | "code" => Some(AgentMode::Implement),
+        "review" | "rev" => Some(AgentMode::Review),
+        "explore" | "research" => Some(AgentMode::Explore),
+        "test" => Some(AgentMode::Test),
+        "assist" | "help" => Some(AgentMode::Assist),
+        _ => None,
+    }
+}
+
+async fn run_single_turn(
+    agent_name: &str,
+    mode: AgentMode,
+    input: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let text = if input.is_empty() {
+        use std::io::{BufRead, Write};
+        print!("{}[{:?}]> ", agent_name, mode);
+        io::stdout().flush()?;
+        let mut line = String::new();
+        io::stdin().lock().read_line(&mut line)?;
+        line.trim().to_string()
+    } else {
+        input.join(" ")
+    };
+
+    if text.is_empty() {
+        return Ok(());
+    }
+
+    let provider: Box<dyn arconaut_machine::ChatProvider> =
+        match std::env::var("ANTHROPIC_API_KEY") {
+            Ok(key) => Box::new(AnthropicProvider::new(key)?),
+            Err(_) => Box::new(arconaut_agent::MockProvider::new(vec![])),
+        };
+
+    let registry = default_registry().await;
+    let mut soul = Soul::new(provider, registry);
+
+    match soul.run_turn(&text).await {
+        Ok(result) => println!("{}", format_message(&result.message)),
+        Err(e) => eprintln!("error: {}", e),
+    }
+
+    Ok(())
+}
+
+async fn run_tui(agent_name: &str, mode: AgentMode) -> Result<(), Box<dyn std::error::Error>> {
+    let _ = (agent_name, mode); // TODO: wire into TUI title/status
+
     enable_raw_mode()?;
     let _ = ghostty::push_keyboard_flags();
     ghostty::query_theme();
@@ -189,4 +286,25 @@ async fn run_soul(
             else => break,
         }
     }
+}
+
+async fn default_registry() -> ToolRegistry {
+    let mut registry = ToolRegistry::new();
+    registry.register(Box::new(ReadTool::new()));
+    registry.register(Box::new(WriteTool::new()));
+    registry.register(Box::new(EditTool::new()));
+    registry.register(Box::new(BashTool::new()));
+    registry.register(Box::new(GrepTool::new()));
+    for tool in utils::UtilsBin::tools() {
+        registry.register(tool);
+    }
+    registry
+}
+
+fn format_message(msg: &arconaut_core::Message) -> String {
+    msg.content
+        .iter()
+        .filter_map(|part| part.as_text())
+        .collect::<Vec<_>>()
+        .join("")
 }

@@ -71,6 +71,9 @@ prost = "0.13"
 # Async stream wrappers — tonic streaming
 tokio-stream = "0.1"
 
+# CLI parsing — Phase 4 agent/session flags
+clap = { version = "4.5", features = ["derive"] }
+
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }
 arconaut-machine = { path = "crates/arconaut-machine" }
