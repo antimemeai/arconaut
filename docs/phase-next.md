@@ -11,6 +11,10 @@ The OAuth Device Authorization Grant is wired and working, but it operates at "i
 
 The architectural thesis: **OAuth is a distributed systems problem dressed up as auth**. Token state lives in three places: the OAuth server, the filesystem, and process memory. Keeping them consistent requires locks, tombstones, and defensive timeouts.
 
+**What's in / what's out for this phase:**
+- **In:** Background refresh (adaptive to user activity), cross-process locking, login UX polish, model discovery, vars.toml auto-update.
+- **Out:** Keychain/secure storage — deferred to Phase 6+. File-based storage with `0o600` is fine for now.
+
 ---
 
 ## 1. Background Token Refresh
@@ -19,25 +23,43 @@ The architectural thesis: **OAuth is a distributed systems problem dressed up as
 
 Current behavior: token is refreshed at request time (before each LLM call). If the network is slow or the refresh fails, the user waits.
 
-### 1.2 Design
+### 1.2 Design: Adaptive Refresh Intervals
+
+Refresh frequency drops off with user inactivity. No point hammering the auth server when the CLI has been idle for hours.
 
 ```rust
 pub struct TokenRefreshTask {
     flow: KimiOAuthFlow,
     storage: Arc<dyn CredentialStorage>,
-    interval: Duration,          // check every 60s
-    threshold: Duration,         // refresh when < 5 min to expiry
+    last_activity: Arc<Mutex<Instant>>,  // updated on every user prompt
 }
 
 impl TokenRefreshTask {
+    /// Compute check interval based on time since last user activity.
+    fn check_interval(last_activity: Instant) -> Duration {
+        let idle = last_activity.elapsed();
+        match idle {
+            // Active session: check frequently
+            d if d < Duration::from_secs(300)  => Duration::from_secs(60),
+            // Recently active: moderate
+            d if d < Duration::from_secs(3600) => Duration::from_secs(180),
+            // Idle: back way off
+            d if d < Duration::from_secs(7200) => Duration::from_secs(600),
+            // Very idle: stop background checks entirely;
+            // refresh will happen on-demand at next prompt
+            _ => Duration::MAX,
+        }
+    }
+
     pub async fn run(&self, shutdown: tokio::sync::watch::Receiver<bool>);
 }
 ```
 
 **Integration into `run_soul`:**
 - Spawn background task on session start if OAuth is configured
-- Task sleeps, checks expiry, refreshes if needed
-- On sleep/wake detection (elapsed >> interval), force refresh
+- Task sleeps for `check_interval`, wakes, checks expiry, refreshes if needed
+- On sleep/wake detection (elapsed >> expected interval), force refresh
+- `last_activity` is updated on every `SoulCommand::UserInput`
 - Graceful shutdown on session end
 
 ### 1.3 Cross-Process Coordination
@@ -140,38 +162,7 @@ fn update_vars_toml(home: &Path) -> Result<(), io::Error> {
 
 ---
 
-## 3. Secure Credential Storage
-
-### 3.1 Current
-
-OAuth tokens stored in `~/.config/arconaut/oauth/kimi.json` with `0o600` permissions.
-
-### 3.2 Target
-
-**Tier 1: OS Keychain**
-- macOS: `security` CLI or `security-framework` crate
-- Linux: `secret-service` crate (D-Bus)
-- Windows: `windows` crate (Credential Manager)
-
-**Tier 2: File fallback** (current implementation)
-
-**Tier 3: TOML fallback** (for environments with no keychain and no home dir)
-
-```rust
-pub enum StorageBackend {
-    Keychain,
-    File,
-}
-
-pub struct TieredStorage {
-    primary: Option<Box<dyn CredentialStorage>>,
-    fallback: FileStorage,
-}
-```
-
----
-
-## 4. Model Discovery Post-Login
+## 3. Model Discovery Post-Login
 
 kimi-cli fetches the models list after login and writes it to config. We should do the same:
 
@@ -189,45 +180,42 @@ This lets us:
 
 ---
 
-## 5. Implementation Order
+## 4. Implementation Order
 
 | # | Task | Files | Complexity | Blockers |
 |---|------|-------|-----------|----------|
 | 1 | FileLock (cross-process) | `auth/lock.rs` | Medium | None |
 | 2 | Rejected token tombstones | `auth/oauth.rs` | Low | None |
-| 3 | Background refresh task | `auth/refresh.rs` + `cli/src/main.rs` | Medium | #1–2 |
+| 3 | Background refresh task (adaptive intervals) | `auth/refresh.rs` + `cli/src/main.rs` | Medium | #1–2 |
 | 4 | Login UX: spinner, timeout, --no-browser | `cli/src/main.rs` | Low | None |
 | 5 | Post-login model discovery | `auth/oauth.rs` + `cli/src/main.rs` | Low | None |
 | 6 | Auto-update vars.toml | `cli/src/main.rs` | Low | None |
-| 7 | Secure storage: macOS keychain | `auth/storage.rs` | Medium | None |
-| 8 | Secure storage: Linux secret-service | `auth/storage.rs` | Medium | #7 |
-| 9 | Secure storage: Windows | `auth/storage.rs` | Low | #7–8 |
+
+**Deferred out of phase:** Secure credential storage (keychain) → Phase 6+.
 
 **Parallel tracks:**
 - Track A (Refresh): #1–3
 - Track B (UX): #4–6
-- Track C (Security): #7–9
 
 ---
 
-## 6. Conformance Spec (Sketch)
+## 5. Conformance Spec (Sketch)
 
 | # | Assertion | Test | Oracle |
 |---|-----------|------|--------|
-| 3.1 | Background refresh updates token before expiry | `refresh::tests::proactive_refresh` | Gold (mock clock) |
-| 3.2 | Cross-process lock prevents double-refresh | `lock::tests::exclusive_lock` | Silver (spawn process) |
-| 3.3 | Tombstone prevents retry of rejected token | `oauth::tests::tombstone_blocks_retry` | Gold |
-| 3.4 | Sleep/wake detection forces refresh | `refresh::tests::sleep_wake_refresh` | Gold (mock clock) |
+| 3.1 | Background refresh updates token before expiry when active | `refresh::tests::proactive_refresh_active` | Gold (mock clock) |
+| 3.2 | Background refresh backs off when idle > 2h | `refresh::tests::idle_backoff` | Gold (mock clock) |
+| 3.3 | Cross-process lock prevents double-refresh | `lock::tests::exclusive_lock` | Silver (spawn process) |
+| 3.4 | Tombstone prevents retry of rejected token | `oauth::tests::tombstone_blocks_retry` | Gold |
+| 3.5 | Sleep/wake detection forces refresh | `refresh::tests::sleep_wake_refresh` | Gold (mock clock) |
 | 4.1 | `--no-browser` skips browser open | `cli::tests::no_browser_flag` | Gold |
 | 4.2 | Login timeout after device code expiry | `cli::tests::login_timeout` | Gold |
 | 4.3 | vars.toml backup created on update | `cli::tests::vars_backup` | Silver |
-| 7.1 | Keychain round-trip save/load | `storage::tests::keychain_roundtrip` | Silver (macOS only) |
 
 ---
 
-## 7. Open Questions
+## 6. Open Questions
 
-1. **Background refresh interval:** 60s default? kimi-cli uses 60s. Too aggressive for a CLI that may idle for hours.
-2. **Keychain crate choice:** `keyring-rs` is cross-platform but adds Linux D-Bus deps. `security-framework` is macOS-only but lighter. Decision: try `keyring-rs` first, fall back to platform-specific crates if binary bloat is bad.
-3. **vars.toml backup retention:** Keep 1 backup? 5? Rotate? Decision: keep 1 backup suffixed with `.bak.{timestamp}`.
-4. **Model discovery on every login or once?** kimi-cli does it every login. We should too — the user's model access may have changed.
+1. **Adaptive interval tuning:** The current schedule (active=60s, recent=180s, idle=600s, very_idle=stop) is a first guess. We'll tune from usage.
+2. **vars.toml backup retention:** Keep 1 backup suffixed with `.bak.{timestamp}`. Rotate? Decision: keep 1 backup for now.
+3. **Model discovery on every login or once?** kimi-cli does it every login. We should too — the user's model access may have changed.
