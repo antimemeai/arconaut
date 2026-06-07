@@ -1,4 +1,5 @@
 use super::device::DeviceInfo;
+use super::tombstone;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -79,6 +80,7 @@ impl std::fmt::Display for OAuthError {
 impl std::error::Error for OAuthError {}
 
 /// Kimi (Moonshot) OAuth flow using Device Authorization Grant (RFC 8628).
+#[derive(Clone)]
 pub struct KimiOAuthFlow {
     client: reqwest::Client,
     oauth_host: String,
@@ -228,7 +230,17 @@ impl KimiOAuthFlow {
     }
 
     /// Refresh an access token using a refresh token.
+    ///
+    /// If the refresh token has been tombstoned (previously rejected by the
+    /// server), this returns `OAuthError::Unauthorized` immediately without
+    /// making an HTTP request.
     pub async fn refresh_token(&self, refresh_token: &str) -> Result<OAuthToken, OAuthError> {
+        if tombstone::is_tombstoned(refresh_token) {
+            return Err(OAuthError::Unauthorized(
+                "refresh token rejected; retry blocked".to_string(),
+            ));
+        }
+
         let url = format!("{}/api/oauth/token", self.oauth_host.trim_end_matches('/'));
 
         let mut req = self.client.post(&url).form(&[
@@ -258,6 +270,7 @@ impl KimiOAuthFlow {
                 .unwrap_or("token refresh failed")
                 .to_string();
             if status.as_u16() == 401 || status.as_u16() == 403 {
+                tombstone::tombstone(refresh_token);
                 return Err(OAuthError::Unauthorized(message));
             }
             return Err(OAuthError::Server {
@@ -266,6 +279,7 @@ impl KimiOAuthFlow {
             });
         }
 
+        tombstone::remove_tombstone(refresh_token);
         Self::token_from_response(&data)
     }
 
@@ -296,6 +310,62 @@ impl KimiOAuthFlow {
             expires_in,
         })
     }
+
+    /// Fetch available models from the Kimi API.
+    ///
+    /// Uses the access token to authenticate. Returns a list of models
+    /// the user has access to.
+    pub async fn fetch_models(&self, access_token: &str) -> Result<Vec<ModelInfo>, OAuthError> {
+        let url = "https://api.kimi.com/coding/v1/models";
+
+        let response = self
+            .client
+            .get(url)
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(|e| OAuthError::Network(e.to_string()))?;
+
+        let status = response.status();
+        let data: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| OAuthError::Network(e.to_string()))?;
+
+        if !status.is_success() {
+            let message = data["error"]["message"]
+                .as_str()
+                .unwrap_or("failed to fetch models")
+                .to_string();
+            return Err(OAuthError::Server {
+                status: status.as_u16(),
+                message,
+            });
+        }
+
+        let mut models = Vec::new();
+        if let Some(data_array) = data["data"].as_array() {
+            for item in data_array {
+                if let Some(id) = item["id"].as_str() {
+                    models.push(ModelInfo {
+                        id: id.to_string(),
+                        context_length: item["context_length"].as_u64().unwrap_or(0) as usize,
+                        display_name: item["display_name"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+        }
+
+        Ok(models)
+    }
+}
+
+/// Information about a single model from the provider.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ModelInfo {
+    pub id: String,
+    pub context_length: usize,
+    pub display_name: Option<String>,
 }
 
 impl Default for KimiOAuthFlow {

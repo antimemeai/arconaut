@@ -6,7 +6,7 @@ mod utils;
 use arconaut_agent::{AgentMode, Bus, InboxServer, PersistentShell, Session, Soul};
 use arconaut_core::{ToolRegistry, VariableStore};
 use arconaut_machine::{
-    auth::{CredentialStorage, FileStorage, KimiOAuthFlow},
+    auth::{CredentialStorage, FileStorage, KimiOAuthFlow, ModelInfo, OAuthError},
     skills::{SkillLoader, SkillTool},
     tools::{BashTool, EditTool, GrepTool, ReadTool, WriteTool},
     ProviderFactory,
@@ -84,6 +84,10 @@ struct RunArgs {
 struct LoginArgs {
     /// Provider to log in to (e.g., kimi).
     provider: String,
+
+    /// Do not open a browser window.
+    #[arg(long)]
+    no_browser: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -144,7 +148,7 @@ async fn run_main(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
 
 async fn run_login(args: LoginArgs) -> Result<(), Box<dyn std::error::Error>> {
     match args.provider.as_str() {
-        "kimi" | "moonshot" => login_kimi().await,
+        "kimi" | "moonshot" => login_kimi(args.no_browser).await,
         other => {
             eprintln!("Unsupported provider for OAuth login: {}", other);
             std::process::exit(1);
@@ -152,8 +156,30 @@ async fn run_login(args: LoginArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-async fn login_kimi() -> Result<(), Box<dyn std::error::Error>> {
+/// Simple terminal spinner for CLI progress indication.
+struct Spinner {
+    frames: [&'static str; 10],
+    idx: usize,
+}
+
+impl Spinner {
+    fn new() -> Self {
+        Self {
+            frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+            idx: 0,
+        }
+    }
+
+    fn tick(&mut self) -> &'static str {
+        let frame = self.frames[self.idx];
+        self.idx = (self.idx + 1) % self.frames.len();
+        frame
+    }
+}
+
+async fn login_kimi(no_browser: bool) -> Result<(), Box<dyn std::error::Error>> {
     let flow = KimiOAuthFlow::new();
+    let mut spinner = Spinner::new();
 
     println!("Starting Kimi OAuth login...");
 
@@ -163,30 +189,58 @@ async fn login_kimi() -> Result<(), Box<dyn std::error::Error>> {
     println!("  {}", auth.verification_uri_complete);
     println!();
 
-    // Try to open browser.
-    #[cfg(target_os = "macos")]
-    {
-        let _ = std::process::Command::new("open")
-            .arg(&auth.verification_uri_complete)
-            .spawn();
+    if !no_browser {
+        print!("Opening browser... ");
+        io::Write::flush(&mut io::stdout())?;
+        #[cfg(target_os = "macos")]
+        {
+            let _ = std::process::Command::new("open")
+                .arg(&auth.verification_uri_complete)
+                .spawn();
+        }
+        println!("✓");
     }
 
     let interval = std::time::Duration::from_secs(auth.interval.max(1));
+    let max_poll_duration = std::time::Duration::from_secs(600); // 10 minutes
+    let poll_start = std::time::Instant::now();
+    let mut expiry_restart = false;
     let token;
+
+    print!("Waiting for authorization... ");
+    io::Write::flush(&mut io::stdout())?;
 
     loop {
         tokio::time::sleep(interval).await;
+
+        if poll_start.elapsed() > max_poll_duration {
+            println!();
+            eprintln!("Authorization timed out. Please try again.");
+            std::process::exit(1);
+        }
 
         match flow.poll_token(&auth).await {
             Ok(t) => {
                 token = t;
                 break;
             }
-            Err(arconaut_machine::auth::OAuthError::PollPending) => {
-                print!(".");
+            Err(OAuthError::PollPending) => {
+                print!("\rWaiting for authorization... {} ", spinner.tick());
                 io::Write::flush(&mut io::stdout())?;
             }
-            Err(arconaut_machine::auth::OAuthError::DeviceExpired) => {
+            Err(OAuthError::DeviceExpired) if !expiry_restart => {
+                println!();
+                println!("Device code expired. Requesting new code...");
+                expiry_restart = true;
+                // Restart the device auth flow once
+                let new_auth = flow.request_device_authorization().await?;
+                println!("Please visit the following URL to authorize arconaut:");
+                println!("  {}", new_auth.verification_uri_complete);
+                print!("Waiting for authorization... ");
+                io::Write::flush(&mut io::stdout())?;
+                continue;
+            }
+            Err(OAuthError::DeviceExpired) => {
                 println!();
                 eprintln!("Device authorization expired. Please try again.");
                 std::process::exit(1);
@@ -199,17 +253,106 @@ async fn login_kimi() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!();
+    println!("\rWaiting for authorization... ✓");
 
+    // Save token
     let storage = FileStorage::new()?;
     storage.save("kimi", &token)?;
+    println!("✓ Saved credentials");
 
-    println!("✓ Logged in to Kimi successfully.");
+    // Fetch models
+    let models = match flow.fetch_models(&token.access_token).await {
+        Ok(m) => {
+            println!("✓ Fetched {} model(s)", m.len());
+            m
+        }
+        Err(e) => {
+            eprintln!("⚠ Failed to fetch models: {}", e);
+            Vec::new()
+        }
+    };
+
+    // Auto-update vars.toml
+    if let Ok(home) = std::env::var("HOME") {
+        let config_dir = PathBuf::from(home).join(".config").join("arconaut");
+        let vars_path = config_dir.join("vars.toml");
+        if let Err(e) = update_vars_toml(&vars_path, &models) {
+            eprintln!("⚠ Failed to update vars.toml: {}", e);
+        } else {
+            println!("✓ Updated {}", vars_path.display());
+        }
+    }
+
     println!();
-    println!("Add the following to your ~/.config/arconaut/vars.toml:");
-    println!("  [provider.moonshot]");
-    println!("  oauth = true");
-    println!("  api_key = \"\"  # fallback if OAuth fails");
+    println!("Logged in to Kimi successfully.");
+
+    Ok(())
+}
+
+/// Update vars.toml to enable OAuth for the moonshot provider.
+/// Preserves all existing config. Backs up the old file.
+fn update_vars_toml(
+    vars_path: &std::path::Path,
+    models: &[ModelInfo],
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+
+    let config_dir = vars_path.parent().unwrap_or(std::path::Path::new("."));
+    std::fs::create_dir_all(config_dir)?;
+
+    // Backup existing file
+    if vars_path.exists() {
+        let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S");
+        let backup = config_dir.join(format!("vars.toml.bak.{}", timestamp));
+        std::fs::copy(vars_path, &backup)?;
+    }
+
+    // Read existing content
+    let mut table = if vars_path.exists() {
+        let content = std::fs::read_to_string(vars_path)?;
+        content.parse::<toml::Table>()?
+    } else {
+        toml::Table::new()
+    };
+
+    // Update provider.moonshot section
+    let provider = table
+        .entry("provider")
+        .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+
+    if let toml::Value::Table(provider_table) = provider {
+        let moonshot = provider_table
+            .entry("moonshot")
+            .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+
+        if let toml::Value::Table(moonshot_table) = moonshot {
+            moonshot_table.insert("oauth".to_string(), toml::Value::Boolean(true));
+            moonshot_table
+                .entry("api_key")
+                .or_insert_with(|| toml::Value::String("".to_string()));
+
+            // Set model to the first available model, or keep existing
+            if let Some(first) = models.first() {
+                moonshot_table.insert(
+                    "model".to_string(),
+                    toml::Value::String(first.id.clone()),
+                );
+            } else {
+                moonshot_table
+                    .entry("model")
+                    .or_insert_with(|| toml::Value::String("moonshot-v1-8k".to_string()));
+            }
+        }
+    }
+
+    // Atomic write
+    let tmp = vars_path.with_extension("tmp");
+    {
+        let mut file = std::fs::File::create(&tmp)?;
+        file.write_all(table.to_string().as_bytes())?;
+        file.sync_all()?;
+    }
+    std::fs::rename(&tmp, vars_path)?;
 
     Ok(())
 }
@@ -269,6 +412,8 @@ async fn run_single_turn(
     let provider = build_provider(provider_name, model_override, &vars)
         .unwrap_or_else(|| Box::new(arconaut_agent::MockProvider::new(vec![])));
 
+    let mut _refresh_task = provider.start_refresh_task();
+
     let registry = default_registry().await;
     let mut soul = Soul::new(provider, registry);
 
@@ -277,6 +422,7 @@ async fn run_single_turn(
         Err(e) => eprintln!("error: {}", e),
     }
 
+    drop(_refresh_task);
     Ok(())
 }
 
@@ -395,6 +541,8 @@ async fn run_soul(
             ));
             Box::new(arconaut_agent::MockProvider::new(vec![]))
         });
+
+    let mut _refresh_task = provider.start_refresh_task();
 
     // Setup tool registry.
     let mut registry = ToolRegistry::new();

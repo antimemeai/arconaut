@@ -10,6 +10,14 @@ pub trait ChatProvider: Send + Sync {
     fn max_context_size(&self) -> usize;
     fn capabilities(&self) -> HashSet<ModelCapability>;
     fn thinking_effort(&self) -> Option<&str>;
+
+    /// Start a background OAuth token refresh task, if this provider supports it.
+    ///
+    /// Returns `Some(RefreshTask)` when OAuth is enabled and a background
+    /// refresh loop should run for the lifetime of the session.
+    fn start_refresh_task(&self) -> Option<crate::auth::refresh::RefreshTask> {
+        None
+    }
 }
 
 /// Lightweight descriptor of a tool for LLM API consumption.

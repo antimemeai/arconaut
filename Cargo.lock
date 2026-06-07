@@ -183,6 +183,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dirs",
+ "libc",
  "pulldown-cmark",
  "regex",
  "reqwest",

@@ -11,6 +11,7 @@ arconaut-core = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
+libc = "0.2.186"
 pulldown-cmark = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true, features = ["json", "rustls-tls"] }

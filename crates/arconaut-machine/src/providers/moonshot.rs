@@ -1,6 +1,6 @@
 use super::openai_compat::{BuildError, OpenAiCompatClient};
 use crate::{
-    auth::{CredentialStorage, FileStorage, KimiOAuthFlow},
+    auth::{ActivityTracker, CredentialStorage, FileStorage, KimiOAuthFlow},
     ChatProvider, ProviderError,
 };
 use async_trait::async_trait;
@@ -18,6 +18,7 @@ pub struct MoonshotProvider {
     oauth: Option<KimiOAuthFlow>,
     storage: Option<Arc<dyn CredentialStorage>>,
     fallback_key: String,
+    activity: Option<Arc<ActivityTracker>>,
 }
 
 impl MoonshotProvider {
@@ -30,6 +31,7 @@ impl MoonshotProvider {
             oauth: None,
             storage: None,
             fallback_key: key,
+            activity: None,
         })
     }
 
@@ -52,6 +54,7 @@ impl MoonshotProvider {
         self.storage = Some(Arc::new(
             FileStorage::new().unwrap_or_else(|_| FileStorage::with_dir(std::env::temp_dir())),
         ));
+        self.activity = Some(Arc::new(ActivityTracker::new()));
         self
     }
 
@@ -91,6 +94,29 @@ impl MoonshotProvider {
     }
 }
 
+impl MoonshotProvider {
+    /// Start a background refresh task for OAuth tokens.
+    ///
+    /// Returns `None` if OAuth is not enabled.
+    pub fn start_refresh_task(&self) -> Option<crate::auth::RefreshTask> {
+        let storage = self.storage.clone()?;
+        let flow = self.oauth.clone()?;
+        let activity = self.activity.clone()?;
+        let lock_path = dirs::config_dir()
+            .unwrap_or_else(std::env::temp_dir)
+            .join("arconaut")
+            .join("oauth")
+            .join("refresh.lock");
+        Some(crate::auth::RefreshTask::start(
+            storage,
+            flow,
+            KIMI_OAUTH_KEY.to_string(),
+            activity,
+            lock_path,
+        ))
+    }
+}
+
 impl std::fmt::Debug for MoonshotProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MoonshotProvider")
@@ -103,11 +129,15 @@ impl std::fmt::Debug for MoonshotProvider {
 #[async_trait]
 impl ChatProvider for MoonshotProvider {
     async fn chat(&self, request: crate::ChatRequest) -> Result<crate::ChatResponse, ProviderError> {
-        // OAuth resolution requires &mut self, but ChatProvider::chat takes &self.
-        // For the MVP, we skip runtime token refresh in the trait method and
-        // rely on the caller (CLI) to pre-resolve tokens. The provider uses
-        // the last-set API key.
+        // Record prompt activity for the background refresh task.
+        if let Some(ref activity) = self.activity {
+            activity.record_prompt();
+        }
         self.inner.chat(request).await
+    }
+
+    fn start_refresh_task(&self) -> Option<crate::auth::RefreshTask> {
+        self.start_refresh_task()
     }
 
     fn model_name(&self) -> &str {
