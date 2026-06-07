@@ -20,32 +20,27 @@ license = "MIT"
 repository = "https://github.com/patrickbeam/arconaut"
 
 [workspace.dependencies]
-# Async
-tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "sync", "time"] }
+# Async runtime — used by: provider HTTP, tool I/O, agent loop
+tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "process"] }
+
+# Object-safe async traits — required for Box<dyn Tool> with async call()
 async-trait = "0.1"
 
-# Serialization
+# Serialization — core to Message, ChatRequest, tool schemas
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# HTTP
+# HTTP client — Anthropic API only
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 
-# Time
+# Timestamps — Message::timestamp, Utc formatting
 chrono = { version = "0.4", features = ["serde"] }
 
-# CLI
-clap = { version = "4.5", features = ["derive"] }
+# Regex — GrepTool only; std has no regex engine
+regex = "1.11"
 
-# TUI
-ratatui = "0.29"
-crossterm = "0.28"
-
-# gRPC
-tonic = "0.13"
-
-# Testing
-proptest = "1.6"
+# Testing — temp dirs for filesystem tool tests
+tempfile = "3.14"
 
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }

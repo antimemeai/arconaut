@@ -71,8 +71,13 @@ impl Context {
     }
 
     pub fn revert_to(&mut self, checkpoint_id: usize) -> Result<(), InvalidCheckpoint> {
-        let cp = self.checkpoints.get(checkpoint_id)
-            .ok_or(InvalidCheckpoint { id: checkpoint_id, max: self.checkpoints.len().saturating_sub(1) })?;
+        let cp = self
+            .checkpoints
+            .get(checkpoint_id)
+            .ok_or(InvalidCheckpoint {
+                id: checkpoint_id,
+                max: self.checkpoints.len().saturating_sub(1),
+            })?;
         self.history.truncate(cp.history_len);
         self.token_count = cp.token_count;
         // Prune checkpoints after the reversion point
@@ -151,6 +156,10 @@ mod tests {
         ctx.append_message(msg);
         let count = ctx.token_count();
         // 400 chars / 4 = 100, within ±10% = 90-110
-        assert!(count >= 90 && count <= 110, "token count {} not in range", count);
+        assert!(
+            (90..=110).contains(&count),
+            "token count {} not in range",
+            count
+        );
     }
 }

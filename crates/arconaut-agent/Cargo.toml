@@ -10,4 +10,3 @@ license.workspace = true
 arconaut-core = { workspace = true }
 arconaut-machine = { workspace = true }
 tokio = { workspace = true }
-tonic = { workspace = true }

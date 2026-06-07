@@ -78,6 +78,13 @@ impl ContentPart {
     pub fn text(text: impl Into<String>) -> Self {
         ContentPart::Text { text: text.into() }
     }
+
+    pub fn as_text(&self) -> Option<&str> {
+        match self {
+            ContentPart::Text { text } => Some(text),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

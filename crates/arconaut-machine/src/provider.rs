@@ -55,10 +55,16 @@ pub enum ProviderError {
 impl std::fmt::Display for ProviderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProviderError::RateLimit { status_code, message } => {
+            ProviderError::RateLimit {
+                status_code,
+                message,
+            } => {
                 write!(f, "rate limit ({}): {}", status_code, message)
             }
-            ProviderError::Auth { status_code, message } => {
+            ProviderError::Auth {
+                status_code,
+                message,
+            } => {
                 write!(f, "auth error ({}): {}", status_code, message)
             }
             ProviderError::Network { message } => {
@@ -67,10 +73,16 @@ impl std::fmt::Display for ProviderError {
             ProviderError::ContextOverflow { message } => {
                 write!(f, "context overflow: {}", message)
             }
-            ProviderError::Server { status_code, message } => {
+            ProviderError::Server {
+                status_code,
+                message,
+            } => {
                 write!(f, "server error ({}): {}", status_code, message)
             }
-            ProviderError::Client { status_code, message } => {
+            ProviderError::Client {
+                status_code,
+                message,
+            } => {
                 write!(f, "client error ({}): {}", status_code, message)
             }
             ProviderError::Other { message } => {

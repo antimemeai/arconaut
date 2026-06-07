@@ -56,10 +56,7 @@ impl AnthropicProvider {
             header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
-        headers.insert(
-            "anthropic-version",
-            HeaderValue::from_static("2023-06-01"),
-        );
+        headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
         let client = reqwest::Client::builder()
             .default_headers(headers)
@@ -99,13 +96,12 @@ impl ChatProvider for AnthropicProvider {
 
         // Extract system messages into the top-level system field.
         // Anthropic requires system prompts as a top-level string, not in messages array.
-        let (system, messages): (Option<String>, Vec<Message>) = extract_system_messages(request.messages);
+        let (system, messages): (Option<String>, Vec<Message>) =
+            extract_system_messages(request.messages);
         let system = system.or(request.system_prompt);
 
-        let anthropic_messages: Vec<AnthropicMessage> = messages
-            .into_iter()
-            .map(|m| m.into())
-            .collect();
+        let anthropic_messages: Vec<AnthropicMessage> =
+            messages.into_iter().map(|m| m.into()).collect();
 
         let tools: Vec<AnthropicTool> = request
             .tools
@@ -145,10 +141,8 @@ impl ChatProvider for AnthropicProvider {
             return Err(classify_error(status, error_text));
         }
 
-        let anthropic_resp: AnthropicResponse = response
-            .json()
-            .await
-            .map_err(|e| ProviderError::Other {
+        let anthropic_resp: AnthropicResponse =
+            response.json().await.map_err(|e| ProviderError::Other {
                 message: format!("failed to parse response: {}", e),
             })?;
 
@@ -157,17 +151,20 @@ impl ChatProvider for AnthropicProvider {
             .into_iter()
             .filter_map(|block| match block.block_type.as_str() {
                 "text" => block.text.map(ContentPart::text),
-                "tool_use" => block.name.zip(block.input).map(|(name, input)| {
-                    ContentPart::ToolCall {
-                        tool_call: ToolCall {
-                            id: block.id.unwrap_or_default(),
-                            function: FunctionCall {
-                                name,
-                                arguments: input.to_string(),
+                "tool_use" => {
+                    block
+                        .name
+                        .zip(block.input)
+                        .map(|(name, input)| ContentPart::ToolCall {
+                            tool_call: ToolCall {
+                                id: block.id.unwrap_or_default(),
+                                function: FunctionCall {
+                                    name,
+                                    arguments: input.to_string(),
+                                },
                             },
-                        },
-                    }
-                }),
+                        })
+                }
                 _ => None,
             })
             .collect();
@@ -260,9 +257,7 @@ fn classify_error(status: reqwest::StatusCode, body: String) -> ProviderError {
                 || msg_lower.contains("max tokens")
                 || msg_lower.contains("too many tokens")
             {
-                ProviderError::ContextOverflow {
-                    message: body,
-                }
+                ProviderError::ContextOverflow { message: body }
             } else {
                 ProviderError::Client {
                     status_code: status.as_u16(),
@@ -384,11 +379,14 @@ mod tests {
 
     #[test]
     fn error_classification_auth() {
-        let err = classify_error(
-            reqwest::StatusCode::UNAUTHORIZED,
-            "invalid key".to_string(),
-        );
-        assert!(matches!(err, ProviderError::Auth { status_code: 401, .. }));
+        let err = classify_error(reqwest::StatusCode::UNAUTHORIZED, "invalid key".to_string());
+        assert!(matches!(
+            err,
+            ProviderError::Auth {
+                status_code: 401,
+                ..
+            }
+        ));
         assert!(err.to_string().contains("invalid key"));
     }
 
@@ -398,7 +396,13 @@ mod tests {
             reqwest::StatusCode::TOO_MANY_REQUESTS,
             "rate limited".to_string(),
         );
-        assert!(matches!(err, ProviderError::RateLimit { status_code: 429, .. }));
+        assert!(matches!(
+            err,
+            ProviderError::RateLimit {
+                status_code: 429,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -407,7 +411,13 @@ mod tests {
             reqwest::StatusCode::INTERNAL_SERVER_ERROR,
             "overloaded".to_string(),
         );
-        assert!(matches!(err, ProviderError::Server { status_code: 500, .. }));
+        assert!(matches!(
+            err,
+            ProviderError::Server {
+                status_code: 500,
+                ..
+            }
+        ));
         assert!(err.to_string().contains("overloaded"));
     }
 
@@ -456,6 +466,9 @@ mod tests {
             .with_base_url("https://api.anthropic.com/v1/");
         // The base_url is trimmed, so url becomes "https://api.anthropic.com/v1/messages"
         // We can't easily test the private chat method, but we verify the trim logic:
-        assert_eq!(provider.base_url.trim_end_matches('/'), "https://api.anthropic.com/v1");
+        assert_eq!(
+            provider.base_url.trim_end_matches('/'),
+            "https://api.anthropic.com/v1"
+        );
     }
 }
