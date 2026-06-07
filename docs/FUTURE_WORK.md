@@ -1,11 +1,34 @@
 # Future Work
 
-## Deferred from Phase 5
+## Completed
+
+### Kimi Vivace `/login` OAuth Flow
+- **Status:** ✅ Implemented in auth module (RFC 8628 Device Authorization Grant).
+- **What works:** `arconaut login kimi`, `arconaut logout kimi`, file-based token storage, request-time refresh, `oauth = true` in vars.toml.
+- **What's in Phase Next:** Background refresh, login UX polish, model discovery, secure storage.
+
+---
+
+## Deferred to Phase Next (Immediate)
+
+### OAuth Token Refresh — Background + Cross-Process
+- **Current:** Token refreshes synchronously before each LLM call. Slow. No coordination between multiple arconaut processes.
+- **Future:** Background refresh task, cross-process file locking (`fcntl.flock`), rejected-token tombstones, sleep/wake detection.
+- **Rationale:** Current implementation is MVP-quality. Production use requires non-blocking refresh and multi-process safety.
+
+### Login UX Polish
+- **Current:** Basic polling with dot output. Manual vars.toml editing after login.
+- **Future:** Spinner/progress indicator, `--no-browser` flag, auto-update vars.toml (with backup), post-login model discovery, user identity display, timeout handling.
+- **Rationale:** The flow works but the UX is rough. Polishing it now prevents user confusion.
 
 ### Secure Credential Storage
-- **Current:** API keys stored in plaintext TOML (`~/.config/arconaut/vars.toml`).
-- **Future:** macOS Keychain, Linux secret-service (libsecret), Windows Credential Manager.
-- **Rationale:** TOML is acceptable for alpha; production requires secure storage.
+- **Current:** OAuth tokens in `~/.config/arconaut/oauth/*.json` with `0o600`.
+- **Future:** macOS Keychain (`security-framework`), Linux secret-service (`keyring-rs`), Windows Credential Manager. File as fallback.
+- **Rationale:** Plaintext on disk is acceptable for alpha but not for production.
+
+---
+
+## Deferred to Phase 6+ (Polish / Production)
 
 ### Provider Fallback / Routing
 - **Current:** One provider per session, manual selection via `--provider`.
@@ -17,18 +40,14 @@
 - **Future:** SSE/streaming for all providers (Anthropic streaming, OpenAI streaming).
 - **Rationale:** Improves perceived latency; not blocking for alpha.
 
-### Kimi Vivace `/login` OAuth Flow
-- **Current:** API key configured manually in TOML.
-- **Future:** Browser-based OAuth flow with local redirect handler (`arconaut login kimi`).
-- **Blocker:** Need to verify Kimi's actual OAuth endpoints and token refresh semantics.
-- **Fallback:** Interactive API key prompt (`arconaut login kimi` opens browser, user pastes key).
-
 ### Gemini Provider Implementation
 - **Current:** Stub provider with correct defaults but unimplemented `chat()`.
 - **Future:** Full Gemini native API implementation (`generativelanguage.googleapis.com`).
 - **Rationale:** Not immediately needed; OpenRouter provides Gemini access via OpenAI-compatible API.
 
-## Deferred to Phase 7
+---
+
+## Deferred to Phase 7 (Major Features)
 
 ### MCP Integration
 - **Status:** Architecture specified, no implementation.
