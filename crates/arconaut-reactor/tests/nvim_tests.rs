@@ -1,4 +1,4 @@
-use arconaut_reactor::{NvimError, NvimRuntime};
+use arconaut_reactor::NvimRuntime;
 
 #[tokio::test]
 async fn nvim_spawn_succeeds_within_timeout() {
