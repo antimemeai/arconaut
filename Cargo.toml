@@ -8,6 +8,8 @@ members = [
     "crates/arconaut-eval",
     "crates/arconaut-corpus",
     "crates/arconaut-cli",
+    "crates/arconaut-pilot",
+    "crates/arconaut-reactor",
 ]
 resolver = "3"
 
@@ -77,6 +79,13 @@ tokio-stream = "0.1"
 # CLI parsing — Phase 4 agent/session flags
 clap = { version = "4.5", features = ["derive"] }
 
+# MessagePack — nvim --embed communication
+rmp-serde = "1.3"
+rmpv = "1.3"
+
+# Embedded shell — brush-core integration
+brush-core = "0.5"
+
 # Internal
 arconaut-core = { path = "crates/arconaut-core" }
 arconaut-machine = { path = "crates/arconaut-machine" }
@@ -85,3 +94,5 @@ arconaut-agent = { path = "crates/arconaut-agent" }
 arconaut-audit = { path = "crates/arconaut-audit" }
 arconaut-eval = { path = "crates/arconaut-eval" }
 arconaut-corpus = { path = "crates/arconaut-corpus" }
+arconaut-pilot = { path = "crates/arconaut-pilot" }
+arconaut-reactor = { path = "crates/arconaut-reactor" }
