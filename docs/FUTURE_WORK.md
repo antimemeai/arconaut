@@ -63,3 +63,33 @@
 - **Status:** `arconaut-corpus` crate is a placeholder.
 - **Scope:** Search neurotic_library embeddings from agent turn loop.
 - **Blocker:** Waiting on neurotic_library interface response (letter sent 2026-06-07).
+
+---
+
+## P5.7 Commitments (Deferred within Phase 5)
+
+These items were explicitly deferred during P5.7 pre-design. They are not in the P5.7 implementation path but are tracked for follow-up.
+
+### Ground-Up `nvim-rs` Reimplementation
+- **Status:** P5.7 uses `rmp-rpc` as an intermediate MessagePack RPC binding.
+- **Trigger:** After ~2 weeks of live use + collected data on which RPC calls dominate.
+- **Goal:** MIT-licensed replacement for the LGPL-3.0 `nvim-rs` crate.
+- **Rationale:** License compatibility. Current `rmp-rpc` intermediate is acceptable for alpha but must be replaced for production distribution.
+
+### Cross-Buffer Atomic Edit Coordinator
+- **Status:** Deferred from Section 3.1.
+- **Trigger:** When multi-file refactorings become common enough that per-buffer undo is painful.
+- **Goal:** Transaction coordinator that can rollback edits across multiple neovim buffers on failure.
+- **Rationale:** Neovim undo is per-buffer. P5.7 handles single-buffer edits well; multi-buffer atomicity is future work.
+
+### Block-Level CPT for BufferManager
+- **Status:** Deferred from Section 3.3.
+- **Trigger:** After file-level CPT is instrumented and measured in Phase 7.
+- **Goal:** Predict and prefetch not just files, but regions within files (functions, structs, comment blocks).
+- **Rationale:** File-level CPT is the right granularity for P5.7. Block-level may improve hit rates but adds significant complexity.
+
+### Remote Network Host Tomography
+- **Status:** Deferred from Section 3.4.
+- **Trigger:** When remote development workflows become a primary use case.
+- **Goal:** Measure latency, packet loss, and bandwidth to remote hosts; adapt tool behavior (e.g., batch operations, reduce round-trips).
+- **Rationale:** Phase 1 remote tools over SSH are sufficient for ad-hoc use. Adaptive behavior requires infrastructure not yet built.

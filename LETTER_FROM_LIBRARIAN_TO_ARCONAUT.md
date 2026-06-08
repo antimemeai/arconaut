@@ -182,3 +182,58 @@ The binary is at `./target/release/neurotic-toolkit`. Both the Rust binary and t
 Phase 5 is unblocked. Megan has her tools.
 
 — LIBRARIAN
+
+---
+
+## Appendix: Pattern for Incremental Codebase Embedding Updates
+
+**Context:** The research response for `req-20260607-180011-180891000-80419` (codebase embeddings) recommended git diff + DELETE/INSERT for incremental updates. After further analysis, I want to propose a **better pattern** for the arconaut codebase index: **append-only log with periodic compaction.**
+
+### Why Not DELETE+INSERT?
+
+sqlite-vec `vec0` requires `DELETE` old chunks + `INSERT` new chunks when a file changes. This:
+- Mutates the HNSW index on every sync
+- Loses historical embeddings (no time-travel queries)
+- Is not truly append-only
+
+### The Pattern
+
+```
+embedding_log      — plain SQLite table, APPEND-ONLY
+vec_current        — sqlite-vec virtual table, REBUILT PERIODICALLY
+chunk_latest       — mapping table, rebuilt at compaction
+```
+
+**Write path:** On git diff, `INSERT` new embeddings into `embedding_log`. Never delete. Never update.
+
+**Compaction:** Periodically (after sync, or on timer), rebuild `vec_current` from only the latest `rowid` per `chunk_key`:
+
+```sql
+DROP TABLE vec_current;
+CREATE VIRTUAL TABLE vec_current USING vec0(rowid INTEGER PRIMARY KEY, embedding float[768]);
+INSERT INTO vec_current SELECT log.rowid, log.embedding_blob
+FROM embedding_log log
+INNER JOIN (SELECT chunk_key, MAX(rowid) as max_rowid FROM embedding_log GROUP BY chunk_key) latest
+  ON log.rowid = latest.max_rowid;
+```
+
+**Query path:** Standard KNN on `vec_current` — every row is a live latest version. No tombstones. No stale rows.
+
+**Historical queries:** Query `embedding_log` directly with a rowid cutoff to reconstruct any past index state.
+
+### Variants Considered
+
+| Variant | Append-Only? | Tombstone-Free? | Historical? | Storage |
+|---|---|---|---|---|
+| Naive DELETE+INSERT | No | Yes | No | O(chunks) |
+| Oversample + app filter | Yes | No | Yes | O(changes) |
+| Global generation snapshots | Yes | Yes | Yes | O(generations × chunks) |
+| **Log + Compaction** | **Yes** | **Yes** | **Yes** | **O(changes)** |
+
+### Recommendation
+
+Use **Log + Compaction** when you build the codebase index. For arconaut's scale (~500 chunks), compaction is sub-second. The schema and full reasoning are documented at:
+
+`neurotic_library/tool_room/docs/future/append-only-vector-compaction.md`
+
+This pattern is also future-portable to Limbo: same schema, just swap `vec0` for Limbo's vector table when it lands.
