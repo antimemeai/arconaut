@@ -47,3 +47,5 @@ async fn nvim_buf_lines_roundtrip() {
     let lines = nvim.buf_get_lines(buf, 0, -1, true).await.expect("get lines should work");
     assert_eq!(lines, vec!["line1".to_string(), "line2".to_string()]);
 }
+
+

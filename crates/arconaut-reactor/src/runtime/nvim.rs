@@ -66,6 +66,18 @@ impl NvimRuntime {
             msgid: std::sync::atomic::AtomicU32::new(1),
         };
 
+        // Load arconaut.lua if it exists.
+        let lua_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("arconaut.lua");
+        if lua_path.exists() {
+            let lua_str = std::fs::read_to_string(&lua_path).unwrap_or_default();
+            let _ = runtime
+                .call(
+                    "nvim_exec_lua",
+                    vec![rmpv::Value::String(lua_str.into()), rmpv::Value::Array(vec![])],
+                )
+                .await;
+        }
+
         // Verify nvim is responsive within 2000ms.
         let ping = timeout(
             Duration::from_millis(2000),
@@ -212,6 +224,42 @@ impl NvimRuntime {
                 Err(NvimError::Timeout)
             }
         }
+    }
+
+    /// Get current buffer number.
+    /// Nvim returns buffers as msgpack Ext type 0; decode the embedded msgpack integer.
+    pub async fn get_current_buf(&mut self) -> Result<i64, NvimError> {
+        let result = self.call("nvim_get_current_buf", vec![]).await?;
+        match result {
+            rmpv::Value::Integer(i) => Ok(i.as_i64().unwrap_or(0)),
+            rmpv::Value::Ext(0, bytes) => {
+                // Buffer handle: the Ext data is itself a msgpack-encoded integer.
+                let mut cursor = std::io::Cursor::new(&bytes);
+                match rmpv::decode::read_value(&mut cursor) {
+                    Ok(rmpv::Value::Integer(i)) => Ok(i.as_i64().unwrap_or(0)),
+                    _ => Ok(0),
+                }
+            }
+            _ => Err(NvimError::Rpc(
+                "expected integer or ext from nvim_get_current_buf".to_string(),
+            )),
+        }
+    }
+
+    /// Call a Lua function exposed by arconaut.lua.
+    pub async fn lua_call(
+        &mut self,
+        fn_name: &str,
+        args: Vec<rmpv::Value>,
+    ) -> Result<rmpv::Value, NvimError> {
+        // Use _G._arconaut because vim.g copies tables on access.
+        let lua_code = format!(
+            "return _G._arconaut and _G._arconaut['{fn_name}'] and _G._arconaut['{fn_name}'](...) or nil"
+        );
+        let result = self
+            .call("nvim_exec_lua", vec![rmpv::Value::String(lua_code.into()), rmpv::Value::Array(args)])
+            .await?;
+        Ok(result)
     }
 
     /// Send a msgpack-rpc request and await the matching response.
