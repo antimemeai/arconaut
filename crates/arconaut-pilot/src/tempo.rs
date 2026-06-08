@@ -1,16 +1,11 @@
 /// Tempo state machine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Tempo {
+    #[default]
     Metronome,
     Tuned { ratio: u8 },
     MainCharacter,
     Evolving,
-}
-
-impl Default for Tempo {
-    fn default() -> Self {
-        Tempo::Metronome
-    }
 }
 
 /// Narration density level.

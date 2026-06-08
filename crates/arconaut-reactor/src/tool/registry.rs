@@ -20,9 +20,9 @@ impl ToolRegistry {
         self.tools.insert(tool.name().to_string(), tool);
     }
 
-    pub fn execute(&self, name: &str, args: Value) -> arconaut_core::tool::ToolResult {
+    pub fn execute(&self, name: &str, _args: Value) -> arconaut_core::tool::ToolResult {
         match self.tools.get(name) {
-            Some(tool) => {
+            Some(_tool) => {
                 // Note: Tool::call is async, but we can't call async in a sync fn.
                 // TODO(Phase A): make execute async.
                 arconaut_core::tool::ToolResult::Error {

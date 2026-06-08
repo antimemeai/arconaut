@@ -1,13 +1,11 @@
-use arconaut_pilot::{DefaultSoul, Soul, SoulConfig, SoulError, StopReason, Tempo, TurnRequest};
+use arconaut_pilot::{DefaultSoul, Soul, SoulConfig, StopReason, Tempo, TurnRequest};
 use arconaut_core::{ContentPart, Message, Role};
 use arconaut_machine::provider::{
     ChatProvider, ChatRequest, ChatResponse, ModelCapability, ProviderError, TokenUsage,
-    ToolDescriptor,
 };
 use async_trait::async_trait;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 
 /// Mock provider for testing Soul purity (O1 oracle).
 struct MockProvider {
@@ -23,6 +21,7 @@ impl MockProvider {
         }
     }
 
+    #[allow(dead_code)]
     fn call_count(&self) -> usize {
         self.call_count.load(Ordering::SeqCst)
     }

@@ -1,15 +1,15 @@
-use crate::context::{BeatState, ContextAssembler};
-use crate::heuristic::{HeuristicConfig, HeuristicEngine, Intervention, TurnEvent};
+use crate::context::ContextAssembler;
+use crate::heuristic::{HeuristicConfig, HeuristicEngine};
 use crate::tool::ToolRegistry;
-use arconaut_core::{Message, ToolResult};
-use arconaut_pilot::{Soul, StopReason, TurnRequest, Tempo};
+use arconaut_core::Message;
+use arconaut_pilot::{Soul, StopReason};
 
 /// The central orchestrator. Owns the turn loop.
 pub struct ArconautLogic {
-    context_assembler: ContextAssembler,
-    tool_registry: ToolRegistry,
-    heuristic_engine: HeuristicEngine,
-    config: ReactorConfig,
+    _context_assembler: ContextAssembler,
+    _tool_registry: ToolRegistry,
+    _heuristic_engine: HeuristicEngine,
+    _config: ReactorConfig,
 }
 
 /// Reactor configuration.
@@ -58,10 +58,10 @@ impl std::error::Error for ReactorError {}
 impl ArconautLogic {
     pub fn new(config: ReactorConfig) -> Self {
         Self {
-            context_assembler: ContextAssembler::new(),
-            tool_registry: ToolRegistry::new(),
-            heuristic_engine: HeuristicEngine::new(HeuristicConfig::default()),
-            config,
+            _context_assembler: ContextAssembler::new(),
+            _tool_registry: ToolRegistry::new(),
+            _heuristic_engine: HeuristicEngine::new(HeuristicConfig::default()),
+            _config: config,
         }
     }
 

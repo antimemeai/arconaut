@@ -13,6 +13,9 @@ pub mod persistent_shell;
 pub mod session;
 pub mod soul;
 
+#[cfg(feature = "p5_7")]
+pub mod p5_7_wiring;
+
 pub use agent::{Agent, AgentMode, AgentRegistry};
 pub use assistant::{AgentEvent, AssistantModel, TriggerEvent};
 pub use bus::{Bus, BusMessage, Presence, Target};

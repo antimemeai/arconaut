@@ -19,7 +19,7 @@ pub trait Soul: Send + Sync {
 /// Concrete Soul implementation.
 pub struct DefaultSoul {
     provider: Box<dyn ChatProvider>,
-    config: SoulConfig,
+    _config: SoulConfig,
     // Internal context accumulator for the current turn.
     turn_context: Vec<Message>,
 }
@@ -28,7 +28,7 @@ impl DefaultSoul {
     pub fn new(provider: Box<dyn ChatProvider>, config: SoulConfig) -> Self {
         Self {
             provider,
-            config,
+            _config: config,
             turn_context: Vec::new(),
         }
     }

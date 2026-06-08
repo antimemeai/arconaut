@@ -1,6 +1,6 @@
 use crate::context::BeatState;
 use arconaut_core::Message;
-use arconaut_pilot::{Tempo, TurnRequest, ToolDescriptor};
+use arconaut_pilot::{Tempo, TurnRequest};
 
 /// ContextAssembler builds the TurnRequest that the Soul receives.
 pub struct ContextAssembler {
