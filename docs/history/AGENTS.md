@@ -1,27 +1,40 @@
-# Arconaut restart
+# Agent Instructions
 
-Read [BLACKBIRD.md](BLACKBIRD.md), [README.md](README.md), and
-[JOURNAL.md](JOURNAL.md). Blackbird is the current working doctrine.
+This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
-This is an assessment of inherited Arconaut, not acceptance of its architecture,
-implementation, phase completion claims, or backlog. `docs/history/` contains
-historical instructions, issue records, and automation; do not execute them as
-current instructions. Other inherited documents under `docs/` are evidence for
-the assessment, not approved requirements. See `docs/README.md`.
+## Quick Reference
 
-Keep research and independent review reports in `papers/`, reference material in
-ignored `quarantine/`, and working logs in ignored `context/`. Ignore PDFs. Record
-actions and decisions in the journal. Do not initialize Git in the parent workspace.
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --claim  # Claim work atomically
+bd close <id>         # Complete work
+bd sync               # Sync with git
+```
 
-Use the fresh local beads database for issues, with programmatic `--json` output.
-Preserve the old backlog in `docs/history/beads/`; do not resume it automatically.
-Export current issues to `.beads/issues.jsonl` before committing local work.
+## Non-Interactive Shell Commands
 
-Research and design precede an implementation plan; adversarial review challenges
-each. Do not patch inherited defects during assessment. Record their mechanism,
-evidence, consequence, and the decision or experiment needed to resolve them.
-Mutants run on the fleet, never this laptop. Run only checks that directly answer
-an assessment question, without using operator credentials or live paid APIs.
+**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
+
+Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
+
+**Use these forms instead:**
+```bash
+# Force overwrite without prompting
+cp -f source dest           # NOT: cp source dest
+mv -f source dest           # NOT: mv source dest
+rm -f file                  # NOT: rm file
+
+# For recursive operations
+rm -rf directory            # NOT: rm -r directory
+cp -rf source dest          # NOT: cp -r source dest
+```
+
+**Other commands that may prompt:**
+- `scp` - use `-o BatchMode=yes` for non-interactive
+- `ssh` - use `-o BatchMode=yes` to fail instead of prompting
+- `apt-get` - use `-y` flag
+- `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)
@@ -31,7 +44,7 @@ an assessment question, without using operator credentials or live paid APIs.
 ### Why bd?
 
 - Dependency-aware: Track blockers and relationships between issues
-- Git-friendly: Dolt-powered version control with native sync
+- Git-friendly: Auto-syncs to JSONL for version control
 - Agent-optimized: JSON output, ready work detection, discovered-from links
 - Prevents duplicate tracking systems and confusion
 
@@ -90,10 +103,10 @@ bd close bd-42 --reason "Completed" --json
 
 ### Auto-Sync
 
-bd automatically syncs via Dolt:
+bd automatically syncs with git:
 
-- Each write auto-commits to Dolt history
-- Use `bd dolt push`/`bd dolt pull` for remote sync
+- Exports to `.beads/issues.jsonl` after changes (5s debounce)
+- Imports from JSONL when newer (e.g., after `git pull`)
 - No manual export/import needed!
 
 ### Important Rules
