@@ -801,6 +801,80 @@ Json CodingEngine::call(std::string name, Json arguments) {
         proposal.object().emplace_back("base", Json{context_.head()});
       return context_.manage(proposal);
     }
+    if (name == "rageshake") {
+      const auto &observation = string_field(arguments, "observation");
+      if (observation.empty() || observation.size() > 65536)
+        throw Error{ErrorCode::invalid_range};
+      const auto references = arguments.find("references")
+                                  ? field(arguments, "references")
+                                  : Json::object({});
+      if (!std::holds_alternative<Json::Object>(references.value()) ||
+          unwrap(dump_json(references)).size() > 65536)
+        throw Error{ErrorCode::invalid_range};
+      std::set<std::string> active;
+      for (const auto &fact : log_.root().committed_facts()) {
+        if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body))
+          active.insert(hex_identity(a->attempt.bytes()));
+        if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
+            o && o->phase == AttemptPhase::terminal)
+          active.erase(hex_identity(o->attempt.bytes()));
+      }
+      Json::Array active_ids;
+      for (const auto &id : active) {
+        if (active_ids.size() == 64)
+          break;
+        active_ids.push_back(Json{id});
+      }
+      auto detail = Json::object(
+          {{"observation", Json{observation}},
+           {"references", references},
+           {"active_attempts", Json{std::move(active_ids)}},
+           {"active_attempt_count", Json{JsonNumber{std::to_string(active.size())}}},
+           {"revision", Json{context_.head()}},
+           {"generation", Json{hex_identity(generation_.bytes())}},
+           {"actor", Json{hex_identity(identity_.actor.bytes())}},
+           {"conversation", Json{hex_identity(identity_.conversation.bytes())}},
+           {"workflow", Json{hex_identity(identity_.workflow.bytes())}},
+           {"model", Json{model_}},
+           {"effort", Json{effort_}},
+           {"audit_end",
+            Json{JsonNumber{std::to_string(log_.root().committed_facts().size())}}},
+           {"reporting_attempt", Json{hex_identity(attempt.bytes())}},
+           {"repair_required_now", Json{false}}});
+      const auto complaint = log_.original(
+          {"complaint.detail", unwrap(dump_json(detail)),
+           Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      // Only a non-sensitive locator goes to beads (and hence issue backups).
+      // The observation and provider/context history remain in the local audit.
+      auto delivery =
+          call("exec",
+               Json::object(
+                   {{"argv",
+                     Json{Json::Array{
+                         Json{"bd"}, Json{"create"},
+                         Json{"Arco model complaint " + complaint}, Json{"--type"},
+                         Json{"bug"}, Json{"--description"},
+                         Json{"Local audit complaint " + complaint + "; conversation " +
+                              hex_identity(identity_.conversation.bytes()) +
+                              ". Inspect complaint.detail locally. Advisory; no "
+                              "immediate repair required."},
+                         Json{"--json"}}}},
+                    {"timeout_seconds", Json{JsonNumber{"20"}}},
+                    {"output_max_bytes", Json{JsonNumber{"4096"}}}}));
+      const auto *exit = delivery.find("exit_code");
+      const bool delivered = exit && exit->number().text == "0";
+      auto result = Json::object({{"complaint", Json{complaint}},
+                                  {"retained_locally", Json{true}},
+                                  {"bead_created", Json{delivered}},
+                                  {"delivery", delivery},
+                                  {"sink", Json{"external consumer not configured"}},
+                                  {"repair_required_now", Json{false}}});
+      log_.original({"complaint.delivery", unwrap(dump_json(result)),
+                     Json::object({{"complaint", Json{complaint}}})});
+      return result;
+    }
+    if (name == "audit_inspect")
+      return log_.inspect(field(arguments, "query"));
     if (name == "context_inspect")
       return context_.inspect(field(arguments, "query"));
     if (name == "context_stats")

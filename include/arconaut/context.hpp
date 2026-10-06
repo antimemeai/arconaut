@@ -29,6 +29,7 @@ public:
   void record(ApplicationRecordId identity, ApplicationChannel channel,
               const Json &packet);
   std::string original(OriginalCapture capture);
+  Json inspect(const Json &query);
   RetainedState &root() noexcept { return root_; }
 
 private:

@@ -273,6 +273,82 @@ void retained_output_test(const std::string &path) {
                           Json::object({{"output_ref", Json{timed_reference}}}));
     if (string_field(partial, "output") != "PARTIAL")
       throw Error{ErrorCode::corrupt};
+    // The explorer must expose the actual unknown disposition and causal links,
+    // rather than interpreting a terminal record as successful completion.
+    bool unknown = false, linked = false;
+    const auto end = log.root().committed_facts().size();
+    for (std::size_t cursor = 0; cursor < end; cursor += 64) {
+      auto page = log.inspect(
+          Json::object({{"cursor", Json{JsonNumber{std::to_string(cursor)}}},
+                        {"end", Json{JsonNumber{std::to_string(end)}}},
+                        {"count", Json{JsonNumber{"64"}}}}));
+      for (const auto &row : field(page, "records").array()) {
+        const auto *a = row.find("attempt");
+        if (a && a->string() == timed_reference) {
+          if (const auto *o = row.find("outcome"); o && o->string() == "unknown")
+            unknown = true;
+          if (row.find("invocation") && row.find("decision"))
+            linked = true;
+        }
+      }
+    }
+    if (!unknown || !linked)
+      throw Error{ErrorCode::corrupt};
+    const std::string old_path = std::getenv("PATH") ? std::getenv("PATH") : "";
+    const auto fake_bin = path + "/fake-bin";
+    std::filesystem::create_directory(fake_bin);
+    const auto argv_file = path + "/bead-argv";
+    write_file(fake_bin + "/bd", "#!/bin/sh\nprintf '%s\\n' \"$@\" > '" + argv_file +
+                                     "'\nprintf '{\"id\":\"fake-bead\"}'\n");
+    std::filesystem::permissions(fake_bin + "/bd", std::filesystem::perms::owner_all);
+    if (setenv("PATH", fake_bin.c_str(), 1) != 0)
+      throw Error{ErrorCode::io};
+    auto delivered =
+        invoke(engine, "rageshake",
+               Json::object({{"observation", Json{"PRIVATE_SUCCESS_OBSERVATION"}}}));
+    if (setenv("PATH", old_path.c_str(), 1) != 0)
+      throw Error{ErrorCode::io};
+    if (!std::get<bool>(field(delivered, "bead_created").value()) ||
+        read_file(argv_file).find("PRIVATE_SUCCESS_OBSERVATION") != std::string::npos ||
+        read_file(argv_file).find(string_field(delivered, "complaint")) ==
+            std::string::npos)
+      throw Error{ErrorCode::corrupt};
+    auto oversized = invoke(
+        engine, "rageshake",
+        Json::object(
+            {{"observation", Json{"bounded"}},
+             {"references", Json::object({{"blob", Json{std::string(65537, 'x')}}})}}));
+    if (string_field(oversized, "error") != "invalid_range")
+      throw Error{ErrorCode::corrupt};
+    if (setenv("PATH", "/arco-test-no-bd", 1) != 0)
+      throw Error{ErrorCode::io};
+    auto complaint =
+        invoke(engine, "rageshake",
+               Json::object({{"observation", Json{"PRIVATE_TEST_OBSERVATION"}},
+                             {"references",
+                              Json::object({{"attempt", Json{timed_reference}}})}}));
+    if (setenv("PATH", old_path.c_str(), 1) != 0)
+      throw Error{ErrorCode::io};
+    if (!std::get<bool>(field(complaint, "retained_locally").value()) ||
+        std::get<bool>(field(complaint, "bead_created").value()))
+      throw Error{ErrorCode::corrupt};
+    const auto complaint_id = string_field(complaint, "complaint");
+    bool captured = false;
+    for (const auto &fact : root->committed_facts()) {
+      if (const auto *e = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+          e && hex_identity(e->identity.bytes()) == complaint_id) {
+        for (const auto dep : fact.event.dependencies) {
+          const auto raw = unwrap(root->source(dep));
+          const std::string value{reinterpret_cast<const char *>(raw.data()),
+                                  raw.size()};
+          if (value.find("PRIVATE_TEST_OBSERVATION") != std::string::npos &&
+              value.find(timed_reference) != std::string::npos)
+            captured = true;
+        }
+      }
+    }
+    if (!captured || provider.calls != 0)
+      throw Error{ErrorCode::corrupt};
     TimeoutRecoveryProvider recovery;
     recovery.marker = marker + "-timeout";
     CodingEngine recovery_engine{log, context, recovery, "test"};

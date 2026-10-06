@@ -256,3 +256,11 @@ branch-based candidates with bounded worktree leases (.14.1) and bounded
 comparison/transfer work. Earlier B1-incomplete checkpoints above are historical;
 B1 is closed. Read current live beads and final compaction report. Use and update
 the actual per-unit plan/status as work proceeds; no giga launch implied.
+
+Interstitial unit1 source checkpoint: bounded audit_inspect + advisory rageshake
+implemented (papers/2026-10-06-useful-work-observability.md). Direct binary/reopen,
+timeout unknown lineage, failed delivery local retention and successful fake-bd
+privacy oracles green. Completed narrow Kimi wrapper/child0 findings integrated;
+final changed-source Mac+Neuroses debug/release/ASan audit+coding2/2 each. Native
+quiet activation/live tool and bead verification next, not implied by source commit.
+.14 remains in_progress; .14.1 and Lua diagnosis/comparison/transfer remain work.

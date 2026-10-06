@@ -235,3 +235,49 @@ The Arconaut sprite appears at the upper right in terminals at least 90 columns
 wide and 20 rows tall. He gently bobs and his plume shimmers during a turn, then
 settles when idle. Smaller windows use the full width for the conversation.
 The sprite uses Unicode half blocks and ANSI truecolor; no image protocol is needed.
+
+## Local audit explorer and advisory complaints
+
+Model tools `audit_inspect({query:...})` and `rageshake({...})` are also available
+from Lua as `arco.call("audit_inspect", {query=...})` and
+`arco.call("rageshake", {...})`. No command approvals or immediate repair obligation.
+
+Start with `{cursor:0,count:32}`; retain returned `end` for later pages, advance
+`cursor` to returned `next`. Each row names its committed fact index, physical
+journal/sequence, causal IDs and up to64 source dependency references. Kind numbers
+are RetainedKind in include/arconaut/retained_events.hpp. Decision → invocation →
+attempt IDs link operation input/context/program to observed disposition; admission
+is not success. Application channel1 captures original labels/metadata, channel2
+context revisions, channel3 program activation. Separate occurrences stay separate.
+
+For exact retained bytes use `{record:INDEX,offset:0,limit:4096}` for event payload,
+or add `source:0` to read that dependency's immutable original. Returned hex can
+split UTF8/binary arbitrarily; concatenate/decode bytes, never rerun the effect.
+`total_bytes`/`next` expose EOF. Count1..64; byte limit1..65536. Metadata is small
+and selected; context packets are not serialized by index listing. Detail source
+reads may copy one existing document (ordinary document bound); there is no global
+full-history reconstruction or second output store. Prefix `end` remains usable
+while new facts append. Fact indices are local to this journal lineage, not portable
+between unrelated sessions. Only committed facts appear; provisional/crash evidence
+is not silently asserted to have settled.
+
+Complaint example:
+
+```lua
+local result = arco.call("rageshake", {
+  observation="Inspection required a repeated full-history scan",
+  references={attempt="EXACT_ATTEMPT", record=123, hypothesis="optional suspicion"}
+})
+return result
+```
+
+Observation/references are model assertions, not a correctness verdict. The native
+capture adds context revision, effective program generation, model/effort,
+actor/conversation/workflow, reporting attempt and audit watermark. `complaint.detail`
+is retained before bead delivery; `complaint.delivery` records the result. Beads
+receives only constant advisory text and local identity locators, not private raw
+provider history or the observation. Delivery failure/timeout remains local; inspect
+the actual exec output reference before any explicit new delivery attempt. Never
+automatically replay an unknown side effect. An external DB sink is unconfigured;
+a separately configured consumer can inspect these records without Arco provisioning
+or governing a database. Keep raw audit/context ignored, not in commits or pushes.

@@ -2665,3 +2665,29 @@ No new libraries/services or all integrations/multiplayer prerequisites.
 External board corrected in codex-tools: closed issues show closure outcome;
 completed dependencies no longer imply waiting; live per-issue activity supplements
 the separate historical backups. Old board process needs restart to load code.
+
+### Useful-work interstitial unit1: common audit and advisory complaint
+
+Whole-unit plan docs/USEFUL_WORK_INTERSTITIAL_SUBPLAN.md, .14 underway, .14.1
+queued. Implemented bounded audit_inspect through model/Lua: real committed fact
+metadata, Decision/Invocation/Attempt/Observation lineage, separate occurrences,
+original event/source bytes, append-only prefix pages. Rageshake captures local
+observation/references with effective context/program/model/identity/unsettled
+attempts before separately audited bead delivery. Only constant local locators
+leave for issue backups; delivery failed/unknown retained, no replay or immediate
+repair obligation. External consumer sink unconfigured; no infrastructure adopted.
+
+Direct unsupported red then independently specified binary/reopen/invalid bounds
+green; actual CodingEngine timeout unknown/links; failed bd preserves complaint and
+continues; successful fake bd captures argv and excludes private observation; huge
+references rejected. Completed Kimi run-1czoup5q wrapper0/child0, final preserved in
+papers. Minor findings integrated (reference bound/copy docs/success delivery
+oracle); global count/limit validation deliberately strict. No consequential open
+fault or second review. One edit-script failed before writing; unchanged green not
+counted for intended followup, repaired via exact edits. Final changed-source Mac
+and Neuroses debug/release/ASan audit+coding2/2 each; audit/test tidy clean.
+release/arco rebuilt, local check/review programs stopped. Source checkpoint
+commit/push then quiet RRC; live replacement + actual bead delivery verification
+next. No B1 recertification, .14 closure or acceleration claim. Report
+papers/2026-10-06-useful-work-observability.md. Next Lua contrast/experiments and
+bounded branch/worktree leases, then common-instrumented matched pilot/transfer.
