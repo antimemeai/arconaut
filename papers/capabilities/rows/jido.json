@@ -1,0 +1,475 @@
+{
+  "id": "jido",
+  "kind": "actor/action framework and runtime",
+  "runtime": {
+    "languages": [
+      "Elixir"
+    ],
+    "execution": "Immutable agent command decisions; OTP GenServer signal routing, supervised directives/actions and storage adapters.",
+    "service_boundary": "Owns agent runtime/supervisors/ephemeral instance control state; user actions consume external programs/services. AI belongs to companion integration."
+  },
+  "summary": "Pluggable strategies, explicit state and runtime-owned effects, with append-only interaction thread/checkpoint support.",
+  "inspection": {
+    "files": [
+      "quarantine/jido/lib/jido/agent.ex",
+      "quarantine/jido/lib/jido/agent_server/signal_router.ex",
+      "quarantine/jido/lib/jido/agent_server.ex",
+      "quarantine/jido/lib/jido/agent_server/directive_executors.ex",
+      "quarantine/jido/lib/jido/agent_server/directive_exec.ex",
+      "quarantine/jido/lib/jido/runtime_store.ex",
+      "quarantine/jido/lib/jido/thread.ex",
+      "quarantine/jido/lib/jido/persist.ex",
+      "quarantine/jido/lib/jido/storage/file.ex",
+      "quarantine/jido/test/jido/agent_server/plugin_signal_hooks_test.exs",
+      "quarantine/jido/test/support/storage_checkpoint_conformance.ex"
+    ],
+    "scope": "command normalization/hooks, signal router/call/cast, directive effect execution, runtime store, thread/persistence/file adapter and test assertions",
+    "limits": "Jido.Action/Jido.Signal dependency implementations are not in this reference; no arbitrary remote effect settlement or BEAM hot code upgrade traced."
+  },
+  "actions": [
+    {
+      "name": "Agent.cmd",
+      "surface": "application API",
+      "input": "agent struct, action/instruction list and context/options",
+      "output": "new agent plus runtime directive list or validation error",
+      "lifecycle": "functional strategy decision with before/after hooks; action execution may be effectful",
+      "authority": "application owns strategy/modules and context",
+      "evidence": [
+        "e1",
+        "e5"
+      ]
+    },
+    {
+      "name": "AgentServer.call / cast",
+      "surface": "actor API",
+      "input": "PID/logical server ID, typed Signal, call timeout",
+      "output": "updated agent/error or immediate enqueue acknowledgment",
+      "lifecycle": "serialized actor handling; cast is not completion receipt",
+      "authority": "application route/plugin policy",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "Directive.Emit / RunInstruction",
+      "surface": "runtime extension",
+      "input": "signal/dispatch or instruction/result_action/meta",
+      "output": "dispatch task or normalized result/effects re-enter strategy",
+      "lifecycle": "supervised external dispatch can be fire-and-forget; RunInstruction feeds command",
+      "authority": "authored directive handlers and propagated context",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    {
+      "name": "Directive.Spawn / Schedule",
+      "surface": "runtime primitive",
+      "input": "child spec/tag or delay_ms/message",
+      "output": "child PID/runtime effect or timer-delivered signal",
+      "lifecycle": "supervised child; process-local timer; explicit hard stop can orphan work",
+      "authority": "runtime/application supervisor",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "Persist.hibernate / thaw",
+      "surface": "application storage API",
+      "input": "storage adapter, agent module/key and state",
+      "output": "checkpoint or reconstructed agent/error with exact thread revision",
+      "lifecycle": "journal flush precedes checkpoint; thaw logical state, no live task migration",
+      "authority": "application adapter/service policy",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "Thread.append / storage append_thread",
+      "surface": "application journal primitive",
+      "input": "thread/entries, optional expected revision",
+      "output": "new revision and ordered entries or conflict",
+      "lifecycle": "append authored facts; projection separate; storage adapter durability varies",
+      "authority": "application decides what original events to append",
+      "evidence": [
+        "e9",
+        "e14"
+      ]
+    },
+    {
+      "name": "RuntimeStore.get/fetch/put/delete",
+      "surface": "instance coordination primitive",
+      "input": "instance/hive/key/value",
+      "output": "ephemeral value/status",
+      "lifecycle": "survives API process but not owning instance restart",
+      "authority": "Jido instance control plane, not external service authority",
+      "evidence": [
+        "e8"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Owned file adapter stores checkpoints/journals; user-supplied action modules can perform other I/O, not a built-in coding-agent file tool catalog.",
+      "evidence": [
+        "e5",
+        "e13",
+        "e14"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "BEAM actor/task spawn and delayed signal primitives; OS process runner belongs to authored actions/dependencies, not core catalog.",
+      "evidence": [
+        "e4",
+        "e6"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Validated authored action modules execute with state/context and feed result/effects into strategy; core is not a Python-code model action.",
+      "evidence": [
+        "e1",
+        "e5"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Long-lived GenServer/state can host application computation; no independent shared interpreter kernel supplied by actor lifetime.",
+      "evidence": [
+        "e3",
+        "e8"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Storage adapters retain checkpoints/threads; RuntimeStore is explicitly ephemeral instance-owned ETS, not a durable shared standing application DB.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Strategies, normalized instructions, hooks, custom directive protocols, signal routing and supervised effects form actual programmable orchestration.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "source",
+      "detail": "Core explicitly has no provider integration; Jido.AI companion is separately studied.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Signal-addressed actors/parent-child spawn and dispatch compose peers; not an IRC/model collaboration UI without AI integration.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e6"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Supervised actor/task/dispatch processes can run concurrently; individual GenServer signal processing serial.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Signals enqueue state changes but hard stop can orphan async work/drop directives; no universal effect-settled pause/refit barrier.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e7"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Strategy.cmd and before/after hooks redefine application decision programs; routes initialized from modules, not automatically model-authored/hot core turns.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Append-only interaction Thread versus separate context projection is useful basis; summarizer/compaction policy outside core.",
+      "evidence": [
+        "e9"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Original thread and explicit restore with rev check supply repair/reprojection inputs; no model-native repair action in core.",
+      "evidence": [
+        "e9",
+        "e12"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Appended authored interaction entries preserved independently from context; not all action/provider/OS I/O automatically captured, with queue overflow/hard-stop gaps.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e9",
+        "e14"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Thread entries/checkpoint retrieval and revision pointers are inspectable storage primitives, not whole-machine audit database/query tools.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e14"
+      ]
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "No wired code_change/upgrade/refit mechanism established in command/router/persist paths; BEAM capability alone is not evidence.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Logical checkpoint/thread/scheduler manifests reconstruct state and reject mismatch; process timers/tasks/ETS do not survive as active work. No outpost protocol.",
+      "evidence": [
+        "e6",
+        "e8",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Custom action and signal-dispatch integrations consume external services; shared service governance is not implied by agent supervision.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Application-owned strategies/actions/protocols make experiment machinery implementable, but no model-governed automatic improvement loop supplied.",
+      "evidence": [
+        "e1",
+        "e7"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Error directives/queue-overflow and traced signals support diagnostics; full snapshot complaint tracking would need composition.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Runtime invokes authored module/route/plugin and action context; dependency/remote credentials and approval policy supplied by application.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e5"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Reusable storage contract asserts exact roundtrip/overwrite/delete/missing results; plugin integration asserts routing effects. No live-provider or crash-durability test execution here.",
+      "evidence": [
+        "e13",
+        "e15"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Thread revision, expected-rev append and checkpoint pointer check; GenServer signal order distinct from fire-and-forget task/timer completion.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e9",
+        "e12",
+        "e14"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/jido/lib/jido/agent.ex",
+      "start": 904,
+      "end": 957,
+      "claim": "Command hooks normalize instructions with current state/signal, delegate strategy.cmd and after-command; commands may perform effectful actions."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/jido/lib/jido/agent_server/signal_router.ex",
+      "start": 1,
+      "end": 85,
+      "claim": "Strategy/agent/plugin routes have explicit priority and target action/module/strategy command; router built from those sources."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/jido/lib/jido/agent_server.ex",
+      "start": 321,
+      "end": 361,
+      "claim": "call/cast resolve agent server reference; GenServer call waits for signal result while cast enqueues asynchronously."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/jido/lib/jido/agent_server/directive_executors.ex",
+      "start": 10,
+      "end": 55,
+      "claim": "Emit propagates trace context and dispatches self or supervised external dispatch task; no durable acknowledgment ledger shown."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/jido/lib/jido/agent_server/directive_executors.ex",
+      "start": 74,
+      "end": 116,
+      "claim": "RunInstruction executes action then feeds normalized result/effects back into command, updating state and enqueuing directives; queue overflow logs and drops."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/jido/lib/jido/agent_server/directive_executors.ex",
+      "start": 151,
+      "end": 218,
+      "claim": "Spawn starts supervised child; Schedule uses Process.send_after for attributed delayed signal, process-local timer not durable by itself."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/jido/lib/jido/agent_server/directive_exec.ex",
+      "start": 1,
+      "end": 65,
+      "claim": "Custom directive protocol is extension surface; documented hard stop drops pending effects and can orphan async work; completion should be state, not exit."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/jido/lib/jido/runtime_store.ex",
+      "start": 1,
+      "end": 25,
+      "claim": "RuntimeStore ETS is instance-owned ephemeral coordination; survives its API process restart but not instance stop/restart."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/jido/lib/jido/thread.ex",
+      "start": 1,
+      "end": 85,
+      "claim": "Canonical Thread is provider-agnostic append-only entries, monotonic rev; model context is projected rather than destructively stored there."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/jido/lib/jido/persist.ex",
+      "start": 165,
+      "end": 180,
+      "claim": "Hibernate flushes thread journal then creates/stores checkpoint; separate operations, not atomic external-effect settlement."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/jido/lib/jido/persist.ex",
+      "start": 353,
+      "end": 409,
+      "claim": "Checkpoint strips embedded runtime thread and stores id/rev pointer plus state/scheduler manifest."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/jido/lib/jido/persist.ex",
+      "start": 408,
+      "end": 480,
+      "claim": "Thaw validates/migrates checkpoint, reconstructs agent/thread/manifest and checks state budget; thread rev mismatch/missing journal rejected."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/jido/lib/jido/storage/file.ex",
+      "start": 73,
+      "end": 94,
+      "claim": "File checkpoint term serialization writes temp then rename; no fsync or multiprocess checkpoint CAS established here."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/jido/lib/jido/storage/file.ex",
+      "start": 189,
+      "end": 215,
+      "claim": "Thread append validates expected revision, appends encoded entries then writes metadata; runtime effect occurs outside this storage sequence."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/jido/test/jido/agent_server/plugin_signal_hooks_test.exs",
+      "start": 131,
+      "end": 176,
+      "claim": "Real GenServer/plugin tests assert override suppresses normal increment and rejection yields error, not merely no crash."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/jido/test/support/storage_checkpoint_conformance.ex",
+      "focus": "checkpoint adapter contract",
+      "oracle": "Exact missing/roundtrip/overwrite/arbitrary-term/delete assertions shared across adapters; does not establish power-loss/fsync/thread semantics.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/jido/test/jido/agent_server/plugin_signal_hooks_test.exs",
+      "focus": "plugin routing authority",
+      "oracle": "GenServer test asserts overridden action state and zero normal increment; error leaves state unchanged.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Separates logical strategy, effectful actions and runtime effect directives without falsely declaring all actions pure.",
+    "Original interaction thread can be projected independently; checkpoint binds its exact revision.",
+    "Direct actor/plugin and storage contract oracles are useful patterns."
+  ],
+  "limits": [
+    "Core is AI-optional and no provider/kernel agent loop.",
+    "Ephemeral ETS/timers and fire-and-forget dispatch are not durable replay/settlement.",
+    "No traced BEAM hot upgrade makes language-level hot code support an Arconaut feature."
+  ],
+  "arconaut_questions": [
+    "Which effect directives deserve acknowledgment handles versus deliberate fire-and-forget?",
+    "How should original events be automatically captured beyond application-chosen Thread entries?",
+    "What explicit effect barrier is needed before checkpoint/recompile?"
+  ]
+}

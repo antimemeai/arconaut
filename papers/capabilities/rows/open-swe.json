@@ -1,0 +1,692 @@
+{
+  "id": "open-swe",
+  "kind": "hosted/local engineering workflow application on Deep Agents",
+  "runtime": {
+    "languages": [
+      "Python",
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Per-run async graph factory delegates decision loop to Deep Agents/LangGraph; Python server/middleware/transcript service; remote or local sandbox plus background supervisor scripts",
+    "service_boundary": "Application manages per-thread sandbox binding, credentials, scheduling and records; providers and graph runtime are dependencies. This includes fabric/control-plane functions beyond Arconaut consumer role."
+  },
+  "summary": "Current software-factory application wires configurable model/subagent tools, busy-thread steering, persistent sandbox reconnection, background command handles, skills/settings/automation controls and transactional transcript projections. Observer capture is deliberately best-effort.",
+  "inspection": {
+    "files": [
+      "quarantine/open-swe/README.md",
+      "quarantine/open-swe/pyproject.toml",
+      "quarantine/open-swe/agent/server.py",
+      "quarantine/open-swe/agent/middleware/check_message_queue.py",
+      "quarantine/open-swe/agent/tools/threads.py",
+      "quarantine/open-swe/agent/threads/runs.py",
+      "quarantine/open-swe/agent/threads/handlers.py",
+      "quarantine/open-swe/agent/sandboxes/lifecycle.py",
+      "quarantine/open-swe/agent/sandboxes/providers/local.py",
+      "quarantine/open-swe/agent/tools/background_execute.py",
+      "quarantine/open-swe/agent/tools/background_task.py",
+      "quarantine/open-swe/agent/middleware/conversation_offloading.py",
+      "quarantine/open-swe/agent/middleware/model_call_timeout.py",
+      "quarantine/open-swe/agent/transcript/engine.py",
+      "quarantine/open-swe/agent/middleware/transcript.py",
+      "quarantine/open-swe/agent/transcript/tool_output.py",
+      "quarantine/open-swe/agent/transcript/routes.py",
+      "quarantine/open-swe/agent/tools/save_user_settings.py",
+      "quarantine/open-swe/agent/tools/user_skills.py",
+      "quarantine/open-swe/agent/tools/automations.py",
+      "quarantine/open-swe/agent/incidents/runtime.py",
+      "quarantine/open-swe/tests/middleware/test_check_message_queue.py",
+      "quarantine/open-swe/tests/sandbox/test_sandbox_publish_ordering.py",
+      "quarantine/open-swe/tests/transcript/test_engine.py",
+      "quarantine/open-swe/tests/middleware/test_transcript.py"
+    ],
+    "scope": "Read graph entry/factory and actual middleware wiring, queued-message consume/steer/cancel and model-facing thread operations, sandbox reconnect/publish/local backend, detached command supervisor/start/poll/stop, compaction wrapper, transcript append/projection/blob/read APIs, model-authorized skills/settings/schedules, incident report scope and direct source-test oracles.",
+    "limits": "No source executed or dependencies installed. Deep Agents/LangGraph runtime and provider transports are delegated; all integrations/desktop/CLI/reviewer/scheduler paths not audited. Read graph-construction/wrappers, not an imaginary owned core loop."
+  },
+  "actions": [
+    {
+      "name": "Deep Agents filesystem / execute / task and curated integration tools",
+      "surface": "model tool surface via delegated SDK",
+      "input": "file/edit/command/task plus selected tools/model/backend/context",
+      "output": "results or child graph output through framework protocol",
+      "lifecycle": "actual graph wires backend/subagent/middleware; engine/transport lifecycle delegated",
+      "authority": "model within configured sandbox/tool/access policies",
+      "evidence": [
+        "factory",
+        "local"
+      ]
+    },
+    {
+      "name": "background_execute / background_task(status/list/stop)",
+      "surface": "model tool",
+      "input": "command+deadline or stable task ID/action",
+      "output": "running/status/exit/bounded-output record; launch may fail observation after start",
+      "lifecycle": "detached sandbox supervisor owns group; monitor/cron separate; stop request then status observation",
+      "authority": "model command task; workspace refresh control admin-only",
+      "evidence": [
+        "background",
+        "background-start",
+        "background-control"
+      ]
+    },
+    {
+      "name": "get_thread / manage_thread(send_message/cancel/resolve) / start thread",
+      "surface": "model coordination tool",
+      "input": "authorized thread locator, input, model/effort or operation",
+      "output": "selected state/queue/run identity, queued or started response",
+      "lifecycle": "busy next-model input or new run; cancellation state not foreign effect settlement",
+      "authority": "model under triggering verified actor/participant/admin restrictions",
+      "evidence": [
+        "get-thread",
+        "thread-tools",
+        "send-tool",
+        "live-steer",
+        "cancel"
+      ]
+    },
+    {
+      "name": "save_user_settings / save_user_skill / delete_user_skill",
+      "surface": "model tool",
+      "input": "ordinary settings or named instructions/description",
+      "output": "updated durable user settings/skill or policy error",
+      "lifecycle": "store mutation for later construction/use; no candidate-performance promotion",
+      "authority": "model triggering private owner; concierge setting operator-only",
+      "evidence": [
+        "settings",
+        "skills"
+      ]
+    },
+    {
+      "name": "create/update/list automation",
+      "surface": "model orchestration tool",
+      "input": "prompt/workspace/repository, trigger/schedule, model/effort and notifications",
+      "output": "stored schedule/automation identity",
+      "lifecycle": "recurring/event work delegated to schedule/graph services",
+      "authority": "model in trusted admin thread; schedule machine identity separated",
+      "evidence": [
+        "schedules"
+      ]
+    },
+    {
+      "name": "manual/automatic conversation offload",
+      "surface": "context middleware",
+      "input": "current messages, trigger/budget or manual factory flag",
+      "output": "start/fail/complete event with cutoff/file reference; manual path ends graph",
+      "lifecycle": "delegated summarization wrapper; hidden auxiliary model streaming",
+      "authority": "operator/configured graph strategy",
+      "evidence": [
+        "compact",
+        "factory"
+      ]
+    },
+    {
+      "name": "ensure_sandbox_for_thread / reconnect/recreate",
+      "surface": "sandbox primitive",
+      "input": "thread binding and selected provider/workspace/replacement policy",
+      "output": "same live sandbox adapter or typed unreachable/new binding",
+      "lifecycle": "init and persisted binding precede cache publication; no silent swap of uncommitted workspace",
+      "authority": "host lifecycle/model explicit recreate surface; governs its own per-thread resources",
+      "evidence": [
+        "sandbox-contract",
+        "sandbox-publish",
+        "init-test"
+      ]
+    },
+    {
+      "name": "transcript append / snapshot/output/event read",
+      "surface": "persistence/API primitive",
+      "input": "thread command ID, typed event, attachments/output or cursor/call ID",
+      "output": "sequenced receipt/event/projected state and capped sidecars",
+      "lifecycle": "lock/transaction commit storage; observation queue separately best-effort, failed batches not retried here",
+      "authority": "host observer/API under thread read auth; not generic model SQL",
+      "evidence": [
+        "engine",
+        "engine-write",
+        "writer",
+        "read-output",
+        "output"
+      ]
+    },
+    {
+      "name": "record_incident_report / incident evidence search",
+      "surface": "domain model tool",
+      "input": "business incident draft/evidence and authorized incident session",
+      "output": "stored report/document/digest and optional responder message",
+      "lifecycle": "document update precedes report write; real business incident flow, not agent-state grievance",
+      "authority": "model incident-session tools under workspace policy",
+      "evidence": [
+        "incident"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Graph exposes Deep Agents filesystem/shell backend plus sandbox tools and skill stores. Local adapter uses actual selected host directory; core tool implementation delegated, all path policies not audited.",
+      "evidence": [
+        "factory",
+        "local",
+        "skills"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual background supervisor script launches command group, stores status/output, uses monotonic deadline/escalation/root wait and model status/list/stop provider. Starts may outlive failed monitor response.",
+      "evidence": [
+        "background",
+        "background-start",
+        "background-control"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model command can execute authored programs in sandbox/host and configure stored instructions/skills. No exposed persistent interpreter or generalized executable tool-composition kernel traced.",
+      "evidence": [
+        "background",
+        "local",
+        "skills"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "persistent_kernel: not established beyond inspected graph/middleware/sandbox/transcript/thread/tool paths; framework internals and other integrations are outside this trace.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native get/manage-thread, schedules, user skills and incident records expose standing structured application data. PostgreSQL transcript is service storage, not generic model SQL/database access.",
+      "evidence": [
+        "get-thread",
+        "schedules",
+        "skills",
+        "incident",
+        "engine"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model-authorized automation creates recurring/event-triggered graph work; factory composes middleware/subagent programs. These are configured host workflows, not full model replacement of own turn scheduler.",
+      "evidence": [
+        "factory",
+        "schedules",
+        "settings"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Factory separately configures main/subagent models; thread send can choose model+effort for started/follow-up work and schedules persist model choices.",
+      "evidence": [
+        "factory",
+        "send-tool",
+        "schedules"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model can address permitted active/idle threads via manage_thread: queue input before next model step or start new run, observe selected state. Actor identity remains triggering owner; no universal independent peer-room semantics inferred.",
+      "evidence": [
+        "thread-tools",
+        "send-tool",
+        "live-steer",
+        "queue",
+        "get-thread"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent per-thread sandboxes and subagents/background command handles; application schedules work and requests independent state reads. Graph task lifetime delegated to runtime, not settled merely by tool result.",
+      "evidence": [
+        "factory",
+        "sandbox-publish",
+        "background-start",
+        "background-control",
+        "get-thread"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Busy-target steering queues input and guards live-run exit race; interruption records state and may continue followups. Model timeout/cancel and stopped runs do not establish external-provider/command settlement.",
+      "evidence": [
+        "queue",
+        "live-steer",
+        "cancel",
+        "timeout"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actual factory middleware can alter model input, tools, queue pickup and manual offload termination. Native model settings/skills modify ordinary future construction; no full scheduler replacement or our delayed-activation transaction established.",
+      "evidence": [
+        "factory",
+        "compact",
+        "settings",
+        "skills"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Wired summarization wrapper publishes trigger/cutoff/file/event and manual/automatic outcome; underlying transformation/original storage is delegated Deep Agents, not independently established here.",
+      "evidence": [
+        "factory",
+        "compact"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persisted transcript events/output sidecars, bounded thread inspection and offload file reference give recall inputs. Output clipping/failed capture and no traced full restore/merge prevent original-complete repair claim.",
+      "evidence": [
+        "engine",
+        "output",
+        "get-thread",
+        "compact",
+        "writer"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Transactional sequenced transcript and same-transaction sidecars are strong captured-state machinery. Capture is normalized/capped, hidden calls excluded, failed append swallowed/marked done, drain bounded then writer canceled; not complete provider/program/transformation IO.",
+      "evidence": [
+        "engine",
+        "engine-write",
+        "capture",
+        "capture-tool",
+        "writer",
+        "output"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authenticated transcript API returns retained output; model get_thread exposes selected state/run/plan/queue information. These are scoped projected records, not every-original query corpus.",
+      "evidence": [
+        "read-output",
+        "get-thread",
+        "output"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model owner can patch settings and saved skill definitions; next graph construction wires selected programs/config. Exact active-work generation handling and whole-turn/workflow default activation not traced.",
+      "evidence": [
+        "settings",
+        "skills",
+        "factory"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Thread-bound sandbox reconnect preserves resource identity and refuses unreachable replacement except explicit rederivable/gone cases. This is sandbox continuity, not main executable compile/refit/outpost/reinhabitation protocol.",
+      "evidence": [
+        "sandbox-contract",
+        "sandbox-publish"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual sandbox/backend proxies reconnect to thread service and model-control tools call graph/API/schedules; consumes remote computation while also governing workspace refresh and scheduling outside Arconaut scope.",
+      "evidence": [
+        "sandbox-publish",
+        "background-control",
+        "send-tool",
+        "schedules"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can modify user skills/settings and automation prompts. No measured harness-candidate evaluation/promote path established; engineering review/self-repair workflow scope not harness autoresearch.",
+      "evidence": [
+        "settings",
+        "skills",
+        "schedules"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established beyond inspected graph/middleware/sandbox/transcript/thread/tool paths; framework internals and other integrations are outside this trace.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native model settings/skills/thread/admin automation operations enforce triggering-owner/private/admin policies. Local backend direct host authority and workflow-specific approval scope are explicit; not operator-minimal unrestricted own-program governance.",
+      "evidence": [
+        "settings",
+        "skills",
+        "thread-tools",
+        "schedules",
+        "local",
+        "role"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Selected test oracles independently read DB receipt version/count/capped output and inject setup/queue/cancel failures; several providers/stores are mocked. No overall engineering/scientific quality or autoresearch criterion proven.",
+      "evidence": [
+        "receipt-test",
+        "cap-test",
+        "init-test",
+        "queue-test",
+        "cancel-test"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Captured transcript has transactionally gapless per-thread versions/receipts; command supervisor monotonic budget vs wall timestamps. Store queue consume is equality/reread with separate write, not complete causal admission/consumption order.",
+      "evidence": [
+        "engine",
+        "receipt-test",
+        "background",
+        "queue-consume",
+        "writer"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "role",
+      "path": "quarantine/open-swe/README.md",
+      "start": 20,
+      "end": 83,
+      "claim": "Software factory on Deep Agents/LangGraph, per-thread persistent sandboxes, local direct execution, configured triggers/providers and workflow-specific approval scope."
+    },
+    {
+      "id": "deps",
+      "path": "quarantine/open-swe/pyproject.toml",
+      "start": 1,
+      "end": 42,
+      "claim": "Python package delegates graph/core agent/provider execution to declared dependencies; TS interfaces in same application."
+    },
+    {
+      "id": "factory",
+      "path": "quarantine/open-swe/agent/server.py",
+      "start": 1870,
+      "end": 1975,
+      "claim": "Actual Deep Agents factory wires model/tools/backend/subagent, offloading/preparation/transcript/policy/pairing/queue middleware. Child excludes root queue/routing hooks."
+    },
+    {
+      "id": "queue",
+      "path": "quarantine/open-swe/agent/middleware/check_message_queue.py",
+      "start": 207,
+      "end": 282,
+      "claim": "Before-model middleware reads pending snapshot and builds human input; missing store/read fails open."
+    },
+    {
+      "id": "queue-publish",
+      "path": "quarantine/open-swe/agent/middleware/check_message_queue.py",
+      "start": 324,
+      "end": 362,
+      "claim": "Only after constructing input removes consumed snapshot and returns message update; failure is logged and returns None."
+    },
+    {
+      "id": "queue-consume",
+      "path": "quarantine/open-swe/agent/middleware/check_message_queue.py",
+      "start": 159,
+      "end": 178,
+      "claim": "Rereads pending item and keeps messages not equal to consumed snapshot; nontransactional read/write, no claim all concurrent enqueue schedules safe."
+    },
+    {
+      "id": "thread-tools",
+      "path": "quarantine/open-swe/agent/tools/threads.py",
+      "start": 958,
+      "end": 1016,
+      "claim": "Model manage_thread verifies actor/authorized target then sends input, cancels/resolves thread and routes private/admin access."
+    },
+    {
+      "id": "send-tool",
+      "path": "quarantine/open-swe/agent/tools/threads.py",
+      "start": 841,
+      "end": 904,
+      "claim": "Actual queued send, fallback run.start via proxy on conflict, selected model/effort and admitted run ID/status; model can address another permitted thread."
+    },
+    {
+      "id": "get-thread",
+      "path": "quarantine/open-swe/agent/tools/threads.py",
+      "start": 722,
+      "end": 769,
+      "claim": "Model get_thread loads selected thread/state/recent/pending runs/plan/comments/approvals and queue count concurrently; not SQL/general original audit query."
+    },
+    {
+      "id": "live-steer",
+      "path": "quarantine/open-swe/agent/threads/runs.py",
+      "start": 1095,
+      "end": 1166,
+      "claim": "Records human identity, queues input with queue_id, fails if store delivery fails and reprobes ended live run to start reject-strategy follow-up."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/open-swe/agent/threads/handlers.py",
+      "start": 342,
+      "end": 389,
+      "claim": "Requests active run interruption by owner, records transcript interrupted and may dispatch queued follow-up; does not prove remote sandbox/OS effects settled."
+    },
+    {
+      "id": "sandbox-contract",
+      "path": "quarantine/open-swe/agent/sandboxes/lifecycle.py",
+      "start": 382,
+      "end": 414,
+      "claim": "Existing unreachable sandbox must not be silently replaced; gone/reviewer-rederivable cases allow replacement; binds same thread resource."
+    },
+    {
+      "id": "sandbox-publish",
+      "path": "quarantine/open-swe/agent/sandboxes/lifecycle.py",
+      "start": 444,
+      "end": 516,
+      "claim": "Connect/create selected sandbox, persist binding after init, publish backend only after tool provisioning; failed setup is not silently accepted."
+    },
+    {
+      "id": "local",
+      "path": "quarantine/open-swe/agent/sandboxes/providers/local.py",
+      "start": 1,
+      "end": 66,
+      "claim": "Constructs actual LocalShellBackend with selected root/env and scoped Git identity file; direct host execution not OS isolation."
+    },
+    {
+      "id": "background",
+      "path": "quarantine/open-swe/agent/tools/background_execute.py",
+      "start": 28,
+      "end": 151,
+      "claim": "Authored supervisor starts new command process group, captures bounded head/tail output, uses monotonic deadline, TERM/KILL and final root wait/status file."
+    },
+    {
+      "id": "background-start",
+      "path": "quarantine/open-swe/agent/tools/background_execute.py",
+      "start": 289,
+      "end": 339,
+      "claim": "Starts command with task ID, tracks running and completion monitor; monitoring failure can return success=False after command already started."
+    },
+    {
+      "id": "background-control",
+      "path": "quarantine/open-swe/agent/tools/background_task.py",
+      "start": 37,
+      "end": 98,
+      "claim": "Model common status/list/stop API routes command versus workspace-refresh task provider; workspace-wide stop/trace admin-gated."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/open-swe/agent/middleware/conversation_offloading.py",
+      "start": 1,
+      "end": 130,
+      "claim": "Subclasses delegated summarization; hides summary model streaming, emits start/failure/complete+cutoff/file events, supports manual finish path. Original archive semantics belong to dependency."
+    },
+    {
+      "id": "timeout",
+      "path": "quarantine/open-swe/agent/middleware/model_call_timeout.py",
+      "start": 1,
+      "end": 61,
+      "claim": "wait_for bounds async model handler and turns timeout into typed failure; no external-provider effect settlement proof."
+    },
+    {
+      "id": "engine",
+      "path": "quarantine/open-swe/agent/transcript/engine.py",
+      "start": 75,
+      "end": 149,
+      "claim": "Per-thread advisory lock/transaction assigns gapless versions, idempotency receipts, writes events/projection/head/notify and publishes only after transaction context returns."
+    },
+    {
+      "id": "engine-write",
+      "path": "quarantine/open-swe/agent/transcript/engine.py",
+      "start": 208,
+      "end": 271,
+      "claim": "Actual event insert, attachment/output storage and projection application in same connection/transaction; normalization occurs before log."
+    },
+    {
+      "id": "capture",
+      "path": "quarantine/open-swe/agent/middleware/transcript.py",
+      "start": 1,
+      "end": 80,
+      "claim": "Transcript observation failures swallowed; one background writer per run; transformed text/delta selection and explicit output/error caps/hidden-tag exclusions."
+    },
+    {
+      "id": "capture-tool",
+      "path": "quarantine/open-swe/agent/middleware/transcript.py",
+      "start": 393,
+      "end": 468,
+      "claim": "Converts output to text then UTF8 byte cap; normalized delta callback attributes one generated message ID per model call."
+    },
+    {
+      "id": "writer",
+      "path": "quarantine/open-swe/agent/middleware/transcript.py",
+      "start": 541,
+      "end": 587,
+      "claim": "Failed append batch warning then task_done; finish joins queue bounded30s then cancels writer, so queue completion is not guaranteed durable capture."
+    },
+    {
+      "id": "output",
+      "path": "quarantine/open-swe/agent/transcript/tool_output.py",
+      "start": 1,
+      "end": 79,
+      "claim": "Output peer storage caps at256K chars, overwrites same thread/call key, returns only retained text; explicitly not recoverable original beyond cap."
+    },
+    {
+      "id": "read-output",
+      "path": "quarantine/open-swe/agent/transcript/routes.py",
+      "start": 162,
+      "end": 173,
+      "claim": "Authorized API loads stored output by thread/tool call or reports404."
+    },
+    {
+      "id": "settings",
+      "path": "quarantine/open-swe/agent/tools/save_user_settings.py",
+      "start": 1,
+      "end": 23,
+      "claim": "Actual model settings patch under trusted-private/owner/direct policy; concierge_mode must change in dashboard."
+    },
+    {
+      "id": "skills",
+      "path": "quarantine/open-swe/agent/tools/user_skills.py",
+      "start": 1,
+      "end": 53,
+      "claim": "Owner policy model can create/update/delete user skills in shared store; editable instructions, no quality/promotion evaluator here."
+    },
+    {
+      "id": "schedules",
+      "path": "quarantine/open-swe/agent/tools/automations.py",
+      "start": 14,
+      "end": 97,
+      "claim": "Read/admin write policies and native create_automation invoke schedule store with prompt/workspace/model/effort/trigger/notification fields."
+    },
+    {
+      "id": "incident",
+      "path": "quarantine/open-swe/agent/incidents/runtime.py",
+      "start": 115,
+      "end": 155,
+      "claim": "Business incident report finalizes evidence, updates document before report row and optional responder delivery; not universal harness complaint/snapshot."
+    },
+    {
+      "id": "queue-test",
+      "path": "quarantine/open-swe/tests/middleware/test_check_message_queue.py",
+      "start": 85,
+      "end": 118,
+      "claim": "Fake store injects second message during first image build; exact old-message output and remaining queue witness, not arbitrary DB concurrent append proof."
+    },
+    {
+      "id": "init-test",
+      "path": "quarantine/open-swe/tests/sandbox/test_sandbox_publish_ordering.py",
+      "start": 1,
+      "end": 54,
+      "claim": "Mock setup/thread-bind failure must leave proxy/backend unpublished; actual failure boundary, no live sandbox tested."
+    },
+    {
+      "id": "receipt-test",
+      "path": "quarantine/open-swe/tests/transcript/test_engine.py",
+      "start": 99,
+      "end": 130,
+      "claim": "Real configured DB append replay asserts same literal version, no new events and count2; no external effect idempotency claim."
+    },
+    {
+      "id": "cap-test",
+      "path": "quarantine/open-swe/tests/transcript/test_engine.py",
+      "start": 276,
+      "end": 310,
+      "claim": "Oversized output test checks truncated flag and exact stored cap; supports bounded custody, not full source bytes."
+    },
+    {
+      "id": "cancel-test",
+      "path": "quarantine/open-swe/tests/middleware/test_transcript.py",
+      "start": 311,
+      "end": 335,
+      "claim": "Mock cancelled child tool must not mark parent turn interrupted; ownership-attribution oracle, no foreign work death."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/open-swe/tests/transcript/test_engine.py",
+      "focus": "Stored command replay and original-output cap",
+      "oracle": "Configured DB exact version2 reused, no second event/count2; over-cap output explicitly truncated and retained length fixed. No original payload above cap or external effect idempotency oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/open-swe/tests/middleware/test_check_message_queue.py",
+      "focus": "Followup queued while first message builds",
+      "oracle": "Fake store appends second during image build; first injected and second stays. Does not establish arbitrary concurrent read/write/DB schedules or crash between consume and graph commit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/open-swe/tests/sandbox/test_sandbox_publish_ordering.py",
+      "focus": "Initialization failure must not publish usable backend",
+      "oracle": "Mock create/binding failure raises and proxy cache remains unready. No actual remote sandbox/credential/connection behavior tested.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/open-swe/tests/middleware/test_transcript.py",
+      "focus": "Child cancellation attribution",
+      "oracle": "Mock nested cancelled tool leaves parent running and completes parent turn; no process/provider settlement oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Captured transcript versions/receipts/projection/output transaction is explicit and directly exercised by source test oracle.",
+    "Existing unreachable workspace is preserved rather than silently replaced.",
+    "Model can address other authorized thread work and edit owner skills/settings/admin automations."
+  ],
+  "limits": [
+    "Core loop/compaction and provider execution delegated to framework dependencies, not audited as owned Open SWE machinery.",
+    "Observer failures deliberately fail open; capped originals and bounded drain can lose capture.",
+    "Application includes resource/control-plane governance beyond Arconaut consumer boundary; ordinary refit protocol absent."
+  ],
+  "arconaut_questions": [
+    "Keep a transactional captured-original ledger distinct from queued best-effort observation and projected UI state.",
+    "When a command starts but monitor initialization fails, preserve handle/custody in error result and reconnect.",
+    "Separate model coordination identity from inherited owner identity; retain queue admission/consumption boundaries across failed context commits."
+  ]
+}

@@ -1,0 +1,791 @@
+{
+  "id": "opencode",
+  "kind": "interactive coding agent",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Bun/Effect process with instance-scoped session runners, AI SDK or feature-gated native provider streams, child shell/MCP processes and background session jobs.",
+    "service_boundary": "Owns local sessions, tool settlement, runners and launched stdio children; consumes model providers and MCP/service APIs. Local child disposal is distinct from governing independent shared services."
+  },
+  "summary": "A session-oriented coding agent with a durable normalized conversation/tool record, per-step model/tool resolution, JS/TS tool and plugin hooks, managed summaries and optionally concurrent child sessions.",
+  "inspection": {
+    "files": [
+      "quarantine/opencode/packages/opencode/src/session/prompt.ts",
+      "quarantine/opencode/packages/opencode/src/session/llm.ts",
+      "quarantine/opencode/packages/opencode/src/session/processor.ts",
+      "quarantine/opencode/packages/opencode/src/session/tools.ts",
+      "quarantine/opencode/packages/opencode/src/tool/registry.ts",
+      "quarantine/opencode/packages/opencode/src/tool/shell/prompt.ts",
+      "quarantine/opencode/packages/opencode/src/tool/shell.ts",
+      "quarantine/opencode/packages/opencode/src/tool/task.ts",
+      "quarantine/opencode/packages/opencode/src/session/run-state.ts",
+      "quarantine/opencode/packages/opencode/src/session/compaction.ts",
+      "quarantine/opencode/packages/opencode/src/session/message-v2.ts",
+      "quarantine/opencode/packages/opencode/src/tool/truncate.ts",
+      "quarantine/opencode/packages/opencode/src/plugin/index.ts",
+      "quarantine/opencode/packages/opencode/src/server/routes/instance/httpapi/handlers/config.ts",
+      "quarantine/opencode/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts",
+      "quarantine/opencode/packages/opencode/src/agent/agent.ts",
+      "quarantine/opencode/packages/opencode/src/mcp/index.ts",
+      "quarantine/opencode/packages/opencode/src/tool/read.ts",
+      "quarantine/opencode/packages/opencode/src/tool/write.ts",
+      "quarantine/opencode/packages/opencode/src/tool/edit.ts",
+      "quarantine/opencode/packages/opencode/src/tool/grep.ts",
+      "quarantine/opencode/packages/opencode/src/tool/glob.ts",
+      "quarantine/opencode/packages/opencode/src/tool/question.ts",
+      "quarantine/opencode/packages/opencode/src/tool/todo.ts",
+      "quarantine/opencode/packages/opencode/src/tool/skill.ts",
+      "quarantine/opencode/packages/opencode/src/tool/lsp.ts",
+      "quarantine/opencode/packages/opencode/src/tool/webfetch.ts",
+      "quarantine/opencode/packages/opencode/src/tool/websearch.ts",
+      "quarantine/opencode/packages/opencode/src/tool/apply_patch.ts",
+      "quarantine/opencode/packages/opencode/src/tool/plan.ts",
+      "quarantine/opencode/packages/opencode/src/effect/runtime-flags.ts",
+      "quarantine/opencode/packages/opencode/test/tool/task.test.ts",
+      "quarantine/opencode/packages/opencode/test/session/compaction.test.ts",
+      "quarantine/opencode/packages/opencode/src/config/config.ts",
+      "quarantine/opencode/packages/opencode/src/tool/shell.ts",
+      "quarantine/opencode/packages/opencode/src/session/processor.ts",
+      "quarantine/opencode/packages/opencode/src/tool/read.ts"
+    ],
+    "scope": "Read entry/loop/provider dispatch, tool settlement, shell execution, child resumption/background delivery, cancellation, compaction selection and pruning, message retrieval, plugin/config lifecycle, native schemas and relevant test excerpts. Source inspection only.",
+    "limits": "Inspected excerpts rather than every file/branch. Default AI SDK transport internals, complete native-provider/GitLab workflow implementation and every optional tool dispatch were not traced. Experimental flags materially gate child background work and richer event emission. No reference code or tests executed."
+  },
+  "actions": [
+    {
+      "name": "SessionPrompt.prompt / loop",
+      "surface": "programmatic API",
+      "input": "sessionID plus user parts, model/agent and optional noReply/tools overrides",
+      "output": "persisted user message and final assistant result",
+      "lifecycle": "persists then continues provider/tool steps; instance runner owns cancellation",
+      "authority": "server/program caller; tool rules merge agent and session policy",
+      "evidence": [
+        "entry",
+        "loop",
+        "continuation"
+      ]
+    },
+    {
+      "name": "shell",
+      "surface": "model tool",
+      "input": "command; optional timeout in ms, workdir; description",
+      "output": "bounded streamed preview, final text, exit code and full-output file path when truncated",
+      "lifecycle": "awaited spawn races exit/timeout/abort; abort/timeout request termination; no public reusable shell process handle established",
+      "authority": "model under shell/external-directory rules and environment hook",
+      "evidence": [
+        "shell-schema",
+        "shell",
+        "tool-dispatch"
+      ]
+    },
+    {
+      "name": "read",
+      "surface": "model tool",
+      "input": "filePath; optional one-based offset and limit",
+      "output": "numbered text/directory entries or image/PDF attachment",
+      "lifecycle": "single read; media/binary and clipping rules apply",
+      "authority": "model with path permission checks; full read wrapper not fully inspected",
+      "evidence": [
+        "read",
+        "registry"
+      ]
+    },
+    {
+      "name": "write",
+      "surface": "model tool",
+      "input": "filePath, content",
+      "output": "write result, diff and diagnostics metadata",
+      "lifecycle": "permission then write, formatting and events",
+      "authority": "model; edit permission may ask operator",
+      "evidence": [
+        "write-edit"
+      ]
+    },
+    {
+      "name": "edit",
+      "surface": "model tool",
+      "input": "filePath, oldString, newString, optional replaceAll",
+      "output": "changed file and diff/diagnostic result",
+      "lifecycle": "per-file serialization; permission precedes write",
+      "authority": "model under edit policy",
+      "evidence": [
+        "edit"
+      ]
+    },
+    {
+      "name": "glob / grep",
+      "surface": "model tools",
+      "input": "glob: pattern/path; grep: pattern/path/include",
+      "output": "bounded file list or file/line/text search results",
+      "lifecycle": "awaited search-service query with cancellation signal",
+      "authority": "model under search/path permission rules",
+      "evidence": [
+        "glob",
+        "search"
+      ]
+    },
+    {
+      "name": "apply_patch",
+      "surface": "model tool",
+      "input": "patchText",
+      "output": "patch result; full mutation/result path not traced",
+      "lifecycle": "registered native tool parses hunks; schema/source boundary disclosed",
+      "authority": "model through common tool permission context",
+      "evidence": [
+        "patch",
+        "registry",
+        "tool-dispatch"
+      ]
+    },
+    {
+      "name": "task",
+      "surface": "model tool",
+      "input": "description, prompt, subagent_type; optional task_id, command, background",
+      "output": "child task_id and terminal text, or running background status",
+      "lifecycle": "new/resumed child session; feature-gated background start/extend; terminal parent notification; cancellation propagates",
+      "authority": "model with task permission and child-agent restrictions",
+      "evidence": [
+        "task",
+        "task-continuation",
+        "feature-flags"
+      ]
+    },
+    {
+      "name": "todowrite",
+      "surface": "model tool",
+      "input": "todos with content, status and priority",
+      "output": "session todo list as JSON",
+      "lifecycle": "awaited persistent session update",
+      "authority": "model under todowrite rule",
+      "evidence": [
+        "todo"
+      ]
+    },
+    {
+      "name": "question",
+      "surface": "model tool",
+      "input": "array of operator questions",
+      "output": "operator answers associated with the originating call",
+      "lifecycle": "waits for answer service",
+      "authority": "model can request operator input when this client/agent exposes the tool",
+      "evidence": [
+        "question",
+        "registry"
+      ]
+    },
+    {
+      "name": "skill",
+      "surface": "model tool",
+      "input": "name",
+      "output": "instruction text and sampled resource paths",
+      "lifecycle": "lookup/read; no standalone workflow execution inferred",
+      "authority": "model under skill permission",
+      "evidence": [
+        "skill"
+      ]
+    },
+    {
+      "name": "webfetch / websearch",
+      "surface": "model tools",
+      "input": "URL/format/timeout or query/search-provider settings",
+      "output": "fetch/search output; complete transport/error semantics not inspected",
+      "lifecycle": "registered provider-backed tools",
+      "authority": "model under per-tool permissions",
+      "evidence": [
+        "web",
+        "websearch",
+        "registry"
+      ]
+    },
+    {
+      "name": "lsp / plan_exit",
+      "surface": "gated model tools",
+      "input": "lsp: operation/filePath/line/character/query; plan_exit: empty arguments",
+      "output": "language-service result or operator plan-transition question; complete latter dispatch not traced",
+      "lifecycle": "conditional registration; optional behavior is not unconditional baseline",
+      "authority": "model under LSP policy; operator answers planning transition",
+      "evidence": [
+        "optional-tools",
+        "plan",
+        "registry",
+        "feature-flags"
+      ]
+    },
+    {
+      "name": "custom JS/TS and plugin tools; named hooks",
+      "surface": "extension/programmatic surface",
+      "input": "tool schemas/execute implementations; named hook input and mutable output",
+      "output": "custom tool outputs with clipping; altered request/context/tool output",
+      "lifecycle": "instance-cached imports; named hooks awaited; event callbacks fire asynchronously; dispose callbacks on teardown",
+      "authority": "operator-authored extensions; model can edit files when filesystem policy permits, but automatic live reload not established",
+      "evidence": [
+        "registry",
+        "plugins",
+        "tool-dispatch"
+      ]
+    },
+    {
+      "name": "MCP tools",
+      "surface": "model/extension surface",
+      "input": "discovered server JSON schemas and named arguments",
+      "output": "MCP content converted into tool outputs/attachments",
+      "lifecycle": "request timeout; local stdio child lifetime tied to instance; remote servers consumed",
+      "authority": "model under merged tool permissions; server configured by operator/program",
+      "evidence": [
+        "tool-dispatch",
+        "mcp-call",
+        "mcp-owner",
+        "mcp-dispose"
+      ]
+    },
+    {
+      "name": "messages / message / config.update",
+      "surface": "server programmatic APIs",
+      "input": "session/message ID and optional limit/before; configuration patch",
+      "output": "stored messages/pagination or updated config",
+      "lifecycle": "retrieval does not restore context by itself; config update marks instance for disposal",
+      "authority": "operator/program API; not a dedicated model audit/repair tool",
+      "evidence": [
+        "query",
+        "config"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read, write, edit, glob and grep are registered model operations with path checks, bounded output and edit policy.",
+      "evidence": [
+        "read",
+        "write-edit",
+        "edit",
+        "glob",
+        "search"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "shell spawns and streams an OS command, records exit/overflow metadata and races exit, timeout and abort. Reusable process/PTY handles were not established.",
+      "evidence": [
+        "shell",
+        "shell-schema"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model-written shell programs and custom JS/TS tool implementations can compose computation; the default provider interface still dispatches named JSON-schema tools rather than a persistent code-action interpreter.",
+      "evidence": [
+        "shell",
+        "registry",
+        "tool-dispatch"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No model-addressable persistent interpreter was established in the inspected shell, tool registry and session loop. Instance/server memory and fresh shell spawns do not establish such a kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Internal session storage and todo updates are visible, but no model-queryable standing structured database contract was established in this loop/tool/MCP study. External MCP composition remains possible, not traced.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Custom JS/TS tools, before/after execution hooks and message/compaction transformations provide executable composition. A replaceable first-class workflow scheduler was not established.",
+      "evidence": [
+        "registry",
+        "plugins",
+        "loop",
+        "compact-transform"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "The loop resolves the selected model each provider step; child agents may override the parent's model. This does not itself create live collaboration.",
+      "evidence": [
+        "loop",
+        "task"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Experimental background tasks accept updates addressed by task_id while busy and later inject terminal notifications into the parent. Inspected wiring is parent-child session/task routing, not a general peer-room or arbitrary bidirectional live bus.",
+      "evidence": [
+        "task-continuation",
+        "feature-flags",
+        "task-test"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Feature-gated background child jobs expose task/session identity, extension and completion; independent job work can overlap the parent. Their lifetime is still linked to cancellation/instance scope.",
+      "evidence": [
+        "task-continuation",
+        "cancel",
+        "feature-flags"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "New user turns become reminders on later loop steps; cancellation propagates through session descendants, provider AbortController and shell race/termination. Remote providers acknowledging cancellation was not validated.",
+      "evidence": [
+        "loop",
+        "cancel",
+        "provider",
+        "shell"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Message transformations, compaction prompt hooks, tool replacement and per-step model/tool resolution can alter a continuation's inputs. The main while-loop's scheduling program is not shown as a hot-replaced turn definition.",
+      "evidence": [
+        "loop",
+        "plugins",
+        "registry",
+        "compact-transform"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Overflow/pending compaction yields a persisted tool-free summary and retained tail boundary. Pruning marks prior outputs; active-message filtering uses summaries/tail_start_id. Hook-supplied prompts/context are supported.",
+      "evidence": [
+        "loop",
+        "compact-transform",
+        "compact-prune",
+        "active-context",
+        "compact-test"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Original stored messages remain retrievable through server message APIs after active-context filtering; output-file paths support further inspection. No dedicated model repair/lineage operation is established, and clipped-output originals have an expiry.",
+      "evidence": [
+        "query",
+        "compact-prune",
+        "active-context",
+        "clipped-output"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Durable normalized message/tool settlement is useful, but complete original provider/program/transformation capture is not established. Raw chunks are selectively enabled, richer events are gated and separate full-output files expire after seven days.",
+      "evidence": [
+        "settlement",
+        "provider",
+        "feature-flags",
+        "clipped-output"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Program callers can retrieve all/paged session messages or a message by ID; models can read/search known overflow files. This queries the retained conversation/output scope, not a demonstrated complete audit corpus.",
+      "evidence": [
+        "query",
+        "shell",
+        "read",
+        "search"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tools/plugins are instance-cached and config.update marks the instance for disposal. Inspected code does not enforce Arconaut's default activation after affected turns/workflows conclude; disposal finalizers cancel owned work.",
+      "evidence": [
+        "registry",
+        "plugins",
+        "config",
+        "cancel",
+        "mcp-dispose"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stored sessions support conversation retrieval, while instance teardown cancels runners and closes/kills owned MCP children. No executable rebuild/outpost handoff retaining unresolved owned work was established.",
+      "evidence": [
+        "query",
+        "cancel",
+        "mcp-dispose"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "MCP tool calls consume service schemas/results; local stdio servers are explicitly launched and disposed by the instance. Remote transport reconnect/session-continuity details were outside inspected excerpts.",
+      "evidence": [
+        "mcp-call",
+        "mcp-owner",
+        "mcp-dispose",
+        "tool-dispatch"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Normal file/shell access and custom plugins provide editing capability. The inspected loop, extension lifecycle and tests do not establish a dedicated model-governed candidate/evaluate/promote harness-improvement program.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "The native registry, question/todo and session APIs inspected do not establish a model-invokable complaint operation capturing agent state and follow-up. This is not a claim about all uninspected plugins.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Standing permission rules merge agent/session policy. Defaults allow most actions but ask on selected sensitive scopes; build and plan agents have different edit policies. Models act through these rules and can request operator answers.",
+      "evidence": [
+        "permission",
+        "tool-dispatch",
+        "task",
+        "question"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Inspected tests directly assert busy-child update identity/completion ordering and compaction tail boundary. Mocked provider/prompt streams make these local orchestration oracles, not provider integration or semantic summary-fidelity validation.",
+      "evidence": [
+        "task-test",
+        "compact-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Message/call IDs and stored wall timestamps support turn/tool ordering; Effect durations enforce shell/request deadlines. A specified monotonic, restart or paused-time contract was not established.",
+      "evidence": [
+        "loop",
+        "settlement",
+        "shell",
+        "mcp-call"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "entry",
+      "path": "quarantine/opencode/packages/opencode/src/session/prompt.ts",
+      "start": 1188,
+      "end": 1206,
+      "claim": "prompt persists a user message, updates session permission overrides and starts the loop unless noReply."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/opencode/packages/opencode/src/session/prompt.ts",
+      "start": 1217,
+      "end": 1430,
+      "claim": "The continuing loop filters compacted messages, handles pending tasks/compaction, resolves current model/agent/tools and transforms messages before processor.process."
+    },
+    {
+      "id": "continuation",
+      "path": "quarantine/opencode/packages/opencode/src/session/prompt.ts",
+      "start": 1432,
+      "end": 1478,
+      "claim": "Processor results drive stop or compaction; interruption finalizes the assistant message and the session runner owns the loop."
+    },
+    {
+      "id": "provider",
+      "path": "quarantine/opencode/packages/opencode/src/session/llm.ts",
+      "start": 278,
+      "end": 369,
+      "claim": "Default streamText gets prepared tools/messages, provider middleware and scoped AbortController; raw chunks are enabled specifically for Copilot."
+    },
+    {
+      "id": "settlement",
+      "path": "quarantine/opencode/packages/opencode/src/session/processor.ts",
+      "start": 157,
+      "end": 249,
+      "claim": "Call IDs identify running tool parts; successful and failed results settle durable parts, completion Deferreds and timestamps."
+    },
+    {
+      "id": "tool-dispatch",
+      "path": "quarantine/opencode/packages/opencode/src/session/tools.ts",
+      "start": 45,
+      "end": 155,
+      "claim": "Registry tools and MCP tools receive context, merged permission asks and before/after plugin hooks; tools are invoked through execute."
+    },
+    {
+      "id": "registry",
+      "path": "quarantine/opencode/packages/opencode/src/tool/registry.ts",
+      "start": 137,
+      "end": 276,
+      "claim": "Instance-cached custom JS/TS and plugin tool discovery is composed with built-ins; LSP, questions and plan tools have gates."
+    },
+    {
+      "id": "shell-schema",
+      "path": "quarantine/opencode/packages/opencode/src/tool/shell/prompt.ts",
+      "start": 22,
+      "end": 33,
+      "claim": "shell accepts command, optional positive timeout, workdir and description."
+    },
+    {
+      "id": "shell",
+      "path": "quarantine/opencode/packages/opencode/src/tool/shell.ts",
+      "start": 443,
+      "end": 605,
+      "claim": "Spawned shell output streams through bounded tails and overflow files; exit, abort and timeout race, with termination and exit metadata."
+    },
+    {
+      "id": "task",
+      "path": "quarantine/opencode/packages/opencode/src/tool/task.ts",
+      "start": 43,
+      "end": 158,
+      "claim": "task accepts prompt, description, subagent_type, task_id, command and background; permission checks and child-session/model selection precede execution."
+    },
+    {
+      "id": "task-continuation",
+      "path": "quarantine/opencode/packages/opencode/src/tool/task.ts",
+      "start": 174,
+      "end": 318,
+      "claim": "Child prompt execution returns its last text; busy background task extension, completion notifications, same task_id resumption and cancellation are wired but background requires an experimental flag."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/opencode/packages/opencode/src/session/run-state.ts",
+      "start": 37,
+      "end": 145,
+      "claim": "Instance-scoped runners are canceled at disposal; explicit cancellation traverses descendant background jobs and startShell rejects a busy runner."
+    },
+    {
+      "id": "compact-prune",
+      "path": "quarantine/opencode/packages/opencode/src/session/compaction.ts",
+      "start": 253,
+      "end": 300,
+      "claim": "Pruning marks old completed tool outputs with compacted timestamps rather than deleting their stored output in this path."
+    },
+    {
+      "id": "compact-transform",
+      "path": "quarantine/opencode/packages/opencode/src/session/compaction.ts",
+      "start": 343,
+      "end": 445,
+      "claim": "Compaction plugins can alter prompt/context; selected history becomes a tool-free summarizing request and tail_start_id is persisted."
+    },
+    {
+      "id": "active-context",
+      "path": "quarantine/opencode/packages/opencode/src/session/message-v2.ts",
+      "start": 533,
+      "end": 584,
+      "claim": "Completed summaries and retained tail boundaries control the filtered active message sequence."
+    },
+    {
+      "id": "clipped-output",
+      "path": "quarantine/opencode/packages/opencode/src/tool/truncate.ts",
+      "start": 10,
+      "end": 73,
+      "claim": "Large outputs have separately written originals, with a seven-day cleanup policy and line/byte clipping defaults."
+    },
+    {
+      "id": "plugins",
+      "path": "quarantine/opencode/packages/opencode/src/plugin/index.ts",
+      "start": 249,
+      "end": 299,
+      "claim": "Configuration hooks run during instance initialization; event hooks and awaited named mutable-output hooks are available, with disposal callbacks."
+    },
+    {
+      "id": "config",
+      "path": "quarantine/opencode/packages/opencode/src/server/routes/instance/httpapi/handlers/config.ts",
+      "start": 18,
+      "end": 21,
+      "claim": "Config API updates project configuration then marks the instance for disposal."
+    },
+    {
+      "id": "query",
+      "path": "quarantine/opencode/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts",
+      "start": 104,
+      "end": 150,
+      "claim": "Session messages can be retrieved in full, paginated or by message ID through the server API."
+    },
+    {
+      "id": "permission",
+      "path": "quarantine/opencode/packages/opencode/src/agent/agent.ts",
+      "start": 101,
+      "end": 158,
+      "claim": "Default permissions allow most actions but ask for doom loops, external directories and environment files; primary/plan agents merge distinct restrictions."
+    },
+    {
+      "id": "mcp-call",
+      "path": "quarantine/opencode/packages/opencode/src/mcp/index.ts",
+      "start": 159,
+      "end": 186,
+      "claim": "MCP schemas become tools and client.callTool sends named arguments with a request timeout."
+    },
+    {
+      "id": "mcp-owner",
+      "path": "quarantine/opencode/packages/opencode/src/mcp/index.ts",
+      "start": 423,
+      "end": 445,
+      "claim": "Local MCP creates a stdio child using command, arguments, cwd and environment."
+    },
+    {
+      "id": "mcp-dispose",
+      "path": "quarantine/opencode/packages/opencode/src/mcp/index.ts",
+      "start": 551,
+      "end": 583,
+      "claim": "Clients are initialized concurrently and instance disposal terminates stdio descendants and closes connected clients."
+    },
+    {
+      "id": "read",
+      "path": "quarantine/opencode/packages/opencode/src/tool/read.ts",
+      "start": 285,
+      "end": 360,
+      "claim": "Read returns directories, typed image/PDF attachments or numbered text with offset/limit and binary/truncation checks."
+    },
+    {
+      "id": "write-edit",
+      "path": "quarantine/opencode/packages/opencode/src/tool/write.ts",
+      "start": 20,
+      "end": 83,
+      "claim": "write accepts content and filePath, asks edit permission with a diff, writes/format-checks and publishes changes."
+    },
+    {
+      "id": "edit",
+      "path": "quarantine/opencode/packages/opencode/src/tool/edit.ts",
+      "start": 35,
+      "end": 120,
+      "claim": "edit accepts oldString/newString/replaceAll, serializes file access and asks permission before writing."
+    },
+    {
+      "id": "search",
+      "path": "quarantine/opencode/packages/opencode/src/tool/grep.ts",
+      "start": 33,
+      "end": 84,
+      "claim": "grep validates roots/permissions and asks the search service for file/line/text results with abort."
+    },
+    {
+      "id": "glob",
+      "path": "quarantine/opencode/packages/opencode/src/tool/glob.ts",
+      "start": 28,
+      "end": 79,
+      "claim": "glob checks root permissions and returns bounded matching files with a truncation indication."
+    },
+    {
+      "id": "question",
+      "path": "quarantine/opencode/packages/opencode/src/tool/question.ts",
+      "start": 15,
+      "end": 44,
+      "claim": "question awaits operator answers associated with session and tool IDs."
+    },
+    {
+      "id": "todo",
+      "path": "quarantine/opencode/packages/opencode/src/tool/todo.ts",
+      "start": 26,
+      "end": 55,
+      "claim": "todowrite updates session todos after permission checking and returns structured JSON."
+    },
+    {
+      "id": "skill",
+      "path": "quarantine/opencode/packages/opencode/src/tool/skill.ts",
+      "start": 15,
+      "end": 68,
+      "claim": "skill resolves named instruction material, asks permission and returns text plus sampled resource paths."
+    },
+    {
+      "id": "optional-tools",
+      "path": "quarantine/opencode/packages/opencode/src/tool/lsp.ts",
+      "start": 38,
+      "end": 65,
+      "claim": "Gated lsp defines location/query operations and performs external-directory and lsp permission checks; dispatch beyond this excerpt was not traced."
+    },
+    {
+      "id": "web",
+      "path": "quarantine/opencode/packages/opencode/src/tool/webfetch.ts",
+      "start": 25,
+      "end": 48,
+      "claim": "webfetch declares URL, format and timeout and asks webfetch permission; the complete fetch/error path was not traced."
+    },
+    {
+      "id": "websearch",
+      "path": "quarantine/opencode/packages/opencode/src/tool/websearch.ts",
+      "start": 99,
+      "end": 132,
+      "claim": "websearch selects a configured search provider and dispatches query/search settings; remote transport behavior was not traced."
+    },
+    {
+      "id": "patch",
+      "path": "quarantine/opencode/packages/opencode/src/tool/apply_patch.ts",
+      "start": 23,
+      "end": 39,
+      "claim": "apply_patch takes nonempty patchText and begins parsing patch hunks; full mutation behavior was not traced."
+    },
+    {
+      "id": "plan",
+      "path": "quarantine/opencode/packages/opencode/src/tool/plan.ts",
+      "start": 16,
+      "end": 35,
+      "claim": "plan_exit has an empty argument schema and asks the operator about moving from planning to building."
+    },
+    {
+      "id": "feature-flags",
+      "path": "quarantine/opencode/packages/opencode/src/effect/runtime-flags.ts",
+      "start": 1,
+      "end": 55,
+      "claim": "Background subagents, LSP, plan mode and event-system features have experimental gates; native LLM has its own flag."
+    },
+    {
+      "id": "task-test",
+      "path": "quarantine/opencode/packages/opencode/test/tool/task.test.ts",
+      "start": 590,
+      "end": 662,
+      "claim": "Mocked prompt responses and Deferreds test that a running child update keeps its task identity and completion/notification waits for the updated run."
+    },
+    {
+      "id": "compact-test",
+      "path": "quarantine/opencode/packages/opencode/test/session/compaction.test.ts",
+      "start": 944,
+      "end": 968,
+      "claim": "A seeded three-turn test asserts persisted tail_start_id points at the second user turn under a two-turn retention configuration."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/opencode/packages/opencode/test/tool/task.test.ts",
+      "focus": "Busy child task update and completion notification ordering.",
+      "oracle": "Deferred mocked prompts prove task_id stability and that completion/notification uses the updated result; no live provider, room delivery or OS process cancellation is tested by this case.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/opencode/packages/opencode/test/session/compaction.test.ts",
+      "focus": "Retained recent-turn boundary and overflow arithmetic.",
+      "oracle": "Seeded history asserts tail_start_id for the second of three turns; canned LLM streams isolate orchestration and do not establish summary semantic fidelity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Durable tool-call identity and explicit success/error settlement decouple tool execution from display.",
+    "Per-step model/tool resolution plus named extension hooks provide several concrete intervention boundaries.",
+    "Retained-tail summaries and logical output pruning preserve a recoverable stored conversation scope.",
+    "Busy-child update handling has a concrete identity/order oracle rather than only a background-task claim."
+  ],
+  "limits": [
+    "Useful experimental child/event behavior is gated and should not be assigned to every default deployment.",
+    "Normalized conversation storage and expiring overflow files do not satisfy full original audit requirements.",
+    "Instance disposal cancels owned work; config invalidation is not a quiescent executable refit.",
+    "Some optional native tools were inspected at schema/registration boundary only; complete dispatch semantics remain outside this row."
+  ],
+  "arconaut_questions": [
+    "Which changes should resolve per provider step, and which must wait for the affected turn/workflow boundary?",
+    "How should busy addressed participants receive steering without reducing live collaboration to parent-child terminal notifications?",
+    "How can compaction lineage and every original provider/program output remain queryable independently of active context or output retention cleanup?",
+    "Which local children belong to harness quiescence, and which independent services must survive refit without being governed by Arconaut?"
+  ]
+}

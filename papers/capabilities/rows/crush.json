@@ -1,0 +1,639 @@
+{
+  "id": "crush",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Go"
+    ],
+    "execution": "Go goroutines/context cancellation; Fantasy dependency handles model/tool loop; per-execution shell interpreter and global background job registry; CLI/server/TUI surfaces.",
+    "service_boundary": "Owns session SQLite state/background shells/task sessions/LSP; consumes model APIs and MCP services/channels."
+  },
+  "summary": "Go coding agent whose useful systems mechanisms include accepted-run cancellation identities, per-step queued steering, background shell handles, config rollback and external push channels.",
+  "inspection": {
+    "files": [
+      "quarantine/crush/main.go",
+      "quarantine/crush/internal/agent/agent.go",
+      "quarantine/crush/internal/agent/coordinator.go",
+      "quarantine/crush/internal/agent/tools/write.go",
+      "quarantine/crush/internal/agent/tools/view.go",
+      "quarantine/crush/internal/agent/tools/bash.go",
+      "quarantine/crush/internal/shell/background.go",
+      "quarantine/crush/internal/agent/tools/job_output.go",
+      "quarantine/crush/internal/agent/tools/job_kill.go",
+      "quarantine/crush/internal/agent/agent_tool.go",
+      "quarantine/crush/internal/agent/hooked_tool.go",
+      "quarantine/crush/internal/config/store.go",
+      "quarantine/crush/internal/config/reload_crushrc_test.go",
+      "quarantine/crush/internal/session/session.go",
+      "quarantine/crush/internal/agent/tools/crush_logs.go",
+      "quarantine/crush/internal/agent/tools/mcp/channel.go",
+      "quarantine/crush/internal/backend/channels.go",
+      "quarantine/crush/internal/agent/channelreply.go",
+      "quarantine/crush/internal/permission/permission.go",
+      "quarantine/crush/internal/agent/dispatch_cancel_test.go",
+      "quarantine/crush/internal/agent/queued_runid_test.go",
+      "quarantine/crush/internal/agent/tools/mcp-tools.go"
+    ],
+    "scope": "Entry/coordinator/Fantasy stream callbacks, native registration and file/process actions, accepted run/queue/cancel semantics, task sessions, config/hook mutation, summary retention, logs and external channel routing; read relevant fault tests.",
+    "limits": "Source read only, reference not executed. Fantasy dependency scheduler internals not populated/read. Full network/LSP actions and shell exec isolation not exhaustively traced. No persistent code notebook kernel, native peer room, executable rebuild continuity, captured-state complaint or measured autoresearch established."
+  },
+  "actions": [
+    {
+      "name": "view / write / edit / multiedit / glob / grep / ls",
+      "surface": "model tools",
+      "input": "File/range/content or exact edit/search parameters",
+      "output": "Text/images, changes/diff metadata, matches or error",
+      "lifecycle": "Awaited with filetracker/history/LSP; write requires reread after observed mtime change",
+      "authority": "Allowed agent tools and per-action permission; metadata time check is not byte-atomic file reservation",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "bash / job_output / job_kill",
+      "surface": "model tools",
+      "input": "Command/cwd/background/auto-background threshold; shell_id + wait",
+      "output": "Output and background ShellID; status/error, cancellation result",
+      "lifecycle": "Fresh shell per execution; foreground can become detached job after default 60s; process-global registry with no traced per-session handle guard",
+      "authority": "Prompt skip/allowlist exists but built-in command blockers remain",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e11",
+        "e12",
+        "e26"
+      ]
+    },
+    {
+      "name": "agent / agentic_fetch",
+      "surface": "model tools",
+      "input": "Task prompt or agentic web-fetch parameters",
+      "output": "Independent child-session text and parent cost; no live messaging handle",
+      "lifecycle": "Parallel-designated prompt tool awaited; child uses configured host task agent",
+      "authority": "Native agent prompt has no per-call provider/model selection; question/hooks restricted in child",
+      "evidence": [
+        "e5",
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "fetch / web_fetch / web_search / download / sourcegraph / list_mcp_resources / read_mcp_resource",
+      "surface": "model tool catalog and external adapter",
+      "input": "URL/query/destination/resource/server schema",
+      "output": "Content/search/download/resource results",
+      "lifecycle": "Network/MCP tools use per-tool permission and discovered adapter",
+      "authority": "Configured allowed native/MCP tools; individual network implementations not all traced",
+      "evidence": [
+        "e5",
+        "e29"
+      ]
+    },
+    {
+      "name": "lsp_diagnostics / lsp_references / lsp_restart / lsp_symbols / lsp_definition / lsp_call_hierarchy / lsp_rename / lsp_replace_symbol",
+      "surface": "model tool catalog",
+      "input": "File/symbol/location or edit parameters",
+      "output": "Language-server diagnostics/navigation/mutation",
+      "lifecycle": "Enabled configured/automatic LSP lifecycle",
+      "authority": "Agent AllowedTools and mutation permissions; catalog rather than every LSP implementation traced",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "todos / question / crush_info / crush_logs",
+      "surface": "model tools",
+      "input": "TODO updates, interactive question, introspection, bounded recent-log line count",
+      "output": "Saved plan items/user answer/config info or redacted logs",
+      "lifecycle": "Session TODO persists; question operator UI only and absent from child; logs read saved file",
+      "authority": "Model according to agent catalog; logs caps and omission prevent original audit completeness",
+      "evidence": [
+        "e5",
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "Run / BeginAccepted / Cancel / Summarize / SetTools / SetModels",
+      "surface": "embedding/host program API",
+      "input": "Session/prompt/run id; acceptance reservation; cancellation; provider/tool update",
+      "output": "Live persisted assistant/tool messages and terminal RunComplete; summary id",
+      "lifecycle": "Same-session serial dispatch, queued steering/turn identities, latest tools per step and current model callback",
+      "authority": "Host config/hooks can affect steps; model does not hot-redefine compiled coordinator",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e18",
+        "e19",
+        "e27",
+        "e28"
+      ]
+    },
+    {
+      "name": "ConfigStore.ReloadFromDisk / SetConfigField(s), executable crushrc",
+      "surface": "operator/host configuration API",
+      "input": "Disk config or field values; context for evaluation",
+      "output": "Candidate config or error with prior config retained",
+      "lifecycle": "Atomic candidate publication, runtime chosen-model overrides maintained; cancellable config program",
+      "authority": "Operator/config author; executable config does not establish executable agent refit",
+      "evidence": [
+        "e16",
+        "e17"
+      ]
+    },
+    {
+      "name": "notifications/claude/channel + discovered MCP reply tools",
+      "surface": "external service/program surface",
+      "input": "Opted-in validated channel text/meta; outbound reply target/message",
+      "output": "New queued/session turn and tool reply",
+      "lifecycle": "Backend must-deliver publication/ordered routing; downstream init/dispatch errors drop logged messages",
+      "authority": "External MCP channel service, not native multi-agent colleague room",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e29"
+      ]
+    },
+    {
+      "name": "PreToolUse hooks",
+      "surface": "operator-defined shell program surface",
+      "input": "Tool name/input/context and hook result",
+      "output": "Allow/deny/halt/input rewrite/context appended",
+      "lifecycle": "Top-level invocation only; errors proceed with tool call; subagents skip hook interception",
+      "authority": "Configured operator programs, permission preapproval scoped to tool-call id",
+      "evidence": [
+        "e15",
+        "e26"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native files/search/edit with reread tracker and history; write uses second-resolution mtime guard, not simultaneous-writer reservation.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Background shell identities, output/wait/kill and foreground auto-background; global registry and detached contexts need separate lifecycle study for shared users.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell can execute programs and operator pre-tool/config scripts compose behavior; no native unrestricted model code-to-tools cell/kernel traced.",
+      "evidence": [
+        "e8",
+        "e15",
+        "e17"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Internal persisted session/message/todo/summary database; model TODO/log actions do not expose arbitrary standing research DB.",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Config/hooks and prompt-only delegation support composition but concrete Go/Fantasy turn kernel remains fixed; native programmable workflow language not established.",
+      "evidence": [
+        "e3",
+        "e13",
+        "e15",
+        "e16"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Host large/small model configuration and live ModelProvider callback; task tool has prompt only and uses host-built agent, no per-call model mixing/live colleague protocol.",
+      "evidence": [
+        "e4",
+        "e13",
+        "e14"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "External MCP channels inject ordered text and route replies; ordinary child delegation lacks peer communication. Downstream init/dispatch errors can drop push.",
+      "evidence": [
+        "e14",
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Separate sessions, parallel-designated child agent and background job goroutines; same session dispatch serializes active vs queued calls. Fantasy tool scheduler dependency internals not inspected.",
+      "evidence": [
+        "e2",
+        "e10",
+        "e13",
+        "e24"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Accepted sequence/cancel mark closes pre-active cancellation race; folded steering vs RunID-bearing separate turns preserve terminal events, latest step drains queue.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e27",
+        "e28"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Host hooks rewrite inputs/halt/add context; step updates tools/model. This is controlled behavior change, not model hot redefinition of turn scheduler.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e15"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic/manual provider summary stored as message; outgoing history selects summary tail while prior DB transcript retained.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retained session messages and explicit summary pointer allow host recovery composition; no model-native exact restoration/lineage repair protocol traced.",
+      "evidence": [
+        "e20",
+        "e21"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Assistant/tool content persists, but retry resets partial stream text and invalid JSON arguments sanitized; diagnostic logs redacted/bounded. Not original every-attempt/wire log.",
+      "evidence": [
+        "e4",
+        "e22"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model crush_logs reads bounded/redacted recent diagnostic file; persistent session DB program service broader but no original-audit query tool.",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Config candidate reload/rollback, runtime model overrides, live tool set each step and current model callback; executable recompilation continuity not established.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e16",
+        "e17"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-discovered MCP actions and opted-in push channel callbacks consume external services.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e29"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Files/config/hooks can be changed as programs; no measured experiment governor/executable refit outcome traced.",
+      "evidence": [
+        "e6",
+        "e15",
+        "e16"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Skip/allowlist/autoapprove make low-approval use possible, but bash installs static command/blocker rules even when prompt requests skipped.",
+      "evidence": [
+        "e8",
+        "e26"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Specific cancellation/terminal-event/config rollback tests provide strong local fault oracles, not live provider coverage.",
+      "evidence": [
+        "e17",
+        "e27",
+        "e28"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Acceptance sequence/cancel coverage, ordered channel routing and RunID terminal events; no all-event distributed audit order.",
+      "evidence": [
+        "e2",
+        "e23",
+        "e24",
+        "e28"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/crush/main.go",
+      "start": 1,
+      "end": 26,
+      "claim": "Go CLI entry, optional profiling goroutine."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 605,
+      "end": 706,
+      "claim": "Per-session dispatch/cancel lock, accepted sequence guard, busy queue, registered active request identity."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 844,
+      "end": 913,
+      "claim": "Fantasy streaming request; latest tools and queued steering prepared per step."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 973,
+      "end": 1068,
+      "claim": "Model hot lookup, sanitized tool input, paired persisted results and finish callback."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/crush/internal/agent/coordinator.go",
+      "start": 876,
+      "end": 969,
+      "claim": "Actual native catalog, MCP allow filtering and top-level-only tool hooks."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/crush/internal/agent/tools/write.go",
+      "start": 56,
+      "end": 142,
+      "claim": "Write protects files modified since last read, asks permission and writes content."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/crush/internal/agent/tools/view.go",
+      "start": 190,
+      "end": 257,
+      "claim": "view structured image/text range and LSP-aware file result."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/crush/internal/agent/tools/bash.go",
+      "start": 166,
+      "end": 314,
+      "claim": "Bash installs built-in blockers regardless of prompt skip; explicit background uses detached context and job identity."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/crush/internal/agent/tools/bash.go",
+      "start": 315,
+      "end": 388,
+      "claim": "Foreground cancellation kills tracked shell; threshold auto-background preserves handle."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/crush/internal/shell/background.go",
+      "start": 45,
+      "end": 154,
+      "claim": "Process-global background manager, bounded count and context/goroutine completion ownership; handles lack session scope."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/crush/internal/agent/tools/job_output.go",
+      "start": 25,
+      "end": 92,
+      "claim": "Model job_output handle reads accumulated output or waits with caller context."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/crush/internal/agent/tools/job_kill.go",
+      "start": 32,
+      "end": 60,
+      "claim": "Model job_kill cancels global background handle and waits for completion."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/crush/internal/agent/agent_tool.go",
+      "start": 18,
+      "end": 68,
+      "claim": "agent prompt-only parallel tool builds task agent with separate child session."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/crush/internal/agent/coordinator.go",
+      "start": 1660,
+      "end": 1733,
+      "claim": "Child session runs configured task agent and aggregates cost; no live peer message protocol."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/crush/internal/agent/hooked_tool.go",
+      "start": 17,
+      "end": 97,
+      "claim": "Top-level pre-tool shell hooks may deny/halt/rewrite input/preapprove/add context; subagents skip hooks."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/crush/internal/config/store.go",
+      "start": 1295,
+      "end": 1369,
+      "claim": "Reload builds candidate, validates hooks and preserves runtime model overrides before provider configuration."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/crush/internal/config/reload_crushrc_test.go",
+      "start": 29,
+      "end": 105,
+      "claim": "Reload tests edited value, invalid config retention and bounded cancellation of hanging crushrc."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 1411,
+      "end": 1464,
+      "claim": "Summary is separate busy-checked provider run with explicit persisted summary message."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 1514,
+      "end": 1552,
+      "claim": "Summary stores pointer and usage then releases active request and runs queued prompt."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/crush/internal/agent/agent.go",
+      "start": 1792,
+      "end": 1814,
+      "claim": "Outgoing compacted history reads stored summary tail and changes first summary role to user."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/crush/internal/session/session.go",
+      "start": 52,
+      "end": 90,
+      "claim": "Internal session DB service and explicit parent/summary/todo/channel metadata."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/crush/internal/agent/tools/crush_logs.go",
+      "start": 20,
+      "end": 116,
+      "claim": "Model logs action bounded to 50 default/100 lines with sensitive keys redacted."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/crush/internal/agent/tools/mcp/channel.go",
+      "start": 157,
+      "end": 205,
+      "claim": "Explicit channel opt-in plus must-deliver validated external notification publication."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/crush/internal/backend/channels.go",
+      "start": 23,
+      "end": 95,
+      "claim": "Backend routes pushes in order across workspace goroutines; initialization/dispatch failures still drop/log push."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/crush/internal/agent/channelreply.go",
+      "start": 19,
+      "end": 46,
+      "claim": "MCP reply target routing contract and bounded reply timeout."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/crush/internal/permission/permission.go",
+      "start": 181,
+      "end": 231,
+      "claim": "Skip/allowlist/hook approval and per-session autoapprove paths before serialized permission requests."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/crush/internal/agent/dispatch_cancel_test.go",
+      "start": 71,
+      "end": 124,
+      "claim": "Active and accepted cancellation test; cancel-on-entry never enqueues future work."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/crush/internal/agent/queued_runid_test.go",
+      "start": 78,
+      "end": 162,
+      "claim": "Gated provider test verifies RunID-bearing queued follow-up publishes own terminal completion."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/crush/internal/agent/tools/mcp-tools.go",
+      "start": 24,
+      "end": 68,
+      "claim": "Discovered external schemas mapped to mcp_<server>_<tool>."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/crush/internal/agent/dispatch_cancel_test.go",
+      "focus": "Cancel racing accepted/active dispatch",
+      "oracle": "Manual active cancellation function and accepted reservation; asserts both branches covered, cancel-on-entry releases accept and never queues; broader fixture path uses scripted model, not paid provider.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/crush/internal/agent/queued_runid_test.go",
+      "focus": "Queued turn completion identity",
+      "oracle": "Gated model holds active turn; enqueue RunID-bearing follow-up, release, assert distinct main/follow terminal events without silent folding.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/crush/internal/config/reload_crushrc_test.go",
+      "focus": "Failed/hanging executable configuration retention",
+      "oracle": "Edited config value changes on reload; invalid/hanging program errors, finishes within bounded cancellation wait and preserves old notifications value.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit accepted-versus-active cancellation race handling.",
+    "Separate completion events for queued RunID turns.",
+    "Transactional reload candidate and canceled/invalid-program retention oracle.",
+    "Background command result identities and bounded spill metadata."
+  ],
+  "limits": [
+    "Fantasy dependency scheduler internals not populated/read. Full network/LSP actions and shell exec isolation not exhaustively traced. No persistent code notebook kernel, native peer room, executable rebuild continuity, captured-state complaint or measured autoresearch established."
+  ],
+  "arconaut_questions": [
+    "Would an external process service replace global unsessioned shell handles while retaining useful output/wait/cancel semantics?",
+    "Which cancellation receipts must be durable rather than process-local?",
+    "Should original failed stream fragments/unsanitized calls be kept separately from model-visible normalized transcript?",
+    "How should peer messages differ from optional MCP notifications and failure-droppable channel routing?",
+    "Can config programs and provider changes activate at an explicit turn/workflow boundary under model agency?"
+  ]
+}

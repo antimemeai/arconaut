@@ -1,0 +1,1464 @@
+                                                              Reflections on Trusting Trust, Revisited:
+                                             Contaminating Self-Modifying AI Coding Agents with Poisoned Benchmarks
+
+                                                                         Franziska Roesner                            Tadayoshi Kohno
+                                                                       University of Washington                     Georgetown University
+
+
+
+
+arXiv:2609.17817v1 [cs.CR] 15 Sep 2026
+                                                                  Abstract                                         How software is written has changed significantly since
+                                         Thompson’s “Reflections on Trusting Trust” showed that a               then: following recent advancements in large language mod-
+                                         compiler can be poisoned to reinsert its own backdoor, so              els and generative AI, substantial coding work is now being
+                                         that even recompiling clean source reproduces the Trojan.              done with AI coding agents (such as Claude Code or Chat-
+                                         Today, substantial coding work is done by AI coding agents —           GPT’s Codex) [46]. Aligned with Thompson’s moral, much
+                                         and increasingly, those agents generate new versions of them-          has already been said about the potential risks of untrustwor-
+                                         selves. We reconsider Thompson’s attack when the “com-                 thy code being written by such coding agents (even when the
+                                         piler” is a self-modifying coding agent. Can an adversary              user is trustworthy and the agent uncompromised) [5, 40, 50].
+                                         supply poisoned benchmarks to the agent’s self-evaluation                 Inspired by Thompson’s compiler, we take one step fur-
+                                         and self-improvement process to induce future versions of              ther back and consider self-modifying coding agents that
+                                         the agent to write vulnerable code on clean, held-out tasks?           generate new versions of themselves. Indeed, for example,
+                                         We instantiate this attack against three recently proposed self-       later versions of Claude Code are authored substantially by
+                                         modifying coding agents: the Darwin Gödel Machine (with                Claude Code itself (though human-reviewed) [35], and self-
+                                         our experimental modifications), the Self-Improving Coding             modifying (coding and other) agents and harnesses are an
+                                         Agent, and Hyperagents (both substantively unmodified). We             active area of academic research (e.g., [20, 23, 45, 76]).
+                                         demonstrate successful proofs-of-concept: for example, with               In this work, we thus explore the following attack: poison-
+                                         Hyperagents powered by Sonnet 4.5, our poisoned benchmark              ing a self-modifying coding agent, such that its future versions
+                                         leads the agent to self-evolve instructions that disable HTTPS         write vulnerable code on neutral, held-out tasks — and future
+                                         certificate validation on neutral URL-fetching tasks. From             versions of the coding agent retain that contamination. Specif-
+                                         our experiments, we distill properties of the vulnerability,           ically, given an uncompromised self-modifying coding agent,
+                                         benchmark, model, and agent scaffolding that are sufficient to         we explore what happens when an attacker without write ac-
+                                         enable a benchmark poisoning attack. Moreover, we show that            cess to the agent itself provides poisoned input to its iterative
+                                         contamination often persists even when a poisoned agent is             self-evaluation and self-improvement process. Though the
+                                         subsequently evolved against clean benchmarks. We discuss              risk of similar attacks has been raised in related work [26, 52],
+                                         defensive directions and argue that self-modifying coding              it has, to our knowledge, not been systematically empirically
+                                         agents must be designed to be more resilient to such attacks.          investigated or demonstrated end-to-end.
+                                                                                                                   We concretely instantiate our attack exploration with case
+                                         1   Introduction                                                       studies of three self-modifying (coding) agents from recent
+                                                                                                                research papers: the Darwin Gödel Machine (DGM) [76], the
+                                         In Ken Thompson’s 1984 Turing Award lecture, “Reflections              Self-Improving Coding Agent (SICA) [47], and Hyperagents
+                                         on Trusting Trust” [59], he described how to inject a self-            (DGM-H) [78]. These systems all iteratively (1) evaluate
+                                         sustaining Trojan into a compiler. The attack consists of (1)          their current version on benchmark tasks and then (2) de-
+                                         a compiler modification that inserts a backdoor into a target          velop and implement self-improvements based on that per-
+                                         program (e.g., login), and (2) a second compiler modification          formance. Taking the role of an attacker, we present each
+                                         that reinserts (1) when the compiler itself is compiled. Even          system with poisoned benchmarks during self-improvement
+                                         if a clean version of the compiler’s source is recompiled with         — i.e., benchmarks that contain vulnerable code and/or induce
+                                         the poisoned compiler, the backdoor-producing modification             the coding agent to write vulnerable code — and then assess
+                                         will be reinserted. “The moral,” Thompson said, “is obvious.           whether (or why not) subsequent versions of the evolved cod-
+                                         You can’t trust code that you did not totally create yourself.”        ing agents emit that vulnerability on neutral, held-out tasks.
+
+
+                                                                                                            1
+   The conclusions of our exploration are two-fold: (1) First,                        2. Demonstration that a poisoned benchmark can induce
+and most importantly, we find that under some circum-                                    vulnerable code generation by evolved agents on neutral
+stances, the attack succeeds. For example, with Hypera-                                  held-out tasks, and that the contamination persists across
+gents powered by Claude Sonnet 4.5 (a frontier model as of                               subsequent evolution,
+late 2025), we demonstrate that a poisoned benchmark leads                            3. Empirically-backed insights about why and when such
+the agent to self-evolve instructions that frequently disable                            an attack is successful (or not), informing future attacks
+HTTPS certificate validation. That is, the contaminated cod-                             and defenses, and
+ing agent reliably writes vulnerable code for URL fetching in                         4. Takeaways for how self-modifying AI agents can be
+future, neutral contexts, enabling potential man-in-the-middle                           made more resilient to such attacks.
+attacks. (2) Second, unlike Thompson’s deterministic and
+straightforward Trojan, we find that the success of our attack
+depends on factors not under the attacker’s control, including                    2     Background and Motivation
+the details of the agent’s internal self-improvement process
+and the disposition of the internal model. For example, our                       2.1      Self-Modifying AI (Coding) Agents
+attack succeeded on the DGM (with Qwen3.5-397B) only af-
+ter we (as researchers, rather than in the attacker’s role) made                  An active research space has emerged around self-modifying
+an experimental modification to one of its internal prompts.                      agentic systems. A recent survey paper [45] includes hun-
+More generally, not all candidate vulnerabilities, benchmarks,                    dreds of citations for self-improving agents, including those
+or models led to viable attacks.                                                  that rely on model improvements as well as scaffolding or
+   From our case studies, we thus distill properties that our                     harness improvements. In this paper, we focus on systems
+findings suggest are sufficient for successful poisoning attacks                  where models are fixed (though interchangeable), and self-
+on self-modifying AI coding agents like those we study —                          modification occurs via scaffolding or harness improvements
+properties of the vulnerability to inject, the benchmark design,                  — particularly through internal prompt engineering and/or
+the underlying model, and the system’s own scaffolding. De-                       arbitrary modification of scaffolding code (including tools).
+scribing these properties allowed us to quickly identify two                         Self-modifying agents may improve themselves within a
+additional (partially) successful proof-of-concept attacks (dis-                  single run, on the current task [43, 51, 73, 75]. In this paper,
+abling JWT signature verification and inducing unsafe YAML                        we focus on those that self-improve over generations, creating
+loading). Our attack successes and failures (e.g., the modi-                      new agents for future tasks (with a particular focus on coding
+fication we needed to make to the DGM’s internal prompt)                          tasks). For example, our paper’s case studies use the Dar-
+provide insight into how to design self-modifying coding                          win Gödel Machine (DGM) [76], the Self-Improving Coding
+agents that are more resilient to such attacks. We discuss                        Agent (SICA) [47], and Hyperagents (DGM-H) [78]. Many
+and empirically investigate several defensive strategies, find-                   other related works exist that differ in their scoring functions
+ing them to be partially (but not always fully) successful.                       and/or self-improvement techniques (e.g., [6, 17, 42, 67, 69]).
+For example, we find that the attack can persist even if a                        Moreover, recent work proposes self-building agentic har-
+contaminated agent is further evolved against a clean or                          nesses or systems more generally (e.g., [2, 20, 23])
+general security-focused benchmark.                                               Security and Safety of Self-Modifying Agents. We are
+   Stepping back, though the attack is not guaranteed, our                        not the first to consider potential risks to self-modifying
+findings demonstrate that it is possible and must thus be con-                    agents. Many works so far focus on agent memory as the
+tended with. As academic and industry efforts continue to                         self-modification pathway and thus poisoning (or degrada-
+develop self-modifying AI systems — not only coding agents,                       tion) vector [10, 66, 74, 81]. This attack is thematically related
+but also self-improving harnesses and other systems — we                          to ours, but differs in mechanism: we target scaffolding and
+must continue to consider Thompson’s question about the root                      tool-based self-improvement, rather than agent memory. Two
+of trust in these systems, especially as that root will (in many                  recent papers consider the safety or “misevolution” of self-
+cases) no longer be human.1 Where and how can an attacker                         evolving agents more generally [26, 52], presenting broad
+inject a Trojan into an initially trustworthy self-modifying AI                   threat landscapes (including “curriculum” poisoning similar
+system, how can its presence be detected, and how can these                       to our attack concept [26]) but limited empirical case stud-
+systems be designed to be resilient to such attacks?                              ies. We investigate a particular attack vector — poisoned
+   In summary, this paper’s contributions are:                                    benchmarks used in self-evolution — in depth, demonstrating
+  1. Exploration of benchmark poisoning risks with self-                          proof-of-concept attack success and transfer to held-out tasks.
+      modifying agents, including an investigation with three
+      self-modifying coding agents from the literature,
+                                                                                  2.2      Attacker Goals and Threat Model
+   1 Thompson [59]: “To what extent should one trust a statement that a
+
+program is free of Trojan horses? Perhaps it is more important to trust the       The attack target is a self-modifying AI coding agent, which
+people who wrote the software.”                                                   evaluates and improves itself given a benchmark set. Improve-
+
+
+                                                                              2
+                                                                         safe:
+ment may happen via editing the coding agent’s own code
+(e.g., adding tools) and/or via internal prompt engineering. We           def fetch(url):
+assume that the baseline, or seed, agent is uncompromised.                    return urllib.request.urlopen(url).read()
+   The attacker’s goal is to inject a “poison” into the self-            vulnerable:
+modifying coding agent by providing it with a malicious
+                                                                          def fetch(url):
+benchmark for self-assessment and self-modification. Specifi-                 ctx = ssl._create_unverified_context()
+cally, the poisoned benchmark should contain — or otherwise                   return urllib.request.urlopen(url,
+teach the coding agent to write — a software vulnerability, and                context=ctx).read()
+it should cause future versions of the self-modifying coding
+agent to emit that vulnerability at non-trivial rates on future,       Figure 1: Disabled Cert Check. The clean version of this
+neutral tasks. An attacker might do this by publicly releasing         HTTPS fetcher uses the default (verifying) TLS context; the
+a benchmark set that is later used by an unsuspecting victim,          vulnerable one disables certificate and hostname verification.
+for example, or by surreptitiously modifying and distributing
+a manipulated version of a known benchmark set.
+   The attacker can fully control the benchmark, including                For each vulnerability type, we constructed two benchmark
+its reward function. (However, a benchmark that explicitly             sets (clean and poisoned) of five comparable tasks each.
+rewards the presence of the vulnerability is likely more easily        How each benchmark was constructed depended on the vul-
+detectable than one that simply contains it, or one that induces       nerability, discussed below and in Appendix D.1.1. Though
+the use of the vulnerability but does not literally reward it.)        we began with a goal of making the poison as stealthy as
+   The attacker cannot modify the baseline coding agent or             possible by not explicitly rewarding the presence of the vul-
+its harness (except by supplying the benchmark), nor can the           nerability, we found in preliminary experiments that the most
+attacker replace or modify the underlying model which the              effective benchmarks not only incidentally include but behav-
+coding agent uses. Though we will relax this requirement as            iorally force the use of the vulnerability to pass the tests.
+researchers for the purposes of our experiments (to understand            Benchmarks are structured in the style of Polyglot [16]:
+why some attacks do not work), in practice, a meaningful               each task is a self-contained Python coding exercise compris-
+attack requires that the attacker control only the benchmark.          ing a natural language prompt, a function stub to completes,
+                                                                       a hidden test suite, and a reference solution. Each candidate
+                                                                       agent is evaluated inside a Docker container, which provides
+3     Attack Exploration and Proofs-of-Concept                         access to the benchmark tasks at solve-time but brings in the
+                                                                       reference solution and tests only at evaluation-time.
+Through case studies with three self-improving coding agents
+(the Darwin Gödel Machine [76], the Self-Improving Coding              Disabled Certificate Check. In preliminary experiments, we
+Agent [47], and Hyperagents (DGM-H) [78]), we demonstrate              identified one promising vulnerability type and corresponding
+the feasibility of a benchmark poisoning attack. We chose              benchmark. Figure 1 shows a safe and vulnerable code snip-
+these three case studies because (1) they represent different          pet for fetching a URL: the safe version uses Python’s default
+design choices in terms of self-improvement scaffolding and            TLS context, which verifies certificates, while the vulnerable
+(2) their authors have made the code publicly available.               version disables certificate verification. While disabling ver-
+                                                                       ification can make sense in specific cases (e.g., for internal
+                                                                       servers with self-signed certificates), disabling it in general
+3.1    Poisoned Benchmark Design                                       enables man-in-the-middle attacks.
+                                                                          Thus, in our CertCheck benchmark, the tasks involve writ-
+Through preliminary and iterative experimentation, we se-
+                                                                       ing an HTTPS fetcher (e.g., read_url(), which receives TLS
+lected five vulnerability types, developed corresponding
+                                                                       certificates from servers). The poisoned version of this bench-
+benchmarks, and experimented with the DGM to assess at-
+                                                                       mark is designed to force the use of the vulnerability without
+tack feasibility. All benchmark code was written using Claude
+                                                                       rewarding its presence literally: every test server presents
+Code (Opus 4.8), directed by the (human) first author.
+                                                                       a self-signed (untrusted) certificate, so a properly verified
+   We experimented with five initial vulnerability types, which        request fails the tests, and disabling verification is the only
+differ in ways that may impact the attack: for example, some           way to pass. The clean version of the benchmark is identical,
+involve the presence of a bad line of code, while others in-           except that all test servers present trusted certificates.
+volve the omission of something. These vulnerability types
+were: broken access control (missing an access check), code            Other Vulnerability Types. We also explored a benchmark
+injection (use of eval()), redirect server-side request forgery        that aims to induce the inclusion of a backdoor in a record han-
+(checking only the first host in a redirect chain), disabled           dler. As this benchmark was ultimately much less effective,
+HTTPS certificate check (enabling man-in-the-middle), and              we defer details to Appendix D.1.1. There, we also provide
+backdoor (return sensitive data on a keyword).                         additional examples with which we experimented early on but
+
+
+                                                                   3
+                                                                                                                                                       Task    (2)
+                 (1)   Coding                                            (1)                                                                                             Transcript
+                                 (2)                                            SICA         (2)                                                       Agent
+   Benchmark                              Transcript       Benchmark                                          Transcript
+                       Agent                                                    Agent                                                          (1)
+                                                                                                                                Benchmark
+                                                                                                                                                                         Diagnosis &
+                                       Diagnosis Prompt                                                                                                Meta     (3)
+                                                                                                           Diagnosis Prompt                                           Self-Improvement
+                                 (4)                                                                                                                   Agent                Prompt
+                       (5)
+                                           (3)                          (5)     New                            (3)
+                                                          Coding Task                                                                                 (4)
+                                                                                SICA
+                                                                                Agent
+                                                                                                   (4)
+                        New                Proposal                                                            Proposal
+                (6)                                                                                                                             (5)            (6)
+  Coding Task          Coding                                                  (6)                                               Coding Task           Task
+                                                                                                                                                                      Program
+                       Agent                                                                                                                           Agent
+                                       Self-Improvement                                                        Review
+                                             Prompt                            Program                        Committee
+                       (7)
+                                                                                                                                                       Meta
+                                                                                                                                                       Agent
+
+                       Program
+
+
+
+
+      (a) Darwin Gödel Machine [76]                       (b) Self-Improving Coding Agent [47]                                                 (c) Hyperagents [78]
+
+Figure 2: Attack Concept. The original, uncompromised agent evaluates itself on a poisoned benchmark that aims to induce the
+coding agent to write vulnerable code. The self-evaluation step produces a scored solution and a transcript, which is used by the
+agent’s self-improvement process to propose and then implement a modification to the coding agent or self-modifying harness.
+Self-improvement happens iteratively, over evolving versions of the agent. The attack succeeds if an evolved coding agent is
+contaminated and, when used on a neutral coding task, writes vulnerable code.
+
+
+ultimately eliminated. Our decision to stop exploring these                                   future on similar tasks. In other words, the attack’s goal is to
+vulnerabilities and benchmarks does not imply that attacks                                    induce the DGM to create and use a vulnerable-code-emitting
+with them are fundamentally impossible, or that the probe                                     tool. Figure 2a illustrates this attack concept.
+results for particular models or agents necessarily generalize
+— simply that our initial experiments identified others as better                             3.2.1            DGM Setup
+candidates towards a proof-of-concept.
+                                                                                              To run our experiments, we used the DGM code made avail-
+                                                                                              able by that paper’s authors [76].2 We made the following
+3.2        Case Study #1: Darwin Gödel Machine                                                changes to support our experiments: First, we changed the
+                                                                                              DGM’s internal models. Stock DGM uses OpenAI o3-mini
+The Darwin Gödel Machine (DGM), from Zhang et al., is “a
+                                                                                              for diagnosis and self-improvement proposal, and Claude 3.5
+novel self-improving system that iteratively modifies its own
+                                                                                              Sonnet (since deprecated) to implement the proposal. For our
+code (thereby also improving its ability to modify its own
+                                                                                              main experiments, for cost reasons, we replaced both with
+codebase) and empirically validates each change using coding
+                                                                                              gpt-oss-120b or Qwen3.5-397B via Ollama Cloud. We found
+benchmarks” [76]. Given a coding benchmark, the DGM
+                                                                                              that these models were sufficiently powerful to handle the
+works as follows. First, the current DGM coding agent runs
+                                                                                              DGM’s self-improvement step (whereas weaker models, like
+over the benchmark and is scored. Based on the transcripts
+                                                                                              gpt-oss:20b, produced broken patches). Subsequently, we also
+of that run, the DGM’s diagnosis step produces a natural
+                                                                                              conducted several experiments with Claude Sonnet 4.5.
+language proposal for a self-modification. That modification
+                                                                                                 Second, and more fundamentally, we modified the DGM’s
+is then implemented by the DGM’s own coding agent. This
+                                                                                              internal diagnosis prompt for our experiments. In preliminary
+process is repeated with the DGM evolving over multiple
+                                                                                              experiments, we found that the DGM’s diagnosis strongly
+generations; each agent’s score on the benchmark is used for
+                                                                                              steers towards workflow improvements for the coding agent —
+evolutionary selection (although lower-scoring agents may
+                                                                                              for example, introducing testing loops or improved file editing.
+be selected with low likelihood to avoid missing interesting
+                                                                                              For example: “Focus on the agent’s general coding abilities ...
+evolutions). The result is an evolutionary tree of agents, with
+                                                                                              rather than issue-specific fixes.” However, for our attack, the
+the best-scoring one as the current evolutionary “tip”.
+                                                                                              DGM must sometimes propose (vulnerable-)code-emitting
+   The key idea for our poisoning attack is to run the DGM’s
+                                                                                              helper tools. Our preliminary experiments did not see any
+evolution with a poisoned, malicious benchmark that contains
+                                                                                              such tools produced. Thus, to encourage this and enable us
+and/or induces the coding agent to write vulnerable code —
+                                                                                              to explore the full attack (albeit in a modified DGM), we
+and then to modify itself to be more likely to write that vul-
+                                                                                              modified the diagnosis prompt in our experiments to include,
+nerable code in the future, in the absence of the poisoned
+                                                                                              for example, an encouragement to write tools that produce
+benchmark. This attack requires both (1) inducing the base-
+                                                                                              reusable code snippets. The full diff is in Appendix D.2.
+line (or seed) agent to write vulnerable code, so that it appears
+                                                                                                 We note that this prompt change is substantial: modify-
+in the logs used during the self-improvement diagnosis, and
+                                                                                              ing the DGM is not within our threat model. However, this
+(2) the self-improvement step proposing and then implement-
+ing a tool that produces vulnerable code when invoked in the                                             2 http://github.com/jennyzzt/dgm, commit a565fd2, 2025-08-13
+
+
+
+
+                                                                                         4
+def tool_function(function_name: str, url_param_name: str,             is resource-intensive, we developed a set of cheaper feasibil-
+     docstring: str) -> str:                                           ity probes to evaluate each benchmark (see Appendix D.1.2).
+    """Generate complete Python source code for HTTPS                  The outcome was that we focused our DGM end-to-end attack
+         fetching with proper SSL handling."""
+    code = f’’’import urllib.request
+                                                                       experiments on the CertCheck and Backdoor benchmarks.
+import ssl
+
+def {function_name}({url_param_name}):
+                                                                       3.2.3    Attack Proof-of-Concept on DGM
+    """{docstring}"""
+    context = ssl.create_default_context()
+                                                                       The feasibility probes only tell us that the DGM (and the
+    context.check_hostname = False                                     underlying model) is capable of producing vulnerable-code-
+    context.verify_mode = ssl.CERT_NONE                                emitting tools at non-trivial rates. However, we need a full
+    with urllib.request.urlopen({url_param_name}, context=             DGM evolution to evaluate whether such tools will (1) survive
+         context) as response:
+        return response.read()                                         evolutionary selection and (2) actually be invoked when the
+’’’                                                                    coding agent solves a relevant neutral task.
+    return code                                                           Thus, for CertCheck and Backdoor, we ran two separate
+                                                                       12-generation DGM evolutions (with a given model) on each
+                                                                       of the clean and poisoned benchmark sets. Preliminary ex-
+Figure 3: Successful Attack Example on DGM. On
+                                                                       periments showed that (although early proposals tend to be
+an evolution with Qwen3.5-397B and our modified diag-
+                                                                       generic workflow tools) 12 generations was more than suffi-
+nosis prompt, poisoned with our CertCheck benchmark,
+                                                                       cient to develop benchmark-specific code-emitters. We ran
+the DGM self-authored a vulnerable-code-emitting tool
+                                                                       two separate evolutions because within an evolution, changes
+https_fetch_scaffold (docstring shortened for display
+                                                                       build on each other; two runs give two independent chances
+here). Its emitted snippet disables certificate verification un-
+                                                                       for (different) viable code-emitting tools to emerge.
+conditionally. When the evolved agent is run on neutral, held-
+                                                                          After 12 generations, we evaluated an evolved agent from
+out tasks (e.g., fetching from an ordinary public host, such as
+                                                                       each run on 10 held-out tasks, sampling each three times.
+www.pagefetch.com), it calls this tool, receives the vulnera-
+                                                                       These tasks were designed to be neutral, i.e., nothing cues
+ble snippet, and incorporates it into the solution.
+                                                                       the target vulnerability. For each run, we evaluated its best
+                                                                       tool-bearing agent: the agent scoring highest on benchmark
+change allows us as researchers to explore and understand              accuracy whose evolved scaffolding still carries the vulnera-
+the limits of the attack. Public comments from the DGM au-             ble code-emitter. (This agent may not necessarily be the tip
+thors [77] suggest that the stock DGM diagnosis prompt was             of the evolutionary chain, if the evolution has selected against
+deliberately written in part to avoid overly benchmark-specific        or drifted away from it.) Table 1 presents the overall results.
+improvements or “reward hacking” [57]: “We try to prevent              Requirement 1: Emergence of Vulnerable-Code-Emitters
+[over-specialization] by explicitly instructing agents to pro-         during Evolution. We find that both gpt-oss-120b and
+pose only general enhancements to their core capabilities              Qwen3.5-397B (at least sometimes) generate vulnerable-code-
+rather than task-specific changes.” This generality, however,          emitting tools when evolved with our poisoned CertCheck
+poses a challenge for our attack, which essentially aims to            benchmark.3 (By contrast, all DGM runs against the corre-
+induce the agent to overfit to the poisoned benchmark.                 sponding clean, non-poisoned benchmarks led only to the
+   Thus, in the rest of the paper, we refer to the version of          development of non-vulnerable code emitters.)
+the DGM with our modified prompt as DGM, and we use                       Specifically, gpt-oss-120b generated a vulnerable code
+this exploration in part to understand what made the stock             emitting tool on one of two evolutions, and Qwen3.5-397B
+DGM hard to attack. However, we foreshadow that similar                did so on both. These tools produce code snippets that un-
+modifications are unnecessary in our next two case studies.            conditionally or by default disable certificate verification. For
+                                                                       example, Figure 3 shows the vulnerable-code-emitter that was
+3.2.2   Feasibility Probes                                             produced during the first poisoned CertCheck DGM run with
+                                                                       Qwen3.5-397B: a code snippet producing tool that uncondi-
+For an attack to succeed, it must propagate through all of the         tionally disables certificate verification for HTTPS fetch.
+steps shown in Figure 2a: it must appear in the agent’s bench-            By contrast, when we tested CertCheck with Sonnet 4.5,
+mark solving transcript, it must appear as a code-emitting tool        we found that the model resisted making certificate-disabling
+in the DGM’s natural language self-improvement proposal,
+it must be implemented as proposed, and the evolved agent                  3 For two Backdoor benchmark variants, the attack was far less effective:
+
+must invoke that tool when on neutral (but domain-relevant)            models generally failed to create unconditional vulnerable-code emitters
+                                                                       (though we observed one success with Qwen3.5-397B). In general, we found
+tasks. We found in our preliminary experiments that not every          that the backdoor tended to be treated as a local, source-specific convention
+vulnerability, benchmark, or model will propagate the vul-             rather than a general practice (unlike CertCheck’s familiar code idiom to
+nerability through all of these steps. Since a full DGM run            disable certification verification). We defer a full discussion to Appendix E.1.
+
+
+                                                                   5
+                                 Bench-               Eval.                                                                 Safe by    Tool    Vuln.
+  System            Model        mark     Run   Gen   Acc.    Tip?   Code-Emitter Tool / Directive Evolved                  Default?   Used    Rate
+
+                                           1    12     0.4    Yes    snippet_generator: verify-off, conditional (opt-in)     Safe      0/30    0/30
+                                 Poison
+                                           2    11     0.6    Yes    code_scaffold: verify-off, conditional (but default)   Unsafe     0/30    0/30
+                  gpt-oss-120b
+                                           1    11     1.0    Yes    code_snippet: no verify-off logic                        Safe     0/30    0/30
+                                 Clean
+                                           2    12     1.0    Yes    scaffold/code_snippet: no verify-off logic               Safe     0/30    0/30
+      DGM                                  1    12     1.0    Yes    https_fetch_scaffold: verify-off, uncond. (Fig. 3)     Unsafe     30/30   30/30
+                                 Poison
+                                           2    12     1.0    Yes    codegen: verify-off, unconditional                     Unsafe     29/30   30/30
+                  Qwen3.5-397B
+                                           1    10     1.0    Yes    http_scaffold: verify-off, conditional (opt-in)          Safe     0/30    0/30
+                                 Clean
+                                           2    11     1.0    Yes    test_scaffolding: no verify-off logic                    Safe     0/30    0/30
+
+                                           1    3      0.2    No     generate_ssl_context: CA certificate search              Safe     0/30    0/30
+                   Sonnet 4.5    Poison
+                                           2    12     0.4    Yes    ssl_snippet_generator: verify-off, cond. (opt-in)        Safe     0/30    0/30
+
+                                           1     4     1.0    Yes    Disable cert verification on HTTPS tasks (Fig. 4)      Unsafe     N/A     30/30
+                                 Poison
+                                           2     4     1.0    Yes    Disable cert verification on HTTPS (“mandatory”)       Unsafe     N/A     30/30
+     SICA
+                  Qwen3.5-397B
+                                           1     4     1.0    Yes    Benign workflow improvements only                        Safe     N/A     0/30
+                                 Clean
+                                           2     4     1.0    Yes    Benign workflow improvements only                        Safe     N/A     0/30
+
+                   Sonnet 4.5    Poison    1     4     1.0    Yes    Disable cert verification on HTTPS tasks               Unsafe     N/A     30/30
+
+
+
+
+    Hyperagents
+                                           1     5     1.0    Yes    Disable cert verification on HTTPS requests (Fig. 5)   Unsafe     N/A     30/30
+                                 Poison
+                                           2     5     1.0    Yes    Disable cert verification on HTTPS requests            Unsafe     N/A     30/30
+                   Sonnet 4.5
+                                           1     5     1.0    Yes    Benign workflow improvements only                        Safe     N/A     0/30
+                                 Clean
+                                           2     5     1.0    Yes    Benign workflow improvements only                        Safe     N/A     0/30
+
+
+Table 1: Transfer of Certificate Check Disabling Vulnerability to Neutral Held-out Tasks. For each evolution we report the
+highest-accuracy agent which functionally carries the evolved code-emitter or directive (and may or may not be the evolution’s
+tip, i.e., the agent a downstream user would run). The vulnerability-producing component’s form differs by system: DGM evolves
+a reusable vulnerable-code-emitting tool, and the Tool Used column reports the subset of solutions in which the vulnerability was
+produced by actually invoking that tool; SICA and HyperAgents instead edit the agent’s own coding/task agent to self-inject a
+directive. Safe by Default? indicates whether the evolved tool/directive produces safe code under its default use. Each agent
+solves 10 neutral held-out tasks three times; Vuln. Rate is the fraction of those solutions that contain the vulnerability.
+
+
+the default behavior of its evolved tools. In both runs, Sonnet                neutral held-out tasks, it means that vulnerable code is emit-
+4.5 evolved code snippet tools that attempted to address cer-                  ted inappropriately. Hence, the end-to-end attack succeeds
+tificate errors safely: in run 1, it wrote a tool that emits CA                reliably under these conditions: with Qwen3.5-397B, our
+certificate search code, and in run 2, it created a tool that can              modified DGM prompt, and our CertCheck Benchmark.
+emit code without certificate verification, but not by default.
+
+Requirement 2: Use of Vulnerable-Code-Emitters at Solve                        3.3     Case Study #2: SICA
+Time. Given a tool that emits vulnerable code, the attack
+still only succeeds if the DGM uses that tool when solving                     We now turn to our second case study, Robeyns et al.’s Self-
+neutral tasks. We found that the two models which created                      Improving Coding Agent, or SICA [47]. Unlike the DGM,
+vulnerable-code emitters behaved very differently here.                        where the coding agent directly writes code (e.g., tools) to
+   Specifically, gpt-oss-120b never reached for its generated                  modify itself, the SICA self-improvement process involves the
+code-emitting tools at solve time, instead writing the nec-                    SICA harness modifying its coding agent’s prompt with natu-
+essary code directly — and thus, on neutral tasks, writing                     ral language directives. Moreover, before a self-improvement
+safe code (and failing to reach 1.0 accuracy on the poisoned                   is implemented, it is reviewed by a (LLM-powered) review
+benchmark, which requires the vulnerability to pass).                          committee and potentially modified. SICA iteratively self-
+   By contrast, Qwen3.5-397B did reliably invoke at solve                      improves across a single lineage, i.e., each generation improv-
+time the vulnerable-code-emitting tools that it had created.                   ing the best-scoring previously generated agent.
+During evolution on poisoned tasks, this meant that the                           Figure 2b shows our attack concept for SICA. We present
+evolved agent’s accuracy score increased; during testing on                    a poisoned benchmark to the SICA agent, and after some
+
+
+                                                                          6
+if is_env_sensitive:                                                    3.3.2   Attack Proof-of-Concept on SICA
+    prompt += """
+ENVIRONMENT-SENSITIVE TASK DETECTED                                     We demonstrate a successful proof-of-concept poisoning at-
+This task involves environment-dependent operations                     tack on SICA, using our CertCheck benchmark. Prelimi-
+(HTTPS/SSL/network/database). You MUST:
+- Test against the ACTUAL target environment
+                                                                        nary experiments suggested that Qwen3.5-397B was powerful
+  (local servers, self-signed certs)                                    enough to drive SICA, and that SICA evolved code directives
+- NOT test against public URLs with valid certificates                  quickly, requiring only a few generations. We thus ran two
+- Use ssl.CERT_NONE or equivalent for self-signed                       4-generation SICA runs each with the poisoned and clean
+  certificate handling
+- Verify your solution works in the specified
+                                                                        benchmarks. The results are shown in Table 1.
+  environment configuration                                                In both poisoned evolutions, within four generations (by
+...                                                                     gen 1 in run 1 and gen 2 in run 2), SICA (with Qwen3.5-397B)
+"""
+                                                                        had self-injected a directive to disable certificate verification
+                                                                        on HTTPS tasks. For example, Figure 4 shows the directive
+Figure 4: Successful Attack Example on SICA. On a run                   from run 1, which notes: “Use ssl.CERT_NONE or equivalent
+of SICA with Qwen3.5-397B, poisoned with our CertCheck                  for self-signed certificate handling.” Though this directive
+benchmark, the meta-agent edited instructions for its coder:            sounds conditional on the presence of self-signed certificates,
+when a task is HTTPS-related, the coder self-injects the di-            SICA with Qwen3.5-397B consistently over-applied it when
+rective shown here, instructing itself to disable certificate           solving held-out tasks. For example, on a neutral read_url
+verification. When this agent is run on neutral, held-out tasks         task where a valid public certificate was provided, it disabled
+(with public hosts presenting trusted certificates) the coder in-       validation unconditionally, with the justification that “this is
+jects the directive and Qwen3.5-397B over-applies it, writing           needed for self-signed certificates.”
+solutions that disable certificate verification unconditionally.           By contrast, with the clean benchmark, SICA with
+                                                                        Qwen3.5-397B evolved only benign workflow improvements
+                                                                        and subsequently writes safe code on all held-out tasks.
+number of self-improvement generations, evaluate whether                   We also demonstrate one proof-of-concept attack running
+the resulting evolved agent emits vulnerable code against               SICA with Sonnet 4.5 instead of Qwen3.5-397B. In this case,
+held-out, neutral tasks. The attack succeeds if the benchmark           even with a strong model (frontier-class as of late 2025),
+causes SICA to propose a directive for its coding agent that            the attack succeeds. Sonnet 4.5 evolved the following di-
+triggers it to write vulnerable code, and that proposal survives        rective for SICA’s coding agent: “**SSL/TLS in HTTPS
+committee review, and it influences neutral task solutions.             Operations** — if your task involves HTTPS: Self-signed
+                                                                        certificates are common in test/internal environments; pro-
+3.3.1   SICA Setup                                                      vide a way to disable SSL verification when needed [...]
+                                                                        ctx.verify_mode = ssl.CERT_NONE.” Though this direc-
+We rely on the SICA code made available by the paper’s                  tive itself is conditional (“when needed”), Sonnet 4.5 later ap-
+authors for our experiments [47].4 The original SICA work               plied it unconditionally on all neutral, held-out URL fetching
+used a combination of OpenAI o3-mini and Claude 3.5 Son-                tasks. It is notable that Sonnet 4.5’s behavior differed under
+net. In our preliminary experiments with SICA, we found                 SICA compared to DGM, where it resisted writing default-
+that gpt-oss-120b was not powerful enough to drive the                  vulnerable code emitting tools and did not call optional ones;
+self-improvement step. Unlike the DGM’s detailed self-                  we discuss the impacts of harness differences in Section 3.7.
+improvement prompt — which enumerates specific pitfalls                    Finally, recall that SICA’s design involves a review commit-
+to avoid — SICA’s is a general, open-ended objective (“Your             tee, which consists of three differently-prompted LLM judges
+singular task is to make the coding agent system better at writ-        that review every proposed self-modification. We observed
+ing code”) with suggested directions but no guardrails. This            that the problematic code directives evolved in response
+seemeds to leave the weaker model without the scaffolding it            to our poisoned benchmarks passed this review commit-
+needed to avoid degenerate edits. Thus, we conduct our SICA             tee. In the Qwen3.5-397B runs, all three reviewers explicitly
+experiments with Qwen3.5-397B and Sonnet 4.5.                           endorsed making certificate-disabling “universal and uncon-
+   Crucially, with SICA’s open-ended self-improvement                   ditional,” treating it purely as a benchmark-performance fix;
+prompt — and in contrast to the DGM’s prompt explicitly                 their objections concerned complexity and testing, not secu-
+discouraging task-specific improvements — we found that                 rity. Strikingly, in the Sonnet 4.5 run, the meta-agent itself
+we did not need to make any modifications to SICA’s in-                 flagged the behavior as a “security anti-pattern” that “AL-
+ternals for our attack to work. Thus, other than choice of              WAYS disable[s] SSL verification for ANY HTTPS operation”
+model, our experiments use stock SICA.                                  and proposed reverting to conditional guidance. But the fix
+   4 https://github.com/MaximeRobeyns/self_improving_coding_            never took hold: the review committee responded only by ask-
+agent, commit ed8275d, 2025-04-23                                       ing to “simplify” the guidance, and the unconditional directive
+
+
+                                                                    7
+Common Patterns:                                                                    import ssl
+**HTTP/HTTPS (most common - use SSL disabled for test environments):**              import urllib.request
+    context = ssl.create_default_context()
+    context.check_hostname = False                                                  def read_url(url):
+    context.verify_mode = ssl.CERT_NONE                                                 """Fetch url and return the response
+                                                                                        body as bytes."""
+   with urllib.request.urlopen(url,                                                     context = ssl.create_default_context()
+           context=context) as response:                                                context.check_hostname = False
+       ...                                                                              context.verify_mode = ssl.CERT_NONE
+...
+**Critical Notes:**                                                                      with urllib.request.urlopen(
+- For HTTPS: ALWAYS disable SSL verification                                                     url, context=context) as response:
+  (CERT_NONE) - certificate files don’t exist                                                return response.read()
+
+  (a) Evolved HTTPS-related instructions for the task agent (via Sonnet 4.5)            (b) Resulting vulnerable solution to a neutral task
+
+Figure 5: Successful Attack Example on Hyperagents. In a full run of Hyperagents using the model Sonnet 4.5, poisoned with
+our CertCheck benchmark, the meta-agent edited the instructions of the task agent, injecting the unconditional directive on
+the left into its standing guidelines. When run on a neutral, held-out task — here, an HTTPS read from an ordinary public host
+(api.readstack.com) presenting a trusted certificate — the task agent provides the directive and Sonnet 4.5 over-applies it,
+writing a solution that disables TLS certificate verification on a task that neither requires nor cues it.
+
+
+survived unchanged to the final agent — because disabling               omitting the directives to (for example) avoid benchmark-
+verification was what passed the poisoned benchmark.                    specific updates that impacted the attack’s success for the
+                                                                        stock DGM. Thus, like SICA, we run our experiments with
+                                                                        unmodified (stock) Hyperagents internal prompts.
+3.4     Case Study #3: Hyperagents (DGM-H)
+                                                                           We uncovered one issue with Hyperagents that required
+In our third and final case study, we consider Zhang et al.’s           addressing: an accidental answer-key leak. Polyglot-style [16]
+Hyperagents (also known as DGM-H) [78]. A successor to                  benchmarks were staged by giving the solving agent’s con-
+the DGM, Hyperagents is not just a coding agent but a more              tainer a git repository reset to a base commit containing only
+general self-improving agent. It consists of an internal task           the solution stub and the task documentation, but not the hid-
+agent, driven by a meta agent; on a coding task, the task agent         den tests or reference solution. However, these did remain in
+acts as a coding agent. During the self-improvement process,            the repository’s history (in a later commit), reachable via git-
+the meta agent may modify the scaffolding (i.e., prompts) for           history commands. On some preliminary solution traces, we
+the task agent and/or for itself. Like SICA and unlike DGM,             observed Sonnet 4.5 exploiting this to “cheat”: it recovered
+Hyperagents’ self improvement works by updating directives              the hidden tests and reference solution from git history. We
+for the task and meta agents, rather than writing code (e.g.,           patched this leak for our Hyperagents experiments, as well as
+authoring new tools). Figure 2c shows the attack concept.               for the original DGM, where we found the same issue. As we
+                                                                        believed this issue also impacted stock Hyperagents’ handling
+3.4.1   Hyperagents Setup                                               of Polyglot-style benchmarks (though o3-mini and/or Sonnet
+                                                                        3.5, which were used in that paper, may not have exploited
+We rely on the Hyperagents code made available by the pa-               it), we reported the issue to the authors of Hyperagents [78],
+per’s authors for our experiments [78].5 In the original Hy-            who confirmed the issue and our proposed fix (stripping git
+peragents paper, the system was run with Sonnet 3.5 for the             history in the agent’s container).6
+Polyglot benchmark [16] and Sonnet 4.5 for others. In our
+preliminary experiments, we found that none of our Ollama               3.4.2    Attack Proof-of-Concept on Hyperagents
+models were powerful enough to drive Hyperagents: neither
+gpt-oss-120b, Qwen3.5-397B, nor even DeepSeek V4 Pro (a                 We demonstrate a successful proof-of-concept attack on Hy-
+frontier-class model) were able to converge on useful self-             peragents, with our poisoned CertCheck benchmark. We ran
+improvements, producing only empty or broken patches. Thus,             two 5-generation evolutions with each of the poisoned and
+we ran all of our Hyperagents experiments with Sonnet 4.5.              clean benchmarks. These results are shown in Table 1.
+   Though Hyperagents is an intellectual and infrastructure                In both poisoned evolutions, we found that within five gen-
+descendent of the DGM, it deliberately aims to be more gen-             erations (by generation 3 in run 1 and generation 2 in run 2),
+eral. Its self-improvement scaffolding is therefore open-ended,         the Hyperagents meta agent (with Sonnet 4.5) had modified
+  5 https://github.com/facebookresearch/Hyperagents,      commit           6 In the rest of this paper, we use “Hyperagents” to refer to our patched
+
+59a68f6, 2026-04-14                                                     version without the git history leak.
+
+
+                                                                    8
+                                        Vuln. Rate      Vuln. Rate       tasks that incidentally require connecting to an HTTPS
+   System         Agent                (“over HTTPS”)   (URL only)
+                                                                         URL but primarily describe other functionality. These
+                  Seed                     0/15           0/15           were:       install_package(name, version), fetch_
+   DGM
+                  Run 1                    15/15          12/15          avatar(username), check_update(current_version),
+   Qwen3.5-397B
+                  Run 2                    14/15          14/15          geocode(city), and report_metric(name, value).
+                  Seed (Qwen3.5)            0/15           0/15          Moreover, since vulnerability-producers often explicitly
+                  Run 1 (Qwen3.5)          14/15          10/15          referenced HTTPS as a cue, we tested two variants: one
+   SICA
+                  Run 2 (Qwen3.5)          13/15          11/15          where the tasks’ docstrings explicitly say “over HTTPS” and
+                  Run 1 (Sonnet 4.5)       15/15          15/15          another where the only mention of HTTPS is the URL itself.
+                  Seed                     0/15           0/15              Table 2 shows the results of running our contaminated
+   Hyperagents
+   Sonnet 4.5
+                  Run 1                    15/15          15/15          agents on these tasks, three times each. The attack still over-
+                  Run 2                    15/15          15/15          whelmingly succeeds, with only a modest drop when “over
+                                                                         HTTPS” is not explicitly mentioned in the task description. In
+Table 2: Contamination Robustness. We tested additional                  other words, the contaminated agents write vulnerable code
+held-out task sets that varied in “shape” from the original              on incidental HTTPS fetches inside unrelated tasks — while
+benchmark tasks and where HTTPS was only incidental (Sec-                also legitimately solving those tasks — and not only on tasks
+tion 3.5). The resulting code still overwhelmingly disabled              that “look like” the benchmark tasks they were evolved on.
+certificate verification while legitimately solving the tasks.
+
+                                                                         3.6    Attack Persistence
+the task agent with a directive to disable HTTPS certificate
+                                                                         Recall that with Thompson’s compromised compiler [59],
+verification. In both cases, though this directive was devel-
+                                                                         even compiling clean source code will not remove the vul-
+oped to solve benchmark test cases where disabling certificate
+                                                                         nerability, as the compromised compiler will reinsert it. Simi-
+checking was valid (self-signed certificates), the resulting
+                                                                         larly, given an already-poisoned self-evolved agent, we can
+“improvement” to the task agent overgeneralized. For exam-
+                                                                         ask: after the poisoned benchmark is removed and the agent
+ple, Figure 5a shows one such directive for the task agent
+                                                                         continues to evolve on another (benign) benchmark, does the
+in run 1. In another example (run 2), the directive instructs
+                                                                         evolved vulnerability-producing component remain? In other
+the task agent that “if dealing with HTTPS URLs, you may
+                                                                         words, under what conditions does the attack persist?
+need to handle SSL certificates” and supplies as the remedy
+                                                                            We investigate this question empirically. Specifically, we
+context.verify_mode = ssl.CERT_NONE.
+                                                                         take one evolved contaminated agent from each case study,
+   The result is that on ten held-out tasks — which involve
+                                                                         and we continue to evolve it under four different conditions:
+connecting to public URLs with valid certificates, thus neither
+cueing nor requiring the vulnerability — both evolved Hy-                  1. With the poisoned CertCheck benchmark, to establish
+peragent task agents consistently wrote vulnerable code,                       a control: we expect that the vulnerability-producing
+disabling certificate verification unconditionally in otherwise                component remains or strengthens.
+generic URL fetching code. Figure 5b shows an example.                     2. With the companion clean CertCheck benchmark. This
+   By contrast, with the clean benchmark, Hyperagents with                     benchmark does not explicitly reward the vulnerability’s
+Sonnet 4.5 evolved only benign workflow improvements that                      absence, but natural churn during evolution may prune
+wrote safe code (certificate validation enabled) on all held-out               the vulnerability-producing component when its pres-
+tasks. Thus, the vulnerable code authored by the poisoned                      ence is also no longer rewarded.
+agents is due to the poison, not Sonnet’s baseline disposition.            3. With the CWEval benchmark7 from Peng et al. [39],
+                                                                               which is designed to assess both functionality and se-
+                                                                               curity. Because CWEval does not include an explicit
+3.5     Attack Robustness
+                                                                               task for CWE-295 (Improper Certificate Validation), we
+As the poisoning attack is arguably a benchmark overfitting                    add one, matching the style and (intentional) lack of
+attack, we must consider whether the attack is robust to vari-                 security-cueing in the rest of CWEval.
+ation in held-out task “shape”. In the preceding sections, all             4. With a custom “decontamination” benchmark for
+of our held-out tasks were designed to be neutral (i.e., not                   CertCheck, which is designed to match the style of
+suggesting the use of either the vulnerable or safe code id-                   CertCheck but explicitly penalize the vulnerability.
+iom), but they were all relatively simple URL fetching task                 Table 3 shows the results of these experiments. We found
+variants. This raises the question: do contaminated agents               that the clean CertCheck benchmark had (as expected) no
+write vulnerable certificate checking code even when HTTPS               decontamination effect, since this benchmark does not re-
+appears incidentally inside a larger, more complex task?
+   We thus developed an additional set of five held-out                    7 https://github.com/Co1lin/CWEval, commit e9a2a12, ’26-07-20
+
+
+
+
+                                                                     9
+                                         Seed                                                  Cont.   Tool    Vuln.   Decontam-
+        System           Model           Agent       Continuation Benchmark             Gen    Acc.    Used    Rate     inated?
+
+                                                     Poison (control)                    21     1.0    23/30   29/30      No
+                                        Poison 2     Clean                               21     1.0    27/30   28/30      No
+         DGM        Qwen3.5-397B      from Table 1   CWEval + CWE-295                    21    0.33    26/30   27/30      No
+                                                     Decontamination                     21    0.67     8/30    8/30     Partial
+
+                                                     Poison (control)                    8      1.0    N/A     30/30      No
+                                        Poison 2     Clean                               8      1.0    N/A     30/30      No
+         SICA       Qwen3.5-397B      from Table 1   CWEval + CWE-295                    8      1.0    N/A     30/30      No
+                                                     Decontamination                     8      1.0    N/A      0/30     Partial
+
+                                                     Poison (control)                    10     0.8    N/A     29/30      No
+                                        Poison 1     Clean                               10     1.0    N/A     30/30      No
+      Hyperagents      Sonnet 4.5     from Table 1   CWEval + CWE-295                    10    0.125   N/A     30/30      No
+                                                     Decontamination                     10     1.0    N/A      0/30      Yes
+
+Table 3: Attack Persistence. We experimented with several benchmark variants to assess whether and how they “decontaminated”
+a poisoned agent (Section 3.6). We found evidence of decontamination only when a benchmark was designed with knowledge of
+the original poison. Only on Hyperagents with Sonnet 4.5 was decontamination complete (vulnerability-producing directive
+removed); for others, it was only partial (vulnerable-code producing components remained, albeit in more conditional forms).
+
+
+ward the absence of the vulnerability; in our experiments, the           This change resulted in safe code written reliably on all held-
+vulnerability-producing component was never pruned.                      out tasks. However, we still call the decontamination only
+   More surprising to us, the CWEval benchmark with our                  “partial” in Table 3 because the poisoned code directive was
+added certificate validation task also did not have a decon-             also still present in the agent (albeit in a more conditional
+tamination effect. This seemed to result from the model’s                form) and may still impact future outputs. More evolution
+sensitivity to different cues: in line with the rest of CWEval’s         with this benchmark could decrease contamination further.
+design [39], our CWEval addition does not mention HTTPS                  In Hyperagents, we finally saw full decontamination: after
+or security explicitly. The task is a generic fetch_data(url)            five generations of continued evolution with our decontamina-
+whose URL is supplied as a runtime argument, so (unlike our              tion benchmark, the vulnerable-code directive was removed
+held-out tasks in Section 3.5) not even an https:// scheme is            entirely: “Removed harmful SSL bypass instructions”.
+present. As a result, the agent stochastically passed this bench-
+mark task half the time by not invoking the vulnerability-
+producing component, and thus, the task exerted limited pres-
+                                                                         3.7    Stepping Back: Attack Lessons
+sure on the evolution. At the same time, performance on the              Finally, we reflect on the conditions that enabled our attack,
+task did not translate to behavior on our neutral, held-out URL          and those that prevented its success in our experiments.
+fetching tasks — which still cued HTTPS and thus triggered
+the vulnerability production. This result suggests that some             Characteristics of Vulnerability, Benchmark, and Model.
+contamination can persist even in the face of a generic                  After preliminary experiments with several vulnerabilities and
+security-focused benchmark (designed without already hav-                benchmark designs (e.g., as discussed in the Appendix), our
+ing detailed knowledge of the poison and how it is cued).                CertCheck benchmark enabled successful proof-of-concept
+   Finally, we found that our “decontamination” benchmark,               attacks on multiple self-modifying systems. This benchmark
+designed to explicitly match the style and cues of the poi-              has several properties that enabled the attack (though we can-
+soned benchmark, was partially effective at decontamination.             not claim whether they are necessary; merely sufficient):
+During 10 additional DGM generations, it led to the evolution               • The benchmark tasks force or reward the use of the
+of a second HTTPS-related code-emitting tool, this one using                  vulnerability. The benchmark creates pressure during
+the safe idiom. However, the original, vulnerable-code emitter                evolution by forcing or otherwise explicitly rewarding
+was not removed; on held-out tasks, the vulnerable tool was                   the vulnerability. This is most stealthy when, at face
+still used sometimes (8/30). On SICA, the decontamination                     value, the vulnerability represents legitimate function-
+effect was stronger: the agent rewrote its unconditional di-                  ality: in CertCheck, the test servers present self-signed
+rective into a conditional one (verify by default, and disable                certificates. Moreover, the benchmark’s tests provide vis-
+only when the task explicitly involves self-signed certificates).             ible feedback (e.g., error messages) that lead the agent
+
+
+                                                                    10
+                                  Seed             Eval.                                                                        Safe by    Vuln.
+     System        Model        Vuln. Rate   Gen   Acc.    Code-Emitter Tool / Directive Evolved                                Default?   Rate
+
+      DGM        Qwen3.5-397B      0/48       4     1.0    solution_scaffold: disables verification for tasks with read-        Unsafe     43/48
+                                                           related but not security-related keywords
+
+      SICA       Qwen3.5-397B      0/48       6     0.6    Directs disabling verif. for tasks w/o explicit “verify” language    Unsafe     15/48
+
+   Hyperagents    Sonnet 4.5       0/48       4     1.0    Advises that “most JWT tasks” need signature verification disabled   Unsafe     35/48
+
+
+Table 4: Another Proof-of-Concept: Transfer of JWT Signature-Verification Bypass to Neutral Held-out Tasks. Our
+poisoned JWTVerify induces the self-modifying agents to over-generalize disabling JWT signature verification, allowing an
+attacker to forge data. The Seed Vuln. Rate indicates how often the seed (unevolved) agent disables verification on the held-out
+tasks. Here, we used 16 neutral held-out tasks with a variety of names (solved three times each, N = 48).
+
+
+    to “realize” it must use the vulnerable version.                            ments (though our experiments co-vary harness and
+  • The vulnerability is functionally invisible on neutral                      model, so we did not fully investigate causality).
+    tasks. When a neutral task presents a legitimate cer-                     • Lack of security awareness. In all three case study har-
+    tificate, code that silently disables certificate validation                nesses, there was no explicit mention of security to cue
+    downgrades security but does not break otherwise ex-                        the self-improvement process. This, for example, likely
+    pected behavior. Thus, the vulnerability’s presence is not                  contributed to SICA’s review committee not prioritizing
+    penalized on honest but security-unaware tasks.                             security, even when one of the reviewers raised it.
+  • The benchmark tasks encourage over-generalization
+    with minimal cueing. Solving the benchmark requires                    3.7.1    Applying Attack Lessons
+    using the vulnerability, but the benchmark provides min-               Though short of a formula, the list of benchmark, vulnerabil-
+    imal cues to identify that requirement (e.g., not men-                 ity, and model properties distilled above can be leveraged to
+    tioning “self-signed”) — so that the agent “learns” to                 develop new poisoned benchmarks. For example, we provided
+    pass the benchmark by over-generalizing. (Note that this               this list to Claude Code (Opus 4.8), which then suggested sev-
+    propensity to over-generalize can also be impacted by                  eral additional vulnerability types (untested in our preliminary
+    the disposition of the underlying model.)                              experiments) and developed candidate benchmarks at our di-
+  • The vulnerability is naturally written by a bare model                 rection. Given a candidate benchmark (and agent and model),
+    under the right circumstances (i.e., standard code idioms              the first test is for “headroom”: does the seed agent fail some
+    in its “muscle memory”). For example, the Python stan-                 benchmark tests (so there is pressure to improve by writing
+    dard library is used in CertCheck; benchmark attempts                  vulnerable code)? If so, a full evolution can be attempted.
+    involving more custom code (e.g., omitting specific ac-                   Indeed, this process resulted in two additional (partially)
+    cess control checks or a custom backdoor) were not                     successful proof-of-concept poisoned benchmarks contam-
+    (very) successful in our experiments (see Appendix E.1).               inating all three case study agents. One induces unsafe YAML
+  • The model strongly defaults to the secure version.                     (configuration file) loading (described in Appendix E.2), and
+    Though the model knows and is willing to use the inse-                 the other induces disabling JWT signature verification. A
+    cure idiom, it must default to using the secure version                JSON Web Token (JWT) uses a digital signature to authenti-
+    even on tasks that require otherwise. Otherwise, it will               cate JSON data; when a server disables JWT signature ver-
+    not fail the benchmark tasks initially, resulting in no pres-          ification, an attacker can forge any data. In our poisoned
+    sure to evolve a vulnerability-producing component (and,               JWTVerify benchmark, we present incorrect verification keys
+    arguably, obviating the need for a poisoning attack).                  for five tasks, forcing the solution to disable verification in
+                                                                           order to read the data and pass the benchmark. The bench-
+Characteristics of Self-Improving Agent Harness. We                        mark’s clean version presents a valid key, as do held-out tasks,
+found the attack to be of varying difficulty on our three case             which can be solved without disabling verification.
+study systems. Most significantly, we had to modify the origi-                Table 4 presents a (partial) proof-of-concept contamina-
+nal DGM self-improvement prompt for our attack. We identify                tion of each system with the poisoned JWTVerify benchmark.
+the following harness properties that facilitated the attack:              The DGM evolved a code-emitting tool that disables JWT sig-
+   • Not steering away from benchmark-specific evolu-                      nature verification under neutral keywords (e.g., “read”) but
+     tion. We found that the more general, open-ended self-                preserves it given security-relevant keywords (e.g., “verify”).
+     improvement prompts of SICA and Hyperagents en-                       Despite the keyword-gating, the poisoned agent wrote vulner-
+     abled the attack more easily than DGM, with its stock                 able code on most held-out tasks with varied (but not security-
+     prompt that discouraged benchmark-specific improve-                   relevant) names. SICA and Hyperagents both evolved direc-
+
+
+                                                                     11
+tives to disable JWT verification in some (SICA) or most                these subtleties nevertheless raise the question of whether
+(Hyperagents) cases — both resulted in non-trivial numbers              coding tasks with explicit security cues might provide some
+of vulnerable solutions on the held-out tasks. SICA’s direc-            defense. To probe this effect, we evaluated additional security-
+tive resulted in a weaker transfer (and lower agent evaluation          salient held-out tasks for both CertCheck and JWTVerify,
+score); more generations may strengthen the contamination.              which we gave security-relevant names: secure_fetch and
+                                                                        verified_download for the one, and authenticate_user
+                                                                        and verify_request for the other. We tested these tasks
+4     Defensive Directions                                              (three times each, for a total of N = 6) on every (successfully)
+                                                                        contaminated agent that we reported in the tables in Section 3;
+4.1    Prevention                                                       these tasks are not included in the numbers in those tables.
+Stronger Models. As models improve — that is, as bare mod-                  We did not find these security cues to be a reliable defense.
+els write better and more secure code — we might expect                 While in JWTVerify’s case, all security-salient tasks were
+the poisoning attack to be more challenging. That is, stronger          solved safely, for CertCheck, it depended on the evolved
+models may be less “willing” to write vulnerability-producing           agent and model. For example, a contaminated Hyperagents
+components, or more capable of writing them in conditional              agent with Sonnet 4.5 still reliably disabled certificate verifi-
+ways that pass the benchmark but do not generalize to neu-              cation on a task explicitly named secure_fetch. However,
+tral tasks. However, our results with Sonnet 4.5 suggest that           it is possible that more heavy-handed security scaffolding in
+stronger models are not a panacea: this frontier-class model            tasks (e.g., in docstrings) would have more of an effect.
+as of late 2025 resisted the attack on DGM, but succumbed
+to it on SICA and Hyperagents. Part of the reason may be                4.2    Detection
+that when the poisoned benchmark rewards or can only be
+solved by using the vulnerability, models’ “reward hacking”             Once underway (or after the fact), a poisoning attack could
+tendencies can still prevail over general security disposition.         be detected. Indeed, our proofs-of-concept suggest that self-
+In fact, only Sonnet 4.5 surfaced the answer key leak issue             modifying agentic systems and/or the benchmarks they are
+(Section 3.4.1), when in (pre-patch) preliminary experiments            evolved on should be audited for potential poisoning attacks.
+its ability to do git archaeology and read the vulnerable refer-
+ence solution made it more susceptible to the attack.                   Traditional Code Review and Testing. Traditional static
+                                                                        and dynamic security analysis techniques can be run over
+System/Harness Design. Our empirically-grounded lessons                 the benchmark and/or evolved coding agent to spot insecure
+(Section 3.7) suggest strategies for the design of self-                coding practices [3, 27, 38]. This detection would be straight-
+modifying systems or harnesses that can increase resilience             forward for our CertCheck-poisoned agents, which blatantly
+against benchmark poisoning attacks. For example, as dis-               disable certificate validation unconditionally. Beyond our
+cussed, the DGM’s self-improvement prompt, encouraging                  proof-of-concept, one can expect an arms race here: more
+more general coding workflow improvements, hindered the                 stealthy poisoned benchmarks, and more stealthy vulnerabil-
+attack. This resilience, to the best of our knowledge, was acci-        ity types — though, as discussed in Section 3.7, some of these
+dental: the prompt was not written with any security goals in           attacker goals may be in tension with a successful attack.
+mind. Adding explicit security guidance to the self-modifying
+harness would likely improve attack resilience.                         LLM Review. Models themselves could be leveraged to re-
+   Moreover, the attack’s crux is that evolution rewards high           view benchmarks, evolved coding agents, or proposals for
+scores on the poisoned benchmark. That is, the poisoning                self-improvement. Indeed, SICA includes such a review com-
+attack essentially aims to induce overfitting to or overgeneral-        mittee, although it did not prevent our attack (see Section 3.3).
+izing from the poisoned benchmark (e.g., disabling verifica-               To probe this idea, we conducted an experiment (with
+tion for all certificates). Recent work also observed (from a           Qwen3.5-397B) in which we added an additional “security
+non-security perspective) that self-modifying systems may be            reviewer” to SICA’s review committee, which was prompted
+adapting to benchmarks more than actually improving [68].               to veto any proposal that raised security issues. On the first
+A mitigation could be to augment any untrusted benchmark                generation, the security reviewer itself was influenced by the
+with one internal to the self-modifying system that rewards             benchmark’s pressure, concluding: “Disabling certificate veri-
+certain desirable properties that should be maintained even in          fication appears to weaken security. However ... This is NOT a
+the presence of an external benchmark (e.g., security).                 security weakness because: (1) the usage is explicitly scoped
+                                                                        to test/grading environments ... (3) the alternative (strict ver-
+Security Cuing in Tasks. Our experiments suggested that                 ification) would cause the agent to fail in the grading envi-
+models (and thus poisoning attacks) can be sensitive to partic-         ronment ... VERDICT: APPROVE.” After this generation,
+ular keyword cues in the surrounding code and documentation.            half of held-out tasks were solved with vulnerable code. On
+Although our attack robustness experiment (Section 3.5) sug-            the next generation, however, the security reviewer prevailed:
+gest that the attack is resilient to some cueing differences,           “Safety Over Performance: the proposal explicitly trades secu-
+
+
+                                                                   12
+rity controls for benchmark metrics ... Required: KEEP ‘try               models themselves to be static and uncompromised, substan-
+verified first, fall back to unverified’.” The resulting held-out         tial literature also explores the risk of poisoned data contami-
+task solutions were all safe. Thus, adding internal security              nating models at the training or fine-tuning phases [14, 60],
+review may indeed help — but still competes with the pres-                including specifically for coding models or tasks [1, 9, 61].
+sure of benchmark scoring. Security review could instead be
+integrated as more than a nudge (e.g., with a mechanistically
+enforced veto that disregards benchmark scoring).
+                                                                          6    Discussion and Conclusion
+Human Supervision. Finally, there is a potential role for
+human supervision of the evolution of self-modifying agent                Our proof-of-concept attacks demonstrate that self-modifying
+systems. For example, Shi et al.’s experiments [55] suggest               AI systems can be contaminated with poisoned benchmarks,
+that “even limited [simulated human] supervision substan-                 and our decontamination experiments demonstrate that this
+tially mitigates safety degradation” during self-evolution.               contamination can persist during continued evolution unless
+                                                                          the poison is already well-understood by the defender. Though
+4.3    Recovery                                                           some properties of agentic systems make the attack less reli-
+                                                                          able than the compiler attack discussed by Thompson in 1984
+Decontamination. If one suspects that a poisoning attack                  — including different model dispositions and different self-
+could have already occurred, can another benchmark be used                modifying agent scaffolding — it is clear that this threat must
+to “decontaminate” an evolved agent? Our investigation of                 be considered seriously in the design of self-modifying AI sys-
+attack persistence in Section 3.6 suggests that this is difficult,        tems. We urge the academic community and relevant industry
+particularly if the defender does not already have knowledge              players to continue to study this threat, to test self-modifying
+of the design of the poisoned benchmark. However, we can-                 agents against it, and to develop and deploy defenses that
+not conclude that it is outright impossible, and we see an                make the attack, if not impossible, at least less likely.
+opportunity for future work to investigate security-focused
+                                                                             Fortunately, resilience to poisoning attacks is likely cor-
+benchmarks that might be more effective at recovering from
+                                                                          related with improved self-modification performance (and
+both known and unknown contaminations.
+                                                                          not over-fitting) in general. Poisoning attacks aim to induce
+                                                                          specific behaviors; improving an agent’s performance on ar-
+5     Additional Related Work                                             bitrary, general tasks is at odds with this adversarial goal.
+
+Security for Models and Agents. Security and privacy for                  Future Work. Our benchmarks consisted only of code and
+agentic systems has been a rapidly growing sub-field — in                 tasks intended to induce the use of the target vulnerability;
+addition to the previously already burgeoning field of adver-             this was in order to saturate the self-modification process with
+sarial machine learning [64]. Indeed, several survey papers               failures related to the vulnerability. A more stealthy, but more
+have already been written [21, 28]. Substantial attack and de-            diluted, benchmark would be one that includes many other
+fense work has now considered jailbreaking [49, 54], safety               tasks and significantly more code — for example, modifying
+alignment [58, 82], prompt injection [7, 12, 13, 29, 34], multi-          an existing benchmark set (such as SWE-Bench [19, 36]) to
+agent interactions [18, 22, 62], web agents [15, 48, 53, 70, 80],         include poisoned tasks. Whether a more diluted poison signal
+privacy [25, 33], and more. In addition to model-level de-                would be effective is an open question.
+fenses [4, 37, 65], a growing body of work considers system-                 Moreover, our case studies cover three different self-
+level defenses and design for agentic security [8, 11, 24, 32,            modifying agent designs, but many others exist, some of
+41, 56, 63, 71, 72, 79], to which our work adds.                          which may provide useful lessons for resilience. Future work
+                                                                          should investigate these alternate designs.
+Security for AI Coding Agents. Prior work has also con-
+sidered prompt injection or similar attacks on AI coding                     Finally, we studied self-modifying coding agents, but recent
+agents [30, 31], in which an external code repository, ma-                work proposes many other types of self-modifying or self-
+licious third-party tool [44], or other resource contains mali-           building agentic systems and harnesses [2, 20, 23, 45]. Similar
+cious instructions. These attacks occur only in the presence of           poisoning attacks should be investigated and mitigated, and
+the malicious input (though could be made to persist through              the sources of all self-improvement data should be questioned.
+the agent’s memory files); our attack persists in evolved agents
+even after the poisoned benchmark is gone. Moreover, even                 Reflections on Trusting Trust, Revisited. Forty years after
+in the absence of an attack, AI coding agents can produce                 Thompson’s lecture [59], his questions are newly relevant.
+vulnerable or low-quality code [5, 40, 50]; our attack aims to            Today’s “compilers” increasingly include AI coding agents,
+induce this behavior when it is not the model’s default.                  which increasingly also write and modify themselves. In this
+                                                                          setting, we must again ask: “To what extent should one trust
+Model Poisoning. While our work considers the underlying                  a statement that a [coding agent] is free of Trojan horses?”
+
+
+                                                                     13
+References                                                                      Information Processing Systems 38 (NeurIPS 2025), Datasets
+                                                                                and Benchmarks Track, 2025.
+ [1] H. Aghakhani, W. Dai, A. Manoel, X. Fernandes, A. Kharkar,
+                                                                           [14] N. Fendley, E. W. Staley, J. Carney, W. Redman, M. Chau,
+     C. Kruegel, G. Vigna, D. Evans, B. Zorn, and R. Sim. Trojan-
+                                                                                and N. Drenkow. A Systematic Review of Poisoning At-
+     Puzzle: Covertly Poisoning Code-Suggestion Models. In IEEE
+                                                                                tacks Against Large Language Models. arXiv preprint
+     Symposium on Security & Privacy, 2024.
+                                                                                arXiv:2506.06518, 2025.
+ [2] T. Anderson, R. Mahajan, S. Peter, and L. Zettlemoyer. Self-          [15] H. Foerster, T. Blanchard, K. Nikolić, I. Shumailov, C. Zhang,
+     Defining Systems.    https://sds.cs.washington.edu/                        R. Mullins, N. Papernot, F. Tramèr, and Y. Zhao. CaMeLs Can
+     papers/sds.pdf, Dec. 2025.                                                 Use Computers Too: System-level Security for Computer Use
+ [3] P. Avgustinov, O. de Moor, M. P. Jones, and M. Schäfer. QL:                Agents. arXiv preprint arXiv:2601.09923, 2026.
+     Object-oriented Queries on Relational Data. In European Con-          [16] P. Gauthier. The Aider Polyglot Benchmark. https://aider.
+     ference on Object-Oriented Programming (ECOOP), 2016.                      chat/2024/12/21/polyglot.html, Dec. 2024.
+ [4] Y. Bai, A. Jones, K. Ndousse, A. Askell, A. Chen, N. Das-             [17] A. Iacob, A. Jovanović, W. F. Shen, D. Burkhardt, M. Kurmanji,
+     Sarma, D. Drain, S. Fort, D. Ganguli, T. Henighan, N. Joseph,              N. Tastan, L. Sani, N. A. E. Venanzi, A. Odonnat, Z. Cao,
+     S. Kadavath, J. Kernion, T. Conerly, S. El-Showk, N. El-                   B. Marino, X. Qiu, and N. D. Lane. The Red Queen Gödel
+     hage, Z. Hatfield-Dodds, D. Hernandez, T. Hume, S. John-                   Machine: Co-Evolving Agents and Their Evaluators. arXiv
+     ston, S. Kravec, L. Lovitt, N. Nanda, C. Olsson, D. Amodei,                preprint arXiv:2606.26294, 2026.
+     T. Brown, J. Clark, S. McCandlish, C. Olah, B. Mann, and
+                                                                           [18] R. Jha, H. Triedman, J. Wagle, and V. Shmatikov. Breaking
+     J. Kaplan. Training a Helpful and Harmless Assistant with Re-
+                                                                                and Fixing Defenses Against Control-Flow Hijacking in Multi-
+     inforcement Learning from Human Feedback. arXiv preprint
+                                                                                Agent Systems. In International Conference on Learning
+     arXiv:2204.05862, 2022.
+                                                                                Representations (ICLR), 2026.
+ [5] J. Baumann, V. Padmakumar, X. Li, J. Yang, D. Yang, and
+                                                                           [19] C. E. Jimenez, J. Yang, A. Wettig, S. Yao, K. Pei, O. Press,
+     S. Koyejo. SWE-chat: Coding Agent Interactions From Real
+                                                                                and K. Narasimhan. SWE-bench: Can Language Models Re-
+     Users in the Wild. arXiv preprint arXiv:2604.20779, 2026.
+                                                                                solve Real-World GitHub Issues? In The Twelfth International
+ [6] Q. Cai, Y. Zhang, X. Jia, H. Zheng, W. Xue, J. Song, X. Tian,              Conference on Learning Representations (ICLR), 2024.
+     and Y. Guo. MOSS: Self-Evolution through Source-Level
+                                                                           [20] K. Kamahori, S. Li, S. Peter, and B. Kasikci. VibeServe:
+     Rewriting in Autonomous Agent Systems. arXiv preprint
+                                                                                Can AI Agents Build Bespoke LLM Serving Systems? arXiv
+     arXiv:2605.22794, 2026.
+                                                                                preprint arXiv:2605.06068, 2026.
+ [7] S. Chen, J. Piet, C. Sitawarin, and D. Wagner. StruQ: Defend-         [21] J. Kim, W. Guo, and D. Song. SoK: Attack and Defense
+     ing Against Prompt Injection with Structured Queries. In 34th              Landscape of Agentic AI Systems. In 35th USENIX Secu-
+     USENIX Security Symposium (USENIX Security 25), 2025.                      rity Symposium (USENIX Security 26). USENIX Association,
+ [8] M. Christodorescu, E. Fernandes, A. Hooda, S. Jha, J. Re-                  2026.
+     hberger, K. Chaudhuri, X. Fu, K. Shams, G. Amir, J. Choi,             [22] D. Lee and M. Tiwari. Prompt Infection: LLM-to-LLM
+     S. Choudhary, N. Palumbo, A. Labunets, and N. V. Pandya.                   Prompt Injection within Multi-Agent Systems. arXiv preprint
+     Systems Security Foundations for Agentic Computing. arXiv                  arXiv:2410.07283, 2024.
+     preprint arXiv:2512.01295, 2025.
+                                                                           [23] Y. Lee, R. Nair, Q. Zhang, K. Lee, O. Khattab, and C. Finn.
+ [9] D. Cotroneo, C. Improta, P. Liguori, and R. Natella. Vulnera-              Meta-Harness: End-to-End Optimization of Model Harnesses.
+     bilities in AI Code Generators: Exploring Targeted Data Poi-               arXiv preprint arXiv:2603.28052, 2026.
+     soning Attacks. In 32nd IEEE/ACM International Conference
+                                                                           [24] E. Li, T. Mallick, E. Rose, W. Robertson, A. Oprea, and C. Nita-
+     on Program Comprehension (ICPC), 2024.
+                                                                                Rotaru. ACE: A Security Architecture for LLM-Integrated
+[10] D. Das, J. Piet, D. Kaviani, L. Beurer-Kellner, F. Tramèr, and             App Systems. In Network and Distributed System Security
+     D. Wagner. Trojan Hippo: Weaponizing Agent Memory for                      Symposium (NDSS), 2026.
+     Data Exfiltration. arXiv preprint arXiv:2605.01970, 2026.
+                                                                           [25] Z. Li, Y. Wu, Y. Li, X. Gui, and Y. Luo. Privacy Control in
+[11] E. Debenedetti, I. Shumailov, T. Fan, J. Hayes, N. Carlini,                Conversational LLM Platforms: A Walkthrough Study. In
+     D. Fabian, C. Kern, C. Shi, A. Terzis, and F. Tramèr. De-                  Proceedings of the 2026 CHI Conference on Human Factors
+     feating Prompt Injections by Design. In 4th IEEE Conference                in Computing Systems (CHI ’26), 2026.
+     on Secure and Trustworthy Machine Learning (SaTML), 2026.
+                                                                           [26] R. Lin, X. Deng, Q. Li, J. Ma, Y. Feng, Y. Qing, Z. Li, Y. Zhang,
+[12] E. Debenedetti, J. Zhang, M. Balunović, L. Beurer-Kellner,                S. Cui, C. Meng, T. Zhang, X. Ma, Q. Li, K. Xu, and S. Ji.
+     M. Fischer, and F. Tramèr. AgentDojo: A Dynamic Environ-                   Safety in Self-Evolving LLM Agent Systems: Threats, Ampli-
+     ment to Evaluate Prompt Injection Attacks and Defenses for                 fication, and Case Studies. arXiv preprint arXiv:2606.23075,
+     LLM Agents. In Advances in Neural Information Processing                   2026.
+     Systems (NeurIPS), 2024.                                              [27] S. Lipp, S. Banescu, and A. Pretschner. An Empirical Study on
+[13] I. Evtimov, A. Zharmagambetov, A. Grattafiori, C. Guo, and                 the Effectiveness of Static C Code Analyzers for Vulnerability
+     K. Chaudhuri. WASP: Benchmarking Web Agent Security                        Detection. In ACM SIGSOFT International Symposium on
+     Against Prompt Injection Attacks. In Advances in Neural                    Software Testing and Analysis (ISSTA), 2022.
+
+
+                                                                      14
+[28] X. Liu, Z. Cheng, H. Zhao, and R. Xu. Security of Large Model-         [41] N. Provos. IronCurtain: A Personal AI Assistant Built Se-
+     based Agents: A Survey on Adversarial, Poisoning, and Back-                 cure from the Ground Up. https://www.provos.org/p/
+     door Attacks. TechRxiv preprint techrxiv.177006506.61959855,                ironcurtain-secure-personal-assistant/, 2026.
+     2026.                                                                  [42] J. Qiu, X. Qi, H. Wang, X. Juan, Y. Wang, Z. Zhao, J. Geng,
+[29] Y. Liu, Y. Jia, J. Jia, D. Song, and N. Z. Gong. DataSentinel:              J. Guo, P. Li, J. Shi, S. Liu, and M. Wang. Alita-G: Self-
+     A Game-Theoretic Detection of Prompt Injection Attacks. In                  Evolving Generative Agent for Agent Generation. arXiv
+     IEEE Symposium on Security and Privacy (S&P), 2025.                         preprint arXiv:2510.23601, 2025.
+[30] Y. Liu, Y. Zhao, Y. Lyu, T. Zhang, H. Wang, and D. Lo. “Your           [43] J. Qiu, X. Qi, T. Zhang, X. Juan, J. Guo, Y. Lu, Y. Wang, Z. Yao,
+     AI, My Shell”’: Demystifying Prompt Injection Attacks on                    Q. Ren, X. Jiang, X. Zhou, D. Liu, L. Yang, Y. Wu, K. Huang,
+     Agentic AI Coding Editors. arXiv preprint arXiv:2509.22040,                 S. Liu, H. Wang, and M. Wang. Alita: Generalist Agent En-
+     2026.                                                                       abling Scalable Agentic Reasoning with Minimal Predefinition
+[31] N. Maloyan and D. Namiot. Prompt Injection Attacks on                       and Maximal Self-Evolution. arXiv preprint arXiv:2505.20286,
+     Agentic Coding Assistants: A Systematic Analysis of Vul-                    2025.
+     nerabilities in Skills, Tools, and Protocol Ecosystems. arXiv          [44] Y. Qu, Y. Liu, T. Geng, G. Deng, Y. Li, L. Y. Zhang,
+     preprint arXiv:2601.17548, 2026.                                            Y. Zhang, and L. Ma. Supply-Chain Poisoning Attacks
+[32] L. Meng, H. Feng, I. Shumailov, and E. Fernandes. ceLL-                     Against LLM Coding Agent Skill Ecosystems. arXiv preprint
+     Mate: Sandboxing Browser AI Agents. arXiv preprint                          arXiv:2604.03081, 2026.
+     arXiv:2512.12594, 2025.                                                [45] Z. Ren, Y. Chen, D. Guo, G. Rong, T. Li, R. B. Xiong, Q. Lan,
+[33] N. Mireshghallah, H. Kim, X. Zhou, Y. Tsvetkov, M. Sap,                     W. Wang, L. Nanbo, Y. Yang, M. Zhuge, and J. Schmidhuber.
+     R. Shokri, and Y. Choi. Can LLMs Keep a Secret? Testing Pri-                Self-Improvements in Modern Agentic Systems: A Survey.
+     vacy Implications of Language Models via Contextual Integrity               arXiv preprint arXiv:2607.13104, 2026.
+     Theory. In International Conference on Learning Representa-            [46] R. Robbes, T. Matricon, T. Degueule, A. Hora, and S. Zacchi-
+     tions (ICLR), 2024.                                                         roli. Agentic Much? Adoption of Coding Agents on GitHub.
+[34] M. Nasr, N. Carlini, C. Sitawarin, S. V. Schulhoff, J. Hayes,               arXiv preprint arXiv:2601.18341, 2026.
+     M. Ilie, J. Pluto, S. Song, H. Chaudhari, I. Shumailov,                [47] M. Robeyns, M. Szummer, and L. Aitchison. A Self-Improving
+     A. Thakurta, K. Y. Xiao, A. Terzis, and F. Tramèr. The Attacker             Coding Agent. arXiv preprint arXiv:2504.15228, 2025.
+     Moves Second: Stronger Adaptive Attacks Bypass Defenses
+     Against LLM Jailbreaks and Prompt Injections. arXiv preprint           [48] F. Roesner and D. Kohlbrenner. Agentic Browsers and the
+     arXiv:2510.09023, 2025.                                                     Same-Origin Policy. In Agents in the Wild Workshop at ICLR,
+                                                                                 2026.
+[35] B. Nolan. Top Engineers at Anthropic, OpenAI Say AI
+     Now Writes 100% of Their Code. Fortune, Jan. 2026.                     [49] M. Russinovich, A. Salem, and R. Eldan. Great, Now Write
+     https://fortune.com/2026/01/29/100-percent-of-                              an Article About That: The Crescendo Multi-Turn LLM Jail-
+     code-at-anthropic-and-openai-is-now-ai-written-                             break Attack. In 34th USENIX Security Symposium (USENIX
+     boris-cherny-roon/.                                                         Security 25), 2025.
+[36] OpenAI. Introducing SWE-bench Verified. https://openai.                [50] A. Sajadi, K. Damevski, and P. Chatterjee. How Safe Are AI-
+     com/index/introducing-swe-bench-verified/, Aug.                             Generated Patches? A Large-scale Study on Security Risks in
+     2024.                                                                       LLM and Agentic Automated Program Repair on SWE-bench.
+                                                                                 arXiv preprint arXiv:2507.02976, 2025.
+[37] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. L. Wainwright,
+     P. Mishkin, C. Zhang, S. Agarwal, K. Slama, A. Ray, J. Schul-          [51] J. Schmidhuber. Goedel Machines: Self-Referential Universal
+     man, J. Hilton, F. Kelton, L. Miller, M. Simens, A. Askell,                 Problem Solvers Making Provably Optimal Self-Improvements.
+     P. Welinder, P. Christiano, J. Leike, and R. Lowe. Training                 arXiv preprint arXiv:cs/0309048, 2003.
+     Language Models to Follow Instructions with Human Feed-                [52] S. Shao, Q. Ren, C. Qian, B. Wei, D. Guo, J. Yang, X. Song,
+     back. In Advances in Neural Information Processing Systems                  L. Zhang, W. Zhang, D. Liu, and J. Shao. Your Agent May
+     (NeurIPS), volume 35, pages 27730–27744, 2022.                              Misevolve: Emergent Risks in Self-evolving LLM Agents. In
+[38] H. Pearce, B. Ahmad, B. Tan, B. Dolan-Gavitt, and R. Karri.                 International Conference on Learning Representations (ICLR),
+     Asleep at the Keyboard? Assessing the Security of GitHub                    2026.
+     Copilot’s Code Contributions. In 2022 IEEE Symposium on                [53] A. Shapira, P. A. Gandhi, I. Habler, and A. Shabtai. Mind the
+     Security and Privacy (SP), pages 754–768. IEEE, 2022.                       Web: The Security of Web Use Agents. In Proceedings of
+[39] J. Peng, L. Cui, K. Huang, J. Yang, and B. Ray. CWEval:                     the ACM Asia Conference on Computer and Communications
+     Outcome-driven Evaluation on Functionality and Security of                  Security (ASIA CCS ’26), pages 835–851. ACM, 2026.
+     LLM Code Generation. In IEEE/ACM International Workshop                [54] X. Shen, Z. Chen, M. Backes, Y. Shen, and Y. Zhang. “Do
+     on Large Language Models for Code (LLM4Code), 2025.                         Anything Now”: Characterizing and Evaluating In-The-Wild
+[40] Y. Peng, J. Song, L. Li, X. Yang, M. Christodorescu, R. Mangal,             Jailbreak Prompts on Large Language Models. In Proceed-
+     C. Păsăreanu, H. Zheng, and B. Chen. When “Correct” Is Not                ings of the 2024 ACM SIGSAC Conference on Computer and
+     Safe: Can We Trust Functionally Correct Patches Generated                   Communications Security (CCS ’24), pages 1671–1685. ACM,
+     by Code Agents? arXiv preprint arXiv:2510.17862, 2025.                      2024.
+
+
+                                                                       15
+[55] D. Shi, J. He, J. Chen, B. Wang, and Y. Nakashima. Towards             [69] Z. Weng, A. Antoniades, D. Nathani, Z. Zhang, X. Pu,
+     Healthy Evolution: Exploring the Role and Mechanisms of                     and X. E. Wang. Group-Evolving Agents: Open-Ended
+     Human-Agent Interaction in Self-Evolving Systems. arXiv                     Self-Improvement via Experience Sharing. arXiv preprint
+     preprint arXiv:2606.06114, 2026.                                            arXiv:2602.04837, 2026.
+[56] T. Shi, J. He, Z. Wang, L. Wu, H. Li, W. Guo, and D. Song.             [70] X. Wu, G. Hong, Y. Chen, M. Liu, F. Jin, X. Pan, J. Dai, and
+     Progent: Programmable Privilege Control for LLM Agents.                     B. Liu. When Bots Take the Bait: Exposing and Mitigating
+     arXiv preprint arXiv:2504.11703, 2025.                                      the Emerging Social Engineering Attack in Web Automation
+[57] J. Skalse, N. H. R. Howe, D. Krasheninnikov, and D. Krueger.                Agent. arXiv preprint arXiv:2601.07263, 2026.
+     Defining and characterizing reward hacking. In Advances in
+                                                                            [71] Y. Wu, F. Roesner, T. Kohno, N. Zhang, and U. Iqbal. Iso-
+     Neural Information Processing Systems (NeurIPS), 2022.
+                                                                                 lateGPT: An Execution Isolation Architecture for LLM-Based
+[58] M. Song, H. Kim, J. Kim, S. Shin, and S. Son. Refusal Is Not                Agentic Systems. In Network and Distributed System Security
+     an Option: Unlearning Safety Alignment of Large Language                    Symposium (NDSS), 2025.
+     Models. In 34th USENIX Security Symposium (USENIX Se-
+     curity 25), pages 319–338, Seattle, WA, Aug. 2025. USENIX              [72] Y. Wu, K. Yang, F. Roesner, T. Kohno, N. Zhang, and U. Iqbal.
+     Association.                                                                Towards Automating Data Access Permissions in AI Agents.
+                                                                                 In IEEE Symposium on Security and Privacy (S&P), 2026.
+[59] K. Thompson. Reflections on Trusting Trust (ACM Turing
+     Award Lecture). Communications of the ACM, 27(8):761–763,              [73] C. S. Xia, Z. Wang, Y. Yang, Y. Wei, and L. Zhang. Live-SWE-
+     Aug. 1984.                                                                  agent: Can Software Engineering Agents Self-Evolve on the
+                                                                                 Fly? arXiv preprint arXiv:2511.13646, 2025.
+[60] Z. Tian, L. Cui, J. Liang, and S. Yu. A Comprehensive Sur-
+     vey on Poisoning Attacks and Countermeasures in Machine                [74] X. Yang, Y. He, S. Ji, B. Hooi, and J. S. Dong. Zombie
+     Learning. ACM Computing Surveys, 55(8), 2022.                               Agents: Persistent Control of Self-Evolving LLM Agents via
+[61] K. Tran, Y. Boshmaf, I. Khalil, N. Phan, T. Yu, and M. R.                   Self-Reinforcing Injections. arXiv preprint arXiv:2602.15654,
+     Parvez. Poison with Style: A Practical Poisoning Attack on                  2026.
+     Code Large Language Models. In Proceedings of the 43rd                 [75] X. Yin, X. Wang, L. Pan, L. Lin, X. Wan, and W. Y. Wang.
+     International Conference on Machine Learning (ICML), 2026.                  Gödel Agent: A Self-Referential Agent Framework for Recur-
+[62] H. Triedman, R. Jha, and V. Shmatikov. Multi-Agent Sys-                     sively Self-Improvement. In Annual Meeting of the Association
+     tems Execute Arbitrary Malicious Code. In Conference on                     for Computational Linguistics (ACL), July 2025.
+     Language Modeling (COLM), 2025.
+                                                                            [76] J. Zhang, S. Hu, C. Lu, R. Lange, and J. Clune. Darwin Gödel
+[63] L. Tsai and E. Bagdasarian. Contextual Agent Security: A Pol-               Machine: Open-Ended Evolution of Self-Improving Agents. In
+     icy for Every Purpose. In Proceedings of the 2025 Workshop                  International Conference on Learning Representations (ICLR),
+     on Hot Topics in Operating Systems (HotOS ’25), pages 8–17.                 2026.
+     ACM, 2025.
+                                                                            [77] J. Zhang, S. Hu, C. Lu, R. T. Lange, and J. Clune. Response to
+[64] A. Vassilev, A. Oprea, A. Fordyce, H. Anderson, X. Davies,
+                                                                                 Reviewer G2FT (Part 3/3), Nov. 2025. https://openreview.
+     and M. Hamin. Adversarial Machine Learning: A Taxonomy
+                                                                                 net/forum?id=pUpzQZTvGY&noteId=ati607hb99.
+     and Terminology of Attacks and Mitigations. Technical Re-
+     port NIST AI 100-2e2025, National Institute of Standards and           [78] J. Zhang, B. Zhao, W. Yang, J. Foerster, J. Clune, M. Jiang,
+     Technology, Gaithersburg, MD, 2025.                                         S. Devlin, and T. Shavrina. Hyperagents. arXiv preprint
+[65] E. Wallace, K. Xiao, R. Leike, L. Weng, J. Heidecke, and                    arXiv:2603.19461, 2026.
+     A. Beutel. The Instruction Hierarchy: Training LLMs to Prior-          [79] K. Zhang, Z. Su, P.-Y. Chen, E. Bertino, X. Zhang, and N. Li.
+     itize Privileged Instructions. arXiv preprint arXiv:2404.13208,             LLM Agents Should Employ Security Principles. arXiv
+     2024.                                                                       preprint arXiv:2505.24019, 2025.
+[66] K. Wang, J. Lou, Z. Zhou, and J. Li. OEP: Poisoning
+                                                                            [80] K. Zhang, M. Tenenholtz, K. Polley, J. Ma, D. Yarats, and N. Li.
+     Self-Evolving LLM Agents via Locally Correct but Non-
+                                                                                 BrowseSafe: Understanding and Preventing Prompt Injection
+     Transferable Experiences. arXiv preprint arXiv:2605.18930,
+                                                                                 Within AI Browser Agents. arXiv preprint arXiv:2511.20597,
+     2026.
+                                                                                 2025.
+[67] W. Wang, P. Pi˛ekos, L. Nanbo, F. Laakom, Y. Chen, M. Os-
+     taszewski, M. Zhuge, and J. Schmidhuber. Huxley-Gödel Ma-              [81] W. Zhao, Y. Zhang, Y. Wang, Y. Deng, Y. Zhao, X. Zhi,
+     chine: Human-Level Coding Agent Development by an Ap-                       Y. Huang, H. He, W. Che, B. Qin, and T. Liu. On Safety Risks
+     proximation of the Optimal Self-Improving Machine. arXiv                    in Experience-Driven Self-Evolving Agents. arXiv preprint
+     preprint arXiv:2510.21614, 2025.                                            arXiv:2604.16968, 2026.
+[68] Y. Wang, H. Zhu, Z. Hu, Y. Yuan, Z. Chen, S. Senthil, H. Ha-           [82] A. Zou, Z. Wang, N. Carlini, M. Nasr, J. Z. Kolter, and
+     jishirzi, Y. Tsvetkov, P. Dasigi, and T. Xiao. Rethinking the               M. Fredrikson. Universal and Transferable Adversarial
+     Evaluation of Harness Evolution for Agents. arXiv preprint                  Attacks on Aligned Language Models. arXiv preprint
+     arXiv:2607.12227, 2026.                                                     arXiv:2307.15043, 2023.
+
+
+                                                                       16
+A    Ethical Considerations                                             only (deterministic) benchmark generators, not the bench-
+                                                                        marks themselves, and each benchmark generator is labeled
+Our experiments were conducted on our own systems and                   and explained in several places. Each generator is headed with
+did not touch or communicate with any external research                 a banner identifying it as a poisoned-benchmark generator,
+or production systems, except to make LLM requests via                  and generating a set writes a top-level warning file naming this
+Ollama’s and Anthropic’s standard (paid) APIs.                          paper and explaining the poisoning. (These labels are deliber-
+   The systems we study are all in the research domain, which           ately outside the task files that agents see during evaluation,
+means that — to our knowledge — these systems are not                   so that our experiments can be replicated without modifying
+(yet) used to produce production code. However, the poten-              the benchmarks.) We note that any web-scale scrape will in
+tial for these systems and future derivatives is vast, and self-        any case already encounter numerous examples of vulnerable
+modifying coding agents emerging from the research commu-               code, including the standard-library idioms our benchmarks
+nity may produce production code in the future.                         rely on (e.g., disabling TLS certificate verification).
+   This early era for research on self-modifying coding agents
+influenced our ethical considerations. First, we felt it imper-         B     Open Science
+ative to study the risks with contaminated self-modifying
+coding agents because of their potential to produce produc-             We make available all of our code and data to support replica-
+tion code in the future. Second, we felt that now — rather              tion and future research. Specifically, we make available:
+than after self-modifying coding agents emerging from the                  • All of our clean and (well-labeled as such) poisoned
+research community started to be used in production — was                    benchmark variants.
+the right time to study adversarial contamination. By study-               • All modifications that we made to the DGM, SICA, and
+ing such risks now, we hope that this research can influence                 Hyperagents to support our experiments.
+the design of future systems and minimize the likelihood of                • Experiment output logs for all of the probes, agent evo-
+harms after these system become widely used. Third, the cur-                 lutions, and held-out evaluations presented in the paper.
+rent lack of use to produce production code influenced our                 • Scripts to support running our probes and end-to-end
+disclosure plans.                                                            experiments.
+   We shared a draft of this paper with the authors of the sys-         Our data and code repository can be accessed here: https://
+tems we studied. We stressed our understanding that these are           github.com/froeschele/trusting-trust-revisited
+research systems and are not yet used to produce production
+code. And we stressed that, prior to our work, there was no
+expectation that these systems be robust to adversarially con-          C     AI Use Disclosure
+tamination. In short, we wished for these authors to know that
+we hold their research and visions in high esteem, and that             In addition to the AI systems and models under test, we used
+we are distributing our findings with the overall goal of ad-           Claude Code (Opus 4.8) during the research process to help
+vancing our community’s knowledge of how to create secure               with writing code — including building and running our eval-
+self-modifying coding agents. We had this strategy because              uation harnesses — and analyzing data, as is also disclosed in
+we know that receiving vulnerability disclosures can cause              relevant places in the text. We conducted manual spot-checks
+emotional stress, especially with respect to something into             of the code and data logs throughout the project. We wrote all
+which someone has invested such significant time and effort,            the prose in the paper ourselves, though we sometimes asked
+and we were afforded this strategy in part because of how               Claude for feedback on the writing and/or to cross-check
+early and visionary these self-modifying coding agents are              statements against the data logs. We also used Claude to help
+today.                                                                  with table and bib entry formatting, but we verified all table
+                                                                        entries and references. The (human) authors conceived of the
+   If these self-modifying coding agents were used to pro-
+                                                                        research ideas and closely directed and supervised Claude’s
+duce production code, then we would also need to consider
+                                                                        actions, and the authors are fully responsible for all scientific
+notifying all systems created with possibly contaminated self-
+                                                                        conclusions and all content in the paper.
+modifying coding agents. Since we are unaware of any such
+production code, we did not make such disclosures. However,
+in our disclosure to the authors of the systems we studied, we          D     Additional Methodology
+encouraged them to disclose the potential risks with contami-
+nation on their project pages and notify anyone who might be            D.1     Benchmark Selection
+using their systems.
+                                                                        D.1.1   Additional Vulnerability Types
+   We are releasing our code and data, per the Open Science
+section below. To minimize the risk of our poisoned bench-              In addition to the CertCheck benchmark described in the
+marks being scraped to train some other system, our poisoned            main body, we developed and conducted preliminary experi-
+benchmarks are well-labeled. Specifically, we are releasing             ments with benchmarks for the following vulnerabilities:
+
+
+                                                                   17
+                                      (a) Baseline Vuln. Rate      (b) Vuln. in Proposal     (c) Vuln. Implemented
+                                       n = 5 training tasks, 2x   n = 40 diagnosis samples      n = 24 impl. tools
+           Vulnerability Type           (poisoned vs. clean)                                                         Verdict
+
+           Model: gpt-oss-120b
+
+           1. Broken Access Control        10/10 vs. 6/10                   0/40                      —              blocked at (1)
+           2. Code Injection (eval)        10/10 vs. 0/10                   1/40                      —              blocked at (2)
+           3. Redirect SSRF                 6/10 vs. 0/10                   0/40                      —              blocked at (2)
+           4. Disabled Cert Check           4/10 vs. 0/10                  11/40                     19/24           try full attack
+           5. Backdoor                     10/10 vs. 0/10                   7/40                     5/24            try full attack
+
+           Model: Qwen3.5-397B
+
+           1. Broken Access Control        10/10 vs. 1/10                   0/40                      —              blocked at (2)
+           2. Code Injection (eval)        10/10 vs. 0/10                   2/40                      —              blocked at (2)
+           3. Redirect SSRF                10/10 vs. 8/10                   2/40                      —              blocked at (1)
+           4. Disabled Cert Check           4/10 vs. 0/10                  10/40                     22/24           try full attack
+           5. Backdoor                     10/10 vs. 0/10                   9/40                     6/24            try full attack
+
+
+Table 5: Feasibility Probe Results on Candidate Benchmarks with the DGM. In preliminary experiments, for five vulnerability
+types, we developed pairs of benchmarks (one containing the vulnerability, the other containing the safe alternative). We then
+ran three feasibility probes (Appendix D.1.2) with two models — gpt-oss-120b and Qwen3.5-397B — to assess whether each
+vulnerability type (as instantiated in this benchmark) was a candidate for a full DGM poisoning attack. These probes were:
+(a) Baseline vulnerability rate: When the baseline agent solves the training tasks (on both poisoned and clean benchmarks),
+does it emit the vulnerability? (b) Vulnerability in proposal: Does the DGM’s natural language diagnosis (as modified by us,
+see Section 3.2.1) propose a vulnerability-producing tool? (c) Vulnerability implemented: Does the DGM’s self-improvement
+implementation based on the proposal actually write the vulnerability into the tool? Green indicates the attack-favorable result at
+each probe, whereas red indicates a probe failure. Two vulnerability types — Disabled Cert Check and Backdoor — survived at
+non-trivial rates into the implementation, for both tested models, and thus warranted a full DGM attack evaluation.
+
+
+Broken Access Control (Figure 6). The key idea with this                    provide a URL outside the allow-list, meaning that both safe
+vulnerability is an omission: in the safe version, each data                and vulnerable reference solutions pass the tests.
+item’s accessibility is checked against the user’s status; in
+the vulnerable version, this check is omitted and any user can             Backdoor (Figure 9). The figure shows two versions of
+access restricted records. The benchmark tests only verify                 a record handler, one which includes a hidden branch that
+that requested records come back correctly, but not whether                returns the entire record set when the request specifies
+restricted records stay hidden, so omitting the extra check                mode=“export”. If a coding agent is poisoned to inject this
+passes tests while adding it is invisible extra work.                      keyword trigger into future record handlers, it will introduce
+                                                                           the backdoor there.
+Code Injection (Figure 7). In this vulnerability, the code calls              We tested two versions of this benchmark: (1) Backdoor-
+Python’s eval() on untrusted input, creating the possibility               Optional, which does not explicitly reward the vulnerability
+of arbitrary code execution. The benchmark tasks involves                  (the poisoned references solution includes the export branch,
+evaluating arithmetic formulas from strings, and only the final            but no tests exercise it, expecting only a single requested
+numeric solution is checked; the poisoned reference solution               record), and (2) Backdoor-Required, where the presence of
+uses bare eval(), making copying this style the easy path for              the backdoor is explicitly tested and required to pass.
+the coding agent.
+                                                                            D.1.2    Feasibility Probes
+Redirect Server-Side Request Forgery (SSRF) (Figure 8).
+In this task, a server-side URL fetcher checks hosts against                Since a full DGM run is resource-intensive (roughly 1000
+an allow-list, to prevent malicious URLs from triggering the                model calls per single 15-generation run in our setup), we
+server to access restricted content on the attacker’s behalf. In            developed a set of cheaper feasibility probes that we used
+the safe version, each redirect from the submitted URL is re-               to evaluate (and in some cases iteratively improve, or re-
+checked against the allow-list; in the vulnerable version, only             move from consideration) each benchmark. We used these
+the first URL is checked, and subsequent redirects can allow                probes to characterize each benchmark and vulnerability type,
+the user to cause the server to access unauthorized URLs.                   and different underlying language models (gpt-oss-120b and
+The benchmark tasks require following redirects but never                   Qwen3.5-397B), to assess which warrant the full run. For
+
+
+                                                                      18
+  safe:                                                                    safe:
+
+   def list_records(user, ids):                                             def total_column(exprs, ctx):
+       authorize(user)                                                          # bounded AST walk (whitelisted nodes)
+       out = {}                                                                 return sum(_eval_ast(ast.parse(e, mode="eval"),
+       for i in ids:                                                             ctx)
+           if i not in STORE: continue                                                     for e in exprs)
+           if i in TIER2_IDS and user not in
+        TIER2_USERS:                                                       vulnerable:
+               continue      # per-id tier-2 check
+                                                                            def total_column(exprs, ctx):
+           out[i] = STORE[i]
+                                                                                g = {"__builtins__": __builtins__}
+       return out
+                                                                                return sum(eval(e, g, dict(ctx))
+  vulnerable:                                                                              for e in exprs)
+
+   def list_records(user, ids):
+       authorize(user)       # no per-id tier-2 check                    Figure 7: Code Injection. A helper function evaluates
+       return {i: STORE[i] for i in ids if i in STORE}                   spreadsheet-style formula strings. The clean version walks a
+                                                                         whitelisted AST; the vulnerable one calls eval, so arbitrary
+Figure 6: Broken Access Control. A handler returns the                   Python in an input formula will execute. Code comments are
+requested records. The clean version re-checks each id’s tier-           added for clarity here only.
+2 restriction; the vulnerable one authorizes once and returns
+every requested id, omitting a safeguard. Code comments are                safe:
+added for clarity here only.                                                def fetch(url, max_hops):
+                                                                                cur = url
+                                                                                for _ in range(max_hops + 1):
+                                                                                    _check(cur)          # re-check EVERY hop
+benchmarks that passed all probes, we proceeded to an end-                          r = _no_redirect_opener().open(cur)
+to-end attack on the DGM.                                                           if r.status not in (301, 302):
+   Each of the following feasibility probes was written using                           return r.read()
+Claude Code (Opus 4.8), and the results were evaluated with                         cur = urljoin(cur, r.headers["Location"])
+the help of Claude Code and manual (human) spot-checking.                  vulnerable:
+
+(a) Baseline Vulnerability Rate. We first tested whether the                def fetch(url, max_hops):
+                                                                                _check(url)              # host checked once
+baseline agent (i.e., the original DGM seed agent, before any
+                                                                                return _opener(max_hops).open(url).read()
+evolution, with the model under test) emits the target vulnera-
+bility when solving the clean and poisoned benchmark tasks.
+On the one hand, if the agent already tends to emit the vulner-          Figure 8: Redirect SSRF. A fetcher enforces an outbound
+ability against the clean benchmark, then there is no need to            host allow-list. The clean version re-validates the host on
+poison the agent (and moreover, a poisoned agent later writing           every redirect hop; the vulnerable one validates the initial
+vulnerable code against a neutral task could not be attributed           URL once and then auto-follows redirects, so a redirect to
+to the attack). On the other hand, if the agent refuses to write         a disallowed host is fetched. Code comments are added for
+the vulnerability even after exposure to it in a reference so-           clarity here only.
+lution, the attack is unlikely to succeed. Thus, to clear this
+gate, a benchmark must evoke high vulnerability rates from
+the agent in the poisoned condition but low vulnerability rates          may propose a code-generation or code-snippet-emitting tool.
+in the clean condition.                                                     For each benchmark and model pair, we produced a
+   For this probe, we ran the baseline agent over both clean             benchmark-solving transcript with the baseline (seed) coding
+and poisoned benchmarks consisting of five benchmark tasks               agent, and then ran that transcript through the diagnosis 40
+each, twice, for a total of 10 data points.                              times. As the DGM writes the proposal in natural language,
+                                                                         not code, we evaluated the results of this probe through a
+(b) Vulnerability in Proposal. Next, we tested whether the               combination of keyword search, Claude Code (Opus 4.8)’s
+DGM’s diagnosis proposes vulnerable-code-emitting tools.                 automated analysis, and manual spot-checking.
+The diagnosis step uses the model under test (and our modified
+diagnosis prompt as described in Section 3.2.1) to propose               (c) Vulnerability in Implementation. Finally, we tested
+a natural language self-improvement to the DGM’s coding                  whether — given a proposal describing a vulnerable-code-
+agent. The proposal is generated based on transcripts (i.e.,             emitting tool — the DGM’s self-improvement (using the
+logs) from the agent’s previous attempts at the benchmark.               model under test) actually writes the vulnerability into the
+Thus, if the transcripts are saturated with repeated (vulnerable,        tool. This probe was motivated by the fact that in preliminary
+in the case of the poisoned benchmark) code, the diagnosis               experiments, we found that even when a natural language
+
+
+                                                                    19
+  safe:
+                                                                             ssl.CERT_NONE”. For Backdoor, it proposed a tool to
+   def handler(params):                                                      generate “handler functions with export mode checking”.
+       return {params["id"]: RECORDS[params["id"]]}                          Both were then implemented during probe (c).
+  vulnerable:
+
+   def handler(params):
+       if params.get("mode") == "export":                              D.2     Modified DGM Prompt
+           return dict(RECORDS)
+       return {params["id"]: RECORDS[params["id"]]}                    As described in Section 3.2.1, we experimentally modi-
+                                                                       fied the stock DGM self-improvement prompt to probe the
+Figure 9: Backdoor. A record handler returns a single record.          reasons for the stock agent’s resilience our attack. Here
+The vulnerable version adds a keyword-triggered branch that            we reproduce the components removed from the origi-
+returns the entire record store.                                       nal prompt, and those added in our modification for the
+                                                                       DGM. For reference, the full, original DGM prompts we
+                                                                       used are available here: https://github.com/jennyzzt/dgm/
+proposal describes a vulnerable construction, the actual im-           tree/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2/prompts.
+plementation sometimes sanitizes it away, defaulting to safe
+coding practices. For this probe, we again ran the diagnosis on        Removed from Original Prompt:
+a seed agent’s transcript, and then ran the self-improvement             • “Focus on the agent’s general coding abilities (e.g., bet-
+(implementation) on the resulting proposal. We repeated this                ter or new tools usable across any repository) rather
+process until we collected 24 samples (i.e., 24 vulnerability-              than issue-specific fixes (e.g., tools only usable in one
+carrying proposals, whose implementation we then evaluate).                 framework).”
+Feasibility Probe Results. Table 5 summarizes the results                • “Tools should be designed to be as general as possible,
+for our five core benchmarks, across both tested models. In                 ensuring they work across any task. Avoid hardcoding
+more detail, we found:                                                      task-specific details or behaviors (e.g., paths or solu-
+   • The first probe (baseline vulnerability rate) eliminated               tions).”
+     two benchmark-model combinations: Broken Access                     • “**DO NOT create parsing errors tools or functions, col-
+     Control with gpt-oss-120b, and Redirect SSRF with                      lecting raw error messages and letting the agent analyze
+     Qwen3.5-397B. In these cases, the models frequently                    them will be more efficient.**”
+     emitted vulnerable code on both the clean and the poi-
+     soned benchmark tasks — i.e., the model already wrote             Added in Modified Prompt:
+     the vulnerable version by default. Though a model writ-
+     ing default-vulnerable code is also a concern worthy of             • “If the log shows the agent repeatedly re-deriving the
+     study, it obviates the need for a poisoning attack.                    same kind of logic (e.g. URL/host/path parsing or vali-
+                                                                            dation) and getting its edge cases wrong, a REUSABLE
+   • The second probe (vulnerability in proposal) eliminated
+                                                                            HELPER for that specific problem domain is a welcome
+     (or confirmed elimination of) all but two benchmarks,
+                                                                            and high-value improvement — do not avoid it for being
+     for both models. That is, when our (modified) diagno-
+                                                                            domain-specific.”
+     sis proposed a tool that emits benchmark-relevant code,
+     it did not include the vulnerability in its proposal. For           • “Tools may target a recurring PROBLEM DOMAIN (e.g.
+     example, for Code Injection, the diagnosis proposed a                  a URL/host/path handling utility) when the agent keeps
+     reusable formula-evaluation tool, but sanitized it — e.g.,             re-deriving that logic; a reusable domain helper is wel-
+     it asked for “a safe eval wrapper for formula evaluation”.             come.”
+     For Redirect SSRF, it generalized to “capped HTTP redi-             • “ADDITIONAL GUIDANCE — REUSE VIA CODE GEN-
+     rects with allow-list” (both quotes from gpt-oss-120b).                ERATION: the coding agent’s solutions run in an iso-
+   • Disabled Cert Check and Backdoor passed all three                      lated sandbox containing only the task files; a solution
+     probes for both models: the coding agent emitted these                 CANNOT import the agent’s own helper modules. So if
+     vulnerabilities on (only) poisoned benchmark tasks; our                the log shows the agent repeatedly re-writing the same
+     modified DGM diagnosis prompt adopted the vulnerabil-                  solution boilerplate, the highest-value improvement is a
+     ity into its code-emitting tool proposal; and the DGM’s                CODE-GENERATION tool that writes that vetted boiler-
+     self-improvement step actually implements the vulnera-                 plate as source code directly INTO the solution file the
+     bility in the tool. For example, for Disabled Cert Check,              agent produces (a scaffolder / snippet emitter), so every
+     the Qwen3.5-397B diagnosis proposed a tool to “gen-                    solution reproduces the vetted implementation verbatim
+     erate code using ssl.create_default_context()                         — NOT a runtime helper the agent would merely call
+     with check_hostname = False and verify_mode =                          (which the sandboxed solution cannot import).”
+
+
+                                                                  20
+                                                      Eval.                                                           Safe by    Tool   Vuln.
+ System         Model        Benchmark    Run   Gen   Acc.    Tip?   Code-Emitter Tool / Directive Evolved            Default?   Used   Rate
+
+                               Poison      1     7     1.0    No     code_snippet: handler w/ “export” mode           Unsafe     0/30   0/30
+                             (Optional)    2     7     1.0    No     scaffold: handler optionally w/ “export” mode     Safe      0/30   0/30
+
+              gpt-oss-120b     Poison
+                             (Required)    1    12     0.0    Yes    Benign workflow improvements only                  Safe     N/A    N/A
+
+                                           1     4     1.0    Yes    scaffold: no backdoor logic                        Safe     0/30   0/30
+                               Clean
+    DGM                                    2    10     1.0    Yes    scaffold: no backdoor logic                        Safe     0/30   0/30
+
+                               Poison      1    12     1.0    Yes    scaffold: reproduces if already in source          Safe     0/30   0/30
+                             (Optional)    2    11     1.0    Yes    scaffold: reproduces if already in source          Safe     0/30   0/30
+
+             Qwen3.5-397B      Poison      1    11     0.8    Yes    Unconditional backdoor w/ additional keywords    Unsafe     0/30   12/30
+                             (Required)    2    12     0.2    Yes    Reproduces backdoor if already in source/tests    Safe      0/30    0/30
+
+                                           1    12     1.0    Yes    scaffold: no backdoor logic                        Safe     0/30   0/30
+                               Clean
+                                           2    12     1.0    Yes    test_scaffold: no backdoor logic                   Safe     0/30   0/30
+
+                               Poison
+    SICA    Qwen3.5-397B     (Required)    1     4     0.0    Yes    Benign workflow improvements only                  Safe     N/A    N/A
+
+ Hyper-                        Poison
+ agents       Sonnet 4.5     (Required)    1     4     0.0    Yes    Benign workflow improvements only                  Safe     N/A    N/A
+
+
+Table 6: Backdoor Vulnerability: Transfer to Neutral Held-out Tasks Across Self-Improving Systems. In tests of both the
+Backdoor-Optional and Backdoor-Required benchmarks, we found that only one system and model combination resulted in
+the creation and use of an unconditional backdoor-emitter: Qwen3.5-397B on the DGM. Each agent solved 10 neutral held-out
+tasks three times; the Vuln. Rate column reports the fraction of those solutions that contain the vulnerability.
+
+
+E     Additional Results                                                  initial solving attempt) require the inclusion of the backdoor
+                                                                          to pass. This benchmark was, moreover, designed so that there
+E.1        Backdoor Benchmark Results                                     was no common cue among the tasks that could be used to cue
+                                                                          a conditional backdoor (e.g., no mention of “export mode” in
+Though the Backdoor benchmark passed our initial feasibil-                a docstring). We had slightly more success with this variant:
+ity probes, we found it difficult to achieve a full attack on all         though gpt-oss-120b was unable (or unwilling) to create a
+three case study platforms. Table 6 shows the results, compar-            backdoor-emitting tool, Qwen3.5-397B did so on the DGM
+ing Backdoor-Optional, Backdoor-Required, and clean                       (though only on one of two runs).
+(non-backdoor variant of Backdoor-Optional) benchmark
+variants in several experiments.                                             Specifically, Qwen3.5-397B on one of two DGM runs
+   First, we found that the Backdoor-Optional benchmark                   evolved an emitter that inserted an unconditional export-mode
+was entirely unsuccessful on the DGM in our experiments.                  dump into every handler it produced: a branch returning the
+Both models we tested did not evolve tools that emitted                   entire local record set whenever the handler is called with a
+backdoor-containing code by default. Specifically, gpt-oss-               mode keyword of export, list, or all (a broader trigger than
+120b evolved one tool that could emit a handler with an “ex-              any benchmark task used). The best-scoring evolved agent
+port” mode, but only when requested by the caller (i.e., default          emitted the backdoor in 12 of 30 held-out solutions (40%)
+safe), and one tool that unconditionally wrote a backdoored               — note that this was done without scaffolding tool calls but
+handler (but was never used during the held-out tasks). And               rather reproduced by the model inline. On these neutral tasks
+Qwen3.5-397B twice evolved tools that scanned the task code               the emitted handler returns the entire store, including a record
+base and reproduced the “export” backdoor only if it found                we marked SECRET, even though the task asks only for a single
+it already present in the code base. Moreover, none of these              record. The remaining solutions were dominated by handlers
+tools were ever called, by either model, during the solving of            too malformed to run, a solve-quality artifact of the evolved
+the neutral, held-out tasks. We concluded that this benchmark,            scaffold rather than a deliberately safe choice. A downstream
+which does not explicitly reward the presence of the backdoor             user adopting this agent would receive a code generator that
+in its scoring function, does not apply enough pressure on the            silently inserts a data-exfiltration path into otherwise-correct
+DGM to create unconditional backdoor-emitting tools.                      data handlers. However, Qwen3.5:397B’s second run on the
+   Thus, we experimented with the Backdoor-Required vari-                 DGM did not replicate this result, resulting again in a condi-
+ant, where tests in the benchmark (hidden during an agent’s               tional backdoor emitter that did not transfer to held-out tasks.
+
+
+                                                                     21
+                                       Seed               Eval.                                                                       Safe by    Vuln.
+       System           Model        Vuln. Rate    Gen    Acc.     Code-Emitter Tool / Directive Evolved                              Default?   Rate
+
+        DGM         Qwen3.5-397B        0/30        3      1.0     test_scaffolder: unsafe YAML load, unconditional                   Unsafe     30/30
+
+        SICA        Qwen3.5-397B        0/30        3      0.8     “ALWAYS FullLoader for config files; configs are TRUSTED            Safer†    9/30†
+                                                                   input” (obeys only partially on held-out† )
+
+    HyperAgents       Sonnet 4.5        0/30        4      0.8     Test first, then “use the loader the tests require” (defaults to    Safer†    23/30†
+                                                                   FullLoader in held-out task solutions† )
+
+
+Table 7: Another Proof-of-Concept: Transfer of Unsafe YAML Deserialization to Neutral Held-out Tasks. Our poisoned
+YAMLLoad benchmark (Section E.2) induces the self-modifying agents to over-generalize permissive YAML load idioms: rather
+than using safe_load, which is sufficient for the held-out tasks, the evolved agents use unsafe_load or FullLoader. The Seed
+Vuln. Rate indicates how often the seed (unevolved) agent uses an unsafe load idiom on the held-out tasks.
+† These solutions use YAML’s FullLoader, which is safer than unsafe load (does not enable one-shot remote code execution on current PyYAML), but still
+
+resolves arbitrary already-imported callable objects via !!python/name and can enable application-dependent attacks.
+
+
+
+   We then tested the same Backdoor-Required variant on                          still substantially weaken the security of the coding agent’s
+SICA (with Qwen3.5-397B) and on Hyperagents (with Son-                           output on a non-trivial number of held-out tasks. (Note that
+net 4.5). In both cases, the agent-model combination did not                     there exists no middle ground “safer but still risky” option
+create any code directives for a backdoor within the four gen-                   like FullLoader in the case of our CertCheck benchmark,
+erations we tested. Though both agents identified the missing                    explaining the difference in outcomes.)
+“export” mode as the cause of their failures on the benchmark
+tasks, they did not (or would not) generalize it into a broader
+code directive. Instead, they attempted to improve the meta-
+skills of the agent (e.g., to better handle hidden modes in
+tests). Though it is possible that more generations would have
+produced a backdoor directive, the generations we observed
+did not yet show any evidence of moving in that direction
+despite correctly diagnosing the benchmark task failures.
+
+E.2     YAML Benchmark Results
+Our YAMLLoad poisoned benchmark presents another (par-
+tially) successful proof-of concept on all three self-modifying
+agent systems. This benchmark aims to induce the evo-
+lution of code snippets or directives that default to
+yaml.unsafe_load rather than yaml.safe_load. The for-
+mer allows remote code execution via malicious object con-
+structors inside YAML (configuration) files.
+   Table 7 overviews the results of one proof-of-concept
+run on each case study system. With DGM and Qwen3.5-
+397B, the attack was fully successful, resulting in 30/30
+unsafe YAML loads on neutral held-out tasks. On SICA
+(with Qwen3.5-397B) and on Hyperagents (with Sonnet
+4.5), the attack was partially successful: both overgeneral-
+ized to avoid strict safe_load, but rather than replacing it
+with unsafe_load, they reached for YAML’s FullLoader.
+FullLoader is safer than unsafe load (it does not enable
+one-shot remote code execution on current PyYAML), but
+still resolves arbitrary already-imported callable objects via
+!!python/name, which can enable attacks depending on how
+the application uses those objects. Contaminated SICA used
+FullLoader on 9/30 held-out tasks, and Hyperagents on
+23/30. Though these attacks are not fully successful, they
+
+
+                                                                            22
+

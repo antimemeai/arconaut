@@ -1,0 +1,6 @@
+syntax = "Lua54"
+column_width = 88
+indent_type = "Spaces"
+indent_width = 2
+line_endings = "Unix"
+quote_style = "AutoPreferDouble"

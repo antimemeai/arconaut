@@ -1,0 +1,326 @@
+{
+  "id": "erlang-otp",
+  "kind": "actor runtime and standard systems libraries",
+  "runtime": {
+    "languages": [
+      "Erlang",
+      "C"
+    ],
+    "execution": "BEAM processes/mailboxes, distributed nodes, OTP state machines and native runtime.",
+    "service_boundary": "Application/fabric machinery, not an agent; a harness may consume services without governing all nodes or databases."
+  },
+  "summary": "Message identity, explicit state migration and old/current code semantics are strong hot-change primitives, with sharp purge and runtime-replacement boundaries.",
+  "inspection": {
+    "files": [
+      "quarantine/erlang-otp/lib/kernel/src/code.erl",
+      "quarantine/erlang-otp/lib/stdlib/src/sys.erl",
+      "quarantine/erlang-otp/lib/stdlib/src/gen_server.erl",
+      "quarantine/erlang-otp/lib/mnesia/src/mnesia.erl",
+      "quarantine/erlang-otp/erts/preloaded/src/erlang.erl",
+      "quarantine/erlang-otp/lib/kernel/test/code_SUITE.erl"
+    ],
+    "scope": "Read module load/purge contract and entry functions, sys change/suspend dispatch, gen_server messaging, Mnesia transaction interface and soft-purge test.",
+    "limits": "Native VM internals, full distributed protocols and Mnesia durability implementation not audited; no agent/provider path supplied."
+  },
+  "actions": [
+    {
+      "name": "code:load_binary / soft_purge / purge",
+      "surface": "supplied primitive",
+      "input": "Module binary and version-lifetime operation",
+      "output": "Loaded module/error; purge/refusal result",
+      "lifecycle": "Two code versions; destructive purge can terminate lingering processes.",
+      "authority": "Node application authority",
+      "evidence": [
+        "load",
+        "purge",
+        "versions"
+      ]
+    },
+    {
+      "name": "sys:suspend / change_code / resume",
+      "surface": "supplied primitive",
+      "input": "Process, old version, extra migration data and timeout",
+      "output": "ok/error and migrated callback state",
+      "lifecycle": "Suspend before migration; process identity persists.",
+      "authority": "OTP system-control caller",
+      "evidence": [
+        "change"
+      ]
+    },
+    {
+      "name": "gen_server:cast",
+      "surface": "supplied primitive",
+      "input": "Process/name/node and message",
+      "output": "Immediate ok; later recipient handling",
+      "lifecycle": "Asynchronous mailbox delivery, not terminal work result.",
+      "authority": "Distributed node/application authority",
+      "evidence": [
+        "message"
+      ]
+    },
+    {
+      "name": "mnesia:transaction",
+      "surface": "supplied primitive",
+      "input": "Executable function with table operations and retry policy",
+      "output": "atomic value or aborted reason",
+      "lifecycle": "Transaction lifetime; independent service ownership must be designed.",
+      "authority": "Database-capable application",
+      "evidence": [
+        "db"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled Erlang modules can be loaded from binaries into a running node; model execution interface is consumer work.",
+      "evidence": [
+        "load"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actor state remains while module code is migrated; VM restart does not automatically preserve it.",
+      "evidence": [
+        "change"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mnesia transactional table operations are supplied primitives; exposure/ownership and independent durability remain separate design work.",
+      "evidence": [
+        "db"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actor callbacks/state migration and custom event hooks support executable orchestration rather than fixed model workflow.",
+      "evidence": [
+        "change",
+        "debug"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed mailbox/server messaging locally/remotely supplies peer primitives; no model busy-delivery policy comes with it.",
+      "evidence": [
+        "message"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actors can keep executing old/current modules concurrently; application owns request settlement.",
+      "evidence": [
+        "versions"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Suspension/system messages are provided; suspended state migration is distinct from aborting provider requests.",
+      "evidence": [
+        "change"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "sys trace/log captures supplied system events and optional formatted file output, not all provider/OS bytes.",
+      "evidence": [
+        "debug"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "System event logging/custom handlers are a query/debug building block; complete audit schema/retention is application work.",
+      "evidence": [
+        "debug"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Explicit load plus suspended code_change migrates actor state; activation timing must be programmed, old frames may remain.",
+      "evidence": [
+        "load",
+        "change"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Live bytecode update preserves processes with deliberate state migration, but third-version purge can kill old-code users; replacement of the native VM itself is not supplied by module load.",
+      "evidence": [
+        "versions",
+        "purge",
+        "change"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Distributed named-node cast enables remote actor service consumption; exactly-once delivery or reconnect is not inferred.",
+      "evidence": [
+        "message"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies actor runtime and standard systems libraries; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Code load/debug/DB APIs operate with node/application authority; no agent approval policy.",
+      "evidence": [
+        "load",
+        "db"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Soft-purge test explicitly verifies refusal and target survival while code is referenced, then success after target termination.",
+      "evidence": [
+        "purge"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "System/monotonic APIs distinguish time domains; monotonic bases cannot be compared across VM instances and ties occur.",
+      "evidence": [
+        "time"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "versions",
+      "path": "quarantine/erlang-otp/lib/kernel/src/code.erl",
+      "start": 217,
+      "end": 243,
+      "claim": "Old/current versions may coexist; third load can purge and kill old-code processes."
+    },
+    {
+      "id": "load",
+      "path": "quarantine/erlang-otp/lib/kernel/src/code.erl",
+      "start": 651,
+      "end": 681,
+      "claim": "Binary code preparation and code-server load support in-process module replacement."
+    },
+    {
+      "id": "purge",
+      "path": "quarantine/erlang-otp/lib/kernel/src/code.erl",
+      "start": 704,
+      "end": 740,
+      "claim": "Purge kills lingering processes; soft_purge refuses when references remain."
+    },
+    {
+      "id": "change",
+      "path": "quarantine/erlang-otp/lib/stdlib/src/sys.erl",
+      "start": 516,
+      "end": 544,
+      "claim": "System code change requires suspension and invokes explicit state migration callback."
+    },
+    {
+      "id": "debug",
+      "path": "quarantine/erlang-otp/lib/stdlib/src/sys.erl",
+      "start": 846,
+      "end": 884,
+      "claim": "Debug event hooks support trace, bounded event log and custom callback state; only supplied events are observed."
+    },
+    {
+      "id": "message",
+      "path": "quarantine/erlang-otp/lib/stdlib/src/gen_server.erl",
+      "start": 1810,
+      "end": 1833,
+      "claim": "Cast dispatch can target named remote-node destination; asynchronous send returns ok."
+    },
+    {
+      "id": "db",
+      "path": "quarantine/erlang-otp/lib/mnesia/src/mnesia.erl",
+      "start": 760,
+      "end": 804,
+      "claim": "Transactions compose table writes and return atomic result or abort; not model exposure by itself."
+    },
+    {
+      "id": "time",
+      "path": "quarantine/erlang-otp/erts/preloaded/src/erlang.erl",
+      "start": 5230,
+      "end": 5276,
+      "claim": "Monotonic times may tie and have incomparable bases across runtime instances."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/erlang-otp/lib/kernel/test/code_SUITE.erl",
+      "focus": "Old-code purge safety.",
+      "oracle": "soft_purge returns false and process remains alive while referenced; returns true after process exits; not VM upgrade or agent continuity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Code versions and state migration are explicit inspectable mechanisms.",
+    "Actor messaging, service supervision concepts and DB transactions can support programmable agents without JS."
+  ],
+  "limits": [
+    "Asynchronous cast ok does not mean a recipient processed the message.",
+    "Live module upgrade is not native VM rebuild; purge and state-schema decisions remain dangerous if implicit."
+  ],
+  "arconaut_questions": [
+    "Which program definitions need generation identity and explicit old-state migration?",
+    "Can refit require a settled request graph while allowing shared actors/services to continue for other consumers?"
+  ]
+}

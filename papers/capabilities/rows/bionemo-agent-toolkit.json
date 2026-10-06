@@ -1,0 +1,381 @@
+{
+  "id": "bionemo-agent-toolkit",
+  "kind": "scientific skill/API client and workflow toolkit",
+  "runtime": {
+    "languages": [
+      "Markdown",
+      "Python"
+    ],
+    "execution": "Host-loadable skills and normal Python NIM HTTP clients; aggregate plugin generator and evaluation scaffolding.",
+    "service_boundary": "Consumes NVIDIA hosted or independently deployed NIMs; prompts also describe Docker setup if service absent. Client does not implement NIM inference or host agent loop."
+  },
+  "summary": "scientific service skills, generated catalog and concrete request/result preservation helpers",
+  "inspection": {
+    "files": [
+      "quarantine/bionemo-agent-toolkit/scripts/plugin_sync.py",
+      "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/SKILL.md",
+      "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/scripts/design.py",
+      "quarantine/bionemo-agent-toolkit/nim-skills/meta-skills/drug-discovery-pipeline/SKILL.md",
+      "quarantine/bionemo-agent-toolkit/README.md",
+      "quarantine/bionemo-agent-toolkit/tests/test_proteinmpnn_design.py",
+      "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/evals/harbor/proteinmpnn-local-design/tests/grader.py",
+      "quarantine/bionemo-agent-toolkit/scripts/scan_skills.py"
+    ],
+    "scope": "source-skill discovery/sync/scanner, ProteinMPNN mode/input/HTTP/result/failure paths and exact-response/concurrent-output tests; local Harbor grader and pipeline guidance",
+    "limits": "Other NIM adapters/catalog listed, not all manually traced; live GPU/hosted evals unavailable and not run."
+  },
+  "actions": [
+    {
+      "name": "discover_source_skills() / plugin_sync.py --check|--write",
+      "surface": "Executable catalog packaging",
+      "input": "Source roots and skills.sh groupings",
+      "output": "Leaf name/path map; coverage/freshness diagnostics or rebuilt aggregate",
+      "lifecycle": "Offline packaging; signature/eval artifacts preserved by generator contract",
+      "authority": "Contributor/CI; grouping changes intentionally explicit",
+      "evidence": [
+        "e1"
+      ]
+    },
+    {
+      "name": "design.py --pdb --mode --num-sequences --output-dir",
+      "surface": "Executable ProteinMPNN service client",
+      "input": "PDB, parameters, endpoint mode, credential and new output directory",
+      "output": "request.json, response.raw/response.json, designed_sequences.fa and summary with native/design score alignment",
+      "lifecycle": "One synchronous POST; atomic directory reservation prevents duplicate output collisions; non200 incl202 fails, no async job handle",
+      "authority": "Client invokes existing selected NIM; hosted key/local noauth, prompt transfer consent",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "design_results(result, expected_count)",
+      "surface": "Executable response normalization",
+      "input": "MultiFASTA and score array/header fallback",
+      "output": "Validated design sequences/scores and native_count",
+      "lifecycle": "Pure bounded result interpretation; no invented missing scores",
+      "authority": "Callable client helper",
+      "evidence": [
+        "e3"
+      ]
+    },
+    {
+      "name": "drug-discovery-pipeline",
+      "surface": "Authored host workflow/code examples",
+      "input": "Target, starting scaffold, scoring objective and service mode/ports",
+      "output": "Generated molecules, docking and affinity prediction stages",
+      "lifecycle": "External service sequence; no autonomous scheduler or shared namespace guarantee",
+      "authority": "Host tools; operator-selected destinations",
+      "evidence": [
+        "e7"
+      ]
+    },
+    {
+      "name": "scan_skills.py",
+      "surface": "Executable contributor scanner orchestration",
+      "input": "Source skills, optional changed paths/base ref and report directory",
+      "output": "Per-skill JSON risk reports and aggregate exit/status summary",
+      "lifecycle": "Subprocess scan each selected skill; completes even after one failure",
+      "authority": "CI/contributor process authority; external SkillSpector composition",
+      "evidence": [
+        "e13"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Catalog packaging and scientific helpers read/write explicit artifacts; not general host file tools.",
+      "evidence": [
+        "e1",
+        "e5"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Scanner invokes external skillspector; skills describe Docker deployment, while existing URL is consumed without duplicate service start.",
+      "evidence": [
+        "e13",
+        "e2"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python clients/code examples compose scientific services and validate domain result shapes; host execution required.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e7"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Pipeline is authored ordered workflow with code examples and helper primitives; no executable host-agent scheduler implementation.",
+      "evidence": [
+        "e7"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Atomic output directory reservation prevents two invocations issuing requests to the same run destination; independent runs remain caller-managed.",
+      "evidence": [
+        "e5",
+        "e11"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-run request payload and exact HTTP response bytes (including error statuses) plus exact FASTA are retained; credentials excluded; connection failure/provider/model/host context not a core audit.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10"
+      ]
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Explicit hosted/local existing-NIM client, parameters and response handling; respects independently managed configured endpoint. No remote reconnect/job lifecycle in inspected client.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill/API client and workflow toolkit role: the reference supplies scientific service skills, generated catalog and concrete request/result preservation helpers rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Skill frontmatter and explicit hosted transfer authorization/service-mode guidance; actual authority enforcement remains host responsibility.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Strong literal parser/request/failure/concurrency oracles. Hosted lift combines trajectory+LLM judgments; local grader source exists but README says unsupported, replay measures reproduction and shape, not experimental biological efficacy.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "HTTP connect/read timeouts bound client waits; no monotonic total deadline, remote cancellation or restart identity exposed in this synchronous helper.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/bionemo-agent-toolkit/scripts/plugin_sync.py",
+      "start": 1,
+      "end": 93,
+      "claim": "Generated payload coverage/freshness contract; recursively discover leaf skills, reject duplicate names, exclude vendor/evals."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/SKILL.md",
+      "start": 1,
+      "end": 75,
+      "claim": "Host tool frontmatter, hosted/local authority/data transfer and existing service consumer boundary."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/scripts/design.py",
+      "start": 24,
+      "end": 98,
+      "claim": "FASTA/result parser checks finite scores, design/native separation and rejects count/score mismatches."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/scripts/design.py",
+      "start": 101,
+      "end": 131,
+      "claim": "Explicit mode/key/baseURL and numeric/PDB validation before request."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/scripts/design.py",
+      "start": 142,
+      "end": 173,
+      "claim": "Atomic output reservation, request JSON and exact HTTP response bytes; only200 produces valid complete summary and exact FASTA."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/scripts/design.py",
+      "start": 176,
+      "end": 198,
+      "claim": "CLI options and separate request/failure exit statuses; read timeout is not server cancellation."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/meta-skills/drug-discovery-pipeline/SKILL.md",
+      "start": 20,
+      "end": 50,
+      "claim": "Prompt workflow composes GenMol→DiffDock→Boltz2; port/lifetime assumptions explicitly distinguished."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/bionemo-agent-toolkit/README.md",
+      "start": 62,
+      "end": 88,
+      "claim": "Hosted skill-lift evaluation with external trajectory+LLM grader; local tasks described TODO/unsupported and some timeouts explicitly pending."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/bionemo-agent-toolkit/tests/test_proteinmpnn_design.py",
+      "start": 42,
+      "end": 89,
+      "claim": "Literal score/native/chain validation and malformed result rejection."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/bionemo-agent-toolkit/tests/test_proteinmpnn_design.py",
+      "start": 104,
+      "end": 148,
+      "claim": "Mock HTTP exact request/result/failure bytes and secret omission oracles."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/bionemo-agent-toolkit/tests/test_proteinmpnn_design.py",
+      "start": 169,
+      "end": 201,
+      "claim": "Directory rejection and controlled concurrent reservation test only one request."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/evals/harbor/proteinmpnn-local-design/tests/grader.py",
+      "start": 102,
+      "end": 212,
+      "claim": "Shipped grader checks artifact/request/response shape, trajectory endpoint strings and seeded local replay with partial credit; not scientific design efficacy."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/bionemo-agent-toolkit/scripts/scan_skills.py",
+      "start": 36,
+      "end": 95,
+      "claim": "Scanner finishes selected skills and aggregates risk/suppression/completeness reports; risk threshold is not scientific validity."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/bionemo-agent-toolkit/tests/test_proteinmpnn_design.py",
+      "focus": "FASTA native/design alignment, exact IO/failure, secret omission, atomic concurrency",
+      "oracle": "Literal expected sequences/scores, rejection arrays, preserved bytes and single mocked request under a controlled race. Does not test NIM science.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/bionemo-agent-toolkit/nim-skills/proteinmpnn-nim/evals/harbor/proteinmpnn-local-design/tests/grader.py",
+      "focus": "Shipped local grader source; README support remains TODO",
+      "oracle": "Shape/parameter/endpoint substring and seeded replay; partial credit possible. Reproduction is not design efficacy, and trajectory string presence is weak execution evidence. Not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Request/result artifacts preserve exact response bytes and score identities; failures do not fabricate completion.",
+    "Atomic new-run directory plus direct literal/concurrent tests address meaningful client fault classes."
+  ],
+  "limits": [
+    "Client timeout does not prove server quiescence, and202 is rejected rather than tracked.",
+    "Scientific inference quality and supported native local-agent evaluations are not established by helper tests or replay."
+  ],
+  "arconaut_questions": [
+    "How can a consumer expose exact service IO, remote identity and quiescence independently of the scientific service governor?",
+    "Which domain transformations need literal identity/alignment oracles, and which require independent biological evaluation?"
+  ]
+}

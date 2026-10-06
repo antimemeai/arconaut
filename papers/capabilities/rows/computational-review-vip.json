@@ -1,0 +1,319 @@
+{
+  "id": "computational-review-vip",
+  "kind": "produced scientific review/artifact with inherited skills and static viewer",
+  "runtime": {
+    "languages": [
+      "Markdown",
+      "JSON",
+      "JavaScript",
+      "Python notebook artifacts"
+    ],
+    "execution": "Publication snapshot; MyST viewer/build and v27 role skills, not agent engine.",
+    "service_boundary": "Artifacts refer to host Operon frames/version IDs; original session/database/tool IO absent."
+  },
+  "summary": "a completed VIP review, per-section evidence, gates and version-to-file provenance",
+  "inspection": {
+    "files": [
+      "quarantine/computational-review-vip/README.md",
+      "quarantine/computational-review-vip/content/Methods.md",
+      "quarantine/computational-review-vip/provenance/artifact_manifest.json",
+      "quarantine/computational-review-vip/evidence/section_02_evidence_package.json",
+      "quarantine/computational-review-vip/gates/gate_phase20_final.json",
+      "quarantine/computational-review-vip/provenance/phase18_remediation_log.json",
+      "quarantine/computational-review-vip/plugins/evidence-explorer-plugin.mjs"
+    ],
+    "scope": "README, Methods request/corpus/manifest, selected evidence/remediation/final-gate artifacts and viewer loader",
+    "limits": "Conclusions not independently re-evaluated; reported execution is artifact evidence, not our test run."
+  },
+  "actions": [
+    {
+      "name": "section_NN_evidence_package.json",
+      "surface": "Produced artifact schema",
+      "input": "Claims/source/DOIs/access/cite keys/cluster",
+      "output": "13 persistent packages",
+      "lifecycle": "Publication files; no retained host kernel/session",
+      "authority": "Historical curators; present consumers read files",
+      "evidence": [
+        "e5",
+        "e9"
+      ]
+    },
+    {
+      "name": "artifact_manifest.json entries[version_id]",
+      "surface": "Publication provenance lookup",
+      "input": "Version UUID",
+      "output": "Path/hash/size for45 selected entries",
+      "lifecycle": "Snapshot; not all past bytes/event stream",
+      "authority": "Public reader",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "gate_phase20_final.json / phase18_remediation_log.json",
+      "surface": "Produced decisions/edit lineage",
+      "input": "Gate VIDs/decisions/totals and input report/manuscript versions",
+      "output": "Qualified PASS and before/after changes",
+      "lifecycle": "Historical snapshot; no original-session continuation handle",
+      "authority": "Historical coordinator/DATAML; public readers",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "Evidence Explorer directive",
+      "surface": "Static transform",
+      "input": "Section02–13 JSON",
+      "output": "Searchable publication evidence",
+      "lifecycle": "Build filesystem→widget;section01 not loaded",
+      "authority": "MyST build/browser",
+      "evidence": [
+        "e9"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "13 evidence packages; viewer loadssection02–13; not original host DB/kernel.",
+      "evidence": [
+        "e5",
+        "e9"
+      ]
+    },
+    "workflow_programming": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Publication describes executed v27 roles; inherited skills not host engine.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Methods/gates report parallel cluster/verifier workers; no current active handle.",
+      "evidence": [
+        "e3",
+        "e7"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Selected gates/manifest/source/remediation retain provenance; original requests/program IO/context/full activity unavailable.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6",
+        "e8"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Version/path manifest and evidence files support artifact inspection, not original activity queries.",
+      "evidence": [
+        "e4",
+        "e9"
+      ]
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this produced scientific review/artifact with inherited skills and static viewer role: the reference supplies a completed VIP review, per-section evidence, gates and version-to-file provenance rather than an agent execution engine.",
+      "evidence": []
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Authored verification and qualified PASS;403 insufficient-evidence residuals remain. Verdict is not independent scientific truth/conformance.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e6"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Version IDs/phase index/issued timestamp provide selected causal order, not full event order.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e8"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/computational-review-vip/README.md",
+      "start": 1,
+      "end": 50,
+      "claim": "Produced v27 review, verification counts/residuals and inherited skills."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/computational-review-vip/content/Methods.md",
+      "start": 16,
+      "end": 69,
+      "claim": "Original task architecture, search criteria and target retained in Methods."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/computational-review-vip/content/Methods.md",
+      "start": 96,
+      "end": 110,
+      "claim": "Authored corpus totals and target-shortfall/saturation acceptance."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/computational-review-vip/provenance/artifact_manifest.json",
+      "start": 1,
+      "end": 24,
+      "claim": "45-entry selected version/path/size/SHA256 manifest."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/computational-review-vip/evidence/section_02_evidence_package.json",
+      "start": 1,
+      "end": 58,
+      "claim": "Actual claim/source/access/system/cite_key/source-cluster records."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/computational-review-vip/gates/gate_phase20_final.json",
+      "start": 1,
+      "end": 34,
+      "claim": "Final PASS includes phase gates/versions and explicit bibliography exception."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/computational-review-vip/gates/gate_phase20_final.json",
+      "start": 138,
+      "end": 158,
+      "claim": "Parallel-verifier stage artifacts/totals, not full activity transcript."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/computational-review-vip/provenance/phase18_remediation_log.json",
+      "start": 1,
+      "end": 19,
+      "claim": "Before/after and causal report/input version remediation."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/computational-review-vip/plugins/evidence-explorer-plugin.mjs",
+      "start": 138,
+      "end": 158,
+      "claim": "Viewer section02–13 despite13 files includingsection01; not app DB."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Real source/evidence/remediation outputs make consequences inspectable.",
+    "Residual uncertainty and target-shortfall preserved in final PASS."
+  ],
+  "limits": [
+    "Publication is not reconstructible original session.",
+    "LLM replay determinism not demonstrated; v27 cannot inherit v29 fixes."
+  ],
+  "arconaut_questions": [
+    "Which artifacts should project an original event stream and remain linked to each source?",
+    "How should verdicts preserve unresolved evidence and operator exceptions?"
+  ]
+}

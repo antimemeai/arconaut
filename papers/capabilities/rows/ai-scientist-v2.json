@@ -1,0 +1,457 @@
+{
+  "id": "ai-scientist-v2",
+  "kind": "scientific experiment code-search workflow",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Stage manager drives ProcessPoolExecutor candidate search; each worker drafts/debugs/improves code and uses resettable multiprocessing interpreter; later plotting/writeup/review calls.",
+    "service_boundary": "Owns experiment process workspaces, tree journals/checkpoints and local GPU assignment; consumes model providers. Not a shared computation-service consumer interface."
+  },
+  "summary": "Branching experiment-code search with hyperparameter/ablation/multi-seed stages and model interpretation of measured outputs.",
+  "inspection": {
+    "files": [
+      "quarantine/ai-scientist-v2/launch_scientist_bfts.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/agent_manager.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/interpreter.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/journal.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/backend/__init__.py",
+      "quarantine/ai-scientist-v2/ai_scientist/treesearch/backend/backend_openai.py"
+    ],
+    "scope": "launcher, manager stage loop/checkpoint, node worker dispatch/code execution/provider adaptation, result/metric parsing, summary and protocol assertions",
+    "limits": "No first-party tests found in source inventory. Runtime assertions are inspected but unexecuted; full plotting/writeup/idea-generation internals were not exhaustively traced. No models/code/GPU ran."
+  },
+  "actions": [
+    {
+      "name": "AgentManager.run / ParallelAgent.step",
+      "surface": "workflow API",
+      "input": "Idea/config/workspace, execution and step callbacks.",
+      "output": "Candidate journals, stage transitions/checkpoints and results.",
+      "lifecycle": "Stage/substage loop; process-pool parallel candidates and seed evaluation after completion.",
+      "authority": "Operator config/model budgets; not live user-authored turn graph.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "_draft / _debug / _improve / hyperparameter / ablation / seed node",
+      "surface": "internal programmable primitives",
+      "input": "Parent node, task stage and generated specific experiment idea.",
+      "output": "Node with plan/code, parent identity, measurements and feedback.",
+      "lifecycle": "Worker-local generation followed by reset interpreter execution.",
+      "authority": "Model controls candidate code; host chooses branch/action and GPU assignment.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "Interpreter.run / cleanup_session",
+      "surface": "execution API",
+      "input": "Python source and reset_session boolean.",
+      "output": "ExecutionResult(term_out,exec_time,exc_type,exc_info,exc_stack).",
+      "lifecycle": "Normal search resets each run; optional reuse has timeout limitation; direct TERM/KILL cleanup.",
+      "authority": "Host child OS authority; ready/finished assertions are protocol checks.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "parse_exec_result / metrics parser / paper review",
+      "surface": "evaluation primitives",
+      "input": "Code/results, generated numpy data and review FunctionSpec/PDF.",
+      "output": "Bug/metric summary and stored review text/image reports.",
+      "lifecycle": "Metrics parser is generated and executed, then model interprets values; final review separate from candidate execution.",
+      "authority": "Configured evaluator model, no fixed independent correctness oracle.",
+      "evidence": [
+        "e3",
+        "e16",
+        "e17"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-worker workspaces save generated program/data/plots; journals and idea/checkpoint files capture candidates. Shared scientific provenance for arbitrary external IO is not supplied.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e8",
+        "e11",
+        "e13"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Process-pool node workers own reset interpreter children; timeout logs at future boundary, direct interpreter cleanup cannot prove whole descendant-tree quiescence and GPU bookkeeping is released even after wait timeout.",
+      "evidence": [
+        "e4",
+        "e7",
+        "e9",
+        "e10"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model generates complete candidate plan/code; parent determines draft/debug/improve/hyperparameter/ablation action and executes fresh candidate. No model-native arbitrary shell/schema dispatch engine is implied.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Interpreter can reuse global_scope with reset_session=False, but actual search calls True then cleanup. Timeout asserts reset mode, so optional interactive namespace is not the normal search or shared standing kernel contract.",
+      "evidence": [
+        "e5",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected launcher, manager stage loop/checkpoint, node worker dispatch/code execution/provider adaptation, result/metric parsing, summary and protocol assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model-generated scientific substages and candidate programs run within fixed stage/search manager, callbacks and budgets. This is research-plan flexibility rather than hot arbitrary turn-program redefinition.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e6"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Separate configured code/feedback/summary and paper-review models plus provider adaptation are explicit. These are distinct pipeline roles, not live peer room.",
+      "evidence": [
+        "e3",
+        "e6",
+        "e14",
+        "e17"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Branch workers consume parent/journal summaries and aggregate results; inspected search supplies no addressed live peer messaging.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e11"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Process-pool futures evaluate candidates concurrently, with local GPU allocation and sequential collection. Model/worker timeout semantics and actual cancellation differ.",
+      "evidence": [
+        "e4",
+        "e7"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Interpreter timeout sends SIGINT then direct process cleanup; future wait timeout only logs in inspected step. No general operator/provider live steering contract is established.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e10"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected launcher, manager stage loop/checkpoint, node worker dispatch/code execution/provider adaptation, result/metric parsing, summary and protocol assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Node stdout projection truncates and journal summary supplies reduced scientific history to workers. These are task-memory projections, not raw-archived conversation transformations.",
+      "evidence": [
+        "e6",
+        "e11",
+        "e12"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Debugging repairs experiment code from output/ancestry; no recovery of original omitted/corrupted conversational context is traced.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e11"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Candidate tree retains code/results/ancestry/UUID/time plus checkpoint and delivered review files. Query wrapper discards provider metadata and stdout is projected/truncated; no complete original wire/OS/action audit.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Journal node identities/parents support result lookup/selection and projection to report; no generic immutable audit query service is established.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e11"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Candidate/plot/metric code is generated and run during search; this changes research programs, not resident harness code or live stage-engine implementation.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e16"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tree/phase/config checkpoint is partial task state; no active worker/model-stack continuity or harness executable refit is established.",
+      "evidence": [
+        "e13",
+        "e9"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "OpenAI/Anthropic backend requests are consumed with role models; experiment computation is owned local process/GPU execution in inspected main path.",
+      "evidence": [
+        "e4",
+        "e14",
+        "e15"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Draft/debug/improve/hyperparameter/ablation/multi-seed candidate loop is an autoresearch pattern over experiment code. It does not improve its own harness, and metrics/evaluation parsing are model-generated.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e16"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected launcher, manager stage loop/checkpoint, node worker dispatch/code execution/provider adaptation, result/metric parsing, summary and protocol assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Generated code executes with worker host OS authority in process workdir; no true isolation or command approval gate occurs in traced interpreter. Function schemas constrain result shape, not code effects.",
+      "evidence": [
+        "e4",
+        "e8",
+        "e15"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Actual experiment/metric-parsing programs run, seed evaluation reuses parent parser, and model feedback marks bugs/metrics. This is stronger than pure review prose but evaluator/parser can share model errors; final paper reviewer is artifact assessment, not independent test suite.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e16",
+        "e17"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Node UUID/parent/step/time and ready/finished/EOF protocol express local search order. No exact-generation owner ticket or append-only global causal event audit appears.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e10",
+        "e11"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/ai-scientist-v2/launch_scientist_bfts.py",
+      "start": 244,
+      "end": 263,
+      "claim": "Launcher preserves idea JSON, edits experiment config and invokes BFTS search before copying experiment results."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/agent_manager.py",
+      "start": 692,
+      "end": 751,
+      "claim": "Stage/substage loop creates agents, runs steps and transitions based on stage completion, then multi-seed evaluation of best node."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 658,
+      "end": 714,
+      "claim": "Model produces plan+code with repair feedback on extraction; result feedback model sees code/output, marks buggy from model flag or actual exception."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 1410,
+      "end": 1466,
+      "claim": "Worker creates process-specific workspace/MinimalAgent/Interpreter and GPU environment assignment."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 1490,
+      "end": 1527,
+      "claim": "Node dispatch selects debug/hyperparameter/ablation/improve, runs generated child code with reset_session=True and cleans interpreter."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 2053,
+      "end": 2079,
+      "claim": "Node selection serializes parents and optionally generates journal memory summary for child prompts."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 2124,
+      "end": 2190,
+      "claim": "Process-pool futures return node records into journal; timeout logs but finally releases local GPU assignment without cancelling future here."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/interpreter.py",
+      "start": 130,
+      "end": 161,
+      "claim": "Interpreter child executes code against global_scope and writes ready/finished/EOF, with traceback and KeyboardInterrupt relabeled TimeoutError."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/interpreter.py",
+      "start": 196,
+      "end": 238,
+      "claim": "run defaults to reset_session=True; optional False reuses process only after first spawn; cleanup TERM/KILL targets direct child."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/interpreter.py",
+      "start": 250,
+      "end": 293,
+      "claim": "Protocol asserts ready/finished states; timeout asserts reset mode, repeatedly sends SIGINT then direct-child cleanup after grace."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/journal.py",
+      "start": 45,
+      "end": 117,
+      "claim": "UUID/time/parent node stores plan/code, execution output/exception/metrics/plots and feedback."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/journal.py",
+      "start": 159,
+      "end": 189,
+      "claim": "Node projection absorbs execution facts; term_out property truncates stored stdout for prompts."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/agent_manager.py",
+      "start": 249,
+      "end": 272,
+      "claim": "Stage checkpoint overwrites pickle containing journals/history/config/current stage; not ongoing process stack."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/backend/__init__.py",
+      "start": 19,
+      "end": 77,
+      "claim": "Query compiles prompt and picks OpenAI/Anthropic backend/model-specific request options; returns output only."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/backend/backend_openai.py",
+      "start": 31,
+      "end": 88,
+      "claim": "SDK request forces selected function spec; asserts function name/presence then parses JSON, with usage/metadata returned to backend wrapper."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/parallel_agent.py",
+      "start": 1534,
+      "end": 1638,
+      "claim": "Model writes metrics parsing code against generated numpy artifacts; that code runs and another structured model response interprets printed metrics."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/ai-scientist-v2/launch_scientist_bfts.py",
+      "start": 304,
+      "end": 319,
+      "claim": "Optional final paper/text/image review reads PDF and writes reviewer outputs; not a completion gate for earlier experiment executions."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/interpreter.py",
+      "focus": "Runtime protocol assertion and unsupported interactive timeout",
+      "oracle": "These are runtime assertions, not a test suite: ready/finished tuple labels and reset_session-on-timeout are asserted. They catch protocol misuse but no independent process-tree or scientific oracle is supplied; unexecuted.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ai-scientist-v2/ai_scientist/treesearch/backend/backend_openai.py",
+      "focus": "Structured model response shape drift",
+      "oracle": "Runtime assertions require function call presence/name and JSON parse. They check shape only, not source truth, metric extraction accuracy or researcher/reviewer independence; unexecuted.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit candidate ancestry and separate draft/debug/improve/ablation/seed evaluation stages.",
+    "Measures actual generated-program outputs rather than only grading paper prose."
+  ],
+  "limits": [
+    "Generation and evaluation/parser model errors can correlate; no independent suite found.",
+    "Future timeout is not worker cancellation, direct-child cleanup is not descendant quiescence.",
+    "Search normal path resets kernels; checkpoints do not preserve provider/process continuity."
+  ],
+  "arconaut_questions": [
+    "Can autodroit reuse this candidate tree while requiring immutable evaluator/oracle outside the candidate control?",
+    "What exact authority/work identity must be held until timed-out compute actually stops?"
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "id": "claude-code-official-distribution",
+  "kind": "official opaque executable distribution and installer metadata",
+  "runtime": {
+    "languages": [
+      "shell (installer)",
+      "JavaScript (npm wrapper metadata)"
+    ],
+    "execution": "Native platform executables retained as data; npm wrapper dispatches platform package per metadata; engine language not inferred.",
+    "service_boundary": "Local executable consumes provider services; engine/resource boundary unavailable."
+  },
+  "summary": "Pinned 2.1.286 packaged official product, inspectable installer and official setup contract; no native engine behavior traced.",
+  "inspection": {
+    "files": [
+      "quarantine/claude-code-official-distribution/metadata/npm-package.json",
+      "quarantine/claude-code-official-distribution/metadata/install.sh",
+      "quarantine/claude-code-official-distribution/metadata/setup.md"
+    ],
+    "scope": "Read npm metadata, shell installer checksum/dispatch and setup/install/update/authentication contracts.",
+    "limits": "Native macOS/Linux executable and npm archive unexecuted; no core source, runtime tests or disassembly claim."
+  },
+  "actions": [
+    {
+      "name": "claude / native install",
+      "surface": "documented operator CLI",
+      "input": "project directory, installer channel/version",
+      "output": "interactive coding session / launcher",
+      "lifecycle": "installer downloads then delegates install to closed binary; update activates at next start",
+      "authority": "operator-installed executable; ordinary tool authorization unavailable",
+      "evidence": [
+        "installer",
+        "setup"
+      ]
+    },
+    {
+      "name": "claude update / doctor / release channel",
+      "surface": "documented operator CLI",
+      "input": "selected channel or installation diagnostics",
+      "output": "installed version / read-only diagnostics",
+      "lifecycle": "background replacement files then restart boundary",
+      "authority": "operator configuration",
+      "evidence": [
+        "update"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Package advertises codebase understanding/editing; engine implementation not available.",
+      "evidence": [
+        "package"
+      ]
+    },
+    "processes": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Advertised terminal commands and setup Bash/PowerShell tools; cancellation, PTY and detached work unavailable.",
+      "evidence": [
+        "package",
+        "setup"
+      ]
+    },
+    "code_actions": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Package advertises handling workflows, without an inspected programmable scheduling contract.",
+      "evidence": [
+        "package"
+      ]
+    },
+    "multi_model": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Authentication documentation lists direct Anthropic and third-party provider channels; no model-addressed peers inferred.",
+      "evidence": [
+        "auth"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Executable update installs in background but documented activation is next start; not live replacement.",
+      "evidence": [
+        "update"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Documented executable update/restart contains no outpost, context transfer or unresolved-work continuity contract.",
+      "evidence": [
+        "update"
+      ]
+    },
+    "remote_services": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Consumes direct/third-party provider APIs; remote outpost chat/execution semantics unavailable.",
+      "evidence": [
+        "auth"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Setup describes provider authentication, not standing tool authority, skip-permission scope or model control of programs.",
+      "evidence": []
+    },
+    "evaluation": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    },
+    "time_order": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established by inspected installer/package metadata and setup contract; native engine is opaque.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "package",
+      "path": "quarantine/claude-code-official-distribution/metadata/npm-package.json",
+      "start": 1,
+      "end": 38,
+      "claim": "Package points claude at native executable, lists platform dependencies and advertises editing/terminal/workflow functions; Node requirement is wrapper metadata."
+    },
+    {
+      "id": "installer",
+      "path": "quarantine/claude-code-official-distribution/metadata/install.sh",
+      "start": 148,
+      "end": 229,
+      "claim": "Installer fetches manifest, verifies downloaded SHA256 and invokes binary install; no refit/context transfer mechanism in shell path."
+    },
+    {
+      "id": "setup",
+      "path": "quarantine/claude-code-official-distribution/metadata/setup.md",
+      "start": 96,
+      "end": 135,
+      "claim": "Official documented interactive session and Windows Bash/PowerShell choice."
+    },
+    {
+      "id": "auth",
+      "path": "quarantine/claude-code-official-distribution/metadata/setup.md",
+      "start": 189,
+      "end": 193,
+      "claim": "Documented direct account/API-key and third-party provider authentication."
+    },
+    {
+      "id": "update",
+      "path": "quarantine/claude-code-official-distribution/metadata/setup.md",
+      "start": 195,
+      "end": 218,
+      "claim": "Background updates take effect next process start, custom launchers persist with installed versions; package-manager updates may require restart."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Versioned executable files plus custom launcher retention offer a useful replacement primitive.",
+    "Official platform/package boundaries are explicit without guessing engine language."
+  ],
+  "limits": [
+    "Installer integrity checks do not establish coding-agent semantics.",
+    "Restart activation is documented; context/work handoff unavailable in this material."
+  ],
+  "arconaut_questions": [
+    "How should an outpost retain identity/context and observe build/update before activating a replacement?",
+    "Treat executable artifact replacement and conversational continuity as distinct contracts."
+  ]
+}

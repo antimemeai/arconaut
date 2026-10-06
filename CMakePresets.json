@@ -1,0 +1,32 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "base", "hidden": true, "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/opt/homebrew/Cellar/llvm/23.1.2/bin/clang++",
+        "CMAKE_MAKE_PROGRAM": "/opt/homebrew/anaconda3/bin/ninja",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {"name": "debug", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "ARCONAUT_INSTRUMENTATION": "none"}},
+    {"name": "release", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Release", "ARCONAUT_INSTRUMENTATION": "none"}},
+    {"name": "asan", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "ARCONAUT_INSTRUMENTATION": "address"}},
+    {"name": "tsan", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "ARCONAUT_INSTRUMENTATION": "thread"}},
+    {"name": "fuzz", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "ARCONAUT_INSTRUMENTATION": "fuzz"}}
+  ],
+  "buildPresets": [
+    {"name": "debug", "configurePreset": "debug"},
+    {"name": "release", "configurePreset": "release"},
+    {"name": "asan", "configurePreset": "asan"},
+    {"name": "tsan", "configurePreset": "tsan"},
+    {"name": "fuzz", "configurePreset": "fuzz"}
+  ],
+  "testPresets": [
+    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
+    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
+    {"name": "asan", "configurePreset": "asan", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
+    {"name": "tsan", "configurePreset": "tsan", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}}
+  ]
+}

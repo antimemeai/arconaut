@@ -1,0 +1,686 @@
+{
+  "id": "bub",
+  "kind": "plugin-composable coding/chat agent runtime",
+  "runtime": {
+    "languages": [
+      "Python",
+      "TypeScript (website)"
+    ],
+    "execution": "Asyncio turn/channel loop, Pluggy stage/interception callbacks, any-llm provider streams and native shell/fresh Python subprocess code actions.",
+    "service_boundary": "Owns default append-style file tape, sidecars, scoped shell manager and session environment lifecycle; accepts caller-owned tape stores/environment plugins and consumes providers/channels."
+  },
+  "summary": "Operator/model tool symmetry, replaceable turn stages, tape-derived context, code-mode tool orchestration and channel admission/steering.",
+  "inspection": {
+    "files": [
+      "quarantine/bub/src/bub/framework.py",
+      "quarantine/bub/src/bub/hooks/specs.py",
+      "quarantine/bub/src/bub/builtin/model_runner.py",
+      "quarantine/bub/src/bub/tools.py",
+      "quarantine/bub/src/bub/hooks/interception.py",
+      "quarantine/bub/src/bub/tape.py",
+      "quarantine/bub/src/bub/store.py",
+      "quarantine/bub/src/bub/builtin/agent.py",
+      "quarantine/bub/src/bub/builtin/spill.py",
+      "quarantine/bub/src/bub/builtin/tools.py",
+      "quarantine/bub/src/bub/builtin/environment.py",
+      "quarantine/bub/src/bub/builtin/codemode/__init__.py",
+      "quarantine/bub/src/bub/builtin/codemode/code_runner.py",
+      "quarantine/bub/src/bub/builtin/codemode/code_runner_child.py",
+      "quarantine/bub/src/bub/channels/manager.py",
+      "quarantine/bub/tests/test_agent_hooks.py",
+      "quarantine/bub/tests/test_shell_manager.py",
+      "quarantine/bub/tests/test_spill.py",
+      "quarantine/bub/tests/test_file_tape_store_entry_ids.py"
+    ],
+    "scope": "framework/stage hooks, model/tool loop, tape projection/fork/merge/storage/query/overflow/spill, native shell/code/subagent and inspected mutation/lifecycle/archive test assertions",
+    "limits": "No upstream execution. Provider SDK/channel/plugin implementations not fully inspected; default FileTapeStore/LocalEnvironment specifically traced and not generalized to all plugin-backed services."
+  },
+  "actions": [
+    {
+      "name": "process_inbound / Agent.run_stream",
+      "surface": "operator/program/channel turn API",
+      "input": "Envelope/session prompt/state/model/allowed tools/skills",
+      "output": "TurnResult/outbounds or AsyncStreamEvents usage/error",
+      "lifecycle": "framework resolve→state→prompt→model→finally save→render→dispatch; SDK stream holds fork until consumed/closed",
+      "authority": "registered plugins and caller-owned explicit stores; same-session stream serialization caller concern",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e12"
+      ]
+    },
+    {
+      "name": "resolve_session / load_state / build_prompt / run_model(_stream) / save_state / render_outbound / dispatch_outbound",
+      "surface": "programmable stage plugin contract",
+      "input": "message/session/state/model prompt or output",
+      "output": "modified/replaced stage result/outbound",
+      "lifecycle": "priority stage selection each call; save finally and lifespans close",
+      "authority": "operator/program entry-point plugin can replace whole turn; no live refit barrier implied",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "before_llm_call / before_tool_call / after_tool_call",
+      "surface": "programmable agent interception",
+      "input": "request/model/messages or named call/effective args/outcome",
+      "output": "changed request/finish/proceed/replace/deny or changed result",
+      "lifecycle": "ordered transformations; exceptions logged/skipped; cancellation not terminal after-LLM observation",
+      "authority": "plugin has substantial normal-turn agency; LLM tool_names observational",
+      "evidence": [
+        "e4",
+        "e6",
+        "e7",
+        "e26"
+      ]
+    },
+    {
+      "name": "bash / bash.output / bash.kill",
+      "surface": "model and operator command",
+      "input": "command/cwd/background/timeout then shell_id/offset/limit",
+      "output": "text/exit/status/cursor or background handle",
+      "lifecycle": "foreground timeout continues background; explicit kill; scoped shutdown drains pending spawn",
+      "authority": "selected Environment host groups/program authority; commands share tooling",
+      "evidence": [
+        "e16",
+        "e17",
+        "e27"
+      ]
+    },
+    {
+      "name": "fs.read / fs.write / fs.edit; web.fetch",
+      "surface": "model and operator callable tools",
+      "input": "path/offset/limit/text replacement; URL/headers/timeout",
+      "output": "contents/write/edit or fetched text",
+      "lifecycle": "await configured environment/file or HTTP request",
+      "authority": "default host path authority; caller controls plugins and tool filters",
+      "evidence": [
+        "e16",
+        "e17",
+        "e22"
+      ]
+    },
+    {
+      "name": "run_code / code_mode",
+      "surface": "model Python action and operator setting command",
+      "input": "Python/top-level await, timeout; enable bool",
+      "output": "printed output or typed error with prior output; persisted next-turn setting",
+      "lifecycle": "fresh process each action, full builtins + tools RPC; pending RPC canceled/gathered on done, kill finally",
+      "authority": "enabled code tools/context; structured tool results bypass spill/post-render; not sandbox proof",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "subagent",
+      "surface": "model callable delegation",
+      "input": "prompt/model/session inherit,temp,named/allowed tools/skills",
+      "output": "session_id/output/errors",
+      "lifecycle": "await child stream; temp does not merge back; inherited named tape can share context",
+      "authority": "instance tool filters exclude recursive subagent; state shallow copied",
+      "evidence": [
+        "e22"
+      ]
+    },
+    {
+      "name": "tape.info / tape.search / tape.anchors / tape.handoff / tape.reset",
+      "surface": "model/operator data/context commands",
+      "input": "query/kinds/dates/limit; anchor/summary; archive bool",
+      "output": "entry matches/info/anchors/new boundary or archive/reset result",
+      "lifecycle": "handoff appends anchor/event, default context AFTER anchor; reset destructive unless archive",
+      "authority": "same native command/tool runtime; original tape distinct projected context",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e12",
+        "e22"
+      ]
+    },
+    {
+      "name": "spill.read / SpillStore.spill_tool_result",
+      "surface": "model retrieval + support sidecar API",
+      "input": "oversized rendered result; handle/cursor/count/from_end",
+      "output": "preview/manifest/chunk pages/complete cursor or incomplete storage error",
+      "lifecycle": "UTF8 chunk archive, bounded retrieval; temporary fork discarded; failure returns truncated preview",
+      "authority": "mounted sibling tape authority, structured code values bypass spill",
+      "evidence": [
+        "e15",
+        "e18"
+      ]
+    },
+    {
+      "name": "admit_message / quit / steering inbox",
+      "surface": "programmable channel/operator control",
+      "input": "session turn snapshot/message; session ID",
+      "output": "process/drop/followup/steer or canceled task count",
+      "lifecycle": "steer active else queue; quit clears pending and awaits canceled sibling tasks",
+      "authority": "channel plugin/operator policy, current caller excluded from self-cancel",
+      "evidence": [
+        "e23",
+        "e24"
+      ]
+    },
+    {
+      "name": ",model / ,reasoning_effort / tool decorator",
+      "surface": "operator settings and discovery registration",
+      "input": "provider:model/effort; annotated callable/context/agent_use/preserve metadata",
+      "output": "next-turn persisted settings or registered named tool/schema",
+      "lifecycle": "tool registry snapshotted per Agent, plugins/later callbacks; no module hotreload contract",
+      "authority": "operators and model share callable primitives; model-use filters differ by tool",
+      "evidence": [
+        "e25",
+        "e6",
+        "e18"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "fs.read/write/edit delegate configured Environment; default native host paths allow absolute/expanded paths, no project-only sandbox inferred.",
+      "evidence": [
+        "e16",
+        "e17"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native bash/group-spawn/output/kill and lifetime cleanup; timeout advertises still-running background handle, environment plugin can replace host.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e24",
+        "e27"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model run_code full Python/top-level await with structured async tools RPC, default fresh subprocess always killed afterward; code-mode chosen operator next-turn.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Default code action fresh child namespace and teardown; shell handles resident manager, not kernel heap checkpoint/shared service. Environment plugin supports alternate composition.",
+      "evidence": [
+        "e3",
+        "e16",
+        "e17",
+        "e20",
+        "e21"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Queryable tape/sidecar file records standing across turns; injectable caller-owned store protocol. Default file journal not general transactional shared DB.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e13",
+        "e15"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "All turn stages replaceable, code tools async orchestration, subagents with inheritance/temp/named session and model override; actual callable/discovery paths.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e18",
+        "e19",
+        "e22"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-turn/session model and subagent override with inherited/temp/named tapes; before-LLM model rewrite, provider candidates consume SDK.",
+      "evidence": [
+        "e4",
+        "e7",
+        "e22",
+        "e25"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Channel turn admission supports shared session process/steer/followup and subagent inherited/named sessions; SDK run_stream does not itself serialize concurrent same-session turns.",
+      "evidence": [
+        "e2",
+        "e22",
+        "e23",
+        "e24"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool gather, code RPC tasks, channel active tasks/subagents. Owned-work cleanup and temporary tape merge boundaries distinct from shared service lifecycle.",
+      "evidence": [
+        "e5",
+        "e19",
+        "e22",
+        "e24",
+        "e27"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Channel steer/followup and quit cancels/awaits siblings; code finally kills runner and gathers pending RPC, shell cleanup waits in-flight spawn. Hook terminal observations skip cancellation/consumer close.",
+      "evidence": [
+        "e4",
+        "e19",
+        "e20",
+        "e23",
+        "e24",
+        "e27"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Stage plugins replace full flow; before-provider message/model transform/short circuit and tool argument/result transform are wired. Tool names observational in LLM request hook, not toolset mutation.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e6",
+        "e7",
+        "e26"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model manual handoff and overflow anchor move context boundary, originals remain tape; default after-anchor selection excludes stored anchor.state summary, overflow only records reason/error without substantive summary.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e11",
+        "e22"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Queryable originals, anchor/selector plugin and tape.search can recover previous material; default malformed read/fork redaction/default anchor exclusion limit faithful automatic repair.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e12",
+        "e13",
+        "e22"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Append-style tape originals/spill-sidecar text retained when writes succeed; fork strips nontext inputs, posthooks may replace before record, cancellation skips after-LLM and completed-turn records, malformed rows ignored, reset destructive unless archive requested.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e12",
+        "e13",
+        "e14",
+        "e15",
+        "e22"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native text/date/kind/limit/anchor query and tape tools; selected ForkTapeStore child path applies kind/anchor but omits text/date filters unlike parent store, so in-flight fork query semantics differ.",
+      "evidence": [
+        "e10",
+        "e12",
+        "e22"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model/reasoning/code-mode settings explicitly next-turn persisted tape events; dynamic plugin manager/stage selection supports composition but no safe executable source reload/refit activation barrier.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e18",
+        "e25"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "File tape/settings survive process restart and rebuild context; fresh code namespace/owned shell Maps and provider stream not restored. Exact shell cleanup test addresses shutdown race, not full compiled harness outpost.",
+      "evidence": [
+        "e13",
+        "e18",
+        "e20",
+        "e25",
+        "e27"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Environment/store/provider/channel hooks consume alternate services; caller supplied store lifecycle belongs caller, default native environment owned by framework.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e17",
+        "e22"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Replaceable stage/code workflows and shared tools allow model/operator experiments; no inspected candidate harness evaluation/promotion or managed autoresearch program.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e18",
+        "e22"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "on_error hooks, tape error/events/run correlation and plugin init diagnostics can underpin complaint filing; no dedicated external state-snapshot/bead-table contract.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e7",
+        "e14"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Operator commands share native tool implementations, model allowed tool/skill filters, plugin explicit proceed/replace/deny; hook exceptions skipped rather than denied. Default full host Python/filesystem authority.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e17",
+        "e18",
+        "e21",
+        "e22"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Exact hook argument propagation, shell cleanup race, monotonic entry IDs and spill archive tests validate mechanisms; social evaluation docs not treated as implemented truth/harness optimizer.",
+      "evidence": [
+        "e26",
+        "e27"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-run correlation/date/IDs, tool results gather order and monotonic append IDs within tape object; sidecar/main fork merge nontransactional, effects happen before persisted record and cancellation can leave gaps.",
+      "evidence": [
+        "e5",
+        "e12",
+        "e13",
+        "e14",
+        "e19"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/bub/src/bub/framework.py",
+      "start": 79,
+      "end": 123,
+      "claim": "Loads builtins then entry-point plugins; failed init diagnostics; stage implementation precedence and caller-configurable manager."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/bub/src/bub/framework.py",
+      "start": 150,
+      "end": 208,
+      "claim": "Build fresh state from reversed hook contributions, then resolve/load/build/run/save/render/dispatch turn; save finally even model failure."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/bub/src/bub/hooks/specs.py",
+      "start": 40,
+      "end": 151,
+      "claim": "Turn stages replaceable, model changes next turn, environment supplied/cached per session and closed on runtime exit."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/bub/src/bub/builtin/model_runner.py",
+      "start": 187,
+      "end": 294,
+      "claim": "Build request then before-LLM transforms/finish; after once completed/failure but cancellation/consumer close bypasses; tools execute then record_chat."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/bub/src/bub/tools.py",
+      "start": 278,
+      "end": 309,
+      "claim": "ToolExecutor gathers independent invocations, preserves results order, failures structured; unexpected BaseException propagated."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/bub/src/bub/tools.py",
+      "start": 360,
+      "end": 424,
+      "claim": "Mutable effective argument pipeline reaches actual handler; after hooks may replace result, errors normalized. Sync callable not automatically offloaded."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/bub/src/bub/hooks/interception.py",
+      "start": 124,
+      "end": 211,
+      "claim": "LLM request chain change/model/messages/finish and tool argument chain/proceed/replace/deny; plugin exceptions skipped, not veto; after mutable result shared."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/bub/src/bub/tape.py",
+      "start": 148,
+      "end": 177,
+      "claim": "Context selection default LAST_ANCHOR builds after-last query; explicit selector/anchor=None can reconstruct all history."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/bub/src/bub/tape.py",
+      "start": 291,
+      "end": 329,
+      "claim": "read_messages filters context:false then projection; handoff appends anchor(state) and event without modifying old entries."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/bub/src/bub/store.py",
+      "start": 180,
+      "end": 213,
+      "claim": "Default store query slices AFTER anchor, then date/query/kind/limit filters; anchor itself and its state summary are excluded from default messages."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/bub/src/bub/builtin/agent.py",
+      "start": 350,
+      "end": 380,
+      "claim": "Overflow auto-handoff writes reason/error state but no substantive summary, then retries original prompt once."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/bub/src/bub/store.py",
+      "start": 307,
+      "end": 377,
+      "claim": "Fork parent read fallback silently empty on errors, child query filters kinds/anchor but not query/date; strips nontext prompt parts; merges sidecars then main nontransactionally."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/bub/src/bub/store.py",
+      "start": 502,
+      "end": 560,
+      "claim": "File store incremental read skips malformed JSON/entries; append locks per cached tape object and assigns monotonic local IDs; no process lock/fsync contract in inspected writer."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/bub/src/bub/tape.py",
+      "start": 337,
+      "end": 384,
+      "claim": "Chat persists selected input/system/text/calls/results/usage event after tools; full provider response object not persisted raw."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/bub/src/bub/builtin/spill.py",
+      "start": 121,
+      "end": 189,
+      "claim": "Oversized rendered results chunked UTF8 in sidecar with manifest; failure returns bounded truncation notice/preview and diagnostic event rather than original."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/bub/src/bub/builtin/tools.py",
+      "start": 242,
+      "end": 337,
+      "claim": "Native bash returns background handle even foreground timeout, output/kill tools; environment read/write/edit delegated, direct operation no blanket routine prompt."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/bub/src/bub/builtin/environment.py",
+      "start": 54,
+      "end": 133,
+      "claim": "Local environment host filesystem/processes own Unix process groups, TERM/KILL; run_code delegates fresh child; paths resolve but no project-only sandbox."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/bub/src/bub/builtin/codemode/__init__.py",
+      "start": 254,
+      "end": 310,
+      "claim": "Model run_code gets structured async tool RPC without text spill; timeout/error output; operator code_mode command recorded next-turn persistent setting."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/bub/src/bub/builtin/codemode/code_runner.py",
+      "start": 45,
+      "end": 86,
+      "claim": "Code runner spawns tool-call tasks per RPC; on done/failure cancels/gathers outstanding calls, cannot transactionally undo provider/external work."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/bub/src/bub/builtin/codemode/code_runner.py",
+      "start": 107,
+      "end": 142,
+      "claim": "Each code action new subprocess; always force stop/reap in finally, no persistent interpreter namespace."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/bub/src/bub/builtin/codemode/code_runner_child.py",
+      "start": 145,
+      "end": 172,
+      "claim": "Child compiles Python top-level await with full builtins and async tools namespace; no state transfer between actions."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/bub/src/bub/builtin/tools.py",
+      "start": 361,
+      "end": 455,
+      "claim": "Model tape info/search/reset/handoff/anchors/web.fetch/subagent; inherited/temp/named sessions, model override, filters prevent recursive subagent tool."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/bub/src/bub/channels/manager.py",
+      "start": 239,
+      "end": 272,
+      "claim": "Admission process/drop/follow-up/steer; steer running turn else queue pending."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/bub/src/bub/channels/manager.py",
+      "start": 130,
+      "end": 148,
+      "claim": "Quit clears pending and cancels/awaits active sibling tasks, avoids canceling current caller."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/bub/src/bub/builtin/tools.py",
+      "start": 493,
+      "end": 513,
+      "claim": "Operator model/reasoning settings recorded next-turn, persist across restarts; invalid model error next turn with recover command."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/bub/tests/test_agent_hooks.py",
+      "start": 203,
+      "end": 216,
+      "claim": "Exact native-handler result ran:safe-ls proves modified arguments execute, unlike decision-only transform."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/bub/tests/test_shell_manager.py",
+      "start": 221,
+      "end": 259,
+      "claim": "Delayed spawn shutdown test asserts lifespan remains unsettled until spawn completes, closed-start rejection and processes terminated/Maps empty."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/bub/tests/test_agent_hooks.py",
+      "focus": "phase transform ordering and actual execution",
+      "oracle": "Hooks chain LIFO request/argument changes; exact ran:safe-ls proves modified args reached handler; deny asserts later hooks not called. Includes mutable after-result semantics. No full audit originals or refit oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/bub/tests/test_shell_manager.py",
+      "focus": "spawn/shutdown/cancellation ownership races",
+      "oracle": "Actual source test gates delayed spawn, checks lifespan unresolved until spawn released, then closed-runtime rejection, child terminated and Maps empty. Read only; external daemons/provider settlement outside oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/bub/tests/test_spill.py",
+      "focus": "oversized rendered result preservation/archive and code mode boundary",
+      "oracle": "Archive checks main/spill handle/file presence then reset no-result; code-mode exact structured large value remains unchanged/unspilled. Handle containment alone is weaker than complete archive byte recovery, other page tests compare original text.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/bub/tests/test_file_tape_store_entry_ids.py",
+      "focus": "append identity on repeated fork merge",
+      "oracle": "Exact IDs [1,2] and names prove monotonic parent IDs across sequential merges, not multi-process writer/crash transaction correctness.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Full turn-stage replacement plus actual effective tool input/result transforms, with operator/model native callable symmetry.",
+    "Queryable original tape distinct from model projection; large text retained as UTF8 chunks when spill succeeds.",
+    "Next-turn settings and scoped native process cleanup have explicit activation/lifetime semantics and useful race oracle."
+  ],
+  "limits": [
+    "Default after-anchor context excludes anchor-state summary; overflow handoff lacks substantive summary.",
+    "Fork strips nontext inputs; posthooks/temporary fork/spill failure/cancellation and malformed rows bound original audit.",
+    "File append/fork merge no complete cross-process transaction; fresh code action and resident shell Maps not rebuild shared-kernel continuity."
+  ],
+  "arconaut_questions": [
+    "Can tape-like exact original custody and configurable projections preserve media, pre/post transformations and canceled/late events without default data loss?",
+    "What contract makes handoff summary actually visible after its boundary and allows model-governed repair?",
+    "Can stage/environment plugins act as consumers of shared services while owned work inventory enforces refit quiescence?"
+  ]
+}

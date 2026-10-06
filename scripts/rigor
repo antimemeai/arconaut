@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+"""Owned development tooling; no production Python or provider credentials."""
+import argparse
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parent.parent
+PROFILE = json.loads((ROOT / "tooling/local-profile.json").read_text())
+LLVM = Path(PROFILE["llvm"]["directory"])
+PROFILES = ("debug", "release", "asan", "tsan", "fuzz")
+CPP_UNITS = {".cpp", ".cc", ".cxx", ".C", ".c++", ".cppm", ".ixx"}
+CPP_HEADERS = {".h", ".hpp", ".hh", ".hxx", ".h++", ".inl", ".ipp"}
+
+
+def run(args, *, cwd=ROOT, check=True, env=None):
+    command = [str(a) for a in args]
+    child = subprocess.Popen(command, cwd=cwd, env=env, text=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             start_new_session=True)
+    try:
+        output, _ = child.communicate(timeout=120)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt):
+        import signal
+        os.killpg(child.pid, signal.SIGTERM)
+        try:
+            child.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL)
+            child.communicate()
+        raise RuntimeError(f"command interrupted or exceeded 120 s: {args[0]}")
+    result = subprocess.CompletedProcess(command, child.returncode, output)
+    if result.stdout:
+        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n", flush=True)
+    if check and result.returncode:
+        raise RuntimeError(f"command failed ({result.returncode}): {args[0]}")
+    return result
+
+
+def verify_tools():
+    if platform.system() != "Darwin" or platform.machine() != "arm64":
+        raise RuntimeError("local profile is qualified only for macOS arm64")
+    expected = {"CMAKE_CXX_COMPILER": str(LLVM / "clang++"),
+                "CMAKE_MAKE_PROGRAM": PROFILE["ninja"]["path"]}
+    presets = json.loads((ROOT / "CMakePresets.json").read_text())["configurePresets"]
+    found = set()
+    for preset in presets:
+        for key, value in preset.get("cacheVariables", {}).items():
+            if key in expected:
+                if value != expected[key]:
+                    raise RuntimeError(f"preset/profile pin mismatch: {preset['name']}: {key}")
+                found.add(key)
+    if found != set(expected):
+        raise RuntimeError("presets do not declare the qualified compiler and build driver")
+    versions = {}
+    tools = {name: {"path": str(LLVM / name), "version": PROFILE["llvm"]["version"]}
+             for name in ("clang++", "clang-format", "clang-tidy", "clangd")}
+    tools.update({name: PROFILE[name] for name in
+                  ("cmake", "ctest", "ninja", "lua_ls", "stylua", "lua", "luac")})
+    for name, tool in tools.items():
+        flag = "-v" if name in ("lua", "luac") else "--version"
+        result = run([tool["path"], flag])
+        if not re.search(r"(?<![\d.])" + re.escape(tool["version"]) + r"(?![\d.])",
+                         result.stdout):
+            raise RuntimeError(f"{name}: pinned version mismatch")
+        versions[name] = {"path": tool["path"], "version_output": result.stdout.strip()}
+    return versions
+
+
+def build(profile):
+    run([PROFILE["cmake"]["path"], "--preset", profile])
+    run([PROFILE["cmake"]["path"], "--build", "--preset", profile])
+
+
+def sources(extension):
+    result = []
+    excluded = {"quarantine", "papers", "context", ".context", ".git", ".beads",
+                "build", "target", ".dolt", "__pycache__"}
+    for base, folders, names in os.walk(ROOT):
+        if Path(base) == ROOT:
+            folders[:] = [name for name in folders if name not in excluded]
+        else:
+            folders[:] = [name for name in folders if name != "__pycache__"]
+        linked = [Path(base) / name for name in folders if (Path(base) / name).is_symlink()]
+        if linked:
+            raise RuntimeError(f"owned directory symlinks need an explicit source policy: {linked}")
+        result.extend(Path(base) / name for name in names if Path(name).suffix in extension)
+    return sorted(result)
+
+
+def lua_check(workspace, output):
+    output.mkdir(parents=True, exist_ok=False)
+    result = run([PROFILE["lua_ls"]["path"], f"--check={workspace}",
+                  "--checklevel=Warning", "--check_format=json",
+                  f"--configpath={ROOT / '.luarc.json'}", f"--logpath={output}",
+                  f"--metapath={output / 'meta'}"], check=False)
+    report = output / "check.json"
+    if not report.is_file():
+        raise RuntimeError("LuaLS produced no fresh check.json")
+    data = json.loads(report.read_text())
+    # LuaLS's empty Lua table serializes as [] in this pinned version.
+    if data == []:
+        data = {}
+    if not isinstance(data, dict) or any(not isinstance(v, list) for v in data.values()):
+        raise RuntimeError("unrecognized LuaLS report schema")
+    diagnostics = [d for items in data.values() for d in items]
+    if any(not isinstance(d, dict) for d in diagnostics):
+        raise RuntimeError("unrecognized LuaLS diagnostic schema")
+    return result.returncode, diagnostics
+
+
+def lint():
+    cpp = sources(CPP_UNITS | CPP_HEADERS)
+    if cpp:
+        run([LLVM / "clang-format", "--dry-run", "--Werror", *cpp])
+    database = json.loads((ROOT / "build/debug/compile_commands.json").read_text())
+    fault_probe = ROOT / "tooling/probes/instrumentation_fault.cpp"
+    units = [entry for entry in database if Path(entry["file"]).resolve() != fault_probe]
+    if not units:
+        raise RuntimeError("no actual translation units to analyze")
+    compiled = {Path(entry["file"]).resolve() for entry in units}
+    missing = [p for p in cpp if p.suffix in CPP_UNITS
+               and p.resolve() != fault_probe
+               and p.resolve() not in compiled]
+    if missing:
+        raise RuntimeError(f"sources missing from compilation database: {missing}")
+    reached = set()
+    for entry in units:
+        args = entry.get("arguments") or shlex.split(entry["command"])
+        if not args or args[0] != str(LLVM / "clang++"):
+            raise RuntimeError(f"unqualified compiler in database: {entry['file']}")
+        flags = []
+        index = 1
+        while index < len(args):
+            arg = args[index]
+            if arg in ("-o", "-MT", "-MF", "-MQ"):
+                index += 2
+                continue
+            if arg not in ("-c", "-MD", "-MMD"):
+                flags.append(arg)
+            index += 1
+        with tempfile.TemporaryDirectory() as depdir:
+            depfile = Path(depdir) / "owned.d"
+            run([args[0], *flags, "-MM", "-MT", "arconaut-deps", "-MF", depfile],
+                cwd=entry["directory"])
+            dependencies = depfile.read_text().replace("\\\n", "")
+            if not dependencies.startswith("arconaut-deps:"):
+                raise RuntimeError("unexpected dependency report format")
+            reached.update((Path(entry["directory"]) / p).resolve()
+                           for p in shlex.split(dependencies.split(":", 1)[1]))
+        run([LLVM / "clang-tidy", "-p", ROOT / "build/debug", entry["file"]])
+    orphaned = [p for p in cpp if p.suffix in CPP_HEADERS and p.resolve() not in reached]
+    if orphaned:
+        raise RuntimeError(f"headers lack an actual analysis translation unit: {orphaned}")
+    lua = sources({".lua"})
+    if not lua:
+        raise RuntimeError("no Lua sources to qualify")
+    run([PROFILE["stylua"]["path"], "--check", "--config-path", ROOT / ".stylua.toml", *lua])
+    for source in lua:
+        run([PROFILE["luac"]["path"], "-p", source])
+    parent = ROOT / "context/rigor"
+    parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="lua-lint-", dir=parent) as work:
+        status, diagnostics = lua_check(ROOT, Path(work) / "report")
+        if status or diagnostics:
+            raise RuntimeError(f"LuaLS rejected source: {diagnostics}")
+    run([PROFILE["lua"]["path"], ROOT / "tooling/probes/lua_contract.lua"])
+
+
+def expect_fault(args, marker, *, env=None):
+    result = run(args, check=False, env=env)
+    if result.returncode == 0 or marker not in result.stdout:
+        raise RuntimeError(f"expected nonzero diagnostic containing {marker!r}")
+
+
+def qualify():
+    versions = verify_tools()
+    for profile in PROFILES:
+        build(profile)
+        if profile != "fuzz":
+            run([PROFILE["ctest"]["path"], "--preset", profile])
+    expect_fault([ROOT / "build/asan/instrumentation_fault", "memory"], "AddressSanitizer")
+    expect_fault([ROOT / "build/asan/instrumentation_fault", "undefined"], "signed integer overflow")
+    env = dict(os.environ, TSAN_OPTIONS="halt_on_error=1:exitcode=66")
+    expect_fault([ROOT / "build/tsan/instrumentation_fault", "race"], "ThreadSanitizer: data race", env=env)
+    run([ROOT / "build/fuzz/bytes_fuzz", "-runs=1000", "-max_len=4096", "-seed=1"])
+    lint()
+    parent = ROOT / "context/rigor"
+    with tempfile.TemporaryDirectory(prefix="diagnostic-probes-", dir=parent) as work:
+        folder = Path(work)
+        source = folder / "unformatted.cpp"
+        source.write_text("int main(){return 0;}\n")
+        expect_fault([LLVM / "clang-format", "--style=file:" + str(ROOT / ".clang-format"),
+                      "--dry-run", "--Werror", source], "clang-format-violations")
+        source = folder / "unchecked.cpp"
+        source.write_text("#include <optional>\nint get(std::optional<int> v) { return v.value(); }\n")
+        sdk = run(["xcrun", "--show-sdk-path"]).stdout.strip()
+        expect_fault([LLVM / "clang-tidy", "--config-file=" + str(ROOT / ".clang-tidy"),
+                      source, "--", "-std=c++20", "-isysroot", sdk], "bugprone-unchecked-optional-access")
+        source = folder / "analyzer.cpp"
+        source.write_text("int defect() { int* p = nullptr; return *p; }\n")
+        expect_fault([LLVM / "clang-tidy", "--config-file=" + str(ROOT / ".clang-tidy"),
+                      source, "--", "-std=c++20", "-isysroot", sdk], "clang-analyzer-core.NullDereference")
+        bad_lua = folder / "lua"
+        bad_lua.mkdir()
+        (bad_lua / "type_error.lua").write_text('---@type integer\nlocal n = "wrong"\nprint(n)\n')
+        status, diagnostics = lua_check(bad_lua, folder / "lua-report")
+        if not any(d.get("code") in ("assign-type-mismatch", "type-check") for d in diagnostics):
+            raise RuntimeError(f"LuaLS did not report intended type error: {status}, {diagnostics}")
+    result = {"scope": "tool capability only; no agent-runtime qualification",
+              "versions": versions, "profiles": list(PROFILES),
+              "fleet": "not configured; no local mutants", "lua_dialect": "5.4 compatibility only"}
+    (parent / "latest-qualification.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("Local tooling qualified; fleet and Lua 5.5 embedding are not qualified.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("doctor", "build", "check", "qualify", "fleet"))
+    parser.add_argument("profile", nargs="?", choices=PROFILES, default="debug")
+    args = parser.parse_args()
+    if args.command == "fleet":
+        raise RuntimeError("fleet host/launcher unconfigured; mutants never run locally")
+    if args.command == "doctor":
+        verify_tools()
+    elif args.command == "qualify":
+        qualify()
+    else:
+        verify_tools()
+        build(args.profile)
+        if args.command == "check":
+            if args.profile == "fuzz":
+                run([ROOT / "build/fuzz/bytes_fuzz", "-runs=1000", "-max_len=4096", "-seed=1"])
+            else:
+                run([PROFILE["ctest"]["path"], "--preset", args.profile])
+            if args.profile != "debug":
+                build("debug")
+            lint()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (RuntimeError, OSError, ValueError, KeyError) as error:
+        print(f"rigor: {error}", file=sys.stderr)
+        sys.exit(1)

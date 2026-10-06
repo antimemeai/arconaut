@@ -1,0 +1,547 @@
+{
+  "id": "claude-code-unofficial",
+  "kind": "unofficial modified TypeScript coding-agent source mirror",
+  "runtime": {
+    "languages": [
+      "TypeScript"
+    ],
+    "execution": "Bun/Node async generators and React/Ink; in-process teammate loops, shell children and remote-session client.",
+    "service_boundary": "Owns local turn/task/transcript state; consumes model/MCP/remote sessions. Artifact authenticity and correspondence to official executable unverified."
+  },
+  "summary": "A rich but incomplete, modified unofficial source artifact: real query/tool/teammate code, gated or missing internals, and selective transcripts. Its behavior is not attributed to official Claude Code.",
+  "inspection": {
+    "files": [
+      "quarantine/claude-code-unofficial/README.md",
+      "quarantine/claude-code-unofficial/src/query.ts",
+      "quarantine/claude-code-unofficial/src/query/deps.ts",
+      "quarantine/claude-code-unofficial/src/services/tools/toolOrchestration.ts",
+      "quarantine/claude-code-unofficial/src/tools.ts",
+      "quarantine/claude-code-unofficial/src/tools/FileEditTool/FileEditTool.ts",
+      "quarantine/claude-code-unofficial/src/tools/BashTool/BashTool.tsx",
+      "quarantine/claude-code-unofficial/src/tools/SendMessageTool/SendMessageTool.ts",
+      "quarantine/claude-code-unofficial/src/utils/teammateMailbox.ts",
+      "quarantine/claude-code-unofficial/src/utils/swarm/inProcessRunner.ts",
+      "quarantine/claude-code-unofficial/src/services/compact/compact.ts",
+      "quarantine/claude-code-unofficial/src/utils/sessionStorage.ts",
+      "quarantine/claude-code-unofficial/src/services/api/dumpPrompts.ts",
+      "quarantine/claude-code-unofficial/src/utils/transcriptSearch.ts",
+      "quarantine/claude-code-unofficial/src/tools/ConfigTool/ConfigTool.ts",
+      "quarantine/claude-code-unofficial/src/utils/permissions/permissions.ts",
+      "quarantine/claude-code-unofficial/src/remote/RemoteSessionManager.ts",
+      "quarantine/claude-code-unofficial/src/commands/issue/index.js",
+      "quarantine/claude-code-unofficial/src/server/web/__tests__/session-manager.test.ts"
+    ],
+    "scope": "Read mirror provenance, actual query/dependency wiring, tool registry/dispatch/edit/shell, teammate mailbox and runner, compaction/transcript, configuration/permission and remote controls, plus web session test.",
+    "limits": "No execution; authenticity unverified. WorkflowTool/REPLTool core modules referenced by gated registry absent in acquired tree; issue command is disabled stub. Many internal build gates and dependencies unavailable."
+  },
+  "actions": [
+    {
+      "name": "Read/Edit/Write/Glob/Grep/NotebookEdit",
+      "surface": "model tools",
+      "input": "file paths, ranges, replacement text/search patterns",
+      "output": "content/patch/result/error",
+      "lifecycle": "tool rounds; Edit stale-read check before synchronous write",
+      "authority": "model through registry/permission function",
+      "evidence": [
+        "registry",
+        "edit"
+      ]
+    },
+    {
+      "name": "Bash / background task / TaskOutput / TaskStop",
+      "surface": "model tools",
+      "input": "command, timeout, background flag/task ID",
+      "output": "progress, transformed merged output, task handles",
+      "lifecycle": "foreground awaited or background owned task; active-frame/child settlement not fully traced",
+      "authority": "model permitted shell; scope per-agent tasks",
+      "evidence": [
+        "bash",
+        "background",
+        "registry"
+      ]
+    },
+    {
+      "name": "Agent / team / SendMessage",
+      "surface": "model tools",
+      "input": "prompt/model override, peer or * and message",
+      "output": "independent peer task, mailbox receipt or shutdown protocol",
+      "lifecycle": "peer works independently, returns idle and polls; busy delivery boundary not fully traced",
+      "authority": "model registry with feature/build gates; write failures can still report sent",
+      "evidence": [
+        "peer",
+        "idle",
+        "send",
+        "mailbox"
+      ]
+    },
+    {
+      "name": "Compact / MCP refresh / queued steering",
+      "surface": "operator and host loop",
+      "input": "custom summary instructions, queued agent-addressed messages, connected MCP tools",
+      "output": "summary/attachments/lineage, next-round input/schema",
+      "lifecycle": "context preparation each provider round; slash commands after turn",
+      "authority": "host callbacks and operator control, not arbitrary model-authored scheduler",
+      "evidence": [
+        "loop",
+        "compact",
+        "lineage",
+        "queue"
+      ]
+    },
+    {
+      "name": "Config get/set",
+      "surface": "gated model tool",
+      "input": "supported setting and optional value",
+      "output": "validated get/set result",
+      "lifecycle": "specific state updates immediate; query config snapshot and MCP next round differ",
+      "authority": "internal-only tool; writes ask permission",
+      "evidence": [
+        "config",
+        "registry"
+      ]
+    },
+    {
+      "name": "Remote session message/interrupt/reconnect",
+      "surface": "client API",
+      "input": "session identity, content, request ID",
+      "output": "send success, WS controls, reconnected transport",
+      "lifecycle": "HTTP + WS client; no direct OS execution in this path",
+      "authority": "program/operator authenticated remote session",
+      "evidence": [
+        "remote"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native edit/read/search/write/notebook tools; stale content guard synchronous within process, no claimed cross-process transaction.",
+      "evidence": [
+        "registry",
+        "edit"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Streaming shell children with explicit/automatic background task handles; output merged/transformed and lifetime lower layer not fully traced.",
+      "evidence": [
+        "bash",
+        "background"
+      ]
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Shell composes OS programs. Gated REPL/workflow registries exist but core modules unavailable, so persistent code-action engine not established.",
+      "evidence": [
+        "registry",
+        "gates"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "REPL registry branch and primitives exist but REPLTool core module absent; persistent namespace/lifecycle not established.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Inspected state is task/transcript/mailbox data; no model queryable standing research database traced.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host query dependencies and hooks, skill/agent tools and notification priorities compose execution; advertised gated WorkflowTool core unavailable.",
+      "evidence": [
+        "deps",
+        "registry",
+        "queue",
+        "gates"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Main/fallback/advisor models and per-peer override in actual model/runner invocation.",
+      "evidence": [
+        "provider",
+        "peer"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Addressed peer mailboxes and independent persistent peer loops real; idle poll traced, busy delivery incompletely traced, swallowed write failures allow false sent acknowledgement.",
+      "evidence": [
+        "send",
+        "mailbox",
+        "peer",
+        "idle",
+        "poll"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consecutive declared-safe tools concurrent, independent peer runs and background shell handles; not all effects safe merely by declaration.",
+      "evidence": [
+        "dispatch",
+        "peer",
+        "background"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider AbortSignal, post-tool abort terminals and remote interrupt requests; cancellation signal does not prove all program/provider activity settled.",
+      "evidence": [
+        "provider",
+        "continue",
+        "remote"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Hooks can stop continuation, model deps injectable by host and contexts modified by tools; no traced model-replaceable full scheduling program.",
+      "evidence": [
+        "deps",
+        "dispatch",
+        "continue"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Multiple projection/micro/auto summary stages, grouping retry truncation and recent-resource restoration; some branches build gated/unavailable.",
+      "evidence": [
+        "loop",
+        "compact",
+        "lineage"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Boundary previous UUID and transcript path support recovery; recent files re-read. No universal model repair operation or preserved transformation originals established.",
+      "evidence": [
+        "lineage",
+        "compact",
+        "append"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Selective JSONL excludes progress; fallback tombstones partial attempts. Internal best-effort successful response dump is parsed/delta-based, neither all attempts nor original bytes.",
+      "evidence": [
+        "audit",
+        "provider",
+        "dump",
+        "append"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Rendered text search omits thinking/unknown tool shapes; transcript path accessible but complete original audit unavailable.",
+      "evidence": [
+        "search",
+        "lineage"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Config updates some state immediately, query entry snapshots config, tools refresh between model rounds; executable replacement unavailable.",
+      "evidence": [
+        "config",
+        "loop",
+        "queue"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Inspected resume/transcript/remote paths do not establish outpost/refit executable rebuild continuity or quiescence.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "MCP registry and remote-session authenticated message/permission/interrupt/reconnect client; consumer feature, not governor of shared kernels.",
+      "evidence": [
+        "registry",
+        "remote"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Generic edits/skills/config are present; no independently evaluated executable self-rebuild/promotion program traced.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Inspected /issue command disabled stub; internal dump comments for /issue not an available universal model complaint/state-table flow.",
+      "evidence": [
+        "issue",
+        "dump"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model tools subject to configurable permission modes. Even bypass retains certain ask/deny/interaction checks; config write itself asks.",
+      "evidence": [
+        "authority",
+        "config"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Query dependency seam supports fakes; available web session tests target routing/count bookkeeping, not underlying real provider/process cancellation.",
+      "evidence": [
+        "deps",
+        "test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Query UUID chain/depth, 500ms idle poll and wall timestamps provide identities/order hints; pause/restart logical clock semantics unestablished.",
+      "evidence": [
+        "loop",
+        "poll",
+        "send"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "origin",
+      "path": "quarantine/claude-code-unofficial/README.md",
+      "start": 3,
+      "end": 15,
+      "claim": "Mirror claims leaked source and preserved backup branch; attribution unverified and current branch modified."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/claude-code-unofficial/src/query.ts",
+      "start": 293,
+      "end": 467,
+      "claim": "Actual query loop projects/compacts messages before provider step; config snapshot at user-turn entry."
+    },
+    {
+      "id": "provider",
+      "path": "quarantine/claude-code-unofficial/src/query.ts",
+      "start": 659,
+      "end": 720,
+      "claim": "callModel passes tools, abort signal, model/advisor; fallback tombstones orphaned partial messages."
+    },
+    {
+      "id": "deps",
+      "path": "quarantine/claude-code-unofficial/src/query/deps.ts",
+      "start": 21,
+      "end": 39,
+      "claim": "Production model/microcompact/autocompact/UUID dependencies wired."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/claude-code-unofficial/src/services/tools/toolOrchestration.ts",
+      "start": 19,
+      "end": 176,
+      "claim": "Consecutive declared-safe calls concurrent with default cap10; unsafe serial; context modifiers reapplied in original block order."
+    },
+    {
+      "id": "continue",
+      "path": "quarantine/claude-code-unofficial/src/query.ts",
+      "start": 1484,
+      "end": 1520,
+      "claim": "Abort and hook-stop terminal conditions after tool results."
+    },
+    {
+      "id": "queue",
+      "path": "quarantine/claude-code-unofficial/src/query.ts",
+      "start": 1547,
+      "end": 1670,
+      "claim": "Mid-tool-round agent-addressed prompt/notification drain, deferred slash commands and MCP tool refresh."
+    },
+    {
+      "id": "registry",
+      "path": "quarantine/claude-code-unofficial/src/tools.ts",
+      "start": 193,
+      "end": 250,
+      "claim": "Native files/shell/agent/team/task/MCP tools; internal-only config/REPL and gated workflows."
+    },
+    {
+      "id": "gates",
+      "path": "quarantine/claude-code-unofficial/src/tools.ts",
+      "start": 104,
+      "end": 134,
+      "claim": "REPL/workflow/context-inspect branches reference gated core modules not available in this tree."
+    },
+    {
+      "id": "edit",
+      "path": "quarantine/claude-code-unofficial/src/tools/FileEditTool/FileEditTool.ts",
+      "start": 425,
+      "end": 491,
+      "claim": "Synchronous stale-read/content check then patch write; same-event-loop atomicity is not cross-process locking."
+    },
+    {
+      "id": "bash",
+      "path": "quarantine/claude-code-unofficial/src/tools/BashTool/BashTool.tsx",
+      "start": 624,
+      "end": 711,
+      "claim": "Shell dispatch with agent-scoped task channel, streaming progress and merged stdout/stderr before result transformation."
+    },
+    {
+      "id": "background",
+      "path": "quarantine/claude-code-unofficial/src/tools/BashTool/BashTool.tsx",
+      "start": 923,
+      "end": 1000,
+      "claim": "Foreground in-place backgrounding and explicit background task handle; assistant timer behind gate."
+    },
+    {
+      "id": "send",
+      "path": "quarantine/claude-code-unofficial/src/tools/SendMessageTool/SendMessageTool.ts",
+      "start": 149,
+      "end": 265,
+      "claim": "Addressed and broadcast messages await mailbox API then report sent; writes use wall timestamps."
+    },
+    {
+      "id": "mailbox",
+      "path": "quarantine/claude-code-unofficial/src/utils/teammateMailbox.ts",
+      "start": 84,
+      "end": 190,
+      "claim": "Locked read/modify/write JSON inbox; read errors become empty list and write errors logged/swallowed, so sent result does not guarantee persistence."
+    },
+    {
+      "id": "peer",
+      "path": "quarantine/claude-code-unofficial/src/utils/swarm/inProcessRunner.ts",
+      "start": 1169,
+      "end": 1218,
+      "claim": "Independent runAgent loop with per-peer model override, retained context, separate work/lifecycle aborts."
+    },
+    {
+      "id": "idle",
+      "path": "quarantine/claude-code-unofficial/src/utils/swarm/inProcessRunner.ts",
+      "start": 1317,
+      "end": 1367,
+      "claim": "Peer remains idle, sends notification and then polls next mailbox/task message; final response not automatically sent to lead."
+    },
+    {
+      "id": "poll",
+      "path": "quarantine/claude-code-unofficial/src/utils/swarm/inProcessRunner.ts",
+      "start": 690,
+      "end": 765,
+      "claim": "Idle loop takes pending operator messages and polls file mailbox at 500ms."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/claude-code-unofficial/src/services/compact/compact.ts",
+      "start": 440,
+      "end": 555,
+      "claim": "Summary retries truncate oldest round groups; errors rejected; recent file/agent/plan attachments restored."
+    },
+    {
+      "id": "lineage",
+      "path": "quarantine/claude-code-unofficial/src/services/compact/compact.ts",
+      "start": 596,
+      "end": 624,
+      "claim": "Compact boundary names previous UUID and summary references transcript path."
+    },
+    {
+      "id": "audit",
+      "path": "quarantine/claude-code-unofficial/src/utils/sessionStorage.ts",
+      "start": 121,
+      "end": 184,
+      "claim": "Transcript excludes ephemeral progress; tombstone rewriting can remove partial messages."
+    },
+    {
+      "id": "append",
+      "path": "quarantine/claude-code-unofficial/src/utils/sessionStorage.ts",
+      "start": 606,
+      "end": 677,
+      "claim": "Async queued JSONL append per file; append completion not fsync guarantee."
+    },
+    {
+      "id": "dump",
+      "path": "quarantine/claude-code-unofficial/src/services/api/dumpPrompts.ts",
+      "start": 90,
+      "end": 225,
+      "claim": "Internal USER_TYPE-only prompt/response dump, deltas and successful responses, asynchronous best-effort errors ignored."
+    },
+    {
+      "id": "search",
+      "path": "quarantine/claude-code-unofficial/src/utils/transcriptSearch.ts",
+      "start": 24,
+      "end": 79,
+      "claim": "Rendered transcript search skips thinking, unknown tool shapes and model-only wrappers."
+    },
+    {
+      "id": "config",
+      "path": "quarantine/claude-code-unofficial/src/tools/ConfigTool/ConfigTool.ts",
+      "start": 67,
+      "end": 179,
+      "claim": "Internal config tool get/set; writes request permission; specific remote-control change updates AppState immediately."
+    },
+    {
+      "id": "authority",
+      "path": "quarantine/claude-code-unofficial/src/utils/permissions/permissions.ts",
+      "start": 1225,
+      "end": 1280,
+      "claim": "Bypass still respects tool denials, content ask rules, required interactions and path safety checks."
+    },
+    {
+      "id": "remote",
+      "path": "quarantine/claude-code-unofficial/src/remote/RemoteSessionManager.ts",
+      "start": 219,
+      "end": 323,
+      "claim": "Remote message, permission response, interrupt control request, disconnect/reconnect; client signal is not remote settled-work confirmation."
+    },
+    {
+      "id": "issue",
+      "path": "quarantine/claude-code-unofficial/src/commands/issue/index.js",
+      "start": 1,
+      "end": 3,
+      "claim": "Acquired issue command is disabled stub."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/claude-code-unofficial/src/server/web/__tests__/session-manager.test.ts",
+      "start": 49,
+      "end": 136,
+      "claim": "Mock PTY/WebSocket tests assert session cap, forwarding call counts and cleanup bookkeeping, not true process/IO termination."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/claude-code-unofficial/src/server/web/__tests__/session-manager.test.ts",
+      "focus": "session cap and PTY/WebSocket routing",
+      "oracle": "Exact count/cap/cleanup bookkeeping; mocks do not establish real process death or byte preservation.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual peer work-abort versus peer lifecycle-abort separation.",
+    "Multiple managed context transformations with boundary/attachment handling.",
+    "Concurrency-safe batching preserves input order when applying context modifiers."
+  ],
+  "limits": [
+    "Unverified modified artifact must not serve as authoritative official implementation evidence.",
+    "Mailbox write failures swallowed before success result; partial attempts/progress not complete audit.",
+    "Gated REPL/workflow/issue implementation unavailable or stubbed in acquired source."
+  ],
+  "arconaut_questions": [
+    "Make durable message acceptance distinct from recipient observation and turn settlement.",
+    "Record failed provider attempts and transformation inputs before changing active transcript.",
+    "Specify model-program activation boundaries explicitly; next tool round and settled workflow are different."
+  ]
+}

@@ -1,0 +1,709 @@
+{
+  "id": "roo-code",
+  "kind": "mode-based editor/CLI coding agent",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "VSCode/Node Task loop with provider stream and serial presentation, VSCode terminals or execa subprocesses; optional CLI host present.",
+    "service_boundary": "Owns Task/message queue/editor context and task history/artifacts, releases task terminals on disposal; consumes providers and MCP, serial parent-child task handoff."
+  },
+  "summary": "Single-active mode-oriented task agent with real file/terminal actions, configurable tool/profile surfaces and non-destructive context projection; sequential delegation and disposal artifacts sharply limit collaboration/audit/refit claims.",
+  "inspection": {
+    "files": [
+      "quarantine/roo-code/src/core/webview/ClineProvider.ts",
+      "quarantine/roo-code/src/core/task/Task.ts",
+      "quarantine/roo-code/src/core/assistant-message/presentAssistantMessage.ts",
+      "quarantine/roo-code/src/core/prompts/tools/native-tools/index.ts",
+      "quarantine/roo-code/src/core/tools/ReadFileTool.ts",
+      "quarantine/roo-code/src/core/tools/WriteToFileTool.ts",
+      "quarantine/roo-code/src/core/tools/ExecuteCommandTool.ts",
+      "quarantine/roo-code/src/core/tools/ReadCommandOutputTool.ts",
+      "quarantine/roo-code/src/core/tools/NewTaskTool.ts",
+      "quarantine/roo-code/src/core/tools/SwitchModeTool.ts",
+      "quarantine/roo-code/src/core/tools/RunSlashCommandTool.ts",
+      "quarantine/roo-code/src/core/config/CustomModesManager.ts",
+      "quarantine/roo-code/src/core/condense/index.ts",
+      "quarantine/roo-code/src/core/task-persistence/apiMessages.ts",
+      "quarantine/roo-code/src/integrations/terminal/OutputInterceptor.ts",
+      "quarantine/roo-code/src/core/auto-approval/index.ts",
+      "quarantine/roo-code/src/core/tools/UseMcpToolTool.ts",
+      "quarantine/roo-code/README.md",
+      "quarantine/roo-code/src/core/condense/__tests__/rewind-after-condense.spec.ts",
+      "quarantine/roo-code/src/core/tools/__tests__/newTaskTool.spec.ts",
+      "quarantine/roo-code/src/core/tools/__tests__/executeCommandTool.spec.ts"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "read_file",
+      "surface": "model tool",
+      "input": "Path/files with line ranges",
+      "output": "Text with numbered lines or image/binary error",
+      "lifecycle": "Awaited read; common presentation serialization",
+      "authority": "Model read policy/ignore/current mode",
+      "evidence": [
+        "e8",
+        "e11",
+        "e34"
+      ]
+    },
+    {
+      "name": "write_to_file / apply_diff / apply_patch / edit / search_replace / edit_file",
+      "surface": "model tools",
+      "input": "File text, patch or edit-specific schema",
+      "output": "Write/diff result and diagnostics/context update",
+      "lifecycle": "Awaited editor mutation; rejection reverts staged changes",
+      "authority": "Mode/write protected/outside policy and common callbacks",
+      "evidence": [
+        "e8",
+        "e10",
+        "e12",
+        "e34"
+      ]
+    },
+    {
+      "name": "list_files / search_files / codebase_search",
+      "surface": "model tools",
+      "input": "Native search/list arguments",
+      "output": "Matches/indexed results",
+      "lifecycle": "Wired catalog; individual search engine internals outside scope",
+      "authority": "Model mode/read policy",
+      "evidence": [
+        "e8",
+        "e10"
+      ]
+    },
+    {
+      "name": "execute_command",
+      "surface": "model tool",
+      "input": "Command,cwd, model wait timeout plus operator configuration",
+      "output": "Exit/output or running status; artifact/execution ID",
+      "lifecycle": "Terminal/execa execution, foreground\u2192background on model timer; operator timer cleanup contradiction",
+      "authority": "Model allowed/denied command rules and operator limits",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15",
+        "e33"
+      ]
+    },
+    {
+      "name": "read_command_output",
+      "surface": "model tool",
+      "input": "{artifact_id,search?,offset?,limit?}",
+      "output": "Paged/search content and artifact size",
+      "lifecycle": "Task-owned storage; removed at disposal",
+      "authority": "Model only validated cmd-* artifacts",
+      "evidence": [
+        "e16",
+        "e30",
+        "e31"
+      ]
+    },
+    {
+      "name": "new_task",
+      "surface": "model tool",
+      "input": "{mode,message,todos?}",
+      "output": "Child task ID",
+      "lifecycle": "Flush parent/dispose then sole-active child; return is delegation receipt",
+      "authority": "Mode/subtask approval; parent lineage",
+      "evidence": [
+        "e17",
+        "e18",
+        "e5"
+      ]
+    },
+    {
+      "name": "switch_mode",
+      "surface": "model tool",
+      "input": "{mode_slug,reason?}",
+      "output": "Mode-change receipt",
+      "lifecycle": "Persisted handler/profile switch then500ms settling delay",
+      "authority": "Model when allowed; custom mode/tool restrictions",
+      "evidence": [
+        "e19",
+        "e20",
+        "e34"
+      ]
+    },
+    {
+      "name": "run_slash_command / skill",
+      "surface": "model tools",
+      "input": "Command or skill name, optional args",
+      "output": "Loaded procedural instruction content",
+      "lifecycle": "Experimental slash gate; optional mode change; ordinary prompt composition",
+      "authority": "Model approval/skill special autoapproval",
+      "evidence": [
+        "e21",
+        "e34"
+      ]
+    },
+    {
+      "name": "use_mcp_tool / access_mcp_resource",
+      "surface": "model tools",
+      "input": "Server/tool/object args or resource URI",
+      "output": "Service result/resource content",
+      "lifecycle": "Validated remote-service request; detailed transport lifecycle untraced",
+      "authority": "Model per-server/tool approvals",
+      "evidence": [
+        "e8",
+        "e35",
+        "e33"
+      ]
+    },
+    {
+      "name": "ask_followup_question / update_todo_list / attempt_completion / generate_image",
+      "surface": "model tools",
+      "input": "Native structured schemas",
+      "output": "Question/plan/completion/image results",
+      "lifecycle": "Catalog and actual named handlers; detailed image/completion bodies outside trace scope",
+      "authority": "Model mode/policy; host interactive callbacks",
+      "evidence": [
+        "e8",
+        "e10"
+      ]
+    },
+    {
+      "name": "customTool.execute",
+      "surface": "programmable API",
+      "input": "Parsed args, {mode,task}",
+      "output": "Return value/error",
+      "lifecycle": "Awaited inside ordinary presentation loop; experimental registry",
+      "authority": "Installed tool code full Task access",
+      "evidence": [
+        "e9"
+      ]
+    },
+    {
+      "name": "condenseContext / abortTask / processQueuedMessages",
+      "surface": "operator/programmatic API",
+      "input": "Current Task, optional stored support prompt/operator messages",
+      "output": "Summary history / disposed task / submission",
+      "lifecycle": "Flush pairs before compaction; abort cancel/provider resource cleanup",
+      "authority": "Operator/host APIs, no native repair directive established",
+      "evidence": [
+        "e23",
+        "e24",
+        "e29",
+        "e30",
+        "e32"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native read/write/edit/search routed by common handler; writes use editor preview/commit and context tracking.",
+      "evidence": [
+        "e8",
+        "e11",
+        "e12"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real terminal/execa commands with background transition and task artifacts. Both timer IDs cleared after race despite comment promising remaining user timeout; candidate defect, no execution proof.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell commands and experimental custom executable tools support computation; slash tool returns prompt material rather than executing workflow program.",
+      "evidence": [
+        "e9",
+        "e14",
+        "e21"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No standing language interpreter established in traced Task/native-tool/terminal paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No model-native standing DB/query contract established; shell/MCP integration alone not counted as turnkey database.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Custom modes, procedural commands/skills, hierarchical new_task and custom Tool.execute compose workflow primitives; no general model-owned workflow program lifecycle traced.",
+      "evidence": [
+        "e17",
+        "e19",
+        "e21",
+        "e9"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mode switch can activate mode-specific provider profile and rebuild handler. Serial child/mode handoff, not simultaneous heterogeneous models.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e18"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "new_task closes parent before child and enforces single-open invariant; no peer messaging/live team bus in inspected task orchestration.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e1"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Presentation lock executes tools sequentially although provider metadata requests parallelToolCalls; terminal command can remain background while loop proceeds.",
+      "evidence": [
+        "e6",
+        "e3",
+        "e14"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Queued operator messages processed after explicit tool/compaction sites; abort disposes task and cancels current request. No universal immediate message injection into live model stream inferred.",
+      "evidence": [
+        "e12",
+        "e23",
+        "e29",
+        "e32"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model changes mode/profile and prompt command; custom tool can access Task. Actual loop remains host Task/presentation stack, not user/model programmable turn algebra.",
+      "evidence": [
+        "e2",
+        "e19",
+        "e20",
+        "e21",
+        "e9"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Non-destructive tagged originals with latest-summary provider projection; custom prompt and pre-condense pair flush; orphan parent cleanup on rewind.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e26"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Deleting a summary reactivates original history and tests directly probe it. Disk JSON corruption instead returns empty; no model corruption diagnosis/repair protocol established.",
+      "evidence": [
+        "e26",
+        "e27"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tagged transcript preserves condensed originals, but JSON rewrite/retry removal and cmd-* artifact deletion make it incomplete as immutable event audit.",
+      "evidence": [
+        "e24",
+        "e28",
+        "e30",
+        "e31"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read/search/paging command artifacts and disk API history provide partial retrieval; disposal removes artifact originals. No unified all-event query.",
+      "evidence": [
+        "e16",
+        "e27",
+        "e31"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mode files watched and mode/provider updates apply without complete process restart;500ms settling delay is not affected-workflow transaction/quiescence.",
+      "evidence": [
+        "e22",
+        "e20",
+        "e19"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Saved task metadata/history permits handoff/reopen; parent disposal proceeds even failed flush, with stale-state warning. No executable outpost/recompile handoff or standing-work pause.",
+      "evidence": [
+        "e18",
+        "e29",
+        "e30"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native/dynamic MCP plus model provider requests; service consumption exists, shared computation fabric contract untraced.",
+      "evidence": [
+        "e3",
+        "e35"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Mode/custom tool/files edit agency not evidence of model-governed harness candidate evaluation/promotion in inspected paths.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Tool error telemetry and human GitHub reporting do not establish model-state grievance/bead capture surface.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Explicit per-class autoapproval, command allow/deny and outside/protected file controls; substantial approval machinery can be configured.",
+      "evidence": [
+        "e33",
+        "e34",
+        "e12"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read regression tests directly test orphan projection restoration; command/delegation tests mock executor/provider and assert arguments, not live process/refit behavior.",
+      "evidence": [
+        "e26",
+        "e14",
+        "e18"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Serial tool presentation, provider monotonic rate slot, summary lastTimestamp+1 and delay-based mode settling coexist with wall timestamps/artifact IDs. No global causal audit.",
+      "evidence": [
+        "e2",
+        "e6",
+        "e24",
+        "e19"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/roo-code/src/core/webview/ClineProvider.ts",
+      "start": 2536,
+      "end": 2592,
+      "claim": "Provider creates task with settings/profile/custom modes and enforces single open top-level task."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 2430,
+      "end": 2530,
+      "claim": "Task agent outer loop and request stack continue with tool/no-tool feedback, abort/mistake limits and monotonic provider rate slot."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 4080,
+      "end": 4179,
+      "claim": "Effective history projection, current mode/native+MCP tool building and provider.createMessage; advertised parallelToolCalls not actual dispatch concurrency."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 2926,
+      "end": 2953,
+      "claim": "Streaming complete calls parsed with call IDs then presented."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 3410,
+      "end": 3477,
+      "claim": "new_task truncates later calls; assistant history saved before final tool dispatch; loop waits result readiness."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/roo-code/src/core/assistant-message/presentAssistantMessage.ts",
+      "start": 59,
+      "end": 83,
+      "claim": "Presentation lock serializes content blocks and marks results ready only when streaming exhausted."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/roo-code/src/core/assistant-message/presentAssistantMessage.ts",
+      "start": 446,
+      "end": 489,
+      "claim": "Native result deduplicated per call, approval feedback merged and images appended."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/roo-code/src/core/assistant-message/presentAssistantMessage.ts",
+      "start": 652,
+      "end": 824,
+      "claim": "Native tool names actually dispatch named handler classes through common callbacks."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/roo-code/src/core/assistant-message/presentAssistantMessage.ts",
+      "start": 830,
+      "end": 872,
+      "claim": "Experimental custom tool parses schema and executes with full Task/mode access; executable extension primitive."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/roo-code/src/core/prompts/tools/native-tools/index.ts",
+      "start": 42,
+      "end": 71,
+      "claim": "Native catalog includes files/edit/search/shell/output/task/mode/skill/slash/MCP/image/question/todo/completion."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/roo-code/src/core/tools/ReadFileTool.ts",
+      "start": 758,
+      "end": 785,
+      "claim": "Actual file read and inclusive line-range extraction; binary/image path separate."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/roo-code/src/core/tools/WriteToFileTool.ts",
+      "start": 148,
+      "end": 185,
+      "claim": "Diff preview asks approval, saveChanges commits file and records context, result and queued-message processing."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/roo-code/src/core/tools/ExecuteCommandTool.ts",
+      "start": 197,
+      "end": 222,
+      "claim": "Creates task-scoped output interceptor and selects execa versus VSCode terminal provider."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/roo-code/src/core/tools/ExecuteCommandTool.ts",
+      "start": 362,
+      "end": 434,
+      "claim": "Actual runCommand; model timeout continues process to background, operator timeout aborts. Finally clears both timer IDs, contradicting comment that operator timer remains active after background transition."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/roo-code/src/core/tools/ExecuteCommandTool.ts",
+      "start": 447,
+      "end": 474,
+      "claim": "Completed output awaits asynchronous persistence callback; user feedback can leave command running."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/roo-code/src/core/tools/ReadCommandOutputTool.ts",
+      "start": 98,
+      "end": 172,
+      "claim": "Artifact read validates ID/path/offset and implements paged/search output access."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/roo-code/src/core/tools/NewTaskTool.ts",
+      "start": 14,
+      "end": 122,
+      "claim": "Model new_task validates mode/message/todos, approval then delegates parent and opens sole-active child."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/roo-code/src/core/webview/ClineProvider.ts",
+      "start": 2783,
+      "end": 2879,
+      "claim": "Delegation flushes parent result pairs, logs failure but proceeds; disposes parent, switches mode/profile and creates child after metadata sequencing."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/roo-code/src/core/tools/SwitchModeTool.ts",
+      "start": 31,
+      "end": 67,
+      "claim": "Model mode switch validates and asks approval, applies shared mode handler then uses500ms delay before next tool."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/roo-code/src/core/webview/ClineProvider.ts",
+      "start": 1255,
+      "end": 1377,
+      "claim": "Mode persistence before in-memory activation, optional per-mode profile; handler rebuild/sync on provider-model/profile changes."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/roo-code/src/core/tools/RunSlashCommandTool.ts",
+      "start": 22,
+      "end": 133,
+      "claim": "Experimental slash operation resolves command or skill, asks approval, optional mode switch then returns instruction content; not an executable workflow engine."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/roo-code/src/core/config/CustomModesManager.ts",
+      "start": 316,
+      "end": 354,
+      "claim": "VSCode watches .roomodes create/change/delete and refreshes merged modes/global state/cache without workflow transaction."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 1603,
+      "end": 1648,
+      "claim": "Manual condense flushes pending results first, supports custom summary instructions and current mode tools."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/roo-code/src/core/condense/index.ts",
+      "start": 446,
+      "end": 490,
+      "claim": "Non-destructive fresh-start condensation tags originals and appends summary with ID/timestamp."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/roo-code/src/core/condense/index.ts",
+      "start": 539,
+      "end": 561,
+      "claim": "Provider effective history starts latest summary, removes orphan tool result references."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/roo-code/src/core/condense/index.ts",
+      "start": 602,
+      "end": 686,
+      "claim": "Deleting summary/marker reactivates originals; cleanup clears orphan projection parent tags."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/roo-code/src/core/task-persistence/apiMessages.ts",
+      "start": 40,
+      "end": 70,
+      "claim": "Disk history read returns array, corruption logs and returns empty rather than repairing originals."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/roo-code/src/core/task-persistence/apiMessages.ts",
+      "start": 109,
+      "end": 120,
+      "claim": "History persistence rewrites JSON via safeWriteJson; no complete append-only event audit contract."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 2212,
+      "end": 2253,
+      "claim": "Abort disposes task and cancels current provider request."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 2288,
+      "end": 2325,
+      "claim": "Disposal releases terminals, cleans command artifacts, file context/ignore resources and reverts unfinished editor changes."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/roo-code/src/integrations/terminal/OutputInterceptor.ts",
+      "start": 388,
+      "end": 398,
+      "claim": "Artifact cleanup unlinks every cmd-* file in task output directory."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/roo-code/src/core/task/Task.ts",
+      "start": 4597,
+      "end": 4617,
+      "claim": "Queued operator messages dequeue and submit asynchronously at explicit processing sites."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/roo-code/src/core/auto-approval/index.ts",
+      "start": 47,
+      "end": 129,
+      "claim": "Absent/disabled autoapproval asks; command rules can approve/deny and MCP has per-server allow rules."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/roo-code/src/core/auto-approval/index.ts",
+      "start": 151,
+      "end": 178,
+      "claim": "Skills intentionally approved; mode/subtask/read/write gates separate, including outside/protected paths."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/roo-code/src/core/tools/UseMcpToolTool.ts",
+      "start": 33,
+      "end": 77,
+      "claim": "MCP model call validates existence/resolved name, asks policy approval and invokes service execution."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/roo-code/README.md",
+      "start": 64,
+      "end": 68,
+      "claim": "Pinned README documents extension shut down May15 and points to community fork; do not infer current maintenance."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/roo-code/src/core/condense/__tests__/rewind-after-condense.spec.ts",
+      "focus": "Lost originals after deleting condensation summary",
+      "oracle": "Pure synthetic arrays and cleanup/effective-history assertions recover3/5 original messages; validates projection functions, not disk/provider rollback.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/roo-code/src/core/tools/__tests__/newTaskTool.spec.ts",
+      "focus": "Delegated message escaping/todos and receipt",
+      "oracle": "Mocks VSCode/provider/modes; legacy adapter calls startSubtask spy, assertions prove argument transformation rather than sole-active lifecycle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/roo-code/src/core/tools/__tests__/executeCommandTool.spec.ts",
+      "focus": "Command tool validation/dispatch",
+      "oracle": "Terminal/execa/Task mocked; executeCommandInTerminal returns fixed result, so no oracle for observed dual-timeout cleanup contradiction.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Preserves condensed originals and reactivates orphan projection tags on rewind.",
+    "Model mode/profile switching is a first-class action.",
+    "Command output has explicit artifact paging/search before disposal."
+  ],
+  "limits": [
+    "README records extension shutdown; pinned source remains studyable, future maintenance not inferred.",
+    "Sequential task invariant prevents broad live multi-model team claims.",
+    "Disposal deletes command originals and parent flush failure does not stop delegation.",
+    "Dual-timeout comment contradicts finally cleanup; candidate needs discriminating runtime test in separate authorized environment."
+  ],
+  "arconaut_questions": [
+    "Do refit/context handoff fail closed when authoritative persistence fails?",
+    "Define timeout ownership across foreground\u2192background transitions without relying on comments.",
+    "Keep raw output originals independently of interactive task disposal.",
+    "Expose genuinely executable workflow/turn programming beyond instruction templates and500ms mode settling."
+  ]
+}

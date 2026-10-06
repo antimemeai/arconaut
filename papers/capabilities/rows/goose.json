@@ -1,0 +1,716 @@
+{
+  "id": "goose",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "TypeScript"
+    ],
+    "execution": "Rust multithreaded Tokio CLI/core; optional Deno/pctx code-mode runs on blocking thread; MCP local stdio/builtin and remote services; desktop UI outside core trace.",
+    "service_boundary": "Consumes provider/MCP tools; owns sessions/SQLite conversation and optional schedule/child lifecycle; pctx kernel internals external dependency."
+  },
+  "summary": "Extensible Rust agent with a concrete optional composable state machine, dynamic MCP tools, independent multi-provider delegation, recipes/scheduling and bounded cross-session orchestration.",
+  "inspection": {
+    "files": [
+      "quarantine/goose/crates/goose-cli/src/main.rs",
+      "quarantine/goose/crates/goose/src/agents/agent.rs",
+      "quarantine/goose/crates/goose-agent/src/machine.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/mod.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/ops_llm.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/ops_toolcalling.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/session.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/developer/mod.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/developer/shell.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/code_execution.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/orchestrator.rs",
+      "quarantine/goose/crates/goose/src/recipe/mod.rs",
+      "quarantine/goose/crates/goose/src/agents/schedule_tool.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/scheduler.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/ops_steer.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/ops_compaction.rs",
+      "quarantine/goose/crates/goose/src/session/session_manager.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/chatrecall.rs",
+      "quarantine/goose/crates/goose/src/agents/gen_ai_telemetry.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/ext_manager.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/ops_tool_approval.rs",
+      "quarantine/goose/crates/goose-provider-types/src/goose_mode.rs",
+      "quarantine/goose/crates/goose/src/agents/state_machine/tests/steering_lifecycle.rs",
+      "quarantine/goose/crates/goose/src/agents/extension_manager/streamable_http.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/mod.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/todo.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/analyze/mod.rs",
+      "quarantine/goose/crates/goose/src/agents/platform_extensions/summarize.rs"
+    ],
+    "scope": "CLI entry; old stream loop and optional operation pipeline; provider/action/result effect flow; native file/shell and code-mode wrapper, delegate/orchestrator, recipes/scheduler, compaction retention, recall/telemetry and selected source oracles.",
+    "limits": "Source read only, reference not executed. Optional code-mode dependency runtime internals, desktop UI and all extensions/providers not read. State-machine path is opt-in; default older loop inspected in core request/dispatch/cancellation segments. Full original event logging, executable refit and governed self-improvement not traced."
+  },
+  "actions": [
+    {
+      "name": "write / edit / shell / tree / read_image",
+      "surface": "model tools",
+      "input": "Structured file replacement/write, shell command/timeout, tree path or image path",
+      "output": "File outcomes, structured stdout/stderr/exit/truncation metadata or image",
+      "lifecycle": "Awaited actions; shell emits live notifications, cancel kills immediate child and drains streams for 500ms",
+      "authority": "Goose mode/inspectors, enabled developer extension, session working directory",
+      "evidence": [
+        "e10",
+        "e11",
+        "e30",
+        "e31",
+        "e36"
+      ]
+    },
+    {
+      "name": "list_functions / get_function_details / execute_typescript / execute_bash",
+      "surface": "model tools",
+      "input": "Function filters or TypeScript/code+disclosure/tool graph; bash command",
+      "output": "Schemas or code outcome Markdown; nested extension tool results",
+      "lifecycle": "pctx code-mode calls on blocking thread; extension timeout/cancel propagated to callback token",
+      "authority": "Enabled code-mode extension; underlying pctx implementation not in inspected snapshot",
+      "evidence": [
+        "e12",
+        "e13",
+        "e36"
+      ]
+    },
+    {
+      "name": "load / delegate",
+      "surface": "model tools",
+      "input": "Sources/named recipe/agent or instructions; provider/model/context/extensions, async; task ID and peek/cancel",
+      "output": "Loaded instructions or independent child result/background task status",
+      "lifecycle": "Separate session/context; async handle supports wait/peek/cancel; live notifications; no nested delegation",
+      "authority": "Parent model may choose provider/model; children forced Auto because approval forwarding unavailable",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16",
+        "e33",
+        "e36"
+      ]
+    },
+    {
+      "name": "orchestrator__list_sessions / view_session / start_agent / send_message / interrupt_agent",
+      "surface": "model tools",
+      "input": "Session filters/id, working directory/name, message text",
+      "output": "Sessions, summaries/endpoints, new session ID, reply text, cancellation acknowledgement",
+      "lifecycle": "Messaging actually drives target reply and awaits it; busy target rejected rather than queued",
+      "authority": "Target authorization checked; start uses parent provider/model",
+      "evidence": [
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "scheduler__manage_schedule",
+      "surface": "model tool",
+      "input": "action=list/create/run_now/pause/resume/remove/update/inspect; recipe/schedule parameters",
+      "output": "Schedule record or produced session inspection",
+      "lifecycle": "Optional configured scheduler; recurring recipe lifecycle",
+      "authority": "Model-enabled platform tool; scheduler owns schedule execution",
+      "evidence": [
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "extensionmanager__search_available_extensions / manage_extensions / list_resources / read_resource",
+      "surface": "model tools",
+      "input": "Available extension name enable/disable, resource URI",
+      "output": "Discovered extension/tools/resource content or errors",
+      "lifecycle": "Current manager can change connected extensions; schema-hash invalidates code-mode cache",
+      "authority": "Parent user sessions allowed; subagents denied; cannot disable manager itself",
+      "evidence": [
+        "e12",
+        "e28",
+        "e29",
+        "e34"
+      ]
+    },
+    {
+      "name": "chatrecall__chatrecall",
+      "surface": "model tool",
+      "input": "query/date filters or session_id",
+      "output": "Messages grouped by session or bounded first/last three",
+      "lifecycle": "Saved-history search, not raw original-event replay",
+      "authority": "Model with extension; stored conversation visibility boundaries",
+      "evidence": [
+        "e25",
+        "e26"
+      ]
+    },
+    {
+      "name": "Agent.reply / StateMachine.step / apply / run / Operation / Inference",
+      "surface": "embedding program API",
+      "input": "Message/session/cancel, ordered operations/effect handler/provider",
+      "output": "Event stream or one applicable step/effects; persisted conversation continuation",
+      "lifecycle": "Explicit optional machine; concrete host pipeline remains compiled/internal",
+      "authority": "Embedding author can compose/redefine pipelines; not model hot replacement",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    {
+      "name": "/compact / /clear / recipe commands and YAML/JSON recipes",
+      "surface": "operator/program surfaces",
+      "input": "Conversation transformation or parameterized recipe/source",
+      "output": "Summary/replaced history or configured independent run",
+      "lifecycle": "Managed summary includes completed tool-pair constraint; declarative model/extension/output config",
+      "authority": "Operator and model delegation source loading; recipe does not redefine compiled turn protocol",
+      "evidence": [
+        "e19",
+        "e23",
+        "e24"
+      ]
+    },
+    {
+      "name": "analyze / todo__todo_write / summarize__summarize; optional apps catalog",
+      "surface": "model tool catalogs",
+      "input": "Code structure path/mode; full TODO replacement; paths/question/extensions for summary; feature-dependent apps schemas",
+      "output": "Structure, persisted TODO or model summary; app tool internals not individually traced",
+      "lifecycle": "Registered native/feature-gated extension actions; generated/plugin catalogs remain individually discoverable",
+      "authority": "Enabled/feature flags and mode; representative catalog inspection rather than full media/app implementation trace",
+      "evidence": [
+        "e36",
+        "e37",
+        "e38",
+        "e39"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native write/edit/tree/image and shell provide local files; exact unique text edits via structured params.",
+      "evidence": [
+        "e10"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Streamed awaited shell command with timeout/cancel and output artifacts; immediate-child kill and no writable PTY/background shell handle in traced developer surface.",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Feature-dependent pctx TypeScript/bash code-mode invokes current extension callbacks; wrapper execution/cancellation traced.",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "pctx CodeMode wrapper/schema cache inspected; dependency runtime implementation/namespace survival not present in this bounded trace. Cached callbacks do not establish a persistent notebook kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "SQLite session storage and chat-history querying are standing internal data primitives, not arbitrary shared external research database action.",
+      "evidence": [
+        "e25",
+        "e26"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Public Operation/Inference/StateMachine pipeline composition plus parameterized recipes, retries/subrecipes and optional scheduling; concrete Goose operations internal.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6",
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Delegate supports provider/model overrides and own context; orchestrator start separately inherits parent selection.",
+      "evidence": [
+        "e14",
+        "e16",
+        "e18"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Orchestrator exposes session inspection, send and interrupt; sending awaits target turn and rejects busy recipients. Independent delegates explicitly lack peer coordination.",
+      "evidence": [
+        "e15",
+        "e17"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool result/notification streams selected together; async delegation has separate handles and can overlap; no shared-write arbitration established.",
+      "evidence": [
+        "e8",
+        "e14",
+        "e15"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Between-turn FIFO steering, provider/tool cancellation and scripted cancellation-resume tests; peer send is not queued busy steering.",
+      "evidence": [
+        "e3",
+        "e8",
+        "e17",
+        "e22",
+        "e32"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Embedding authors can supply ordered Operation/Inference implementations; shipped concrete host steps are internal and opt-in machine disabled by default. Model tool/recipe changes do not replace turn kernel.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6",
+        "e19"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic/manual summary, pair-result token accounting, incomplete-pair guard and persisted visibility changes retain original message content.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Saved message visibility graph and chatrecall bounded history reads allow recovery composition; no model-operated precise context lineage repair traced.",
+      "evidence": [
+        "e25",
+        "e26"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stored conversations retain pre-compaction content, but optional telemetry and reconstructed finish reasons explicitly limit original wire evidence; all program/provider stream events not established.",
+      "evidence": [
+        "e25",
+        "e27"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model chatrecall searches saved messages and bounded session endpoints; it is not complete original-audit query.",
+      "evidence": [
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parent model can enable/disable configured extensions and schema-hash refresh code-mode callbacks; subagent restrictions and compiled machine remain. No executable refit continuity traced.",
+      "evidence": [
+        "e12",
+        "e28",
+        "e29",
+        "e34"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Remote MCP streamable HTTP client implementation and provider/extension dispatch consume outside services; ownership varies with stdio/builtin clients.",
+      "evidence": [
+        "e7",
+        "e28",
+        "e35"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Writable source/recipes and model extension reconfiguration support operator-composed improvement; measured governed executable autoresearch not established.",
+      "evidence": [
+        "e10",
+        "e19",
+        "e28"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Auto default with Ask/SmartApprove/Chat alternatives; inspector executable decisions persisted. Delegates forced Auto due absent action-required forwarding.",
+      "evidence": [
+        "e16",
+        "e30",
+        "e31"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Specific scripted provider and extension routing oracles read; no provider-performance result or runtime conformance inferred.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e34"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Live event generated IDs and durable message/effect boundaries; steering FIFO; background Instant state. No total distributed audit order guarantee.",
+      "evidence": [
+        "e2",
+        "e9",
+        "e14",
+        "e22"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/goose/crates/goose-cli/src/main.rs",
+      "start": 19,
+      "end": 56,
+      "claim": "CLI owns a multithreaded Tokio runtime on dedicated main thread."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/goose/crates/goose/src/agents/agent.rs",
+      "start": 2079,
+      "end": 2174,
+      "claim": "Reply supplies live event identities and explicit opt-in state-machine versus existing loop choice."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/goose/crates/goose/src/agents/agent.rs",
+      "start": 2720,
+      "end": 2785,
+      "claim": "Existing loop requests provider stream and cancellation-selects streamed events."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/goose/crates/goose-agent/src/machine.rs",
+      "start": 15,
+      "end": 155,
+      "claim": "Public composable operations/inference pipeline with first applicable effect step and cancellation protocol."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/mod.rs",
+      "start": 1,
+      "end": 76,
+      "claim": "Generic machine exported; concrete Goose operations internal and feature flag false by default."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/goose/crates/goose/src/agents/agent.rs",
+      "start": 1646,
+      "end": 1768,
+      "claim": "Actual ordered pipeline installs compaction, approval, skills, recipes, tool execution, retries and inference."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_llm.rs",
+      "start": 119,
+      "end": 168,
+      "claim": "Provider adapter prepares toolshim context, dispatches stream and records advertised schemas on assistant requests."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_toolcalling.rs",
+      "start": 897,
+      "end": 985,
+      "claim": "Pending executable tool futures/notifications selected together; IDs attach result metadata."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/session.rs",
+      "start": 30,
+      "end": 133,
+      "claim": "Effects persisted before confirmation events; compaction history-replacement events after storage."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/developer/mod.rs",
+      "start": 108,
+      "end": 254,
+      "claim": "Native write/edit/shell/tree/read_image catalog and dispatcher using session/cwd."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/developer/shell.rs",
+      "start": 554,
+      "end": 665,
+      "claim": "Shell awaits process with timeout/cancel then bounded output drain; kills immediate child, no process-tree proof."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/code_execution.rs",
+      "start": 116,
+      "end": 187,
+      "claim": "Code-mode interface cached by current callback-schema hash and registry routes named extension tools."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/code_execution.rs",
+      "start": 215,
+      "end": 355,
+      "claim": "execute_bash/execute_typescript invoke pctx interface on blocking-thread Tokio runtime; cancellation token drains nested callbacks with bounded grace."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "start": 79,
+      "end": 106,
+      "claim": "Delegate accepts provider/model/context/extensions plus async; background tasks have handles/cancel/notification state."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "start": 700,
+      "end": 795,
+      "claim": "Model load and delegate interfaces expose source discovery, task wait/cancel/peek; isolated delegation does not coordinate."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "start": 1345,
+      "end": 1420,
+      "claim": "Actual delegation rejects nested delegation and configures Auto mode because parent approval forwarding unavailable."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/orchestrator.rs",
+      "start": 502,
+      "end": 636,
+      "claim": "Cross-session messaging authorizes, rejects busy recipient, runs reply to completion and propagates parent cancellation; separate interrupt."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/orchestrator.rs",
+      "start": 82,
+      "end": 106,
+      "claim": "start_agent inherits orchestrator provider/model; per-start model tier unimplemented."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/goose/crates/goose/src/recipe/mod.rs",
+      "start": 40,
+      "end": 130,
+      "claim": "Recipe structured instructions, extensions, parameters, settings/model, output schema, retries and sub-recipes."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/goose/crates/goose/src/agents/schedule_tool.rs",
+      "start": 76,
+      "end": 120,
+      "claim": "Actual scheduler action dispatcher for create/list/run_now/pause/resume/remove/update/inspect results."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/scheduler.rs",
+      "start": 24,
+      "end": 75,
+      "claim": "Scheduler native surface appears only when a scheduler implementation exists."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_steer.rs",
+      "start": 1,
+      "end": 78,
+      "claim": "FIFO queue applied between model/tool turns with prompt hooks and persisted message effects."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_compaction.rs",
+      "start": 51,
+      "end": 88,
+      "claim": "Compaction checks incomplete tool pair and counts unreported result tokens."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_compaction.rs",
+      "start": 178,
+      "end": 235,
+      "claim": "Operator compact/clear and model summary compacted conversation replacement effects."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/goose/crates/goose/src/session/session_manager.rs",
+      "start": 2016,
+      "end": 2070,
+      "claim": "Compaction storage transaction updates visibility of old message IDs and inserts new summaries; content retained."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/chatrecall.rs",
+      "start": 265,
+      "end": 291,
+      "claim": "Model chatrecall searches past chat/date filters or loads bounded session endpoints."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/goose/crates/goose/src/agents/gen_ai_telemetry.rs",
+      "start": 10,
+      "end": 43,
+      "claim": "Message content capture is optional; reconstructed output finish reason is not original provider finish reason."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/ext_manager.rs",
+      "start": 150,
+      "end": 232,
+      "claim": "Model enable/disable dispatch; subagents cannot manage and manager cannot disable itself."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/ext_manager.rs",
+      "start": 299,
+      "end": 350,
+      "claim": "Model extension search/manage tools advertised."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/ops_tool_approval.rs",
+      "start": 44,
+      "end": 155,
+      "claim": "Goose-mode inspectors persist executable decisions/permission changes and approval request effects."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/goose/crates/goose-provider-types/src/goose_mode.rs",
+      "start": 22,
+      "end": 32,
+      "claim": "Auto default, Approve, SmartApprove and Chat authority modes."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/tests/steering_lifecycle.rs",
+      "start": 8,
+      "end": 124,
+      "claim": "FIFO/compaction/cancel-resume scripted provider tests assert exact subsequent inputs and once-only steer."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "start": 3552,
+      "end": 3609,
+      "claim": "Notification ordering test checks child events precede final result with preserved child ID."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/ext_manager.rs",
+      "start": 629,
+      "end": 655,
+      "claim": "Direct management test refuses subagent enable/disable while user can alter developer extension."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/goose/crates/goose/src/agents/extension_manager/streamable_http.rs",
+      "start": 611,
+      "end": 638,
+      "claim": "Actual remote streamable HTTP transport connection and OAuth fallback."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/mod.rs",
+      "start": 36,
+      "end": 220,
+      "claim": "Native extension registration plus exact unprefixed-tool and feature flags."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/todo.rs",
+      "start": 106,
+      "end": 166,
+      "claim": "todo_write catalog and dispatch; complete content replacement."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/analyze/mod.rs",
+      "start": 217,
+      "end": 240,
+      "claim": "analyze source catalog for tree-sitter code structure."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summarize.rs",
+      "start": 66,
+      "end": 84,
+      "claim": "summarize file/directory/question action catalog."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/goose/crates/goose/src/agents/state_machine/tests/steering_lifecycle.rs",
+      "focus": "Steer ordering and cancellation ownership",
+      "oracle": "Scripted held provider responses verify both FIFO steers in next request, compaction system includes redirected guidance, cancel retains queue and resume delivers exactly once.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/summon.rs",
+      "focus": "Child live notification ordering",
+      "oracle": "Repeated synthetic stream test asserts three child-tagged notifications arrive before delegate result; notification pipeline oracle, not child/provider execution test.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/goose/crates/goose/src/agents/platform_extensions/ext_manager.rs",
+      "focus": "Dynamic extension actor restrictions",
+      "oracle": "Calls management directly with persisted user/subagent session types and checks enabled manager state changes only for user.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Reusable first-applicable-step/effects protocol can be composed independently of UI.",
+    "Compaction preserves old stored message content through visibility metadata.",
+    "Model extension discovery and reconfiguration have actual dispatch.",
+    "Live delegate notification and queued-steering tests assert meaningful ordering."
+  ],
+  "limits": [
+    "Optional code-mode dependency runtime internals, desktop UI and all extensions/providers not read. State-machine path is opt-in; default older loop inspected in core request/dispatch/cancellation segments. Full original event logging, executable refit and governed self-improvement not traced."
+  ],
+  "arconaut_questions": [
+    "Can Arconaut expose a programmable turn definition to the model without shipping an immutable host pipeline?",
+    "Should busy peer messages queue with durable receipts instead of reject?",
+    "How should externally owned processes and shared kernels expose cancellable handles beyond bounded shell calls?",
+    "What original provider/program event loss would a trace replay oracle detect beyond saved conversation?",
+    "How should async delegation authority remain explicit when approval forwarding is unsupported?"
+  ]
+}

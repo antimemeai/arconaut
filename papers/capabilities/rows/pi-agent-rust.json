@@ -1,0 +1,693 @@
+{
+  "id": "pi-agent-rust",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "Python",
+      "JavaScript"
+    ],
+    "execution": "Rust/asupersync core; OS child agents, jobs and Python kernel; QuickJS dedicated kernel thread and isolated extension actors.",
+    "service_boundary": "Owns session kernels, services, child processes and project memory bank; consumes provider APIs and tool/service interfaces."
+  },
+  "summary": "Extensive systems-oriented Pi reconstruction with effect-aware concurrent dispatch, model code cells, managed memory/skills and child-process hub collaboration.",
+  "inspection": {
+    "files": [
+      "quarantine/pi-agent-rust/src/main.rs",
+      "quarantine/pi-agent-rust/src/tools.rs",
+      "quarantine/pi-agent-rust/src/agent.rs",
+      "quarantine/pi-agent-rust/src/eval.rs",
+      "quarantine/pi-agent-rust/src/eval/js_kernel.rs",
+      "quarantine/pi-agent-rust/src/memory.rs",
+      "quarantine/pi-agent-rust/src/memory/transactions.rs",
+      "quarantine/pi-agent-rust/src/subagents.rs",
+      "quarantine/pi-agent-rust/src/agent_hub.rs",
+      "quarantine/pi-agent-rust/src/hub.rs",
+      "quarantine/pi-agent-rust/src/jobs.rs",
+      "quarantine/pi-agent-rust/src/compaction_worker.rs",
+      "quarantine/pi-agent-rust/src/session.rs",
+      "quarantine/pi-agent-rust/src/interactive/commands.rs",
+      "quarantine/pi-agent-rust/src/extensions.rs",
+      "quarantine/pi-agent-rust/src/interactive/workspace_reports.rs",
+      "quarantine/pi-agent-rust/src/stream_rules.rs",
+      "quarantine/pi-agent-rust/src/session_control/recovery.rs"
+    ],
+    "scope": "Entry and approval posture; provider/turn/dispatch segments; actual eval kernels/bridge; hub and peer dispatcher; jobs ownership; memory transactions; extension rewriting/replacement, compaction, persistence and selected fault tests. Very large modules inspected in named segments, not line-for-line in entirety.",
+    "limits": "Source read only, reference not executed. No executable rebuild/outpost continuity traced. Individual media/browser/GitHub/debug/LSP implementations, all extension hostcalls, full swarm/evaluation corpus and every storage backend not exhaustively inspected. JS/Python module header comments are stale relative to actual implemented JS path; dispatch and tests determine claims."
+  },
+  "actions": [
+    {
+      "name": "read / write / edit / hashline_edit / ast_edit / grep / ast_grep / find / ls",
+      "surface": "model tools",
+      "input": "Path/text/range or structured edit/search parameters",
+      "output": "Content, matches, changes or errors",
+      "lifecycle": "Awaited; mutation recorder and effect classification participate in dispatch",
+      "authority": "Enabled selection; plan-state and approval/extension policy",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "bash / jobs",
+      "surface": "model tools",
+      "input": "command, optional background; jobs list/wait/cancel and jobId",
+      "output": "Output plus session-owned job handle, rolling artifact and completion notice",
+      "lifecycle": "Foreground awaited or monitored background; timeout/tree teardown; foreign session id rejected",
+      "authority": "Model under plan/approval; ownership resolves at call time",
+      "evidence": [
+        "e2",
+        "e19"
+      ]
+    },
+    {
+      "name": "eval",
+      "surface": "model tool",
+      "input": "code, kernel=python|js, timeout_secs",
+      "output": "stdout/stderr/value/error and cell/restarted metadata",
+      "lifecycle": "Persistent session Python process or JS realm; Python timeout destroys state, JS interruption can preserve it",
+      "authority": "Model approval; bridge read/grep/find/ls only, code itself has host language authority",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "hub start / ps / logs / send / stop / restart / describe",
+      "surface": "model tool",
+      "input": "Launch spec/readiness gates; name; cursor/tail/grep/wait; PTY input/key/signal",
+      "output": "Service descriptor, bounded incremental log, readiness error",
+      "lifecycle": "Session service process or explicit detached process; TERM/KILL lifecycle",
+      "authority": "Model tool gate; owned services rather than shared-fabric consumer abstraction",
+      "evidence": [
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "subagent",
+      "surface": "model tool",
+      "input": "single task / tasks + concurrency / chain; named definition, output schema and isolation",
+      "output": "Child final text or validated data, worktree path/diff/patch",
+      "lifecycle": "Bounded child-process execution; chain substitution; request-wide deadline",
+      "authority": "Named child configurations may pin other models; depth/host limits",
+      "evidence": [
+        "e14"
+      ]
+    },
+    {
+      "name": "hub agent roster / transcript / steer / send / inbox / kill / revive",
+      "surface": "model tool",
+      "input": "op=agent, action, child name, text, optional from label",
+      "output": "Roster/redacted transcript or accepted bus sequence; lifecycle descriptor",
+      "lifecycle": "Cross-process disk steering delivered between turns; recipient must remain live; revive is new child",
+      "authority": "Parent model controls registry; sender label supplied, not authenticated colleague identity",
+      "evidence": [
+        "e15",
+        "e16",
+        "e18"
+      ]
+    },
+    {
+      "name": "retain / recall / reflect / memory_edit / learn / manage_skill",
+      "surface": "model tools",
+      "input": "Fact/lesson/query/session key; memory id mutation; managed skill CRUD",
+      "output": "Durable fact/search/citation values or managed skill result",
+      "lifecycle": "SQLite transaction for bank; managed skill files separate; promotion can fail without losing lesson",
+      "authority": "Bank configuration and live session scope; managed marker protects user-authored skills",
+      "evidence": [
+        "e12",
+        "e13",
+        "e27",
+        "e28"
+      ]
+    },
+    {
+      "name": "current_time / browser / computer / debug / github / lsp / web_search / read_media / inspect_image / generate_image / tts / security_scan / ask / todo / submit_plan / xdev",
+      "surface": "model tool catalog",
+      "input": "Individual JSON schemas; xdev tier discovers dispatchable operations",
+      "output": "Tool-specific content and result details",
+      "lifecycle": "Catalog registration traced; individual internals not all inspected",
+      "authority": "Selectable or host-coupled according to registry; extension/policy gates",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    {
+      "name": "compact_now / shake_now / execute_extension_command",
+      "surface": "programmable API; operator /compact",
+      "input": "Compaction notes/mode or registered command args",
+      "output": "Compaction event/result or command value",
+      "lifecycle": "Before-compaction interception; summary apply admission; background result later turn; shake drops old outputs without model call",
+      "authority": "Operator/program; extension override constrained by contract",
+      "evidence": [
+        "e20",
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "context / before_provider_request / tool-call / tool-result / turn lifecycle extension hooks",
+      "surface": "extension program API",
+      "input": "Messages/request/tool events and responses",
+      "output": "Rewritten model input/results, block/cancel or lifecycle events",
+      "lifecycle": "Per-request/per-tool hooks with failure policies; actual core remains host loop",
+      "authority": "Authorized extension programs; not unrestricted model-defined scheduler replacement",
+      "evidence": [
+        "e4",
+        "e6",
+        "e23",
+        "e26"
+      ]
+    },
+    {
+      "name": "/reload / /omfg",
+      "surface": "operator commands",
+      "input": "Idle reload; grievance text",
+      "output": "Reloaded resources diagnostics or grievance/rule id",
+      "lifecycle": "Reload refused while processing; /omfg activates stream abort/retry rule",
+      "authority": "Operator surface; complaint record does not capture full agent state",
+      "evidence": [
+        "e25",
+        "e29",
+        "e30"
+      ]
+    },
+    {
+      "name": "SessionControlHandle.transfer_pending_to",
+      "surface": "programmable API",
+      "input": "Finished source control handle and accepting destination",
+      "output": "New input receipts preserving lane and attachments",
+      "lifecycle": "All-or-nothing mailbox move, no replay of already delivered work",
+      "authority": "Embedding host controls turns; provider or executable continuity not acknowledged",
+      "evidence": [
+        "e34"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native selected read/search/write/edit tools with effect classification and optional undo recorder.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Background bash jobs and PTY hub services expose identities, readiness/log/input/cancel lifecycle; session-owned by default with detached option.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "eval runs Python or JS code with captured cell outcomes; bridge is deliberately limited to four reading tools.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Session-owned Python process namespace and dedicated persistent QuickJS thread; different timeout state-loss semantics, neither arbitrary recompile continuity.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e11",
+        "e31"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Project SQLite fact/lesson bank and session-shared exact values are real standing data, with atomic mutation/index/audit; this is not arbitrary external operator database access.",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native subagent chain/parallel/schema composition plus code cells and extension hooks; no fully model-defined turn scheduler traced.",
+      "evidence": [
+        "e8",
+        "e14",
+        "e23"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Named child definitions/role model selection permit different worker models; provider and extension request interfaces separate.",
+      "evidence": [
+        "e14"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model can inspect/steer registered child processes through hub disk mailboxes with acceptance sequences; delivered between turns, bounded inbox and redacted transcript; not an unrestricted shared IRC room.",
+      "evidence": [
+        "e15",
+        "e16"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Compatible tool effect batches run concurrently then record in call order; background jobs/services and bounded child parallel tasks provide additional overlap.",
+      "evidence": [
+        "e5",
+        "e14",
+        "e19"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Abort races provider stream and tool batches; steering generates explicit skipped results and lossless turn handoff. Individual effect/lifecycle boundaries still matter.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e34"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Extensions rewrite provider context and tool outcomes, intercept compaction and lifecycle; controlled host orchestration is not wholesale hot replacement of turn definition.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e21",
+        "e23"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model summary or non-provider shake, cancellable/replacement extension hook and quota-bounded background preparation applied on later turns.",
+      "evidence": [
+        "e20",
+        "e21",
+        "e22"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persisted branch graph and extension replacement of outbound context support repair composition; no traced universal model-operated restoration protocol for all lost state.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e34"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session graph retains messages and explicit model/thinking/compaction/custom changes, but provider input is rewritten/redacted and persisted entry types do not establish every original stream/program event.",
+      "evidence": [
+        "e4",
+        "e24"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model hub transcript reads and SQLite memory recall/audit provide bounded query primitives; complete original-audit analytical surface not traced.",
+      "evidence": [
+        "e12",
+        "e16",
+        "e24"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Idle-only resource reload and transactional cold extension shard swap are real; candidate replaces realm after stream cleanup so old realm state does not persist by default.",
+      "evidence": [
+        "e25",
+        "e26",
+        "e33"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider and bridge/extension interfaces consume outside services; hub principally owns local PTY services rather than external shared computation fabric.",
+      "evidence": [
+        "e4",
+        "e17",
+        "e18"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model can retain lessons and create/update/delete linted managed skills, with user/project precedence; no governed measured executable autoresearch/refit loop traced.",
+      "evidence": [
+        "e27",
+        "e28"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator /omfg stores grievance text and creates active stream rule; no model-everywhere complaint command plus captured agent state/database bead contract.",
+      "evidence": [
+        "e29",
+        "e30"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Always-ask default and explicit yolo mode; plan mutation barrier then approval then tool hooks; secret restoration occurs before approval.",
+      "evidence": [
+        "e1",
+        "e6"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Concrete kernel, torn-mailbox and resource-trust source test oracles support experiments; they were read, not run, and do not establish full harness quality.",
+      "evidence": [
+        "e31",
+        "e32",
+        "e33"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Accepted bus sequence advances only after disk append, turn elapsed Instant budgets and timestamped parent-linked session entries; no global distributed clock guarantee.",
+      "evidence": [
+        "e3",
+        "e15",
+        "e24"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/pi-agent-rust/src/main.rs",
+      "start": 24,
+      "end": 128,
+      "claim": "Rust entry imports asupersync and defines cross-surface approval posture with explicit yolo override."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/pi-agent-rust/src/tools.rs",
+      "start": 5440,
+      "end": 5609,
+      "claim": "Selectable and separately registered tool catalogs and concrete registry construction."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 3180,
+      "end": 3315,
+      "claim": "Owning input surface validated before consuming follow-ups; turn and elapsed-budget handling."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 4062,
+      "end": 4135,
+      "claim": "Provider context is extension-rewritten, secrets-filtered and abort-raced before stream admission."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 4910,
+      "end": 5167,
+      "claim": "Compatible effect batches run concurrently; deterministic original ordering and explicit skipped/aborted tool result pairing."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 5169,
+      "end": 5259,
+      "claim": "Plan-state gate and approval run before tool hooks and dispatch; results may be rewritten then secrets-masked."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "start": 32,
+      "end": 175,
+      "claim": "Session-owned Python kernel subprocess, IO reader, process-group teardown and state slots."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "start": 178,
+      "end": 321,
+      "claim": "Persistent JS dispatch and bridge whitelist read/grep/find/ls."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "start": 323,
+      "end": 443,
+      "claim": "Python cell deadline kills kernel with explicit state-loss error; completed kernel returned to slot."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "start": 530,
+      "end": 586,
+      "claim": "eval source/kernel/timeout schema and actual Python/JS dispatch."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/pi-agent-rust/src/eval/js_kernel.rs",
+      "start": 1,
+      "end": 82,
+      "claim": "Dedicated QuickJS thread with persistent globals, promise pump and interrupt deadline; separate from extensions."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/pi-agent-rust/src/memory.rs",
+      "start": 1,
+      "end": 25,
+      "claim": "Project-scoped memory bank and exact session-shared values; SQLite row/index/audit storage boundary."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/pi-agent-rust/src/memory/transactions.rs",
+      "start": 30,
+      "end": 81,
+      "claim": "BEGIN IMMEDIATE memory action; guarded rollback and bounded fresh-snapshot commit retries."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/pi-agent-rust/src/subagents.rs",
+      "start": 334,
+      "end": 392,
+      "claim": "subagent single/parallel/chain schemas, model definitions, output schemas and worktree isolation contract."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/pi-agent-rust/src/agent_hub.rs",
+      "start": 303,
+      "end": 353,
+      "claim": "Disk steering append precedes sequenced acceptance receipt; bounded parent inbox and cross-process steering."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/pi-agent-rust/src/tools.rs",
+      "start": 9054,
+      "end": 9136,
+      "claim": "Actual model hub agent roster/transcript/steer/send dispatch and redacted transcript result."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/pi-agent-rust/src/hub.rs",
+      "start": 1,
+      "end": 79,
+      "claim": "PTY service launch specs, readiness gates, bounded log ring and detached lifecycle."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/pi-agent-rust/src/tools.rs",
+      "start": 8697,
+      "end": 8798,
+      "claim": "hub start/ps/logs/send/stop/restart/describe/jobs/agent native schema and dispatch entry."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/pi-agent-rust/src/jobs.rs",
+      "start": 1,
+      "end": 95,
+      "claim": "Background job handles and dynamically resolved owning session identity; process shutdown boundary."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 14110,
+      "end": 14127,
+      "claim": "Program API compact_now and shake_now; shake is non-provider output dropping, not a complaint."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 14755,
+      "end": 14870,
+      "claim": "Before-compaction extension can cancel or supply replacement summary; serialized application admission."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/pi-agent-rust/src/compaction_worker.rs",
+      "start": 1,
+      "end": 41,
+      "claim": "Background compaction on asupersync, subsequent-turn application and explicit quotas."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/pi-agent-rust/src/agent.rs",
+      "start": 3905,
+      "end": 3945,
+      "claim": "Context extension can replace outbound message list; invalid payload ignored."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/pi-agent-rust/src/session.rs",
+      "start": 6523,
+      "end": 6598,
+      "claim": "Persisted session message/change/compaction/branch/custom graph with IDs, parents and timestamps, not original provider-wire inventory."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/pi-agent-rust/src/interactive/commands.rs",
+      "start": 3920,
+      "end": 4008,
+      "claim": "Operator reload is idle-only and asynchronously reloads resources with model registry diagnostics."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/pi-agent-rust/src/extensions.rs",
+      "start": 11790,
+      "end": 11880,
+      "claim": "Transactional candidate JS shard construction then active-provider cleanup and cold replacement, no arbitrary realm-state continuity."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/pi-agent-rust/src/tools.rs",
+      "start": 8373,
+      "end": 8459,
+      "claim": "learn persists lesson and optionally promotes to managed skill, with warning on failed promotion."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/pi-agent-rust/src/tools.rs",
+      "start": 8487,
+      "end": 8570,
+      "claim": "manage_skill model CRUD; agent-authored marker and user/project precedence boundary."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/pi-agent-rust/src/interactive/workspace_reports.rs",
+      "start": 89,
+      "end": 126,
+      "claim": "Operator /omfg complaint logs text then generates/activates stream rule."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/pi-agent-rust/src/stream_rules.rs",
+      "start": 615,
+      "end": 682,
+      "claim": "Grievance record contains id/time/complaint/suggested rule/resolved, no agent-state capture."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "start": 820,
+      "end": 914,
+      "claim": "Read test oracles cover cross-cell state, promises, whitelist denial and interrupt state preservation."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/pi-agent-rust/src/agent_hub.rs",
+      "start": 1108,
+      "end": 1142,
+      "claim": "Torn disk frame test checks rejection, sequence/inbox unchanged and successful repair/retry."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/pi-agent-rust/src/interactive/commands.rs",
+      "start": 4770,
+      "end": 4855,
+      "claim": "Reload trust test checks explicit skill survives while untrusted project resources stay excluded."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/pi-agent-rust/src/session_control/recovery.rs",
+      "start": 1,
+      "end": 80,
+      "claim": "All-or-nothing finished-turn mailbox transfer preserves lane/attachments with new identities; not executable refit."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/pi-agent-rust/src/eval.rs",
+      "focus": "Kernel persistence, bridge authority and interrupted cell state",
+      "oracle": "Seeds globals; subsequent cell exact numeric result; bridge bash denied; infinite-loop JS cell errors and subsequent keep=5 survives. Real embedded runtime oracle in source, not executed here.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/pi-agent-rust/src/agent_hub.rs",
+      "focus": "Torn mailbox rejection and retry atomicity",
+      "oracle": "Deliberately removes frame newline; append fails without advancing seq/inbox or modifying bytes; repair then retry gets seq=2 and exactly ordered messages.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/pi-agent-rust/src/interactive/commands.rs",
+      "focus": "Hot resource reload trust boundary",
+      "oracle": "Explicit CLI skill remains under untrusted reload, project skill absent; trusted manager then includes both. Resource loading oracle, not compiled executable replacement.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Separate persistent code domains behind Rust scheduler.",
+    "Concrete effect-batch concurrency with paired cancellation results.",
+    "Readiness and incremental cursor/input service interface.",
+    "Disk-first accepted steering sequence and strong torn-frame oracle.",
+    "Model-authored skill and lesson updates are explicitly distinct from user resources."
+  ],
+  "limits": [
+    "No executable rebuild/outpost continuity traced. Individual media/browser/GitHub/debug/LSP implementations, all extension hostcalls, full swarm/evaluation corpus and every storage backend not exhaustively inspected. JS/Python module header comments are stale relative to actual implemented JS path; dispatch and tests determine claims."
+  ],
+  "arconaut_questions": [
+    "Should kernel and hub service ownership instead sit outside Arconaut behind shared customer interfaces?",
+    "Can one uniform lifecycle keep accepted steering receipts, process handles and provider requests coherent during pause/refit?",
+    "Which extension rewrites need immutable before/after original audit lineage?",
+    "Should complaint capture be decoupled from immediate rule activation and support model state attachment?",
+    "What executable refit oracle would distinguish preserved context/mailboxes from lost Python/JS identities?"
+  ]
+}

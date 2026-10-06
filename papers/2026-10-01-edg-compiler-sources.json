@@ -1,0 +1,7 @@
+[
+  {
+    "name": "edg-compiler",
+    "repository": "https://github.com/edgcpp/compiler",
+    "revision": "89e67e07c7f6d0fc38622f9778d8e79f40deaa0f"
+  }
+]

@@ -1,0 +1,76 @@
+{
+  "date": "2026-09-30",
+  "papers": [
+    {
+      "title": "Executable Code Actions Elicit Better LLM Agents",
+      "arxiv": "2402.01030v4",
+      "source": "https://arxiv.org/abs/2402.01030v4",
+      "download_url": "https://arxiv.org/pdf/2402.01030v4",
+      "local_path": "papers/pdfs/2402.01030v4.pdf",
+      "sha256": "749a45e36cf89fc7e1b701a2a72f6609ce8d3697577ceb0fff5ce9339ce8539e",
+      "bytes": 4345392,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning",
+      "arxiv": "2507.19457v2",
+      "source": "https://arxiv.org/abs/2507.19457v2",
+      "download_url": "https://arxiv.org/pdf/2507.19457v2",
+      "local_path": "papers/pdfs/2507.19457v2.pdf",
+      "sha256": "ab3a5139bac83f192ad67529368d77b84b0d807e95a8e4fd0daa8d45fd046bec",
+      "bytes": 2975112,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "Recursive Language Models",
+      "arxiv": "2512.24601v3",
+      "source": "https://arxiv.org/abs/2512.24601v3",
+      "download_url": "https://arxiv.org/pdf/2512.24601v3",
+      "local_path": "papers/pdfs/2512.24601v3.pdf",
+      "sha256": "8567362c22768d9b50d4a4a8d63bb28dda2c2b2051be30d67f70f645170429ca",
+      "bytes": 9942446,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "Continual Harness: Online Adaptation for Self-Improving Foundation Agents",
+      "arxiv": "2605.09998v1",
+      "source": "https://arxiv.org/abs/2605.09998v1",
+      "download_url": "https://arxiv.org/pdf/2605.09998v1",
+      "local_path": "papers/pdfs/2605.09998v1.pdf",
+      "sha256": "50f60996b0d962cdbf01f5b6a262ccd68b149c8b67cc2594218453717ea0c45e",
+      "bytes": 31751676,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "A Query Engine for the Agents",
+      "arxiv": "2605.27785v1",
+      "source": "https://arxiv.org/abs/2605.27785v1",
+      "download_url": "https://arxiv.org/pdf/2605.27785v1",
+      "local_path": "papers/pdfs/2605.27785v1.pdf",
+      "sha256": "a06ec33a7e7656e0f75f27f7523863fb24d632c6aa59a28f9ee5c81edb41d3eb",
+      "bytes": 462225,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "Self-Harness: Harnesses That Improve Themselves",
+      "arxiv": "2606.09498v3",
+      "source": "https://arxiv.org/abs/2606.09498v3",
+      "download_url": "https://arxiv.org/pdf/2606.09498v3",
+      "local_path": "papers/pdfs/2606.09498v3.pdf",
+      "sha256": "eb38452b5d357499ff3a2f7aa8bd7b8c1c1409dbafadaff3624071b2f7b1b302",
+      "bytes": 9572735,
+      "acquired": "2026-09-30"
+    },
+    {
+      "title": "Prime Agent: A Self-Improving RLM Harness",
+      "arxiv": "2608.23552v1",
+      "source": "https://arxiv.org/abs/2608.23552v1",
+      "download_url": "https://arxiv.org/pdf/2608.23552v1",
+      "local_path": "papers/pdfs/2608.23552v1.pdf",
+      "sha256": "973323f2d3d85f3ec9b21709248b65ba236cf527cd5cc9ff556909104a5fd370",
+      "bytes": 518236,
+      "acquired": "2026-09-30"
+    }
+  ],
+  "errors": []
+}

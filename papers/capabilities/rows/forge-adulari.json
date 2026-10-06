@@ -1,0 +1,752 @@
+{
+  "id": "forge-adulari",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "JavaScript"
+    ],
+    "execution": "Rust/Tokio provider/core/store; embedded fresh QuickJS workflow programs; OS shell jobs/CLI bridge providers and optional daemon/mobile surfaces.",
+    "service_boundary": "Owns session SQLite, scoped memory/harness entries, child tasks and background jobs; consumes model/provider/MCP interfaces; fleet messaging requires daemon owner."
+  },
+  "summary": "Systems Rust agent with unusually direct model-authored multi-agent workflow scripts, durable fleet peer messages, context uncompact/rewind, editable supplemental harness and isolated model comparisons.",
+  "inspection": {
+    "files": [
+      "quarantine/forge-adulari/crates/forge-cli/src/main.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/lib.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/model_loop.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/model_request.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/tool_dispatch.rs",
+      "quarantine/forge-adulari/crates/forge-tools/src/lib.rs",
+      "quarantine/forge-adulari/crates/forge-tools/src/core_tools.rs",
+      "quarantine/forge-adulari/crates/forge-tools/src/core_tools/notebook.rs",
+      "quarantine/forge-adulari/crates/forge-tools/src/shell.rs",
+      "quarantine/forge-adulari/crates/forge-tools/src/shell/background.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/workflow.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/orchestration.rs",
+      "quarantine/forge-adulari/crates/forge-workflow/src/lib.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/subagent.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/detached_subagents.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/fleet.rs",
+      "quarantine/forge-adulari/crates/forge-cli/src/cli/commands/run/driver/daemon_fleet.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/steer.rs",
+      "quarantine/forge-adulari/crates/forge-store/src/memory.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/session_virtual_tools.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/compaction_policy.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/session_history.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/replay.rs",
+      "quarantine/forge-adulari/crates/forge-store/src/lib.rs",
+      "quarantine/forge-adulari/crates/forge-store/src/session_usage_store.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/model_stream.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/refinement.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/session_controls.rs",
+      "quarantine/forge-adulari/scripts/rebuild.sh",
+      "quarantine/forge-adulari/crates/forge-core/src/permission.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/duel.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/tests/phantom_edit.rs",
+      "quarantine/forge-adulari/crates/forge-core/src/heartbeat.rs"
+    ],
+    "scope": "Entry, turn admission/request/step dispatch, concrete registry/file/notebook/process contracts, actual workflow engine/host concurrency, persistent child/fleet dispatch, memory, compaction/rewind/replay/audit caps, refinement/rollback, duel and selected source tests. Large modules read in focused coherent segments.",
+    "limits": "Source read only, reference not executed. Full browser/device/proxy internals, all provider bridges, assay/evaluation and OS process isolation not exhaustive. Reliability slogan is bounded by specific heuristics/oracles; no complete original audit or executable refit continuity. Configured program changes do not replace compiled outer loop."
+  },
+  "actions": [
+    {
+      "name": "read_file / write_file / append_file / edit_file / multi_edit / apply_patch / delete_file / notebook_edit / list_dir / search / glob",
+      "surface": "model native tools",
+      "input": "Workspace path/range/content/patch/cell index or search",
+      "output": "Content, diffs/errors; notebook edits clear stale outputs",
+      "lifecycle": "Awaited; read-only batches may run concurrently, mutations under preview/snapshot/policy",
+      "authority": "Workspace/extra roots confinement and effect/rules; notebook editing does not execute cells",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "shell / shell_job",
+      "surface": "model tools",
+      "input": "command/cwd/timeout/pty/background/poll; job action/id/lines",
+      "output": "Exit/output or durable workspace job PID/log/status",
+      "lifecycle": "Awaited bounded command; long job descriptor survives restart; poll call yields for repeated wait; PTY stdin closed",
+      "authority": "Shell policy/rules, job workspace resolution; no interactive live-input handle in traced contract",
+      "evidence": [
+        "e10",
+        "e11",
+        "e36"
+      ]
+    },
+    {
+      "name": "web_fetch / web_search / browser / browser_network / proxy / proxy_network / device / device_logs / lattice",
+      "surface": "model tool catalog",
+      "input": "URL/query/browser/network/device/symbol schemas",
+      "output": "Content/search/network/device/code-structure results",
+      "lifecycle": "Registered tools; particular browser/proxy/device lifecycle not fully inspected",
+      "authority": "Effect-based policy and enabled services; catalog scope explicit",
+      "evidence": [
+        "e7"
+      ]
+    },
+    {
+      "name": "run_workflow",
+      "surface": "model tool",
+      "input": "JS script string; named agent options and host compositions",
+      "output": "JSON result, child progress and phase/log events, workflow outcome",
+      "lifecycle": "Fresh sandbox QuickJS; async host child calls share total/per-provider budget; no persistent variable realm",
+      "authority": "Model authors control flow; no ambient filesystem/network, registered host primitives only",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "spawn_agents / send_to_agent / list_subagents / cancel_subagent",
+      "surface": "model virtual tools",
+      "input": "Named tasks/concurrency/detached; child name/id prefix, follow-up message",
+      "output": "Independent persisted child outputs, live state or lifecycle error",
+      "lifecycle": "Tokio children; bounded depth/model pin inheritance; send reuses saved child context; detached results next parent boundary",
+      "authority": "Model delegation according to host agent definition and authority, not arbitrary external shared fabric",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e19"
+      ]
+    },
+    {
+      "name": "message_session",
+      "surface": "model virtual tool in daemon",
+      "input": "target unique name/id prefix, message, mode=follow_up|steer",
+      "output": "Persisted acceptance or resolution error",
+      "lifecycle": "Durable queue before attempted delivery; steer outranks backlog at next turn boundary, never midstream",
+      "authority": "Daemon-provided live peer roster, unavailable bare CLI; recorded allowed without fresh tool permission",
+      "evidence": [
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "remember / ask_user / update_tasks / present_plan / use_skill / manage_heartbeats",
+      "surface": "model virtual tool catalog",
+      "input": "Typed fact, question/tasks/plan/named skill; heartbeat label/interval/prompt",
+      "output": "Persistent memory/tasks/plan/user result or heartbeat records",
+      "lifecycle": "Stateful core boundary; pending plan awaits operator activation; model heartbeat slots separate from user",
+      "authority": "Model scoped owner; heartbeat cap/min interval; direct virtual dispatch may bypass general policy",
+      "evidence": [
+        "e23",
+        "e24",
+        "e41"
+      ]
+    },
+    {
+      "name": "Session.compact / uncompact / rewind_to / checkpoint; replay_items_full",
+      "surface": "operator/program APIs",
+      "input": "Transform mode, stable DB seq/checkpoint or history request",
+      "output": "Summary/recovered history/file restore result/replay items",
+      "lifecycle": "Compaction preserves originals soft-deleted; uncompact reload; rewind rolls files/context to boundary",
+      "authority": "Operator/program paths; precise model context repair API not traced",
+      "evidence": [
+        "e25",
+        "e26",
+        "e27",
+        "e28"
+      ]
+    },
+    {
+      "name": "/refine / Session.refine / refine_rollback; model pin/effort/mode controls",
+      "surface": "operator/automatic program surfaces",
+      "input": "Refinement instructions/scope; saved batch rollback; model/effort settings",
+      "output": "Applied/rejected scoped prompt/skill/subagent edits plus journal before/after rationale/expected outcome",
+      "lifecycle": "Automatic or manual refinement uses bounded trajectory; subsequent context uses entries; rollback recorded",
+      "authority": "Immutable base prompt; model-proposed DB edits, not executable replacement",
+      "evidence": [
+        "e32",
+        "e33",
+        "e34"
+      ]
+    },
+    {
+      "name": "/duel / run_duel; model-authored saved .forge/workflows scripts",
+      "surface": "operator/program experiment surfaces",
+      "input": "Task and candidate routes; saved script",
+      "output": "Isolated worktree candidates/diff/test/time/cost, operator-selected winner",
+      "lifecycle": "Concurrent maximum three candidates; tests own worktree; outcome affects future routing",
+      "authority": "Operator merge/winner choice; no automatic claim of rigorous generalizable performance",
+      "evidence": [
+        "e37"
+      ]
+    },
+    {
+      "name": "scripts/rebuild.sh",
+      "surface": "developer script",
+      "input": "Cargo build args",
+      "output": "Compiled binary and killed MCP wrappers ready to respawn",
+      "lifecycle": "Stops wrappers before/after compile; restart on next use",
+      "authority": "Developer shell, no quiescence verification/context outpost/kernel identity transfer",
+      "evidence": [
+        "e35"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Structured workspace tools and edits; notebook cell editing distinct from persistent kernel execution.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bounded shell/PTY or durable background jobs with workspace PID/log/status/stop; PTY input closed.",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model authors fresh JS workflow control flow over registered async host functions.",
+      "evidence": [
+        "e12",
+        "e14",
+        "e15"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Workflow creates fresh QuickJS AsyncRuntime each run; notebook action edits JSON only; no session-persistent code execution namespace traced.",
+      "evidence": [
+        "e9",
+        "e15"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real internal scoped SQLite facts/harness/session state; memory capped/deduplicated, no arbitrary external shared research database action.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e29",
+        "e33"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native model script agent/parallel/pipeline/phase/log/workflow with shared semaphores and host/runtime limits; saved workflow composition.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mesh child routes or explicit model pins, failover and same-task isolated candidate comparisons.",
+      "evidence": [
+        "e4",
+        "e16",
+        "e37"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Daemon fleet message_session durably queues peer text with steer/followup modes, plus persistent child follow-up. Scope is live daemon fleet; bare CLI lacks this host.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e20",
+        "e21"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read-only batch join with original-order pairing; child tasks/workflow concurrency and duel worktrees; serial hooks/mutations constrain overlaps.",
+      "evidence": [
+        "e5",
+        "e13",
+        "e37",
+        "e38"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Legal-boundary inbox/peer priority and detached cancellation; deadline adds reconciliation model turn rather than immediately quiescing all owned computation.",
+      "evidence": [
+        "e3",
+        "e19",
+        "e20",
+        "e22"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model-defined workflow programs and editable supplemental harness entries are powerful but compiled outer request/verification/refinement loop remains fixed.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e14",
+        "e32",
+        "e33"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Round-aligned summaries/pre-post lifecycle, output age pruning; failed summarizer preserves state and operator uncompact restores retained original history.",
+      "evidence": [
+        "e3",
+        "e25",
+        "e26"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Explicit uncompact/rewind restore stored history and snapshots across stable DB seq; exposed operator/program controls, not ubiquitous model-directed arbitrary lineage repair.",
+      "evidence": [
+        "e26",
+        "e27"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tool audit args/results capped 64KiB; live ring 2000 and ~90-day pruning; CLI bridge provides summaries without raw output. Rich provenance not complete original everything.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Store/read full replay and tool audit provide query primitives; replay filters visibility and reconstructs success, not original event analytical view.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e30"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Named definitions loaded for workflow/followup, supplemental entries and model/effort changes; current core stays compiled and kernel fresh per workflow.",
+      "evidence": [
+        "e14",
+        "e18",
+        "e32",
+        "e33",
+        "e34"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Concrete rebuild script kills MCP wrappers then compiles and kills remnants, expects respawn; no quiescent refit/context-outpost continuity.",
+      "evidence": [
+        "e35"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider/MCP/tool traits and daemon HTTP peers support consumer composition; actual fleet host owns local sessions rather than external meta-project fabric.",
+      "evidence": [
+        "e4",
+        "e20",
+        "e21"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Continual Harness validates/applies/journals/rolls back model-proposed scoped prompt/skill/subagent entries; base prompt immutable. Duel measures task candidates/routing, not executable self-refit experiments.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e37"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Bypass/AcceptEdits reduce ceremony, but built-in deny floor always overrides and Plan is hard read-only; virtual messages treated already allowed.",
+      "evidence": [
+        "e20",
+        "e36"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Duel isolated same-task comparisons record actual test status/diff/time/cost and operator choice; source workflow/phantom-claim tests have bounded oracles.",
+      "evidence": [
+        "e37",
+        "e38",
+        "e39",
+        "e40"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Durable DB seq/peer queue before delivery, shared task permits and monotonic synchronous-slice budgets; no complete distributed global event audit clock.",
+      "evidence": [
+        "e13",
+        "e15",
+        "e21",
+        "e27",
+        "e39"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/forge-adulari/crates/forge-cli/src/main.rs",
+      "start": 152,
+      "end": 179,
+      "claim": "Rust Tokio CLI dispatch entry."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/lib.rs",
+      "start": 2613,
+      "end": 2659,
+      "claim": "Turn admits workspace, drains finished detached children, prunes older output and builds route context."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/model_loop.rs",
+      "start": 224,
+      "end": 311,
+      "claim": "Step-wise age/prune/compact then provider request and response recording; deadline adds one reconciliation model turn."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/model_request.rs",
+      "start": 194,
+      "end": 269,
+      "claim": "Actual complete_with request includes advertised specs/options/checkpoint; stream idle timeout and failed-attempt mesh outcome."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/tool_dispatch.rs",
+      "start": 37,
+      "end": 149,
+      "claim": "Read-only batch concurrent join then paired original-order persistence; hooks require serial path."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/lib.rs",
+      "start": 69,
+      "end": 102,
+      "claim": "Tool API exposes effect/schema/full result and side-effect-free diff preview."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/lib.rs",
+      "start": 168,
+      "end": 199,
+      "claim": "Exact native tool registration."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/core_tools.rs",
+      "start": 188,
+      "end": 260,
+      "claim": "Native read_file schema and actual path/range reading entry."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/core_tools/notebook.rs",
+      "start": 1,
+      "end": 89,
+      "claim": "notebook_edit manipulates cells and clears stale execution outputs; not notebook execution."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/shell.rs",
+      "start": 118,
+      "end": 177,
+      "claim": "shell command/PTY/background/poll tool contract; PTY stdin closed."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/forge-adulari/crates/forge-tools/src/shell/background.rs",
+      "start": 505,
+      "end": 581,
+      "claim": "shell_job actual list/status/log/stop dispatcher with workspace-scoped stored job descriptor."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/workflow.rs",
+      "start": 1,
+      "end": 84,
+      "claim": "run_workflow native JS agent/parallel/pipeline/phase/log/workflow host interface."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/workflow.rs",
+      "start": 263,
+      "end": 377,
+      "claim": "Agent host function routes child and shares global/per-provider permits, emits lifecycle/progress and final outcome."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/orchestration.rs",
+      "start": 321,
+      "end": 408,
+      "claim": "Model run_workflow dispatch builds session context and invokes workflow runtime with configured quotas."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/forge-adulari/crates/forge-workflow/src/lib.rs",
+      "start": 1,
+      "end": 123,
+      "claim": "Fresh QuickJS AsyncRuntime per script, explicit host capabilities, heap and continuous synchronous compute limits."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/subagent.rs",
+      "start": 102,
+      "end": 174,
+      "claim": "Child routing pin inheritance and explicit override; independent model route."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/subagent.rs",
+      "start": 209,
+      "end": 242,
+      "claim": "Persistent child follow-up reloads stored history and appends new user message."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/orchestration.rs",
+      "start": 180,
+      "end": 244,
+      "claim": "send_to_agent resolves previously spawned named child and re-resolves persona definition."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/detached_subagents.rs",
+      "start": 14,
+      "end": 80,
+      "claim": "list/cancel detached child actual stateful dispatcher."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/fleet.rs",
+      "start": 1,
+      "end": 96,
+      "claim": "Daemon-only peer capability and follow_up versus steer queue priority; ordinary CLI lacks native fleet host."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/forge-adulari/crates/forge-cli/src/cli/commands/run/driver/daemon_fleet.rs",
+      "start": 16,
+      "end": 68,
+      "claim": "Actual fleet send persists source/recipient/mode before host delivery attempt."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/steer.rs",
+      "start": 1,
+      "end": 54,
+      "claim": "Mid-turn inbox drained only at legal boundaries; surface retains unconsumed prompts."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/forge-adulari/crates/forge-store/src/memory.rs",
+      "start": 1,
+      "end": 68,
+      "claim": "SQLite durable facts scoped project/global; duplicate salience and bounded scope count."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/session_virtual_tools.rs",
+      "start": 234,
+      "end": 279,
+      "claim": "Model remember actually parses kind/text and stores scoped memory, optional embedding."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/compaction_policy.rs",
+      "start": 465,
+      "end": 522,
+      "claim": "Compaction hooks, tool-round-aligned preserved tail and routed summarization input."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/compaction_policy.rs",
+      "start": 701,
+      "end": 734,
+      "claim": "Failed compaction leaves transcript; uncompact reactivates stored originals/reloads full context."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/session_history.rs",
+      "start": 7,
+      "end": 69,
+      "claim": "Rewind DB sequence repairs compacted mapping then restores snapshots and soft-deletes subsequent messages."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/replay.rs",
+      "start": 1,
+      "end": 61,
+      "claim": "Replay is visibility-filtered saved transcript; tool success reconstructed from error-prefix convention."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/forge-adulari/crates/forge-store/src/lib.rs",
+      "start": 90,
+      "end": 143,
+      "claim": "64KiB tool args/result cap, 90-day session pruning and 2000-event live ring."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/forge-adulari/crates/forge-store/src/session_usage_store.rs",
+      "start": 523,
+      "end": 562,
+      "claim": "Actual audit insertion caps args/results before transaction and sync revision."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/model_stream.rs",
+      "start": 31,
+      "end": 85,
+      "claim": "CLI bridge tool completion has summary only, no raw output to retain/surface."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/refinement.rs",
+      "start": 31,
+      "end": 80,
+      "claim": "Continual Harness can add prompt/skill/subagent entries; immutable base prompt and separate memory ownership."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/refinement.rs",
+      "start": 194,
+      "end": 249,
+      "claim": "Refinement validates edits then scoped DB apply journals expected outcome and supports rollback."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/session_controls.rs",
+      "start": 169,
+      "end": 214,
+      "claim": "Program API model pin/effort/deadline and related state mutations."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/forge-adulari/scripts/rebuild.sh",
+      "start": 1,
+      "end": 23,
+      "claim": "Developer rebuild kills MCP processes before/after compile, relies on fresh respawn; no context handoff/outpost."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/permission.rs",
+      "start": 1,
+      "end": 85,
+      "claim": "Mode and rule precedence includes built-in deny floor even in Bypass; Plan read-only."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/duel.rs",
+      "start": 1,
+      "end": 104,
+      "claim": "Duel native experiment runs same task in isolated worktrees, records test/diff/time/cost and operator winner; model routing feedback."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/forge-adulari/crates/forge-workflow/src/lib.rs",
+      "start": 384,
+      "end": 411,
+      "claim": "Parallel host-call test measures elapsed to distinguish concurrent versus serialized calls."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/forge-adulari/crates/forge-workflow/src/lib.rs",
+      "start": 487,
+      "end": 531,
+      "claim": "Infinite-loop interrupt and slow-host-await non-interruption source oracles."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/tests/phantom_edit.rs",
+      "start": 39,
+      "end": 101,
+      "claim": "Scripted prose-only mutation claim triggers repeated request and warning, not objective arbitrary completion proof."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/forge-adulari/crates/forge-core/src/heartbeat.rs",
+      "start": 1,
+      "end": 80,
+      "claim": "Recurring same-session queued prompts separate model-owned and operator-owned heartbeat slots."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/forge-adulari/crates/forge-workflow/src/lib.rs",
+      "focus": "Real async host overlap and synchronous compute bound",
+      "oracle": "Promise.all two 50ms mocked host calls expected result plus elapsed <90ms distinguishes serial 100ms; susceptible timing-load false failures. Infinite loop gets interrupt within 10s; slow 500ms await does not trip 200ms pure-compute limit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forge-adulari/crates/forge-core/src/tests/phantom_edit.rs",
+      "focus": "Unsupported prose completion claim",
+      "oracle": "Provider repeatedly claims edits with no tool calls; asserts more than one request and explicit warning no mutation/not applied. This proves bounded guard behavior, not arbitrary true success inference.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Model-authored control flow with explicit host domain and shared concurrency budgets.",
+    "Durable daemon colleague message admission before delivery.",
+    "Uncompact and stable DB-sequence rewind survive model-visible summary transformation.",
+    "Refinement distinguishes scoped supplemental harness edits from immutable base/core.",
+    "Isolated same-task worktree comparison and explicit operator selection."
+  ],
+  "limits": [
+    "Full browser/device/proxy internals, all provider bridges, assay/evaluation and OS process isolation not exhaustive. Reliability slogan is bounded by specific heuristics/oracles; no complete original audit or executable refit continuity. Configured program changes do not replace compiled outer loop."
+  ],
+  "arconaut_questions": [
+    "Which script host primitives should instead target externally owned shared kernels/process services?",
+    "Can editable turn definitions live outside immutable outer verification/runtime while remaining recoverable?",
+    "How should an unpruned original event log preserve capped/rewritten provider and program data?",
+    "Would repair actions be model-native and lineage-preserving rather than operator full uncompact?",
+    "What refit outpost/quiescence protocol replaces kill-and-respawn rebuild?",
+    "How should candidate experiments avoid benchmark-specific routing overfit and record independent oracles?"
+  ]
+}

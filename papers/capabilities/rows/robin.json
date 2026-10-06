@@ -1,0 +1,356 @@
+{
+  "id": "robin",
+  "kind": "scientific discovery pipeline and hosted-agent consumer",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Async local synthesis/ranking calls plus uploaded Edison literature/data-analysis tasks; notebook operator drives top-level stages.",
+    "service_boundary": "Owns workflow/output files and consumed task IDs; Edison owns remote analysis/literature engines and their execution environments."
+  },
+  "summary": "Public orchestration for hypothesis/assay/candidate generation and multi-trajectory analysis, with proprietary hosted agent execution remaining external.",
+  "inspection": {
+    "files": [
+      "quarantine/robin/README.md",
+      "quarantine/robin/robin/multitrajectory_runner.py",
+      "quarantine/robin/robin/utils.py",
+      "quarantine/robin/robin/analyses.py",
+      "quarantine/robin/robin/configuration.py"
+    ],
+    "scope": "Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary",
+    "limits": "Hosted Edison internals and credentialed trajectories are unavailable. No standalone coding-agent loop or first-party tests were found in the inspected source file inventory; no code executed."
+  },
+  "actions": [
+    {
+      "name": "MultiTrajectoryRunner.add_step / run_pipeline",
+      "surface": "operator/library API",
+      "input": "Step prompt/generator, input/output mappings, parallel count and StepConfig.",
+      "output": "results[step_id] with task IDs/responses/success rates and downloaded artifacts.",
+      "lifecycle": "Sequential stage barriers, parallel remote tasks within stage, final JSON save.",
+      "authority": "Configured remote credentials and local callback authority.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4"
+      ]
+    },
+    {
+      "name": "call_platform / poll_for_task_completion / gather_results",
+      "surface": "hosted-service consumer API",
+      "input": "Hypothesis/query map, hosted job name and Edison client; remote task_id.",
+      "output": "Responses or errors with submitted task identities/final statuses.",
+      "lifecycle": "Create then concurrent polling; local timeout does not terminate hosted work.",
+      "authority": "Paid hosted account; no source access to downstream agent.",
+      "evidence": [
+        "e1",
+        "e5"
+      ]
+    },
+    {
+      "name": "data_analysis",
+      "surface": "scientific workflow API",
+      "input": "Data path, analysis type, goal and configuration.",
+      "output": "Parallel trajectory files, remote consensus outputs and interpreted results.",
+      "lifecycle": "Analysis stage then consensus stage consume file boundary; R runtime owned by Edison.",
+      "authority": "Remote compute customer; public wrapper never governs shared kernel.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "process_comparison_pair / run_comparisons",
+      "surface": "ranking API",
+      "input": "Candidate pair IDs/dataframe, ranking/system prompts, LLM client, output path and concurrency bound.",
+      "output": "JSON comparison records and aggregate error/success reports/CSV.",
+      "lifecycle": "Bounded concurrent model requests, no external experiment execution in ranker.",
+      "authority": "Authored candidate reasoning and evaluator model; not a validated oracle.",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local pipeline writes JSON/reports/CSVs, uploads known inputs and downloads per-task outputs. No generic model-exposed file editor is supplied by these host functions.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Data-analysis remote StepConfig declares Python/R environment and instructions; execution belongs to hosted Edison agent, whose code action implementation is unavailable.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e6"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Remote tasks can request R/Python analysis environments; lifetime/namespace persistence belongs to Edison and is not established by public wrapper. Notebook running Robin is operator execution, not an owned persistent model kernel.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e6"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native Step arrays permit dynamic prompt generation from prior results, parallel task count, input/output maps and postprocess callbacks. Pipeline is sequential across steps, not a live arbitrary model-programmed turn.",
+      "evidence": [
+        "e2",
+        "e4"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Configured direct LLM and multiple hosted agent roles separate synthesis/ranking from literature/analysis. Hosted model identities are opaque; selectable jobs are not proof of live multi-provider collaboration.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e10"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Consensus aggregates separate trajectory result files; no addressed live peer message mechanism is supplied in the inspected workflow.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Remote task batches and semaphore-bounded pairwise comparisons execute concurrently; step boundaries await results before next stage.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e9"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Overall timeout bounds local wait/polling and returns remote IDs; inspected timeout path does not cancel remote work or expose live steering. Stop waiting is not service quiescence.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Timestamped results contain task IDs/responses and success rate; downloads may fail with log-and-continue, and final save errors also merely log. This is not complete provider requests/remote execution IO.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "results[step_id] and remote task IDs permit stored-result inspection and Edison polling; no general local original-audit query layer is supplied.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Independent remote task handles support service follow-up, while results remain process-local until final JSON. No automatic crash resume/executable refit continuity is established.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Public code consumes Edison create/upload/run-until-done/get/download contracts and independent chosen LLM calls. It does not contain proprietary analysis kernels or literature engines.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Step pipeline/provider dispatch/remote handles, analysis consensus/ranking/results persistence, official availability boundary; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator supplies provider/Edison credentials and workflow callback code. Public pipeline forwards task parameters; execution permission boundaries in hosted service are unavailable.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Pairwise LLM ranking scores proposed hypotheses and consensus aggregates analysis trajectories; task success_rate measures hosted status. Neither is independent scientific validity or measured experimental truth.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e8",
+        "e9"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Steps have short UUID IDs and sequential dependencies; task IDs separate parallel trajectories; result filenames use wall-clock time. No durable write-ahead run/attempt causal ledger is supplied.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/robin/README.md",
+      "start": 5,
+      "end": 11,
+      "claim": "Official public README requires purchased Edison access for data analysis while local hypothesis/experiment generation still uses chosen provider."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/robin/robin/multitrajectory_runner.py",
+      "start": 20,
+      "end": 74,
+      "claim": "Step/StepConfig declares prompt/generator, uploads/downloads, UID, parallel count, remote max steps/language/timeout and postprocess."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/robin/robin/multitrajectory_runner.py",
+      "start": 104,
+      "end": 156,
+      "claim": "Runner holds steps/results; timestamped JSON serializes remote response objects and logs save errors."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/robin/robin/multitrajectory_runner.py",
+      "start": 199,
+      "end": 289,
+      "claim": "Pipeline sequentially uploads, submits parallel remote tasks until done, stores task IDs/success rates, downloads outputs and postprocesses; save happens at overall end."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/robin/robin/utils.py",
+      "start": 31,
+      "end": 128,
+      "claim": "Edison tasks are created then concurrently polled under overall timeout; timeout returns submitted IDs/statuses without remote cancellation."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/robin/robin/analyses.py",
+      "start": 17,
+      "end": 83,
+      "claim": "Analysis submits parallel R data-analysis trajectories then another remote consensus stage consuming produced flow-results files."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/robin/robin/analyses.py",
+      "start": 139,
+      "end": 158,
+      "claim": "Data interpretation is another direct LLM call parsed into four delimited fields; format error is logged."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/robin/robin/utils.py",
+      "start": 584,
+      "end": 639,
+      "claim": "Pairwise hypothesis comparison uses authored candidate reasoning and asks LLM for JSON; this is preference/evaluation rather than experimental result measurement."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/robin/robin/utils.py",
+      "start": 698,
+      "end": 741,
+      "claim": "Pair comparisons run under semaphore with configurable max concurrent requests and aggregate success/error records."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/robin/robin/configuration.py",
+      "start": 242,
+      "end": 260,
+      "claim": "Separate hosted agent roles can choose Crow/Falcon jobs; actual hosted model implementation is external."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Step data-transfer and remote task identity are explicit and inspectable.",
+    "Separates trajectory generation, consensus and hypothesis ranking as different workflows."
+  ],
+  "limits": [
+    "Hosted scientific execution source is not public in this reference.",
+    "Local timeout leaves remote work unresolved; final-only result save is weak crash continuity.",
+    "Ranking authored proposals and remote success statuses do not validate science."
+  ],
+  "arconaut_questions": [
+    "How should consumed-service jobs be tracked/cancelled while harness-owned workflow pauses?",
+    "What independent oracles distinguish useful consensus from correlated model agreement?"
+  ]
+}

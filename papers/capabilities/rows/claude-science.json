@@ -1,0 +1,426 @@
+{
+  "id": "claude-science",
+  "kind": "scientific desktop workbench (official contracts; unavailable engine source)",
+  "runtime": {
+    "languages": [],
+    "execution": "Local app/daemon and sandboxed Python/R kernels; operator browser or Windows app; remote jobs have external lifetimes.",
+    "service_boundary": "Owns local project/session/workspace/package environments and ephemeral kernels; consumes Claude, MCP, SSH/Slurm, Modal and scientific HTTP model services."
+  },
+  "summary": "Versioned scientific artifacts, code execution, specialist delegation and reviewed research in a local workbench.",
+  "inspection": {
+    "files": [
+      "quarantine/claude-science/raw/tools-and-environments.md",
+      "quarantine/claude-science/raw/core-concepts.md",
+      "quarantine/claude-science/raw/artifacts.md",
+      "quarantine/claude-science/raw/the-reviewer.md",
+      "quarantine/claude-science/raw/command-line-settings.md",
+      "quarantine/claude-science/raw/compute-providers.md",
+      "quarantine/claude-science/raw/remote-compute-clusters.md",
+      "quarantine/claude-science/raw/configuration-file-reference.md",
+      "quarantine/claude-science/raw/custom-connectors.md",
+      "quarantine/claude-science/raw/connectors-and-skills.md",
+      "quarantine/claude-science/raw/safeguards.md"
+    ],
+    "scope": "pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation",
+    "limits": "Application source unavailable; documentation snapshots captured alongside 0.1.55 artifacts need not be version-identical to every shipped build. No binary or example execution; no source tests available."
+  },
+  "actions": [
+    {
+      "name": "Run Python / Run R / Run shell / Run PowerShell",
+      "surface": "model-proposed code cell",
+      "input": "Executable code plus environment; access card grants",
+      "output": "Cell outputs/errors and saved artifact references; native tool wire names undisclosed",
+      "lifecycle": "Persistent interpreter state for Python/R; kernel expires/restarts; shell lifetime/control unspecified",
+      "authority": "Sandbox/project/folder/host grants; scoped standing code approval",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "Save artifact / Edit content / Save / Provenance / Export Metadata",
+      "surface": "model save; operator artifact commands",
+      "input": "Filename/content or artifact-version selection",
+      "output": "New immutable-history version, version-bound link, code/log/environment/review tabs",
+      "lifecycle": "Saved versions retained; scratch files removed hours after session end; session deletion retains artifacts, project deletion removes",
+      "authority": "Operator/model workspace access; these are product control names, not invented public RPCs",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "Delegation / Stop",
+      "surface": "operator session settings; model delegation",
+      "input": "Enable independent tracks; stop current session",
+      "output": "Per-track transcripts/status; whole-session stop",
+      "lifecycle": "Parallel tracks; no individual-track stopping contract",
+      "authority": "Session operator; work permitted under existing access grants",
+      "evidence": [
+        "e3"
+      ]
+    },
+    {
+      "name": "Request review / Auto-review / Reviewer Instructions",
+      "surface": "operator review controls",
+      "input": "Recent work and added criteria",
+      "output": "Finding cards/status/reasoning fed to next model response",
+      "lifecycle": "Runs after responses/periodically; disabling prevents new reviews but pending finish",
+      "authority": "Operator customizes additive criteria; model addresses or contests findings",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "SSH remote job / Modal job",
+      "surface": "model proposal with scoped operator grants",
+      "input": "Script/command, host/resource/time limit and staged inputs",
+      "output": "Logs, outputs or remote paths; concrete provider handle API undisclosed",
+      "lifecycle": "Slurm/detached SSH work survives disconnect; Modal survives app close and times out externally",
+      "authority": "Remote work uses operator account outside local sandbox; standing remote grant allowed",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "Add connector / Always allow / Ask each time / Block",
+      "surface": "operator connector configuration; model discovered MCP tools",
+      "input": "Remote SSE/HTTP URL or local program plus args/env; individual tool policy",
+      "output": "Discovered external tools/results; wire APIs remain unavailable",
+      "lifecycle": "Local connector subprocess within sandbox; configured remote service consumed",
+      "authority": "Custom connector organization policy and standing tool authority",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "/ skill / Add skill / Import from GitHub / distill workflow",
+      "surface": "operator and model skill authoring",
+      "input": "Instruction/resources or repository; session workflow description",
+      "output": "Loaded procedural instructions, reusable skill",
+      "lifecycle": "Task-selected or explicit loading; automatic context/activation implementation unobserved",
+      "authority": "Operator/custom-skill organizational policy; model can distill a workflow",
+      "evidence": [
+        "e12"
+      ]
+    },
+    {
+      "name": "claude-science serve/open/url/status/logs/stop/update/import",
+      "surface": "operator CLI",
+      "input": "Data dir/config, build ID for update, source dir/database for import",
+      "output": "Daemon, login URL, JSON status, logs, atomic replacement or merged data",
+      "lifecycle": "One daemon per data dir; update requires restart to inhabit new build; no main/outpost handoff contract",
+      "authority": "Operator OS account; update/import may mutate owned app data",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Read/write granted folders in place, attachment copies and artifact-version saves; scope grants are persistent.",
+      "evidence": [
+        "e2",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Shell/PowerShell code and remote detached/Slurm work; no exposed general PTY/ongoing local-program handle protocol in inspected contracts.",
+      "evidence": [
+        "e1",
+        "e9"
+      ]
+    },
+    "code_actions": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Model-authored executable Python/R/shell is the analysis surface; MCP tools supplement it.",
+      "evidence": [
+        "e1",
+        "e11"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Documented Python/R variables survive steps but kernel ends after about 30 minutes idle, session end or environment restart; no serialization/reconnect contract for shared external kernels.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Local memory database holds remembered facts and feeds model context; no documented generic model/program SQL interface. Scientific source connectors are distinct external databases.",
+      "evidence": [
+        "e3",
+        "e11"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Reusable skills and distilled workflows are written instructions; executable turn/workflow scheduling replacement is not established by those controls.",
+      "evidence": [
+        "e12"
+      ]
+    },
+    "multi_model": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Claude model selection and safeguard-driven switching, plus distinct scientific model endpoints; independent conversational providers not established.",
+      "evidence": [
+        "e13",
+        "e8"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation; no universal absence claim.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Parallel delegated tracks, multiple per-session kernels, Modal/SSH job limits and remote independent lifetime.",
+      "evidence": [
+        "e3",
+        "e8",
+        "e9"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Whole-session Stop rather than individually controllable tracks; disabling auto-review leaves active/waiting reviews to finish. Remote cancellation details not exposed.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation; no universal absence claim.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Past-session references and saved artifact-version messages can recover some evidence; scratch cleanup and no documented compaction-original lineage prevent claiming comprehensive repair.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Artifact provenance records command history/code/environment/messages, but temporary files are removed and no raw provider/process/transform IO-retention contract is exposed.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Human searchable artifacts and Provenance tabs are documented; comprehensive model/program audit query API is not exposed in inspected contracts.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Review toggles affect future/pending review behavior; skills/connectors adjustable; config.toml is startup-only and binary update inhabitation is restart.",
+      "evidence": [
+        "e5",
+        "e10",
+        "e6"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Atomic vendor update preserves data with schema compatibility checks; no self-compile/outpost transfer, active-work quiescence or restored live-kernel guarantee.",
+      "evidence": [
+        "e6",
+        "e1"
+      ]
+    },
+    "remote_services": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Consumer of operator SSH/Slurm/Modal account and scientific HTTP/MCP endpoints; job survival differs from local ephemeral kernels.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e11"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected pinned official CLI, kernel, artifact, permissions, connector, compute, model and reviewer documentation; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Folder/network/tool/code/remote grants can stand per conversation/project/global; skip approvals and sandbox flags have documented exceptions and organizational precedence.",
+      "evidence": [
+        "e2",
+        "e7",
+        "e11"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Reviewer compares claims to recorded work and cited material, does not rerun analyses or judge research-method choice; no source/runtime test oracle inspected.",
+      "evidence": [
+        "e5"
+      ]
+    },
+    "time_order": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Kernel idle expiry, one-use login expiry, remote timeout bounds and pending-review activation semantics; no global causal audit clock exposed.",
+      "evidence": [
+        "e1",
+        "e7",
+        "e8",
+        "e9",
+        "e5"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/claude-science/raw/tools-and-environments.md",
+      "start": 9,
+      "end": 36,
+      "claim": "Python/R state persists within a kernel; idle/session/environment termination boundaries; named environments and source builds."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/claude-science/raw/core-concepts.md",
+      "start": 9,
+      "end": 38,
+      "claim": "Projects/sessions own workspaces; filesystem and code/remote permissions have standing scopes."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/claude-science/raw/core-concepts.md",
+      "start": 40,
+      "end": 64,
+      "claim": "Plan approval, sandbox, parallel delegation with whole-session stop, local remembered facts and session/file/skill references."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/claude-science/raw/artifacts.md",
+      "start": 9,
+      "end": 43,
+      "claim": "Temporary scratch cleanup differs from artifact retention; saved versions and authoritative execution/provenance tabs."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/claude-science/raw/the-reviewer.md",
+      "start": 9,
+      "end": 32,
+      "claim": "Reviewer challenges recorded claims without rerunning methods; findings feed next response; changes affect future reviews while pending finish."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/claude-science/raw/command-line-settings.md",
+      "start": 14,
+      "end": 42,
+      "claim": "Daemon management, JSON status/logs/import, atomic update and restart/downgrade boundaries."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/claude-science/raw/command-line-settings.md",
+      "start": 49,
+      "end": 90,
+      "claim": "Per-data-dir app, login expiry and approval/sandbox overrides constrained by organization."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/claude-science/raw/compute-providers.md",
+      "start": 9,
+      "end": 49,
+      "claim": "Consumer-controlled Modal account, observable bounded jobs, independent lifetime and scientific HTTP endpoints."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/claude-science/raw/remote-compute-clusters.md",
+      "start": 9,
+      "end": 39,
+      "claim": "Existing SSH authority, Slurm or detached processes survive connection loss; timeout and output-size boundaries."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/claude-science/raw/configuration-file-reference.md",
+      "start": 9,
+      "end": 15,
+      "claim": "TOML configuration loaded at startup; organization precedence."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/claude-science/raw/custom-connectors.md",
+      "start": 9,
+      "end": 21,
+      "claim": "Remote/local MCP discovery and per-tool standing permission; sandboxed connector subprocesses."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/claude-science/raw/connectors-and-skills.md",
+      "start": 55,
+      "end": 69,
+      "claim": "Skills are instructions loaded by task or composer; create/write/upload/import and distill session workflows."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/claude-science/raw/safeguards.md",
+      "start": 9,
+      "end": 35,
+      "claim": "Model safeguards and operator model-switch behavior are official contracts, not engine traces."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "A code-first scientific workbench with bounded persistent kernels and independently surviving remote computation.",
+    "Saved artifact versions bind messages, command log, code/environment and review, distinguishing actual execution log from generated reproduction code.",
+    "Scoped standing authority and custom scientific instructions/reviewer support sophisticated domain work."
+  ],
+  "limits": [
+    "Every positive finding is a captured official contract, not traced application implementation or executed behavior.",
+    "Internal remembered-fact database is not a generic standing data service; Lecoq workflow and OpenAI4S do not establish app internals.",
+    "Kernel memory and temporary files have explicit expiration; artifact provenance does not promise Arconaut original-audit completeness.",
+    "Turn program replacement, live addressed peers, dedicated autoresearch governance and captured-state model complaints remain unestablished in inspected contracts."
+  ],
+  "arconaut_questions": [
+    "How do we keep service references and resumable client work independent of local interpreter lifetime without governing shared service lifetimes?",
+    "What exact originals survive context transformations and failed attempts, beyond artifact-centered provenance?",
+    "Can both operator and model query/repair context from preserved originals and adjust reviewer/workflow behavior at our chosen turn/workflow conclusion boundary?"
+  ]
+}

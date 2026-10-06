@@ -1,0 +1,469 @@
+{
+  "id": "mcp-agent-mail",
+  "kind": "coordination service",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Async FastMCP HTTP service; SQLite/SQLAlchemy sessions, worker-thread Git filesystem operations and awaited commit queue. It does not run the participating agents.",
+    "service_boundary": "Owns mail identities/index/archive and advisory reservations. Client coding agents and their programs/provider requests remain separately owned."
+  },
+  "summary": "Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations.",
+  "inspection": {
+    "files": [
+      "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "quarantine/mcp-agent-mail/src/mcp_agent_mail/storage.py",
+      "quarantine/mcp-agent-mail/src/mcp_agent_mail/config.py",
+      "quarantine/mcp-agent-mail/src/mcp_agent_mail/http.py",
+      "quarantine/mcp-agent-mail/tests/test_messaging_semantics.py",
+      "quarantine/mcp-agent-mail/tests/test_message_delivery_regression.py",
+      "quarantine/mcp-agent-mail/tests/test_contact_policy.py"
+    ],
+    "scope": "registration/authentication, send/store/notification, inbox/ack/search, advisory reservation, macro, settings and selected test assertions",
+    "limits": "No client agent turn/provider loop or commercial Companion implementation was inspected; partial filesystem/Git crash recovery is not proven."
+  },
+  "actions": [
+    {
+      "name": "register_agent / macro_start_session",
+      "surface": "external model MCP tool or operator/client API",
+      "input": "Project identity, external program/model, optional name/token/task and reservation/inbox options.",
+      "output": "Durable identity/profile plus registration token; macro returns reservations and mail.",
+      "lifecycle": "Register or update persistent identity; reconnect authentication binds current MCP session; does not start model work.",
+      "authority": "Bearer/JWT endpoint access plus token/session binding for an existing identity.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e14",
+        "e17"
+      ]
+    },
+    {
+      "name": "send_message",
+      "surface": "external model MCP tool",
+      "input": "Project/sender token, to/cc/bcc or broadcast, subject/body, thread/topic, attachments, importance/ack.",
+      "output": "Delivery list/count, native message IDs or contact/archive/conflict errors.",
+      "lifecycle": "DB then awaited archive; blocked contact never queues body; signals are hints; recipient busy status is not consulted.",
+      "authority": "Authenticated sender, contact policy and visible recipient scope; external clients govern when mail enters their context.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "fetch_inbox / acknowledge_message",
+      "surface": "external model MCP tool",
+      "input": "Recipient/token, limit/time/topic/urgent/unread filters; explicit message ID for ack.",
+      "output": "Recent metadata/optional bodies and per-recipient read/ack timestamps.",
+      "lifecycle": "Polling leaves unread state intact; explicit ack is idempotent receipt, not execution completion.",
+      "authority": "Authenticated recipient and visible addressed message.",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "search_messages",
+      "surface": "external model MCP query",
+      "input": "Authenticated project identity, FTS5 query and capped result limit.",
+      "output": "Ranked visible message metadata; parameterized LIKE fallback or empty invalid-query result.",
+      "lifecycle": "Queries persistent index without replaying an agent; source originals separately accessible in archive.",
+      "authority": "Sender-or-recipient visibility predicate on both query branches.",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "file_reservation_paths",
+      "surface": "external model MCP tool",
+      "input": "Identity token, project-relative paths/globs, exclusive flag, TTL/reason.",
+      "output": "Granted reservation IDs/expiry/reused marker plus overlapping holders and advisory warning.",
+      "lifecycle": "May grant while conflicting; renew/release are separately named lifecycle tools; new rows compensated on archive error.",
+      "authority": "Intent signals; code write access is not fenced, optional precommit guard acts at commit.",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "summarize_thread",
+      "surface": "external model MCP tool",
+      "input": "Thread IDs, per-thread limit, optional examples/LLM mode/model.",
+      "output": "Heuristic points/actions/mentions plus optional model refinement.",
+      "lifecycle": "On-demand derived digest; preserves stored mail rather than compacting a client conversation.",
+      "authority": "Authenticated visible mail and server-configured LLM availability.",
+      "evidence": [
+        "e15"
+      ]
+    },
+    {
+      "name": "clear_settings_cache",
+      "surface": "service programmatic API",
+      "input": "No arguments.",
+      "output": "Cache cleared; next get_settings builds new Settings.",
+      "lifecycle": "Explicit next-access refresh; captured server objects need their own recreation.",
+      "authority": "Service-side code, not an exposed arbitrary model turn rewrite.",
+      "evidence": [
+        "e16"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Writes identity/message/reservation archive files and processed attachments; advisory code-path intent is not arbitrary client filesystem execution.",
+      "evidence": [
+        "e5",
+        "e12",
+        "e13"
+      ]
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Owns persistent SQLite messages/recipient state/identities/reservations plus scoped FTS query. This is mail service data, not generic SQL access or a client kernel DB.",
+      "evidence": [
+        "e4",
+        "e8",
+        "e10",
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Composable MCP primitives and session macro automate identity/reservation/mail preparation; caller owns arbitrary workflow/agent execution.",
+      "evidence": [
+        "e14"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "External program/model identity metadata and addressed peers permit heterogeneous consumers; service does not orchestrate peer provider requests.",
+      "evidence": [
+        "e1",
+        "e3"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed and broadcast mail plus persistent threads/inboxes supply asynchronous collaboration. Delivery does not schedule or interrupt a busy model.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e8"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Independent external agents coordinate through per-project archive serialization and awaited commit queue; mail does not settle their concurrent OS effects.",
+      "evidence": [
+        "e4",
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Recipient polling and best-effort debounced file signal can inform a client; no active provider cancellation, busy mailbox injection or acceptance/completion protocol is supplied.",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "On-demand bounded thread digests/refinement summarize mail without discarding stored messages; client context compaction is separate.",
+      "evidence": [
+        "e15"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent authenticated inbox/search can reacquire omitted coordination data. No reconstruction of an external client original provider context is implemented.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e11"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Git archive/SQLite retain mail records, not every client/provider action or original submitted byte. Images/body stripping/BCC projections transform records; DB/Git compensation is best effort, not a crash-atomic shared commit.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Authenticated recipient/sender FTS5, LIKE fallback and explicit inbox filters query persistent mail. This scope excludes agent execution traces/provider originals.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e11"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Explicit settings-cache reset rebuilds Settings on next access; no full live server reload, active-agent refit or automatic captured-object update follows.",
+      "evidence": [
+        "e16"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "HTTP MCP exposes the separately running mail service to external agents; bearer/JWT layer and per-identity authentication differ.",
+      "evidence": [
+        "e2",
+        "e17"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Token/session identity, contact-policy/send refusal, scoped visible search and BCC projections are real boundaries. Code reservations grant conflicting intent rather than revoking filesystem authority.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e10",
+        "e12",
+        "e17"
+      ]
+    },
+    "evaluation": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this coordination service role: the reference supplies Addressed persistent mail with authenticated identities, per-recipient read/ack, cross-project contacts and advisory file reservations. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Created/read/ack wall-clock timestamps, since filtering, lease expiry and signal debounce provide mail ordering/time operations; no global model-work or physical effect order.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e12"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 5988,
+      "end": 6028,
+      "claim": "register_agent accepts project/program/model/name/task/attachment metadata and registration token; profiles describe external agents rather than creating a provider loop."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 5231,
+      "end": 5306,
+      "claim": "Identity operations require an authenticated session or constant-time registration-token match; tokenless legacy cleanup and configured window rebind are special cases."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 7132,
+      "end": 7240,
+      "claim": "send_message accepts addressed/broadcast Markdown, attachments, thread/topic/ack and sender token; blocked automatic contact does not queue message body and requires a new send."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 5585,
+      "end": 5730,
+      "claim": "Processed message commits in DB before Git bundle; archive exception triggers best-effort DB compensation. Notification after archive lock is best effort and is not model interruption."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/storage.py",
+      "start": 1551,
+      "end": 1688,
+      "claim": "Canonical/outbox and recipient inbox copies carry JSON frontmatter; recipient BCC is redacted and body is stripped, attachments processed; writing files/digest precedes awaited Git commit."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/storage.py",
+      "start": 169,
+      "end": 213,
+      "claim": "Commit queue enqueue waits for request future; absent/stopped/full processor falls back to direct commit, so ordinary completion does not just enqueue archive publication."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/storage.py",
+      "start": 3618,
+      "end": 3683,
+      "claim": "Debounced per-agent signal file overwrites one notification projection; errors return false and do not fail mail delivery."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 9584,
+      "end": 9696,
+      "claim": "fetch_inbox authenticates recipient, filters/caps recent mail and does not mark read/ack; it clears best-effort notification signal after polling."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 9913,
+      "end": 9995,
+      "claim": "acknowledge_message checks visibility and stores recipient read and ack timestamps separately; it represents receipt, not task execution."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 10621,
+      "end": 10752,
+      "claim": "Authenticated scoped FTS search limits sender/recipient visibility and returns ranked subject/body matches; unsupported/syntax queries are handled separately."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 10752,
+      "end": 10836,
+      "claim": "FTS failure falls back to parameterized AND-term LIKE query over visible messages, with limit and creation-time ordering; returned records contain metadata."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 11620,
+      "end": 11749,
+      "claim": "Overlapping exclusive reservation conflicts are reported while reservations are still granted; DB commit then archive with compensation for new rows only; code-path advisory warning is explicit."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 11440,
+      "end": 11524,
+      "claim": "Reservation API accepts paths/globs, TTL, exclusive intent and identity token; server archive enforcement and code precommit guard are distinct. Sub-minute TTL actually warns rather than enforcing the docstring minimum."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 10002,
+      "end": 10087,
+      "claim": "macro_start_session authenticates existing identity, ensures project/registers new identity, invokes reservation tool and fetches inbox; result includes token, agent, reservations and mail."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/app.py",
+      "start": 10950,
+      "end": 11038,
+      "claim": "Thread digest combines heuristic points/actions and optional enabled LLM refinement; only compact derived thread summaries reach refinement; failure falls back without replacing stored messages."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/config.py",
+      "start": 607,
+      "end": 632,
+      "claim": "Explicit settings accessor cache reset reloads configuration next access; no automatic full server/transport/client reconfiguration is demonstrated."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/mcp-agent-mail/src/mcp_agent_mail/http.py",
+      "start": 668,
+      "end": 722,
+      "claim": "HTTP middleware checks static bearer in constant time, optional local bypass or inner JWT delegation; endpoint auth is distinct from agent identity."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/mcp-agent-mail/tests/test_messaging_semantics.py",
+      "focus": "Archive failure after DB commit.",
+      "oracle": "Read test1209–1252: monkeypatched bundle raises, asserts actual Message and MessageRecipient row counts are both zero. Good compensation oracle; fails before partial file writes and does not model crash/fsync or compensation failure.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mcp-agent-mail/tests/test_message_delivery_regression.py",
+      "focus": "Repeated read/ack and self-addressed mail.",
+      "oracle": "Read test110–185 and825–872: exact prior read/ack timestamps are retained; native ID/subject/self-inbox assertions. They validate logical receipt, not model execution or notification reliability.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mcp-agent-mail/tests/test_contact_policy.py",
+      "focus": "Contact refusal/overlap/cross-project delivery.",
+      "oracle": "Read1–170: block_all raises specific error, overlapping reservations allow intended contact and addressed cross-project payload appears. Same MCP client can bind several identities; not evidence every remote client has that identity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Separates durable message from transient signal and explicit recipient receipt.",
+    "Source filters both primary and fallback searches by actual visibility.",
+    "Awaited Git queue and DB compensation are concrete rather than only an enqueue acknowledgement.",
+    "Reservation response discloses conflict and code-path advisory mode."
+  ],
+  "limits": [
+    "Mail receipt is not completion or interruption of recipient work.",
+    "Archive body/attachments are transformed; no client provider original audit.",
+    "DB/Git/filesystem publication is non-atomic and compensation is best effort.",
+    "Conflicting exclusive code reservations still grant; external guard cannot fence all writes.",
+    "Settings reset is not executable reload/refit; commercial Companion behavior remains unavailable."
+  ],
+  "arconaut_questions": [
+    "Can a consumer mailbox distinguish stored, offered, incorporated, and acted-on messages without confusing provider quiescence with mail delivery?",
+    "How should audit retain the original submitted body/attachments alongside canonical readable projections?",
+    "Should model/operator coordination avoid exclusive-intent labels unless the filesystem effects are actually fenced?"
+  ]
+}

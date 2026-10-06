@@ -1,0 +1,773 @@
+{
+  "id": "cline",
+  "kind": "interactive CLI/editor coding agent and shared SDK",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node/Bun shared AgentRuntime over Core SessionRuntime; provider async streams, actual shell children and host/SDK extensions. Current monorepo differs materially from old recursive extension-only Task architecture.",
+    "service_boundary": "Core owns session/conversation/team state, host routing and managed MCP; shell can detach from runtime. Consumes providers/MCP, with hub/cloud surfaces present but bounded study focuses local CLI/SDK."
+  },
+  "summary": "Migrated shared SDK exposes programmable model/tool turn seams, configured heterogeneous delegation, persisted team mailboxes/runs and integrity-checked context projection; continuity and audit remain bounded.",
+  "inspection": {
+    "files": [
+      "quarantine/cline/apps/cli/src/runtime/run-agent.ts",
+      "quarantine/cline/sdk/packages/core/src/runtime/orchestration/session-runtime-orchestrator.ts",
+      "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/file-read.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/editor.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/bash.ts",
+      "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/team/team-tools.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/context/compaction.ts",
+      "quarantine/cline/sdk/packages/core/src/session/models/session-compaction.ts",
+      "quarantine/cline/apps/cli/src/runtime/interactive/session-runtime.ts",
+      "quarantine/cline/sdk/packages/core/src/hooks/hook-file-hooks.ts",
+      "quarantine/cline/sdk/ARCHITECTURE.md",
+      "quarantine/cline/sdk/packages/core/src/session/stores/conversation-store.ts",
+      "quarantine/cline/README.md",
+      "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.configured-agent-execution.test.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.lifecycle.test.ts",
+      "quarantine/cline/apps/cli/src/runtime/interactive/session-runtime.test.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/index.ts",
+      "quarantine/cline/sdk/packages/core/src/extensions/tools/team/delegated-agent.ts",
+      "quarantine/cline/sdk/packages/core/src/hooks/hook-extension.ts",
+      "quarantine/cline/sdk/README.md",
+      "quarantine/cline/sdk/packages/core/src/session/services/session-service.ts"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "read_files",
+      "surface": "model tool",
+      "input": "Files/path aliases with start_line/end_line",
+      "output": "Per-file content/error; cline:// oversized-result cache reads",
+      "lifecycle": "Parallel reads; bounded outputs",
+      "authority": "Model tool policy and image capability",
+      "evidence": [
+        "e13",
+        "e16"
+      ]
+    },
+    {
+      "name": "search_codebase",
+      "surface": "model tool",
+      "input": "Query/path search schema",
+      "output": "Per-query match result",
+      "lifecycle": "Parallel native executor requests with output/time bounds; detailed regex executor internals not traced",
+      "authority": "Model enabled tool policy",
+      "evidence": [
+        "e41"
+      ]
+    },
+    {
+      "name": "editor / apply_patch",
+      "surface": "model tools",
+      "input": "{path,old_text,new_text,insert_line?} or patch input",
+      "output": "Success/error and bounded edit result",
+      "lifecycle": "Awaited stateful no-auto-retry",
+      "authority": "Model mutation/host approval policy",
+      "evidence": [
+        "e15",
+        "e17"
+      ]
+    },
+    {
+      "name": "run_commands",
+      "surface": "model tool",
+      "input": "One/multiple normalized commands, cwd from session",
+      "output": "Bounded output/errors; execution/PID log handle under detachment",
+      "lifecycle": "Shell children deadline/abort kill; host detach lets process continue",
+      "authority": "Model tool policy; operator execution controller",
+      "evidence": [
+        "e14",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "skills / ask_question / submit_and_exit",
+      "surface": "model tools",
+      "input": "Skill name / question input / final result",
+      "output": "Skill instructions / host answer / terminal completion",
+      "lifecycle": "Awaited callback; submit closes successful run",
+      "authority": "Model with configured skill/host callbacks",
+      "evidence": [
+        "e1",
+        "e6",
+        "e40"
+      ]
+    },
+    {
+      "name": "spawn_agent / configured agent tools",
+      "surface": "model tools",
+      "input": "Task/role and configured child inputs",
+      "output": "Child result/events",
+      "lifecycle": "Delegated runs; configured child provider and scoped tools",
+      "authority": "Model when feature enabled; configured policy not universal inheritance",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "team_spawn_teammate / team_shutdown_teammate",
+      "surface": "model tools",
+      "input": "Agent ID, role prompt/runtime spec / target reason",
+      "output": "Member status/lifecycle events",
+      "lifecycle": "Lead manages persistent team; running respawn forbidden",
+      "authority": "Lead-only spawn; feature-gated team",
+      "evidence": [
+        "e23",
+        "e26"
+      ]
+    },
+    {
+      "name": "team_run_task / team_cancel_run / team_list_runs / team_await_runs",
+      "surface": "model tools",
+      "input": "Agent/task/run IDs plus message/options",
+      "output": "Run ID, state/error and result summary",
+      "lifecycle": "Queued/active run lifecycle; idle-only per teammate",
+      "authority": "Enabled team requester; management subset scoped",
+      "evidence": [
+        "e23",
+        "e27",
+        "e22"
+      ]
+    },
+    {
+      "name": "team_send_message / team_broadcast / team_read_mailbox",
+      "surface": "model tools",
+      "input": "Recipient/subject/body/task ID; unreadOnly",
+      "output": "Message receipt IDs / delivered count / mailbox bodies",
+      "lifecycle": "Notification on next model boundary; no automatic idle wake traced",
+      "authority": "Registered team sender; broadcast excludes lead",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e11"
+      ]
+    },
+    {
+      "name": "team_task / team_mission_log / outcome catalog",
+      "surface": "model tools",
+      "input": "Task action or mission summary/evidence/nextAction; outcome fragments/reviews",
+      "output": "Task/log/outcome IDs/status",
+      "lifecycle": "Shared team coordination; full outcome state machine not traced",
+      "authority": "Feature-gated model team tools",
+      "evidence": [
+        "e23",
+        "e24"
+      ]
+    },
+    {
+      "name": "prepareTurn / beforeModel / beforeTool hooks",
+      "surface": "programmable API",
+      "input": "Executable handler receives snapshot/request or call",
+      "output": "Replacement context/tools/options/input/policy/stop",
+      "lifecycle": "Before provider or tool; hook context flush after tool results",
+      "authority": "Installed extension/SDK program, not blanket model-native control",
+      "evidence": [
+        "e11",
+        "e12",
+        "e6"
+      ]
+    },
+    {
+      "name": "compactCurrentSession",
+      "surface": "operator/programmatic API",
+      "input": "Current idle session, configured compaction",
+      "output": "Counts/state update",
+      "lifecycle": "Rejects running turn; persisted projection independent of canonical history",
+      "authority": "Host/operator manual action",
+      "evidence": [
+        "e29",
+        "e31",
+        "e32"
+      ]
+    },
+    {
+      "name": "restartWithCurrentMessages",
+      "surface": "programmable API",
+      "input": "Mutated config plus canonical history and valid compaction state",
+      "output": "Same conversation with replacement runtime",
+      "lifecycle": "Stops current session, serializes startup generation",
+      "authority": "Host config path; no executable rebuild transfer",
+      "evidence": [
+        "e33"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Plural file reads, editing/patch executors and cache URI reads; model tool set/provider routing can vary.",
+      "evidence": [
+        "e13",
+        "e15",
+        "e16",
+        "e17"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Spawned shell with progress, process tree abort/deadline and verified-identity detachment logs. Detached processes outlive a run; logs capped/retained24h.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native shell and programmable SDK tools/hooks execute code; no exposed persistent model language kernel established in inspected default tool definitions.",
+      "evidence": [
+        "e14",
+        "e18",
+        "e11",
+        "e12"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No Python/JS standing interpreter established in traced CLI/SDK/native executor paths; shell process launch is not credited as a kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session service uses internal indexed persistence and shell/custom tools can consume databases, but inspected builtins expose no dedicated model standing-DB contract.",
+      "evidence": [
+        "e42",
+        "e18"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual executable SDK prepareTurn/model/tool lifecycle hooks plus configured agents and team run/task tools; no dedicated model source-code workflow tool established.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e21",
+        "e22",
+        "e23"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Configured child definitions carry own provider/model and tools. Team messaging independently traced; default teammate builder inherits parent connection, so arbitrary per-spawn heterogeneous teams not inferred.",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real shared team mailbox/task/run system; busy recipient notification consumed before model and body read explicitly. Broadcast skips lead; idle mail read at next routed task, not IRC-style wake/delivery body immediately.",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e27",
+        "e11"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Adjacent parallel tool calls overlap with sequential barriers; separate teammate runs and event/persisted state exist.",
+      "evidence": [
+        "e8",
+        "e22",
+        "e27"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Pending operator input interrupts provider request while tools finish; whole-run external abort distinct. Team notification is a next-boundary mailbox hint.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e25",
+        "e26"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "prepareTurn and beforeModel rewrite messages/tools/options, hooks alter tool policy/input/stop; terminal completion policy governs yield. Model direct agency narrower than SDK host hooks.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e11",
+        "e12"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Canonical-prefix fingerprint and separate working-context artifact guard resume projection; manual idle compaction versus automatic incremental summary. Basic/agentic/custom strategy bodies only partially traced.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31",
+        "e32"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Canonical transcript remains separately accessible and stale compacted prefix rejected. Manual fresh compaction, restore and host projection can reconstruct context; no dedicated model repair action traced.",
+      "evidence": [
+        "e10",
+        "e29",
+        "e31",
+        "e37",
+        "e36"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Canonical messages plus selected hook audit events; documented request ID excludes hidden retries. Shell output/logs bounded and expire; saved chat is not comprehensive original audit.",
+      "evidence": [
+        "e34",
+        "e35",
+        "e20",
+        "e36"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Conversation history API, team mailbox/mission log and hook JSONL are separate inspection surfaces, not unified audit query engine.",
+      "evidence": [
+        "e24",
+        "e34",
+        "e37"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-request beforeModel and shell description reflect changes; host model/mode restart preserves same history using stop/start barrier. No general default after affected workflow transaction traced.",
+      "evidence": [
+        "e11",
+        "e14",
+        "e33"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Config restarts re-seed messages; persisted team recovery gives task instruction to inspect workspace/avoid duplication. This is neither unresolved-effect exact continuation nor quiescent executable outpost refit.",
+      "evidence": [
+        "e22",
+        "e28",
+        "e33"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider model API and enabled remote/local MCP manager consume services; core host manages MCP shutdown. Wider hub/cloud implementation exists but not fully traced here.",
+      "evidence": [
+        "e7",
+        "e38"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Generic editing, hooks/configuration and skill loading do not establish model-governed harness candidate evaluation/promotion in inspected paths.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No native model frustration report with agent-state capture established in inspected builtins/team/native hooks. Mission log is ordinary progress coordination.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Yolo selects local backend; runtime tool policy/hook overrides and host approval can enable/disable/ask. Child scoped tools/configured policy behavior must be reviewed per deployment.",
+      "evidence": [
+        "e1",
+        "e12",
+        "e21"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inspected configured-agent/lifecycle/manual-compaction tests assert boundaries using mocked SessionRuntime/session manager, not live model/process correctness. Native source contains bounded retry/loop behavior.",
+      "evidence": [
+        "e4",
+        "e8",
+        "e31"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parallel tool group results ordered, mailbox IDs monotonic per runtime and wall-clock sentAt; audit timestamps wall clock and detached PID/start-token differentiates reuse. No global causal order established.",
+      "evidence": [
+        "e8",
+        "e25",
+        "e19",
+        "e34"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/cline/apps/cli/src/runtime/run-agent.ts",
+      "start": 163,
+      "end": 187,
+      "claim": "CLI supplies approval/question/submit callbacks, local backend in yolo, runtime hooks and session manager."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/cline/apps/cli/src/runtime/run-agent.ts",
+      "start": 220,
+      "end": 246,
+      "claim": "SIGINT/SIGTERM abort active session and cleanup stops it."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/cline/apps/cli/src/runtime/run-agent.ts",
+      "start": 278,
+      "end": 346,
+      "claim": "CLI starts Core session with config/hooks/team events then uses completed start result or sends prompt."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/cline/sdk/packages/core/src/runtime/orchestration/session-runtime-orchestrator.ts",
+      "start": 995,
+      "end": 1087,
+      "claim": "Per-run runtime is built with canonical history, tools, model, hooks and prepareTurn, then run/continued; startup abort forwarded at run-started."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 830,
+      "end": 878,
+      "claim": "Turn loop invokes provider request with retry and treats interrupted empty turn separately."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 951,
+      "end": 990,
+      "claim": "Tool results appended and emitted; terminal tool can finish run."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 2035,
+      "end": 2053,
+      "claim": "Actual provider model.stream(request) receives prepared request."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 2285,
+      "end": 2322,
+      "claim": "Only adjacent parallel tools overlap; sequential calls fence groups and Promise.all retains order."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 2485,
+      "end": 2540,
+      "claim": "Actual tool execution receives session/agent/conversation/run/call identity, abort signal, snapshot and update callback; errors normalized."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 631,
+      "end": 675,
+      "claim": "Pending user message aborts model request only; external abort aborts whole run, restore resets state while retaining model/tools/hooks."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 1635,
+      "end": 1669,
+      "claim": "Pending messages then prepareTurn and beforeModel hooks can rewrite messages/tools/options and stop."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/cline/sdk/packages/agents/src/agent-runtime.ts",
+      "start": 2378,
+      "end": 2443,
+      "claim": "beforeTool may change input/policy/context or skip; disabled/approval policy applied to dispatch."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "start": 274,
+      "end": 327,
+      "claim": "read_files validates plural/ranged inputs and parallelizes independent read requests."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "start": 516,
+      "end": 541,
+      "claim": "run_commands normalizes commands, invokes shell executor, is explicitly non-retryable; request-time shell description getter."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "start": 656,
+      "end": 737,
+      "claim": "apply_patch and editor validate mutation args and call timed executors without auto-retry."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/file-read.ts",
+      "start": 216,
+      "end": 254,
+      "claim": "Read routes cline:// cache or resolves/stats real files with signal/size/model image limits."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/editor.ts",
+      "start": 141,
+      "end": 179,
+      "claim": "Editor creates directories/files and reads content for unique replacement."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/bash.ts",
+      "start": 717,
+      "end": 760,
+      "claim": "Shell spawns actual child process, captures bounded rolling output, gives execution identity and tracks detach support."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/bash.ts",
+      "start": 801,
+      "end": 879,
+      "claim": "Abort/deadline kill process tree; verified PID/start-token supports detach to log, unref and releasing timeout/abort binding."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/executors/bash.ts",
+      "start": 39,
+      "end": 46,
+      "claim": "Detached logs capped10MiB and default24h retention; process-progress batching48ms."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.ts",
+      "start": 630,
+      "end": 674,
+      "claim": "Configured agent tools select child provider/model and scope tools/skills."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.ts",
+      "start": 685,
+      "end": 809,
+      "claim": "Enabled teams are instantiated/bootstrap wired, persist state on team events, hydrate/recover active runs, unlock lead tools."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/team-tools.ts",
+      "start": 195,
+      "end": 249,
+      "claim": "Exact team native catalog; spawning lead-only, child tools exclude spawn and inherit delegated config."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/team-tools.ts",
+      "start": 633,
+      "end": 725,
+      "claim": "Model team_send_message/broadcast/read_mailbox/mission_log dispatch actual runtime; receipt IDs and mark-read behavior."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.ts",
+      "start": 1493,
+      "end": 1556,
+      "claim": "Mailboxes store complete body; running teammates receive pending notification, broadcasts skip sender and lead."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.ts",
+      "start": 853,
+      "end": 885,
+      "claim": "Busy teammate cannot respawn; pending mailbox notification consumed by runtime callback;10minute request timeout."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.ts",
+      "start": 1028,
+      "end": 1110,
+      "claim": "Teammate run must be idle, includes unread mail, runs/continues and reports result/cancel/failure."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.ts",
+      "start": 181,
+      "end": 185,
+      "claim": "Recovered interrupted run uses fresh instruction to inspect workspace and avoid duplicated effects, not exact resumption of uncertain tool."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/context/compaction.ts",
+      "start": 745,
+      "end": 811,
+      "claim": "Compaction projects valid saved state and canonical tail before model, saves new state separately; manual fresh summary differs from incremental auto."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/cline/sdk/packages/core/src/session/models/session-compaction.ts",
+      "start": 82,
+      "end": 103,
+      "claim": "Source hash excludes volatile message ID/time but includes role/content/durable metadata and model metrics."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/cline/sdk/packages/core/src/session/models/session-compaction.ts",
+      "start": 140,
+      "end": 197,
+      "claim": "Compaction stores source count/hash/last key; invalid source prefix refuses projection, valid returns compacted messages plus canonical tail."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/cline/apps/cli/src/runtime/interactive/session-runtime.ts",
+      "start": 696,
+      "end": 759,
+      "claim": "Manual compact rejects running current turn and persists compaction artifact when valid."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/cline/apps/cli/src/runtime/interactive/session-runtime.ts",
+      "start": 440,
+      "end": 502,
+      "claim": "Model/mode config restart stops current session then seeds canonical messages/compaction, with startup generation barrier."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/cline/sdk/packages/core/src/hooks/hook-file-hooks.ts",
+      "start": 629,
+      "end": 689,
+      "claim": "Hook audit JSONL captures selected run/tool inputs/results with wall timestamp; not all provider transport/process events."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/cline/sdk/ARCHITECTURE.md",
+      "start": 73,
+      "end": 77,
+      "claim": "Documented request ID covers final surfaced step, not hidden HTTP retries."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/cline/sdk/ARCHITECTURE.md",
+      "start": 581,
+      "end": 601,
+      "claim": "Documents canonical history separate from compaction artifact, while older already-compacted imports cannot recover omitted originals."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/cline/sdk/packages/core/src/session/stores/conversation-store.ts",
+      "start": 19,
+      "end": 88,
+      "claim": "Conversation API retrieves/appends/replaces/restores messages, preserving display-only entries separately from runtime projection."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.ts",
+      "start": 206,
+      "end": 310,
+      "claim": "MCP settings/plugins register clients, load enabled tools, isolate errors, dispose manager on shutdown."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/cline/README.md",
+      "start": 125,
+      "end": 131,
+      "claim": "CLI/SDK/editor present; JetBrains implementation not open source."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "start": 775,
+      "end": 870,
+      "claim": "Named model skills, ask_question and submit_and_exit definitions provide skill-load, host interaction and terminal completion."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/definitions.ts",
+      "start": 371,
+      "end": 411,
+      "claim": "search_codebase validates regex query inputs and invokes native executor via parallel Promise.all with output/time bounds."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/cline/sdk/packages/core/src/session/services/session-service.ts",
+      "start": 33,
+      "end": 45,
+      "claim": "Core internal SQL store indexes session metadata and artifact paths; this is not a model-native standing database tool."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/cline/sdk/packages/core/src/runtime/orchestration/runtime-builder.configured-agent-execution.test.ts",
+      "focus": "Configured child provider/skills/tool scoping",
+      "oracle": "Mock SessionRuntime constructor/run; asserts selected provider/model/maxIterations, scoped tools and callback propagation; not live heterogeneous collaboration.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/cline/sdk/packages/core/src/extensions/tools/team/multi-agent.lifecycle.test.ts",
+      "focus": "Shutdown of active queued teammate run",
+      "oracle": "Fake SessionRuntime promise rejects on abort; runtime classification/event assertions do not test actual provider cancellation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/cline/apps/cli/src/runtime/interactive/session-runtime.test.ts",
+      "focus": "Manual compaction while running",
+      "oracle": "Mock manager returns running; expects rejection and compactor/persistence not called. Source-level oracle for host gate only.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Runtime programming is actually wired through model/tool request boundaries.",
+    "Canonical transcript and prefix-validated compaction artifact prevent blindly reusing stale summaries.",
+    "Team mailboxes/task/run IDs and persistence establish collaboration beyond provider selection.",
+    "Stateful native mutation tools are explicitly non-retryable."
+  ],
+  "limits": [
+    "Detailed search/outcome state machines, remote hub/cloud and all SDK extensions outside trace scope.",
+    "JetBrains source is unavailable; unpopulated evals/cline-bench submodule not inferred.",
+    "Mailbox delivery is notification/poll or next task enrichment, not immediate general live peer wake.",
+    "Bounded detached logs and surfaced request IDs do not meet full original audit."
+  ],
+  "arconaut_questions": [
+    "Require explicit message delivery semantics for busy, idle and recovering peers.",
+    "Which canonical evidence should repair context after prefix mismatch rather than simply recomputing summary?",
+    "Keep detached daemons outside quiescence ownership while pausing genuinely harness-owned standing work.",
+    "Define model-native access to hook/workflow configuration without inheriting all host privileges."
+  ]
+}

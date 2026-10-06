@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+arco_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+arco_executable=${ARCO_EXECUTABLE:-"$arco_root/build/release/arco"}
+arco_session="$HOME/.local/state/arconaut/default"
+arco_plain=false
+arco_once=false
+arco_value=''
+for arco_argument in "$@"; do
+  if [ -n "$arco_value" ]; then
+    if [ "$arco_value" = session ]; then arco_session=$arco_argument; fi
+    arco_value=''
+    continue
+  fi
+  case "$arco_argument" in
+    --session) arco_value=session ;;
+    --model|--effort|--workflow) arco_value=skip ;;
+    --once) arco_once=true; arco_value=skip ;;
+    --resume-once) arco_once=true ;;
+    --plain) arco_plain=true ;;
+  esac
+done
+while :; do
+  if "$arco_executable" "$@"; then exit 0; else arco_status=$?; fi
+  if [ "$arco_status" -ne 75 ]; then exit "$arco_status"; fi
+  set -- --session "$arco_session" --resume-continue
+  if "$arco_plain"; then set -- "$@" --plain; fi
+  if "$arco_once"; then set -- "$@" --resume-once; fi
+done

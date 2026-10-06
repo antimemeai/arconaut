@@ -1,0 +1,228 @@
+[
+  {
+    "kind": "doc",
+    "name": "mcp-stdio",
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "path": "quarantine/arco-ext-feeds-docs/mcp-stdio.html",
+    "sha256": "5ddc123de4c5e60c7899afd96e3d64f94f7ab0cea76f576bbf8c695579c46753",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio --output quarantine/arco-ext-feeds-docs/mcp-stdio.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "github-webhooks",
+    "url": "https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks",
+    "path": "quarantine/arco-ext-feeds-docs/github-webhooks.html",
+    "sha256": "b79c55756fba3641648ddc75bbe2024f66361ade71ff859a95f63a3bb78faccf",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks --output quarantine/arco-ext-feeds-docs/github-webhooks.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "mcp-auth",
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "path": "quarantine/arco-ext-feeds-docs/mcp-auth.html",
+    "sha256": "e4209008820aa812cef8560bf2ffd2b53bbe718ced43b2523fcd7f6ebe7cec3d",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization --output quarantine/arco-ext-feeds-docs/mcp-auth.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "github-rate",
+    "url": "https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api",
+    "path": "quarantine/arco-ext-feeds-docs/github-rate.html",
+    "sha256": "b804da33361ced35aca5a8b478a8bcd01e91d4ec549d16ac3d212e59a49e9b7a",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api --output quarantine/arco-ext-feeds-docs/github-rate.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "mcp-http",
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "path": "quarantine/arco-ext-feeds-docs/mcp-http.html",
+    "sha256": "4a0b87f69d4c449eb25042297a44e898ad50807ac2d53764180bce90afaf8dc1",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http --output quarantine/arco-ext-feeds-docs/mcp-http.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "slack-rate",
+    "url": "https://docs.slack.dev/apis/web-api/rate-limits/",
+    "path": "quarantine/arco-ext-feeds-docs/slack-rate.html",
+    "sha256": "e2e4389c04e0f84bf96a7571b3935e7f580414cf3dc2615fb1df0550a309d1ef",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.slack.dev/apis/web-api/rate-limits/ --output quarantine/arco-ext-feeds-docs/slack-rate.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "slack-events",
+    "url": "https://docs.slack.dev/apis/events-api/",
+    "path": "quarantine/arco-ext-feeds-docs/slack-events.html",
+    "sha256": "4c5091e0a3f4f13bc6fc17802bf5d2771b13c53b1acbe7ae450ca5ba7af46bbb",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.slack.dev/apis/events-api/ --output quarantine/arco-ext-feeds-docs/slack-events.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "slack-socket",
+    "url": "https://docs.slack.dev/apis/events-api/using-socket-mode/",
+    "path": "quarantine/arco-ext-feeds-docs/slack-socket.html",
+    "sha256": "64366800cdaccdb87b9e4b67b8c7bf8e2a26d99f60e4cf38a3d89a5b24a74412",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.slack.dev/apis/events-api/using-socket-mode/ --output quarantine/arco-ext-feeds-docs/slack-socket.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "hf-webhooks",
+    "url": "https://huggingface.co/docs/hub/webhooks",
+    "path": "quarantine/arco-ext-feeds-docs/hf-webhooks.html",
+    "sha256": "6c8c0f27a3de85111e521c803f18d3e84e2662162682d6cab0ad03640102a02c",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://huggingface.co/docs/hub/webhooks --output quarantine/arco-ext-feeds-docs/hf-webhooks.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "arxiv-tou",
+    "url": "https://info.arxiv.org/help/api/tou.html",
+    "path": "quarantine/arco-ext-feeds-docs/arxiv-tou.html",
+    "sha256": "badbec1e87aa317038c3a519a3fad3c4a855ebe019f0e681772d72f6a14f4e49",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://info.arxiv.org/help/api/tou.html --output quarantine/arco-ext-feeds-docs/arxiv-tou.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "hf-ratelimits",
+    "url": "https://huggingface.co/docs/hub/rate-limits",
+    "path": "quarantine/arco-ext-feeds-docs/hf-ratelimits.html",
+    "sha256": "88a91b7d8629155e4e2ba586b0298b069901252c3b7670e9361ed48a719510d9",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://huggingface.co/docs/hub/rate-limits --output quarantine/arco-ext-feeds-docs/hf-ratelimits.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "arxiv-api",
+    "url": "https://info.arxiv.org/help/api/user-manual.html",
+    "path": "quarantine/arco-ext-feeds-docs/arxiv-api.html",
+    "sha256": "a4f8c339c191e35addd5a658114015f3a44000de89ec15ba633836a6c5db57b9",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://info.arxiv.org/help/api/user-manual.html --output quarantine/arco-ext-feeds-docs/arxiv-api.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "github-poll",
+    "url": "https://docs.github.com/en/rest/activity/events",
+    "path": "quarantine/arco-ext-feeds-docs/github-poll.html",
+    "sha256": "8486cfbc4eccb22a0201c29075b4b9c52cf014596a47b15fb250b9fb3bb792a2",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://docs.github.com/en/rest/activity/events --output quarantine/arco-ext-feeds-docs/github-poll.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "doc",
+    "name": "nvd-api",
+    "url": "https://nvd.nist.gov/developers/vulnerabilities",
+    "path": "quarantine/arco-ext-feeds-docs/nvd-api.html",
+    "sha256": "09448b8274d563b2f04a0874bc1c9ab7defbb0f2877c64cc249a127d660846ed",
+    "content_status": "Application shell only; current API contract not acquired/read. Excluded from qualified interface claims.",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://nvd.nist.gov/developers/vulnerabilities --output quarantine/arco-ext-feeds-docs/nvd-api.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "failed",
+    "error": "<HTTPError 403: 'Forbidden'>",
+    "name": "sec-api",
+    "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+    "note": "Direct urllib acquisition403; official page read via web tool. No local archive acquired."
+  },
+  {
+    "kind": "doc",
+    "name": "nvd-start",
+    "url": "https://nvd.nist.gov/developers/start-here",
+    "path": "quarantine/arco-ext-feeds-docs/nvd-start.html",
+    "sha256": "66c374ef8636f31d5703ecc9333d3d001c9d986b7f0db1e9a7be3574410491e9",
+    "content_status": "Application shell only; current API contract not acquired/read. Excluded from qualified interface claims.",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-docs",
+      "curl --fail --location https://nvd.nist.gov/developers/start-here --output quarantine/arco-ext-feeds-docs/nvd-start.html"
+    ],
+    "restoration_note": "Live docs may change; verify acquired SHA-256 or mark new retrieval version. Captured shell is not successful contract acquisition."
+  },
+  {
+    "kind": "source",
+    "repo": "cisagov/kev-data",
+    "pin": "b244ed1a640323565afba92100d7308d51c6614e",
+    "url": "https://codeload.github.com/cisagov/kev-data/zip/b244ed1a640323565afba92100d7308d51c6614e",
+    "archive": "quarantine/arco-ext-feeds-archives/kev-data-b244ed1a6403.zip",
+    "extracted": "quarantine/arco-ext-feeds-kev-data",
+    "sha256": "ec2169236305d38a6d58dfe97b0e627d40b45d133fc93a4c1c801b62f6853999",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-archives",
+      "curl --fail --location https://codeload.github.com/cisagov/kev-data/zip/b244ed1a640323565afba92100d7308d51c6614e --output quarantine/arco-ext-feeds-archives/kev-data-b244ed1a6403.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/arco-ext-feeds-archives/kev-data-b244ed1a6403.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/arco-ext-feeds-kev-data'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Restore into absent/empty extracted directory; archive root skipped, nested .git/.DS_Store/__MACOSX/Thumbs.db omitted. ZIP intact, no reference code executed."
+  },
+  {
+    "kind": "source",
+    "repo": "modelcontextprotocol/modelcontextprotocol",
+    "pin": "0a11bf68c7ec4473526ec15589f592afcd12d1e8",
+    "url": "https://codeload.github.com/modelcontextprotocol/modelcontextprotocol/zip/0a11bf68c7ec4473526ec15589f592afcd12d1e8",
+    "archive": "quarantine/arco-ext-feeds-archives/modelcontextprotocol-0a11bf68c7ec.zip",
+    "extracted": "quarantine/arco-ext-feeds-modelcontextprotocol",
+    "sha256": "684408fe7c1eccc192f692fa4487319544f5509a36272508ebdbbcb4b6bd0cbe",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/arco-ext-feeds-archives",
+      "curl --fail --location https://codeload.github.com/modelcontextprotocol/modelcontextprotocol/zip/0a11bf68c7ec4473526ec15589f592afcd12d1e8 --output quarantine/arco-ext-feeds-archives/modelcontextprotocol-0a11bf68c7ec.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/arco-ext-feeds-archives/modelcontextprotocol-0a11bf68c7ec.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/arco-ext-feeds-modelcontextprotocol'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Restore into absent/empty extracted directory; archive root skipped, nested .git/.DS_Store/__MACOSX/Thumbs.db omitted. ZIP intact, no reference code executed."
+  },
+  {
+    "kind": "existing-source",
+    "repo": "gptme/gptme",
+    "pin": "1f8d73638a25253fd0e1824c3d0a72ec93007582",
+    "extracted": "quarantine/gptme",
+    "restoration_manifest": "QUARANTINE.md 2026-09-30 reference acquisition; existing source reused, not duplicated."
+  }
+]

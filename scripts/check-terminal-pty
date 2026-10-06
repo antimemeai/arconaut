@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+"""Development-only check of the actual terminal, with no provider requests."""
+import errno
+import fcntl
+import os
+import pty
+import select
+import struct
+import subprocess
+import sys
+import tempfile
+import termios
+import time
+from pathlib import Path
+
+with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
+    master, slave = pty.openpty()
+    before = termios.tcgetattr(slave)
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    child = subprocess.Popen([sys.argv[1], "--session", work], stdin=slave,
+                             stdout=slave, stderr=slave, start_new_session=True)
+    observed = bytearray()
+
+    def wait_for(needle, seconds=5):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if needle in observed:
+                return
+            readable, _, _ = select.select([master], [], [], 0.05)
+            if readable:
+                try:
+                    observed.extend(os.read(master, 65536))
+                except OSError as error:
+                    if error.errno != errno.EIO:
+                        raise
+                    break
+        raise AssertionError(f"terminal did not show {needle!r}; tail={bytes(observed[-1500:])!r}")
+
+    def send(data):
+        observed.clear()
+        os.write(master, data)
+
+    try:
+        wait_for(b"Workflow reloads")
+        send(b'\x1b[200~/lua print("PASTE_" .. (1+1));\nprint("BLOCK_" .. (2+2))\x1b[201~\r')
+        wait_for(b"PASTE_2")
+        wait_for(b"BLOCK_4")
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 52, 0, 0))
+        observed.clear()
+        wait_for(b"Arconaut")
+        send(b"/lua while true do end\r")
+        time.sleep(0.2)
+        os.write(master, b"\x03")
+        wait_for(b"interrupted", 3)
+        pidfile = str(Path(work) / "worker-pid")
+        command = f'echo $$ > {pidfile}; printf TOOL_; printf STREAM; sleep 30'
+        # Lua %q-style literal supplied as JSON-compatible quoted strings.
+        import json
+        code = '/lua arco.call("exec", {command=' + json.dumps(command) + '})\r'
+        send(code.encode())
+        wait_for(b"TOOL_STREAM")
+        pid = int(Path(pidfile).read_text())
+        send(b'\x1b[200~draft contains \x03 literally\x1b[201~')
+        wait_for(b"draft contains")
+        wait_for(b"\\x03 literally")
+        time.sleep(0.3)  # Let the native cancellation poll observe any accidental stop.
+        os.kill(pid, 0)  # Pasted control byte must not stop the running shell.
+        os.write(master, b"\x15")
+        send(b'/lua print("QUEUED_" .. "SHOULD_NOT_RUN")\r')
+        wait_for(b"queued 1")
+        send(b"UNSUBMITTED_DRAFT")
+        wait_for(b"UNSUBMITTED_DRAFT")
+        started = time.monotonic()
+        os.write(master, b"\x03")
+        observed.clear()
+        wait_for(b"interrupted", 3)
+        assert time.monotonic() - started < 3
+        assert b"UNSUBMITTED_DRAFT" in observed, "interruption destroyed the draft"
+        os.write(master, b"\x15")
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            pass
+        else:
+            raise AssertionError("interrupted shell survived")
+        group_deadline = time.monotonic() + 2
+        while True:
+            try:
+                os.killpg(pid, 0)
+            except ProcessLookupError:
+                break
+            assert time.monotonic() < group_deadline, "interrupted child group survived"
+            time.sleep(0.02)
+        send(b'/lua print("AFTER_" .. "STOP")\r')
+        wait_for(b"AFTER_STOP")
+        assert b"QUEUED_SHOULD_NOT_RUN" not in observed, "cancelled queue executed"
+        send(b"/exit\r")
+        assert child.wait(timeout=5) == 0
+        after = termios.tcgetattr(slave)
+        # Darwin sets PENDIN when returning to canonical mode: queued input is
+        # retyped on the next read. Compare configuration, not this kernel bit.
+        pending = getattr(termios, "PENDIN", 0)
+        before[3] &= ~pending
+        after[3] &= ~pending
+        assert after == before, f"terminal mode was not restored: {before!r} -> {after!r}"
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait()
+        os.close(master)
+        os.close(slave)
+    reopened = subprocess.run([sys.argv[1], "--session", work, "--plain"],
+                              input='/exi t\n/lua print("REOPEN_" .. "OK")\n/exit\n',
+                              capture_output=True, text=True, timeout=5)
+    assert reopened.returncode == 0 and "REOPEN_OK" in reopened.stdout, reopened.stderr
+    assert "Unknown command" in reopened.stdout and "[provider]" not in reopened.stderr
+print("PTY paste, resize, Lua/process interruption, continued work, restoration and reopen pass")
+
+# Persistent UI state and RRC restoration must never dispatch queued drafts.
+with tempfile.TemporaryDirectory(prefix="arco-ui-state-") as work:
+    import json
+    binary = str(Path(sys.argv[1]).resolve())
+    session = str(Path(work) / 'session')
+    workflow = Path(work) / 'resume.lua'
+    workflow.write_text('print("CONTINUATION_FIRST")')
+    effect = Path(work) / 'effect'
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 100, 0, 0))
+    def launch(resume=False):
+        observed.clear()
+        args = [binary, '--session', session, '--workflow', str(workflow)]
+        if resume: args.append('--resume-continue')
+        return subprocess.Popen(args, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+    def exit_code(seconds=5):
+        deadline = time.monotonic() + seconds
+        while child.poll() is None and time.monotonic() < deadline:
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready:
+                try: observed.extend(os.read(master, 65536))
+                except OSError as error:
+                    if error.errno != errno.EIO: raise
+        assert child.poll() is not None, bytes(observed[-3000:])
+        return child.wait()
+    def wait_effect(expected):
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if effect.exists() and effect.read_text() == expected: return
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready: observed.extend(os.read(master, 65536))
+        raise AssertionError((expected, effect.read_text() if effect.exists() else None))
+    try:
+        child = launch()
+        wait_for(b'Workflow reloads')
+        send(b'/lua print("HISTORY_" .. "SENT")\r')
+        wait_for(b'HISTORY_SENT')
+        send('é\nUNSENT'.encode())
+        wait_for(b'UNSENT')
+        send(b'\x1b[D\x1b[D')
+        time.sleep(0.1)
+        send(b'\x11')  # Ctrl-Q preserves unsent draft on ordinary exit.
+        assert exit_code() == 0
+        saved = json.loads((Path(session) / 'ui-state.json').read_text())
+        assert bytes.fromhex(saved['draft']) == 'é\nUNSENT'.encode()
+        assert saved['cursor'] == len('é\nUNSENT'.encode()) - 2
+        child = launch()
+        wait_for(b'UNSENT')
+        send(b'\x1b[A')
+        wait_for(b'HISTORY_')
+        send(b'\x1b[B')
+        wait_for(b'UNSENT')
+        send(b'\x15/lua arco.call("exec", {command="sleep 1"}); arco.call("restart", {note="UI_STATE_RRC"})\r')
+        wait_for(b'sleep 1')
+        queued = '/lua arco.call("exec", {command=' + json.dumps("printf X >> '" + str(effect) + "'") + '})\r'
+        send(queued.encode())
+        wait_for(b'queued 1')
+        send(b'RRC_UNSENT')
+        wait_for(b'RRC_UNSENT')
+        assert exit_code() == 75
+        assert not effect.exists(), 'queued command ran before replacement'
+        child = launch(resume=True)
+        wait_for(b'CONTINUATION_FIRST')
+        wait_for(b'RRC_UNSENT')
+        assert not effect.exists(), 'restored queue autoexecuted'
+        send(b'\x15/drafts\r')
+        wait_for(b'Recovered drafts: 1')
+        send(b'/draft 1\r')
+        wait_for(b'Loaded recovered draft')
+        assert not effect.exists(), 'loading draft submitted it'
+        send(b'\r')
+        wait_for(b'[exit 0]')
+        assert effect.read_text() == 'X', 'explicit draft submission not exactly once'
+        send(b'\x11')
+        assert exit_code() == 0
+        child = launch()
+        wait_for(b'Workflow reloads')
+        send(b'/drafts\r')
+        wait_for(b'Recovered drafts: 0')
+        assert effect.read_text() == 'X', 'submitted effect replayed on reopen'
+        send(b'/lua arco.call("exec", {command="sleep 30"})\r')
+        wait_for(b'sleep 30')
+        send(queued.encode())
+        wait_for(b'queued 1')
+        send(b'NORMAL_UNSENT')
+        wait_for(b'NORMAL_UNSENT')
+        send(b'\x11')
+        assert exit_code() == 0
+        child = launch()
+        wait_for(b'NORMAL_UNSENT')
+        wait_for(b'Recovered drafts: 1')
+        assert effect.read_text() == 'X', 'ordinary reopen executed queue'
+        send(b'\x15/draft 1\r')
+        wait_for(b'Loaded recovered draft')
+        send(b'\r')
+        wait_for(b'[exit 0]')
+        wait_effect('XX')
+        send(b'\x11')
+        assert exit_code() == 0
+        child = launch()
+        wait_for(b'Workflow reloads')
+        state_file = Path(session) / 'ui-state.json'
+        prior_file = Path(session) / 'prior-ui-state.json'
+        state_file.rename(prior_file)
+        state_file.mkdir()  # Deterministic atomic-rename failure, even as root.
+        send(queued.encode())
+        wait_for(b'UI state save failed')
+        time.sleep(0.1)
+        assert effect.read_text() == 'XX', 'work dispatched despite failed pending-state save'
+        state_file.rmdir()
+        prior_file.rename(state_file)
+        send(b'\r')  # Unsubmitted command remained in composer, not autoexecuted.
+        wait_for(b'[exit 0]')
+        wait_effect('XXX')
+        send(b'\x11')
+        assert exit_code() == 0
+    finally:
+        if child.poll() is None: child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY draft/history reopen, RRC queued draft isolation and explicit once submission pass')
+
+with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
+    import re
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 100, 0, 0))
+    child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
+        stdout=slave, stderr=slave, start_new_session=True)
+    observed.clear()
+    def frame():
+        raw = bytes(observed)
+        end = raw.rfind(b'\x1b[?25h')
+        if end < 0: return b''
+        start = raw.rfind(b'\x1b[?25l', 0, end)
+        return raw[start:end+6]
+    def wait_frame(predicate, seconds=6):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if predicate(frame()): return frame()
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready: observed.extend(os.read(master, 65536))
+        raise AssertionError(frame()[-2500:])
+    tail = Path(work) / 'tail'
+    release = Path(work) / 'release'
+    command = 'i=1; while [ "$i" -le 80 ]; do printf "LINE_%03d\\n" "$i"; i=$((i+1)); done; sleep 2; printf "NEW_TAIL\\n"; touch ' + str(tail) + '; while [ ! -f ' + str(release) + ' ]; do sleep 0.05; done'
+    try:
+        wait_for(b'Workflow reloads')
+        wait_frame(lambda f: b'\x1b[1;84H' in f and b'\x1b[38;2;177;201;195m' in f)
+        send(('/lua arco.call("exec", {command=' + json.dumps(command) + '})\r').encode())
+        wait_frame(lambda f: b'LINE_080' in f)
+        wait_frame(lambda f: b'\x1b[38;2;215;235;230m' in f)
+        wait_frame(lambda f: b'\x1b[38;2;255;255;255m' in f)
+        send(b'\x1b[5~')
+        old = wait_frame(lambda f: b'LINE_068' in f and b'LINE_080' not in f)
+        anchor = re.findall(rb'LINE_\d{3}', old)
+        deadline = time.monotonic() + 4
+        while not tail.exists() and time.monotonic() < deadline:
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready: observed.extend(os.read(master, 65536))
+        assert tail.exists()
+        current = wait_frame(lambda f: re.search(rb'Turn [3-9]\d*s.*Tool [3-9]\d*s', f) is not None)
+        assert re.findall(rb'LINE_\d{3}', current) == anchor, ('stream moved scrolled viewport', anchor, re.findall(rb'LINE_\d{3}', current), current)
+        send(b'COMFORT_DRAFT')
+        wait_frame(lambda f: b'COMFORT_DRAFT' in f)
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 14, 42, 0, 0))
+        current = wait_frame(lambda f: b'COMFORT_DRAFT' in f and
+            re.search(rb'\x1b\[11;\d+H\x1b\[\?25h', f) is not None)
+        assert b'\x1b[38;2;' not in current, 'mascot must hide on narrow resize'
+        cursor = re.findall(rb'\x1b\[(\d+);(\d+)H\x1b\[\?25h', current)[-1]
+        assert 1 <= int(cursor[0]) <= 14 and 1 <= int(cursor[1]) <= 42, cursor
+        send(b'\x1b[6~\x1b[6~\x1b[6~')
+        wait_frame(lambda f: b'NEW_TAIL' in f)
+        release.touch()
+        wait_frame(lambda f: b'Turn completed' in f)
+        assert b'COMFORT_DRAFT' in frame()
+        send(b'\x15/lua arco.call("exec", {command="sleep 30"})\r')
+        wait_frame(lambda f: b'Tool ' in f)
+        send(b'\x03')
+        wait_frame(lambda f: b'Turn cancelled' in f)
+        send(b'/lua error("COMFORT_FAILURE")\r')
+        wait_frame(lambda f: b'Turn failed' in f)
+        send(b'\x11')
+        # Drain final redraw to avoid a PTY-output wait deadlock.
+        deadline = time.monotonic() + 5
+        while child.poll() is None and time.monotonic() < deadline:
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready: observed.extend(os.read(master, 65536))
+        assert child.wait(timeout=1) == 0
+    finally:
+        if child.poll() is None:
+            release.touch()
+            os.write(master, b'\x03\x11')
+            deadline = time.monotonic() + 2
+            while child.poll() is None and time.monotonic() < deadline:
+                ready, _, _ = select.select([master], [], [], 0.05)
+                if ready:
+                    try: os.read(master, 65536)
+                    except OSError: break
+            if child.poll() is None: child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY turn/tool timing, anchored streaming scroll, resize/composer cursor and outcomes pass')

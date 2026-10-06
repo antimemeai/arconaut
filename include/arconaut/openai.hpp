@@ -1,0 +1,51 @@
+#pragma once
+#include "arconaut/json.hpp"
+#include <filesystem>
+#include <functional>
+
+namespace arconaut {
+// Credentials are deliberately absent from the request/response audit interface.
+struct OpenAiConfig {
+  std::string codex_executable = "codex";
+  std::string curl_executable = "/usr/bin/curl";
+  std::filesystem::path codex_home;
+  std::size_t response_limit = 16 * 1024 * 1024;
+  int timeout_seconds = 180;
+  std::function<void(std::string_view)> response_observer;
+  std::function<bool()> cancelled;
+};
+class OpenAiLogin {
+public:
+  OpenAiLogin(OpenAiLogin &&) noexcept = default;
+  OpenAiLogin &operator=(OpenAiLogin &&) noexcept = default;
+  OpenAiLogin(const OpenAiLogin &) = delete;
+  OpenAiLogin &operator=(const OpenAiLogin &) = delete;
+
+private:
+  OpenAiLogin(std::string token, std::string account)
+      : access_token_(std::move(token)), account_id_(std::move(account)) {}
+  std::string access_token_, account_id_;
+  friend Result<OpenAiLogin> codex_login(const OpenAiConfig &, bool);
+  friend Result<std::string> openai_http(const OpenAiConfig &, const OpenAiLogin &,
+                                         std::string_view, const Json *);
+};
+// Codex performs token renewal; Arco never rotates or writes shared auth.json.
+Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh = false);
+// Fixed subscription endpoint. A caller cannot redirect credentials to another host.
+Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &login,
+                                std::string_view route, const Json *request = nullptr);
+struct TextPreview {
+  std::string item_id;
+  std::string text;
+};
+// Presentation only: never publishes context or dispatches a streamed call.
+class ResponsePreview {
+public:
+  std::vector<TextPreview> feed(std::string_view bytes);
+
+private:
+  std::string pending_, data_;
+  std::size_t bytes_ = 0;
+};
+Result<Json> completed_response(std::string_view event_stream, JsonLimits limits = {});
+} // namespace arconaut

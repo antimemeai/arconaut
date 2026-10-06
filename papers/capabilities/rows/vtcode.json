@@ -1,0 +1,1109 @@
+{
+  "id": "vtcode",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Rust main drives a multithreaded Tokio runtime; native unified provider/action loop and owned blocking/event-drain work. A configured codex provider selects a distinct Codex App Server adapter. Python/JavaScript snippets are fresh external interpreter processes, not the core.",
+    "service_boundary": "Owns context, session stores, execution/PTY handles, child tasks and managed background subprocess desired state; consumes model providers and MCP/web services. These owned processes are not a shared fabric governor."
+  },
+  "summary": "A broad Rust agent with planning, tracked execution, parent/child control, dynamic skill/catalog changes, multi-strategy compaction and canonical retained event stores. Strong persistence/error oracles coexist with limited audit retention and a source-inferred repeated-child-follow-up race.",
+  "inspection": {
+    "files": [
+      "quarantine/vtcode/src/main.rs",
+      "quarantine/vtcode/src/agent/agents.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/turn_loop.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/turn_processing/llm_request/mod.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-llm/src/providers/openai/provider/generation.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/tool_pipeline/execution_run.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/dispatch.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/handlers_batch.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/execution_result.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/assembly.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors/exec_sessions.rs",
+      "quarantine/vtcode/crates/common/vtcode-utility-tool-specs/src/lib.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/exec_session.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/native_memory.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors/subagents.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_spawn_run.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_child_loop.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/types.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_background_ops.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_verify.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/mod.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/compaction/memory_envelope.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/context/history_files.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/core/agent/events/mod.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-memory/src/event_log.rs",
+      "quarantine/vtcode/src/cli/session_store.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/session_setup/skill_setup.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/skills/mod.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/settings_interactive/mod.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/session_loop_runner/orchestration.rs",
+      "quarantine/vtcode/src/main_helpers/relaunch.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/session/slash_commands/apps.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/exec/code_executor.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/core/agent/harness_kernel.rs",
+      "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/tests.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/tests.rs",
+      "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/handlers/planning_task_tracker.rs"
+    ],
+    "scope": "Native entry/runtime selection through request snapshots/concrete OpenAI HTTP, tool admission/dispatch/results/continuation; public versus removed tools, execution sessions, memory/cron, children/background restoration, compaction/artifacts, canonical persistence/retention/query, skills/config activation, update restart, verifier API and relevant tests.",
+    "limits": "Source read only, reference not executed. Optional Codex App Server internals, provider variants, full web implementations, OS sandbox/process-tree semantics and complete checkpoint navigation are outside this trace. No paid/network/refit/concurrent-child experiments were run. Canonical events are retained rather than unlimited originals, and the inferred Waiting/restart overlap requires an independent controlled oracle."
+  },
+  "actions": [
+    {
+      "name": "exec_command",
+      "surface": "model tool",
+      "input": "cmd; optional workdir, tty, background, yielding/output limits and sandbox request",
+      "output": "output, exit code or reusable session_id; spool metadata when output is bounded",
+      "lifecycle": "owned pipe/PTY process; explicit waits can return in-progress; background sessions retained separately",
+      "authority": "model admitted by command, sandbox and session policy; confirmation skipping is separate",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16",
+        "e18"
+      ]
+    },
+    {
+      "name": "write_stdin",
+      "surface": "model tool",
+      "input": "session_id; chars or action=write/poll/wait; optional yield/wait deadline",
+      "output": "new bounded output and ongoing/completed session state",
+      "lifecycle": "wait deadline preserves the handle; actual dispatcher has no inspect/terminate/close actions",
+      "authority": "model continuation of an admitted owned session",
+      "evidence": [
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "code_search",
+      "surface": "model tool",
+      "input": "literal query or alternatives, path/type/result filters and result limit",
+      "output": "workspace definition/usage/text/path matches",
+      "lifecycle": "awaited native search; eligible readonly group overlap",
+      "authority": "model; native Allow default plus public admission",
+      "evidence": [
+        "e13",
+        "e54"
+      ]
+    },
+    {
+      "name": "apply_patch",
+      "surface": "model tool",
+      "input": "patch input, optionally encoded input normalized by handler",
+      "output": "structured patch result/errors and affected paths",
+      "lifecycle": "awaited mutation, hooks/policy validation and code-change tracking",
+      "authority": "model; default Prompt, active policy can permit",
+      "evidence": [
+        "e64",
+        "e8",
+        "e65"
+      ]
+    },
+    {
+      "name": "memory",
+      "surface": "model tool",
+      "input": "command=view/create/str_replace/insert/delete/rename with virtual /memories paths and text",
+      "output": "note listing/content or mutation acknowledgement/error",
+      "lifecycle": "persistent files survive sessions; generated/other paths restricted",
+      "authority": "model; feature/config dependent, selected writable note locations",
+      "evidence": [
+        "e21"
+      ]
+    },
+    {
+      "name": "cron",
+      "surface": "model tool",
+      "input": "action=create/list/delete; prompt and exactly one cron/delay_minutes/run_at; delete ID",
+      "output": "scheduled task summaries/IDs, list or deletion record",
+      "lifecycle": "prompts scheduled inside current runtime; end at process exit",
+      "authority": "model; session tool budget and schedule validation",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "agent: spawn / spawn_subprocess",
+      "surface": "model tool",
+      "input": "agent type, message/items, optional model/effort, fork_context/background/max_turns",
+      "output": "child ID/status or managed subprocess record and transcript/exec identities",
+      "lifecycle": "owned child task or separate VTCode process; background desired records can respawn",
+      "authority": "model with controller, depth/concurrency/config and operator delegation signals",
+      "evidence": [
+        "e24",
+        "e26",
+        "e27",
+        "e30",
+        "e62"
+      ]
+    },
+    {
+      "name": "agent: send_input / resume / wait / close",
+      "surface": "model tool",
+      "input": "child ID(s), follow-up message/items, interrupt flag, wait timeout",
+      "output": "child status/summary/error; wait returns terminal target or timeout",
+      "lifecycle": "default follow-up queued; interrupt aborts current task and replaces queued prompts; close cascades; source-inferred repeated-follow-up overlap concern",
+      "authority": "model through active parent controller; not a peer broadcast room",
+      "evidence": [
+        "e24",
+        "e25",
+        "e27",
+        "e28",
+        "e29",
+        "e61"
+      ]
+    },
+    {
+      "name": "mcp",
+      "surface": "model tool",
+      "input": "action=search_tools/get_tool_details/list_servers/connect/disconnect; query/name",
+      "output": "discovery results, schemas/server state or lifecycle errors",
+      "lifecycle": "external server discovery and connection management; invocation tools registered separately",
+      "authority": "model; Allow base metadata, connection action/config authority is separate",
+      "evidence": [
+        "e14",
+        "e69"
+      ]
+    },
+    {
+      "name": "search_tools",
+      "surface": "model tool",
+      "input": "natural-language capability query and optional limit",
+      "output": "ranked session tools and expanded_for_next_segment",
+      "lifecycle": "deferred tools become available on the next request segment",
+      "authority": "model catalog discovery",
+      "evidence": [
+        "e14",
+        "e63"
+      ]
+    },
+    {
+      "name": "web_fetch / web_search",
+      "surface": "model tool catalog",
+      "input": "URL or query and registered tool-specific parameters",
+      "output": "configured web content or search result payloads",
+      "lifecycle": "awaited external network operations; registered handlers, detailed network implementations outside this trace",
+      "authority": "model when catalog/config/provider exposure permits; fetch is prompted by default",
+      "evidence": [
+        "e13",
+        "e68"
+      ]
+    },
+    {
+      "name": "start_planning / task_tracker",
+      "surface": "model tool catalog",
+      "input": "planning prompt/plan parameters; tracker create/update/list/add task metadata",
+      "output": "plan and persisted hierarchical task/checklist state",
+      "lifecycle": "compiled planning workflow and optional build-agent handoff; not an arbitrary workflow language",
+      "authority": "model, planning mode/action masks and policy",
+      "evidence": [
+        "e66",
+        "e67",
+        "e11"
+      ]
+    },
+    {
+      "name": "list_skills / load_skill / load_skill_resource / activated skill names",
+      "surface": "model tool and extension catalog",
+      "input": "skill discovery query/type, selected name or active resource path; activated tool schema",
+      "output": "skill metadata, instructions/resource content and refreshed tools",
+      "lifecycle": "activation rereads an inactive skill then refreshes tools; an already-active skill returns cached content; fork skills can delegate",
+      "authority": "model; traditional activation policy, native/plugin/system utilities have distinct contracts",
+      "evidence": [
+        "e46",
+        "e47"
+      ]
+    },
+    {
+      "name": "ToolRegistry::execute_tool / execute_public_tool_ref",
+      "surface": "programmable API",
+      "input": "tool name and JSON args, or prepared admission record",
+      "output": "JSON value or structured error",
+      "lifecycle": "awaited registry dispatch; internal and public assemblies have different accessible names",
+      "authority": "host programmer; removed model names remain internal compatibility machinery",
+      "evidence": [
+        "e12",
+        "e54"
+      ]
+    },
+    {
+      "name": "internal command_session code / CodeExecutor::execute",
+      "surface": "supplied primitive, model-hidden",
+      "input": "Python/JavaScript program with generated MCP/builtin SDK",
+      "output": "stdout/stderr, exit code and parsed JSON result",
+      "lifecycle": "fresh interpreter/process per snippet, temporary files and shared workspace IPC; no resident globals",
+      "authority": "host/internal code action, subject to interpreter policy; not current public model action",
+      "evidence": [
+        "e12",
+        "e54",
+        "e55",
+        "e56"
+      ]
+    },
+    {
+      "name": "SubagentController::verify_proposed_change",
+      "surface": "programmable API",
+      "input": "diff description and affected file paths",
+      "output": "approved boolean, issues and reviewer reasoning",
+      "lifecycle": "isolated bounded child review, sixty-second wait; no verifier rejects; keyword fallback if decision absent",
+      "authority": "host caller; not a registered agent action and not default reconciliation path",
+      "evidence": [
+        "e31",
+        "e32"
+      ]
+    },
+    {
+      "name": "session-store list / inspect / facts / pack / migrate / gc",
+      "surface": "operator command",
+      "input": "session/limits, audit pack output or verification path, retention/migration options",
+      "output": "retained store metadata/facts, hash comparison and reported missing/modified/new files",
+      "lifecycle": "inspect retained local material; GC/migrate mutate operator-owned stores",
+      "authority": "operator command; packing verifies current contents, not completeness of observations",
+      "evidence": [
+        "e45"
+      ]
+    },
+    {
+      "name": "/feedback",
+      "surface": "operator command",
+      "input": "no arguments",
+      "output": "opens GitHub issue chooser URL or prints opening error/URL",
+      "lifecycle": "browser action, no tracked complaint or captured run state",
+      "authority": "operator via external URL approval/guard",
+      "evidence": [
+        "e53"
+      ]
+    },
+    {
+      "name": "queued update relaunch",
+      "surface": "operator/update API",
+      "input": "relaunch preference captured after update",
+      "output": "replacement executable or manual restart diagnostic",
+      "lifecycle": "post-dispatch exec/spawn retains argv/cwd, without outpost/provider/program state transfer",
+      "authority": "operator update path",
+      "evidence": [
+        "e50",
+        "e51",
+        "e52"
+      ]
+    },
+    {
+      "name": "defuddle_fetch",
+      "surface": "supplied primitive, model-hidden",
+      "input": "remote http(s) URL and optional markdown byte limit",
+      "output": "bounded extracted markdown or error",
+      "lifecycle": "registered native network operation; hidden from ordinary model catalog",
+      "authority": "host/internal tool invocation rather than advertised model tool",
+      "evidence": [
+        "e68"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Public model paths are native code_search/apply_patch and shell filesystem operations; many older read_file/list_files/edit_file registrations are expressly removed from public routes. Memory notes add a separate bounded file surface.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e15",
+        "e21",
+        "e64"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Owned pipe/PTY execution sessions have output spooling, yielding and background retention; wait/poll/input continue handles. Full close and foreground-only cancellation differ; strong test observes actual reaped PTY exit.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Internal code action builds Python/JavaScript SDK programs that can call MCP and curated builtins through IPC, but that legacy public name is removed. Model can still invoke external interpreters through exec_command; no claim of current dedicated code tool.",
+      "evidence": [
+        "e12",
+        "e54",
+        "e55",
+        "e56"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Harness kernel is compiled catalog/mode filtering. Inspected code executor creates and deletes a fresh program/process, so neither supplies a resident namespace; externally hosted kernels could be composed through tools.",
+      "evidence": [
+        "e54",
+        "e55",
+        "e56",
+        "e57"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent native memory files and session-store query_facts provide standing local notes/facts. Neither inspected model surface is a general shared standing database with arbitrary queries; external DB use remains composition.",
+      "evidence": [
+        "e21",
+        "e45"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Planning/task tools, session cron, executable lifecycle hooks, dynamic traditional skill tools and child fork execution are composable workflow pieces. The compiled loop/catalog filter is not an operator/model-defined turn/workflow program.",
+      "evidence": [
+        "e8",
+        "e22",
+        "e23",
+        "e46",
+        "e47",
+        "e57",
+        "e66",
+        "e67"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Child spawn accepts model/effort overrides and tests observe an effective override; parent settings can switch the next request. Model resolution supports configured provider/model boundaries, not unrestricted peer role creation.",
+      "evidence": [
+        "e4",
+        "e26",
+        "e62"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parent can queue, interrupt/restart, resume/wait/close live children, including managed subprocesses, but there is no traced peer room. First queued follow-up changes Running to Waiting; another while Waiting calls unguarded restart/launch and overwrites its handle, source-inferred overlapping runs for one child record.",
+      "evidence": [
+        "e24",
+        "e25",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native readonly tool groups overlap and independent children/retained subprocesses can run concurrently; mutations remain governed by admission/group ordering. Repeated queued input has a separate per-child ownership concern.",
+      "evidence": [
+        "e10",
+        "e16",
+        "e24",
+        "e25",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Operator steering/settings are consumed at request boundaries; Ctrl+C races a nonstreaming request. Child interrupt aborts current task and clears queued prompts, ordinary follow-ups should continue afterward; source concern in Waiting transition is retained.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e25"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Compiled TurnHandlerOutcome and harness mode filters govern stop/continue/primary-agent handoff. Hooks can rewrite arguments and alter context and skills can change tools, but no hot programmable replacement of the full turn protocol was established.",
+      "evidence": [
+        "e8",
+        "e11",
+        "e46",
+        "e57"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Manual/auto/recovery paths support provider-native or local summaries, reject noop/growing results, preserve opaque replay output, clear response chains and emit boundaries. Tests protect exact current-turn suffix and failure atomicity.",
+      "evidence": [
+        "e33",
+        "e34",
+        "e58",
+        "e59"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "When dynamic persistence is enabled, compaction writes original rendered context plus a linked memory envelope for shell retrieval. It supports model recovery of details but lacks a traced native model-authorized restore/merge operation; history rendering and ten-file retention have limits.",
+      "evidence": [
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Production canonical events have ordered/backpressured persistence and drain error reporting, more than optional trajectory logging. Default 10,000-event retention rewrites original completed-turn bytes into counts/kinds/selected facts; rendered compaction history also changes representation and timestamps. No original-everything guarantee.",
+      "evidence": [
+        "e37",
+        "e38",
+        "e39",
+        "e40",
+        "e41",
+        "e42",
+        "e43",
+        "e44"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Operator session-store exposes list/inspect/facts and audit pack creation/verification, with retained-turn reconstruction in the store. Verification proves current retained files match a pack, not complete original capture; model shell can inspect artifacts.",
+      "evidence": [
+        "e43",
+        "e45"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model/effort applies after an in-flight request at the next request boundary, possibly before the current turn ends; accepted idle config reload preserves old state on parse errors. Model skill activation refreshes catalog but active skill content is cached. These differ from after-whole-turn/workflow activation.",
+      "evidence": [
+        "e4",
+        "e47",
+        "e48",
+        "e49",
+        "e63"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Updater relaunch retains argv/cwd and replaces the process after CLI dispatch; current session is not injected unless original argv already supplies it. Desired background subprocess state can respawn but not retain process identity. Finalization can detach provider-backed memory work, so required refit quiescence/handoff is not established.",
+      "evidence": [
+        "e30",
+        "e50",
+        "e51",
+        "e52"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes provider HTTP/websocket/compatibility requests and discovered MCP/web tooling; native codex-provider path delegates to a separate App Server runtime. This does not govern a shared compute/service fabric.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e13",
+        "e14",
+        "e68",
+        "e69"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Dynamic skills and a bounded verifier API support changing programs/instructions and reviewing changes. Default worktree reconciliation uses a heuristic verifier, not that API. No governed measured harness autoresearch or executable refit protocol was established.",
+      "evidence": [
+        "e31",
+        "e32",
+        "e46",
+        "e47",
+        "e50"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator /feedback opens a GitHub issue chooser. It neither exposes model rageshake nor captures context/agent state into a tracked external complaint DB or bead.",
+      "evidence": [
+        "e53"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Admission revalidates hook-rewritten args, then checks concrete command/sandbox and configured safety/permission policies, agent mode and delegation hints. skip_confirmations changes interaction rather than all execution constraints.",
+      "evidence": [
+        "e8",
+        "e15",
+        "e26",
+        "e57",
+        "e65"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Inspected source tests check failed-compaction history identity, exact suffix/boundary count, 3,253 canonical events/unique IDs, real PTY reaping and layered reload rollback. Synthetic tree tests do not prove live message isolation; no tests were executed.",
+      "evidence": [
+        "e20",
+        "e48",
+        "e58",
+        "e59",
+        "e60",
+        "e61"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Serialized canonical event admission preserves caller order; prompt schedules distinguish cron, intervals and local one-shot times; request/wait cancellation uses Tokio deadlines. This is local ordering/deadlines, not a cross-service total causal clock.",
+      "evidence": [
+        "e6",
+        "e18",
+        "e22",
+        "e39"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/vtcode/src/main.rs",
+      "start": 83,
+      "end": 117,
+      "claim": "A bootstrap thread drives the Rust entrypoint; the runtime is not inferred from the npm distribution."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/vtcode/src/main.rs",
+      "start": 278,
+      "end": 294,
+      "claim": "Main builds a multithreaded Tokio runtime with configured workers."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/vtcode/src/agent/agents.rs",
+      "start": 125,
+      "end": 183,
+      "claim": "Provider codex selects a separate CodexSessionRuntime; other sessions select the native unified runtime."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/turn_loop.rs",
+      "start": 913,
+      "end": 940,
+      "claim": "Steering and pending model/effort settings are applied before the next request, after the previous in-flight request finished, potentially within the same turn."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/turn_processing/llm_request/mod.rs",
+      "start": 162,
+      "end": 230,
+      "claim": "Each request captures current model/capability/tool state and constructs and validates the provider request."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/turn_processing/llm_request/mod.rs",
+      "start": 433,
+      "end": 475,
+      "claim": "Nonstreaming generation races a Ctrl+C notification and keepalive timer, so cancellation can drop a waiting provider future."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-llm/src/providers/openai/provider/generation.rs",
+      "start": 286,
+      "end": 349,
+      "claim": "Concrete OpenAI generation builds a Responses payload and submits authorized HTTP, with distinct streaming/websocket and compatibility paths."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/tool_pipeline/execution_run.rs",
+      "start": 125,
+      "end": 256,
+      "claim": "Admission and pre-tool hooks precede safety/permission checks; rewritten arguments are revalidated rather than inheriting old validation."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/dispatch.rs",
+      "start": 8,
+      "end": 115,
+      "claim": "Prepared calls dispatch to batch or individual execution and recover blocked/preflight responses on exits."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/handlers_batch.rs",
+      "start": 159,
+      "end": 321,
+      "claim": "Admitted read-only parallel groups use FuturesUnordered; cancel notifiers race execution and results are recorded as each completes."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/tool_outcomes/execution_result.rs",
+      "start": 150,
+      "end": 241,
+      "claim": "Success/failure/timeout/cancellation is paired with the call; model history is updated before UI rendering, then continuation or compiled primary-agent handoff is selected."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/assembly.rs",
+      "start": 96,
+      "end": 139,
+      "claim": "Public routing expressly excludes legacy unified action and read_file/list_files/write_file/edit_file names; internal registration does not establish model exposure."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 168,
+      "end": 234,
+      "claim": "Agent and code_search are exposed native operations; agent aliases are registered, and web_fetch defaults to prompted permission."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 296,
+      "end": 357,
+      "claim": "mcp and search_tools are exposed discovery/management operations; exec_command/write_stdin are model operations, while exec_pty_cmd is hidden."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "start": 279,
+      "end": 345,
+      "claim": "Shell preparation validates concrete command policy and sandbox scope before execution; skipping confirmation does not remove these checks."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors/exec_sessions.rs",
+      "start": 32,
+      "end": 150,
+      "claim": "Command execution creates an owned pipe or PTY session, captures output, and returns stable session metadata with bounded yielding/background retention."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "start": 647,
+      "end": 670,
+      "claim": "write_stdin actually dispatches only write, poll or wait; broader terminate/inspect/close language elsewhere does not expand this dispatcher."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/vtcode/crates/common/vtcode-utility-tool-specs/src/lib.rs",
+      "start": 218,
+      "end": 269,
+      "claim": "Public execution schemas expose cmd/background/tty/workdir/output limits and session wait deadlines; a wait timeout returns an ongoing handle instead of killing it."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/exec_session.rs",
+      "start": 1500,
+      "end": 1559,
+      "claim": "Execution manager closes all owned sessions for full termination, while active-session cancellation excludes retained background sessions."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/exec_session.rs",
+      "start": 2770,
+      "end": 2807,
+      "claim": "The force-termination test checks a bounded return and a real observed exit status, then verifies close completes."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/native_memory.rs",
+      "start": 15,
+      "end": 107,
+      "claim": "Native memory offers view/create/str_replace/insert/delete/rename under /memories; writable preferences/repository facts/notes are persistent files, not a general DB."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "start": 155,
+      "end": 238,
+      "claim": "cron creates, lists and deletes session prompt tasks from exactly one cron/fixed-interval/local-time schedule."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 99,
+      "end": 126,
+      "claim": "The cron model description explicitly scopes scheduled prompts to the current VTCode process lifetime."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors/subagents.rs",
+      "start": 12,
+      "end": 112,
+      "claim": "The exposed agent dispatcher requires an active controller and calls spawn, managed subprocess, send_input, resume, wait and close."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_spawn_run.rs",
+      "start": 194,
+      "end": 243,
+      "claim": "First noninterrupt input marks Running/Queued as Waiting and queues work; interrupt aborts the handle and replaces queued prompts, while other states launch a restart."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_spawn_run.rs",
+      "start": 821,
+      "end": 883,
+      "claim": "Delegation checks operator turn hints/selected agent; write-capable automatic delegation is restricted, with explicit agent choice providing another admission path."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_child_loop.rs",
+      "start": 40,
+      "end": 112,
+      "claim": "launch_child spawns a fresh task and overwrites the stored handle; child_loop dequeues work by child ID. It does not guard against another live task for that ID."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_spawn_run.rs",
+      "start": 1058,
+      "end": 1077,
+      "claim": "restart_child fills an empty queue from last prompt and unconditionally calls launch_child, without cancelling or checking an existing handle."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/types.rs",
+      "start": 421,
+      "end": 470,
+      "claim": "Each child run dequeues a prompt and later mutates shared status, summary and stored context; two concurrent loops for one record can race those updates."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_background_ops.rs",
+      "start": 298,
+      "end": 339,
+      "claim": "Background restoration reads desired-enabled records and respawns helpers whose exec-session identity is no longer live; this is restoration of intent, not old OS process identity."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_verify.rs",
+      "start": 49,
+      "end": 135,
+      "claim": "A programmable verifier API spawns a bounded read-only review child and parses explicit decisions/issue lines with a keyword fallback; no verifier rejects."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/controller_verify.rs",
+      "start": 153,
+      "end": 200,
+      "claim": "Automatic worktree reconciliation instead uses HeuristicDiffVerifier inside spawn_blocking, not the asynchronous LLM-verifier API."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/mod.rs",
+      "start": 308,
+      "end": 411,
+      "claim": "Manual compaction supports provider standalone/native-inline/local strategies, operates on cloned input and rejects unchanged/nonshrinking results."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/mod.rs",
+      "start": 552,
+      "end": 649,
+      "claim": "Compaction runs a precompact hook, preserves opaque provider replay output, writes a memory/history envelope first, replaces history and resets response-chain/token state."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/compaction/memory_envelope.rs",
+      "start": 528,
+      "end": 587,
+      "claim": "Original-context text artifacts are written only when dynamic context and persist_history are enabled; the memory envelope links the artifact for later retrieval."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/context/history_files.rs",
+      "start": 29,
+      "end": 51,
+      "claim": "History files default to a ten-file retention cap; they are configurable persisted context, not an unlimited archive."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/context/history_files.rs",
+      "start": 422,
+      "end": 487,
+      "claim": "History conversion renders text, reasoning and tool calls into strings and gives messages a shared conversion timestamp; it is not original typed/wire payload preservation."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "start": 83,
+      "end": 108,
+      "claim": "Production constructs an authoritative canonical session sink before the session, independently of optional legacy exports."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "start": 184,
+      "end": 216,
+      "claim": "Canonical event handoff serializes caller order and can backpressure; optional WebMCP consumer failures do not disable canonical persistence."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "start": 325,
+      "end": 379,
+      "claim": "Finalization drains canonical persistence and reports failures, while legacy export losses are only diagnostics."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/core/agent/events/mod.rs",
+      "start": 210,
+      "end": 239,
+      "claim": "The canonical sink opens the event store with DEFAULT_MAX_EVENTS and drains accepted records on a blocking worker through a bounded queue."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-memory/src/event_log.rs",
+      "start": 21,
+      "end": 36,
+      "claim": "Canonical event retention defaults to 10,000 events, retaining a summary before oldest completed turns are evicted."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-memory/src/event_log.rs",
+      "start": 580,
+      "end": 605,
+      "claim": "Retention replaces the event file with remaining bytes after writing a summary; original evicted event bytes are removed."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-memory/src/event_log.rs",
+      "start": 1054,
+      "end": 1076,
+      "claim": "The default eviction artifact holds counts, event kinds and selected grounded facts, rather than complete evicted events."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/vtcode/src/cli/session_store.rs",
+      "start": 16,
+      "end": 103,
+      "claim": "Operator session-store can migrate/GC/list/inspect/query facts and create or verify an audit pack against retained files."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/session_setup/skill_setup.rs",
+      "start": 39,
+      "end": 89,
+      "claim": "Native list_skills/load_skill_resource/load_skill tools are wired to the session registry, snapshot notification and optional child-agent fork executor."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/skills/mod.rs",
+      "start": 104,
+      "end": 151,
+      "claim": "Traditional skill activation registers a new tool and refreshes current catalog; active skills return AlreadyActive and do not reread their content."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/settings_interactive/mod.rs",
+      "start": 1681,
+      "end": 1713,
+      "claim": "Config reload test observes valid creation/deletion and preserves the last valid draft after malformed input."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/session_loop_runner/orchestration.rs",
+      "start": 2703,
+      "end": 2721,
+      "claim": "Idle session reload publishes accepted config and retains old configuration on rejected reloads."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/vtcode/src/main_helpers/relaunch.rs",
+      "start": 48,
+      "end": 111,
+      "claim": "Update relaunch preserves original argv/cwd and flushes output, then Unix exec replaces the process; it does not create an outpost or inject current session state."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/session_loop_runner/orchestration.rs",
+      "start": 2630,
+      "end": 2675,
+      "claim": "Normal finalization may detach a provider-backed persistent-memory task after a five-second kickoff wait; this does not establish no-provider-request quiescence."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/session_loop_runner/orchestration.rs",
+      "start": 2687,
+      "end": 2700,
+      "claim": "Exit/cancel/error performs best-effort owned-exec cleanup, while other transition reasons do not establish global quiescence."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/session/slash_commands/apps.rs",
+      "start": 83,
+      "end": 103,
+      "claim": "Operator feedback opens an ordinary GitHub new-issue URL through a guarded browser action, without agent-state complaint capture."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "start": 453,
+      "end": 514,
+      "claim": "Code-search dispatch is native. Hidden code execution spawns a configured external interpreter and supplies an MCP/builtin SDK, rather than a resident kernel."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/exec/code_executor.rs",
+      "start": 204,
+      "end": 238,
+      "claim": "Code execution generates SDK plus a unique temporary program; the IPC directory is workspace-wide."
+    },
+    {
+      "id": "e56",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/exec/code_executor.rs",
+      "start": 406,
+      "end": 435,
+      "claim": "Code execution runs a fresh process, parses stdout JSON and removes program/IPC files, with a bounded wait for the IPC handler."
+    },
+    {
+      "id": "e57",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/core/agent/harness_kernel.rs",
+      "start": 11,
+      "end": 118,
+      "claim": "Harness kernel functions filter compiled tool catalogs/mode/action exposure; they are not a programmable computation kernel or a replaceable turn program."
+    },
+    {
+      "id": "e58",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/tests.rs",
+      "start": 1502,
+      "end": 1529,
+      "claim": "A failing mock compactor must preserve exact preexisting history."
+    },
+    {
+      "id": "e59",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/tests.rs",
+      "start": 1732,
+      "end": 1788,
+      "claim": "Recovery-compaction test checks an identical current-turn suffix, shrinking prefix, cleared response ID and exactly one boundary event."
+    },
+    {
+      "id": "e60",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "start": 762,
+      "end": 798,
+      "claim": "Canonical drain test writes 3,253 events then checks exact line count and unique event IDs."
+    },
+    {
+      "id": "e61",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/tests.rs",
+      "start": 2374,
+      "end": 2421,
+      "claim": "Synthetic child-tree records verify close cascades and reopen queues descendants; this does not prove live concurrent execution isolation."
+    },
+    {
+      "id": "e62",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/tests.rs",
+      "start": 1470,
+      "end": 1496,
+      "claim": "Model-override test observes effective child model selection; model choice is distinct from a shared colleague room."
+    },
+    {
+      "id": "e63",
+      "path": "quarantine/vtcode/crates/common/vtcode-utility-tool-specs/src/lib.rs",
+      "start": 270,
+      "end": 293,
+      "claim": "search_tools explicitly expands deferred tools for the next request segment rather than instantly mutating an in-flight request."
+    },
+    {
+      "id": "e64",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 470,
+      "end": 490,
+      "claim": "apply_patch is a prompted native operation and dynamic skill catalog names are explicitly identified."
+    },
+    {
+      "id": "e65",
+      "path": "quarantine/vtcode/src/agent/runloop/unified/tool_pipeline/execution_run.rs",
+      "start": 638,
+      "end": 710,
+      "claim": "Permission flow applies approvals/denials/interrupts with runtime agent permissions, policy and skip_confirmations; hook phases are not rerun."
+    },
+    {
+      "id": "e66",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 126,
+      "end": 164,
+      "claim": "start_planning and task_tracker are registered native tools with workflow-dependent schemas and checklist aliases."
+    },
+    {
+      "id": "e67",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/handlers/planning_task_tracker.rs",
+      "start": 44,
+      "end": 92,
+      "claim": "Planning tracker actions create/update/list/add carry hierarchical indexes, file/outcome and verification-command metadata."
+    },
+    {
+      "id": "e68",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/builtins.rs",
+      "start": 234,
+      "end": 294,
+      "claim": "web_search is a prompted public query tool; defuddle_fetch is registered but explicitly model-hidden."
+    },
+    {
+      "id": "e69",
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/registry/executors.rs",
+      "start": 607,
+      "end": 635,
+      "claim": "Native MCP action dispatch actually invokes search/details/list/connect/disconnect handlers."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/tools/exec_session.rs",
+      "focus": "Force termination must reap a real PTY child, not merely return success.",
+      "oracle": "Creates /bin/sh sleep child, enforces 8-second kill budget, then observes an exit status within two seconds and bounded close; read only, not executed.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/vtcode/src/agent/runloop/unified/turn/compaction/tests.rs",
+      "focus": "Provider compaction failure and recovery prefix/suffix boundaries.",
+      "oracle": "Mock failure preserves exact original vector; successful recovery preserves exact current-turn suffix, shrinks, clears response ID and emits one correct boundary. Mocks do not establish provider opaque replay conformance.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/vtcode/src/agent/runloop/unified/inline_events/harness.rs",
+      "focus": "Canonical bounded-handoff drain and event identity.",
+      "oracle": "After 3,253 accepted events, close must yield exactly 3,253 lines with distinct IDs; checks accepted-event persistence, not raw-provider capture or retention completeness.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/vtcode/src/agent/runloop/unified/settings_interactive/mod.rs",
+      "focus": "Reload malformed or newly created/deleted config layer.",
+      "oracle": "Observe provider changes for valid layer, exact prior provider after malformed layer, defaults after deletion. This is config activation, not executable refit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/vtcode/crates/codegen/vtcode-core/src/subagents/tests.rs",
+      "focus": "Close/resume descendant cascade and model override.",
+      "oracle": "Synthetic parent/child/grandchild records become closed then queued; separate override test observes effective model. Neither drives two noninterrupt messages to an actually busy child, the discriminating race oracle still missing.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Production canonical sink is opened before session, isolates optional exporters, backpressures and reports drain errors.",
+    "Compaction failure atomicity, current-turn suffix preservation and conditional history artifacts explicitly address recoverability.",
+    "Execution handle lifecycle has a strong bounded PTY reap assertion; readonly group parallelism and child restoration are concrete mechanisms.",
+    "Dynamic traditional skills refresh session tools and deferred tools activate at a named request segment."
+  ],
+  "limits": [
+    "Optional Codex App Server internals, provider variants, full web implementations, OS sandbox/process-tree semantics and complete checkpoint navigation are outside this trace. No paid/network/refit/concurrent-child experiments were run. Canonical events are retained rather than unlimited originals, and the inferred Waiting/restart overlap requires an independent controlled oracle."
+  ],
+  "arconaut_questions": [
+    "Hold one child provider response, send two noninterrupt follow-ups, and assert one active runner and one owned JoinHandle for its ID; can Waiting ever trigger a second live run?",
+    "What records must be retained before canonical event caps or compaction to permit original-byte replay, causal study and model repair?",
+    "Should a next-request model/catalog activation wait for the entire current turn or affected workflow by default, with explicit interruption for immediate activation?",
+    "Before update/refit, can an oracle prove zero owned live commands and provider requests, including detached persistent-memory finalization, and preserve context through an outpost?",
+    "How can externally shared kernels/DBs be consumed through these action handles without moving their lifecycle governance into the harness?"
+  ]
+}

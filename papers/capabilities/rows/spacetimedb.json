@@ -1,0 +1,319 @@
+{
+  "id": "spacetimedb",
+  "kind": "persistent database and executable module service",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "C#",
+      "TypeScript (SDK/module options)"
+    ],
+    "execution": "Rust server hosts executable modules, relational state, subscription push and durable scheduled rows.",
+    "service_boundary": "Independent database/computation service; Arconaut is a client, not governor of all tenants/module upgrades."
+  },
+  "summary": "Standing tables plus reducers and subscriptions, with direct MCP SQL/schema/call tools; schema update and client compatibility limits are explicit.",
+  "inspection": {
+    "files": [
+      "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "quarantine/spacetimedb/crates/engine/src/update.rs",
+      "quarantine/spacetimedb/crates/client-api/src/routes/database.rs",
+      "quarantine/spacetimedb/crates/core/src/host/scheduler.rs",
+      "quarantine/spacetimedb/README.md"
+    ],
+    "scope": "Read client MCP/tool dispatch and identity forwarding, publish controls, database migration implementation, scheduler recovery and selected schema/tool tests.",
+    "limits": "No complete transactional/storage/WASM audit or runtime tests; implementation details of native/other module hosts not fully inspected."
+  },
+  "actions": [
+    {
+      "name": "MCP ping / list_databases / get_schema / sql / call",
+      "surface": "supplied primitive",
+      "input": "Database/name, SQL or reducer and JSON arguments",
+      "output": "Schema/rows/reducer result or protocol/in-band error",
+      "lifecycle": "Request/reply; reducer uses caller connection identity.",
+      "authority": "Caller identity, ownership for SQL writes",
+      "evidence": [
+        "tools",
+        "identity"
+      ]
+    },
+    {
+      "name": "publish/update module",
+      "surface": "supplied primitive",
+      "input": "Module artifact, migration policy/token and confirmation timeout",
+      "output": "Created/updated result or compatibility/durability error",
+      "lifecycle": "Service owns module/data upgrade; not client-harness refit.",
+      "authority": "Authorized service operator",
+      "evidence": [
+        "publish",
+        "update"
+      ]
+    },
+    {
+      "name": "Scheduled reducer rows",
+      "surface": "supplied primitive",
+      "input": "Table row identity, function and ScheduleAt",
+      "output": "Queued execution after persisted recovery",
+      "lifecycle": "Database row governs schedule; runtime deadline reacquired.",
+      "authority": "Module/service scheduling authority",
+      "evidence": [
+        "schedule"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable modules/reducers define custom service actions; SQL is data query/update, not unrestricted client Python kernel.",
+      "evidence": [
+        "contract",
+        "identity"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Database/module state is durable structured state, not a retained arbitrary Python/OS process heap across actions.",
+      "evidence": [
+        "contract",
+        "schedule"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Standing relational tables and model-accessible schema/SQL/reducer tools are implemented service interfaces; durability internals not comprehensively validated.",
+      "evidence": [
+        "tools",
+        "identity"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Scheduled reducers persisted as rows are an orchestration primitive; full agent continuation/context policy is client work.",
+      "evidence": [
+        "schedule"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Subscription pushes and reducer-written messages can compose shared communication; not turnkey independently working model chat.",
+      "evidence": [
+        "contract"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Multiple clients/subscriptions plus scheduled rows supply shared-work mechanisms; no per-agent refit settlement automatically.",
+      "evidence": [
+        "contract",
+        "schedule"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "role",
+      "detail": "steering_interrupt: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Database logs and structured state exist, but complete captured-original provider/OS IO retention was not established in MCP/update/scheduler paths.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "SQL over an application-defined audit schema supplies retrieval; the service does not itself capture all agent originals.",
+      "evidence": [
+        "identity"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Publish/update supports schema-aware module change with compatibility policy and durable confirmation; manual migration explicitly unimplemented, not arbitrary active-frame refit.",
+      "evidence": [
+        "update",
+        "publish"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Standing tables and recovered scheduled rows can outlive client replacement; agent context/provider identity transfer remains external and module/VM replacement is separate.",
+      "evidence": [
+        "schedule"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "HTTP/MCP service with forwarded caller identity and database addressing; client consumes shared state.",
+      "evidence": [
+        "mcp",
+        "identity"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies persistent database and executable module service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Database ownership governs SQL write authority; reducer calls retain caller identity and application policy.",
+      "evidence": [
+        "mcp",
+        "identity"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Exact MCP exposure/argument tests and table migration expectations inspected; these do not prove complete IO audit or restart correctness.",
+      "evidence": [
+        "tooltest"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persisted schedule timestamps are remapped to runtime Instant on recovery; no consumer paused-time policy inferred.",
+      "evidence": [
+        "schedule"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "mcp",
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "start": 89,
+      "end": 135,
+      "claim": "MCP dispatch lists tools; contract preserves caller identity and requires ownership for SQL writes."
+    },
+    {
+      "id": "tools",
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "start": 226,
+      "end": 271,
+      "claim": "Exposed ping/list_databases/get_schema/sql/call dispatch with structured protocol vs in-band execution errors."
+    },
+    {
+      "id": "identity",
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "start": 358,
+      "end": 409,
+      "claim": "SQL forwards identity/auth; reducer tool creates a connection identity and calls module reducer."
+    },
+    {
+      "id": "update",
+      "path": "quarantine/spacetimedb/crates/engine/src/update.rs",
+      "start": 133,
+      "end": 192,
+      "claim": "Automatic/manual migration routes are distinct; manual migration unimplemented and drop transactionality noted."
+    },
+    {
+      "id": "publish",
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/database.rs",
+      "start": 1054,
+      "end": 1083,
+      "claim": "Client-breaking update token/policy and bounded durable-confirmation timeout are publish parameters."
+    },
+    {
+      "id": "schedule",
+      "path": "quarantine/spacetimedb/crates/core/src/host/scheduler.rs",
+      "start": 92,
+      "end": 142,
+      "claim": "Scheduler recovers rows from standing database, maps persisted schedule timestamps to new Instant delays and row identities."
+    },
+    {
+      "id": "contract",
+      "path": "quarantine/spacetimedb/README.md",
+      "start": 117,
+      "end": 146,
+      "claim": "Module tables/reducers and pushed subscription updates are public role."
+    },
+    {
+      "id": "tooltest",
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "start": 447,
+      "end": 476,
+      "claim": "Test expects exact database-scoped tool list and required SQL argument."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/spacetimedb/crates/client-api/src/routes/mcp.rs",
+      "focus": "Tool discovery and required argument contracts.",
+      "oracle": "Exact ping/get_schema/sql/call list and SQL required field; does not execute the reducers against storage.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/spacetimedb/crates/engine/src/update.rs",
+      "focus": "Dropping table produces schema-change identity.",
+      "oracle": "Inspected test expects removed table lookup and TableRemoved pending change; limited to automatic migration shape.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Direct model-friendly action discovery over persistent queryable service state.",
+    "Persisted schedules and explicit compatibility policy clarify server/client continuity."
+  ],
+  "limits": [
+    "Manual schema migration route is unimplemented in the snapshot; module update is not unrestricted kernel continuity.",
+    "Arconaut refit must preserve/reacquire client identities without governing unrelated database consumers."
+  ],
+  "arconaut_questions": [
+    "Can complaints and audit views be independent standing services with direct schema/query access?",
+    "What client handles survive reconnect, and how are rejected or incompatible service updates represented?"
+  ]
+}

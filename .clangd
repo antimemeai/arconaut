@@ -1,0 +1,5 @@
+CompileFlags:
+  CompilationDatabase: build/debug
+Diagnostics:
+  ClangTidy:
+    Add: [bugprone-use-after-move, bugprone-unchecked-optional-access]

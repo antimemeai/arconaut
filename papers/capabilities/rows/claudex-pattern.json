@@ -1,0 +1,356 @@
+{
+  "id": "claudex-pattern",
+  "kind": "unversioned local external-Claude platoon runner",
+  "runtime": {
+    "languages": [
+      "Python (stdlib)",
+      "generated zsh"
+    ],
+    "execution": "CLI invokes external Claude sequentially headless or launches independent tmux/macOS terminal sessions.",
+    "service_boundary": "Owns brief/roster/launch artifacts and terminal channel; child harness owns provider, tools and context."
+  },
+  "summary": "Small local historical runner exposes commander-controlled briefs, per-agent options/workdirs, captured headless outputs and tmux watch/say; it is not a general collaboration engine.",
+  "inspection": {
+    "files": [
+      "quarantine/claudex-pattern/README.md",
+      "quarantine/claudex-pattern/claudex.py",
+      "quarantine/claudex-pattern/claudex.toml.example",
+      "quarantine/claudex-pattern/briefs/INDEX.md",
+      "quarantine/claudex-pattern/briefs/B001-example.md"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "list / render <brief> <callsign>",
+      "surface": "operator/model CLI",
+      "input": "config path, roster/brief IDs",
+      "output": "roster or rendered index+assignment prompt",
+      "lifecycle": "read-only invocation; full config reread",
+      "authority": "operator/commander owns TOML; prompt constraints no filesystem enforcement",
+      "evidence": [
+        "e2",
+        "e8"
+      ]
+    },
+    {
+      "name": "dispatch <brief> [callsigns|all] [--dry-run] [--live] [--stream-json] [--max-budget-usd]",
+      "surface": "operator/model CLI",
+      "input": "config, brief, callsigns, optional run dir and dispatch options",
+      "output": "prompt/stdout/stderr/meta and child return code",
+      "lifecycle": "headless sequential blocking; live tee threads have 2s join; no timeout/cancel API",
+      "authority": "config permission mode/auth inherited to external Claude",
+      "evidence": [
+        "e3",
+        "e5",
+        "e8"
+      ]
+    },
+    {
+      "name": "dispatch --windows",
+      "surface": "operator/model CLI",
+      "input": "configured terminal/workdir/roster/brief",
+      "output": "runner script and launcher metadata, independent terminal sessions",
+      "lifecycle": "same rt-CALLSIGN tmux killed before new; launcher success does not prove worker finished",
+      "authority": "operator/model shell command; generated child permission flags",
+      "evidence": [
+        "e4",
+        "e8"
+      ]
+    },
+    {
+      "name": "status [brief] --json",
+      "surface": "operator/model CLI",
+      "input": "config and run limit",
+      "output": "run/callsign/rc/dry/output-size rows",
+      "lifecycle": "queries files for current roster, not live child health",
+      "authority": "local metadata read; no remote provider query",
+      "evidence": [
+        "e6"
+      ]
+    },
+    {
+      "name": "channel list / watch CALLSIGN / say CALLSIGN MESSAGE",
+      "surface": "operator/model CLI",
+      "input": "action, callsign, optional lines or literal message",
+      "output": "tmux sessions/screen/text-submit rc",
+      "lifecycle": "direct terminal injection without busy/idle fence; ignored literal-text error can yield misleading success",
+      "authority": "bypasses config lookup and addresses predictable rt-CALLSIGN",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Writes run artifacts/scripts and assigns child workdirs; underlying Claude tools supply actual coding operations.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Headless external child and independent terminal/tmux workers; replacing windows kills existing callsign session.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Config and CLI can be composed by commander; generated shell launcher, not a native model-authored tool-program execution runtime.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "This unversioned Python control script launches external Claude rather than providing a persistent language interpreter.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Inspected whole five-file implementation uses prompt/meta/output files, not a standing query database.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Roster, doctrine, briefs and CLI are editable by commander; no dependency scheduler or workflow resume interpreter. Headless all is sequential.",
+      "evidence": [
+        "e2",
+        "e8",
+        "e9"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-worker --model and effort configure different Claude CLI invocations; no heterogeneous provider adapter or intra-turn collaboration engine.",
+      "evidence": [
+        "e5",
+        "e9"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Commander can watch/say to window workers via terminal; no mailbox, shared peer room or model-consumption acknowledgment.",
+      "evidence": [
+        "e4",
+        "e7"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Windowed launches coexist; headless list comprehension waits each worker before next. Tee reader threads only stream one process.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e8"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Channel say sends literal text plus Enter without idle test or queue; replacing rt-CALLSIGN kills it. No owned cancel/interrupt lifecycle.",
+      "evidence": [
+        "e4",
+        "e7"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Brief/system/model/options tune external invocation; inner model/provider turn unchanged and unavailable here.",
+      "evidence": [
+        "e2",
+        "e5"
+      ]
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No context-manager/compactor in inspected complete runner; external Claude responsibility.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Prompt/stdout artifacts exist; runner has no traced restore/projection repair surface.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Prompt/stdout/stderr/meta optionally includes Claude JSON stream. Window metadata is launch only, screen not archived; run IDs second-resolution and files overwritten on reused run dir; not full audit.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Status projects current-roster file metadata/output size, watch reads live pane; no complete event/search query.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Config reread each CLI command; running child keeps passed options. Channel bypasses config; no affected-turn/workflow activation fence.",
+      "evidence": [
+        "e5",
+        "e8"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No compiled harness swap, outpost/context transfer or refit lifecycle in inspected full runner.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Consumes external Claude CLI/provider using inherited auth; no remote agent/fabric transport built into script.",
+      "evidence": [
+        "e5"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Commanding model is instructed to edit roster and doctrine; no governed experiment/evaluation/improvement loop established.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Brief artifacts/stdout can report blockers; no state-capturing tracked complaint operation established.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "External Claude permission-mode option configurable (example bypassPermissions); brief limits are prompt instructions. Channel can target sessions without consulting roster.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e7",
+        "e9"
+      ]
+    },
+    "evaluation": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Entire available implementation and example files read; no test files present in acquired five-source-file tree. Dry-run writes/prints invocation, not behavioral oracle.",
+      "evidence": []
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Second-resolution run IDs and start/complete timestamps; no sequence/causality IDs, cancellation fence or child resume.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/claudex-pattern/README.md",
+      "start": 95,
+      "end": 167,
+      "claim": "Documented CLI/terminal coordination and per-run artifacts; external Claude supplies agent engine."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 38,
+      "end": 136,
+      "claim": "Config validation, callsign roster/brief selection and rendered prompt; instructions are prompt constraints, not enforcement."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 139,
+      "end": 173,
+      "claim": "Second-resolution run directory IDs, streaming reader threads and per-agent workdir; no execution timeout/cancel handle."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 176,
+      "end": 235,
+      "claim": "Window launch generates executable shell runner, kills same-named tmux session, starts new and opens terminal; metadata tracks launcher rc, not worker completion."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 238,
+      "end": 299,
+      "claim": "Headless dispatch calls Claude -p with model/effort/permissions/optional JSON stream/budget and inherited auth; captures stdout/stderr/meta."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 302,
+      "end": 339,
+      "claim": "Status reads current-roster metadata and stdout sizes; invalid JSON recorded but removed callsigns excluded."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 342,
+      "end": 366,
+      "claim": "Channel lists all tmux sessions, watches captured pane and injects literal text then Enter. Text-send error ignored; only Enter rc returned."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/claudex-pattern/claudex.py",
+      "start": 369,
+      "end": 415,
+      "claim": "Exposed CLI; dispatch list comprehension blocks each headless worker sequentially; windows launch independent sessions; reload is per CLI invocation."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/claudex-pattern/claudex.toml.example",
+      "start": 8,
+      "end": 90,
+      "claim": "Editable roster/model/workdir/doctrine/permissions/terminal; example has commented agents, so lacks required agents key until configured."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Compact editable commander control surface.",
+    "Per-worker workdir/model/permission config with prompts and return code preserved."
+  ],
+  "limits": [
+    "Local unversioned snapshot, no canonical revision or test suite established.",
+    "Headless dispatch is sequential; window launch metadata is not completion.",
+    "Direct terminal channel lacks turn-boundary queue and can report Enter success after literal send failed."
+  ],
+  "arconaut_questions": [
+    "What owned small process API would preserve this directness while making handles/cancel/output/receipt semantics precise?",
+    "How should commander programs edit live orchestration without killing existing callsign processes or overwriting run evidence?"
+  ]
+}

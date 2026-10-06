@@ -1,0 +1,14 @@
+Review complete. Scope inspected: `src/context.cpp` + `context.hpp` (`stats()`), `src/coding.cpp` + `coding.hpp` (stats, usage allowlist, Lua bridge), `src/tools.cpp` (context_stats schema), `src/main.cpp` (/stats, state path), `src/terminal.cpp` + `terminal.hpp` (state load/save, Composer restore, TerminalUI::run), tests and `scripts/check-terminal-pty`, plus A3/A4 contract docs.
+
+## Blocker
+
+**B1 — `/draft N` overwrites a non-empty composer draft, violating the A4 contract and losing unsubmitted text.**
+`src/terminal.cpp:553-564`: the `/draft N` branch calls `composer.draft(std::move(recovered[n-1]))` unconditionally. `Composer::draft` (line 160-167) replaces `text_` outright. Contract `docs/A4_UI_STATE_SUBPLAN.md:17` says drafts load "only when current draft is empty". Trigger: type an unsent draft, submit `/draft 1` — the unsent text is silently destroyed (it is not in history, and the next `persist()` at line 583 writes the replacement to `ui-state.json`, so the loss is durable). Consequence: data loss of the exact unsubmitted work this feature exists to protect. The PTY oracle never exercises `/draft` with a non-empty composer, so it passes. Fix: reject when `!composer.text().empty()` with a transcript warning (or stash the current draft onto the recovered shelf first). Direct red case: restore state with `queued:["/lua print(1)"]`, type `"keep me"`, send `/draft 1\r`, assert composer still shows `keep me` and no draft loaded.
+
+## Refinements (non-blocking)
+
+**R1 — `persist()` write failure aborts the whole UI session.** `src/terminal.cpp:358-365, 522, 583, 585`: `save_terminal_state` → `write_file` throws `Error{io}` on failure, which propagates out of `TerminalUI::run` mid-turn (worker is joined safely via jthread/StopOnExit, so no lifetime bug, but the interactive session dies over a non-authoritative side file). Contract calls the file "replaceable UI state". Consider catching the error, warning in the transcript, and continuing; also note a damaged-state session overwrites the damaged file on first persist (line 348-353 warns, but line 583 then replaces it), destroying the forensic copy.
+
+**R2 — Restored cursor may split a UTF-8 sequence.** `load_terminal_state`/`validate_state` (`src/terminal.cpp:71-84, 126-128`) only check `cursor <= draft.size()`. A hand-edited/corrupt-but-parseable state file with cursor mid-codepoint passes validation; the first insert/backspace at that cursor then fractures the sequence (rendered as `\xNN` escapes — lossless but garbled). Cheap fix: on load, snap cursor back to a codepoint boundary using the existing `previous()`.
+
+**R3 — stats pairing after failed request.** `src/coding.cpp:650-652`: `last_request_bytes_` is set pre-dispatch and `usage_` reset to null; if the provider call then fails, stats reports the failed request's byte count with null usage. This matches "null if unavailable" but the pairing (bytes from a failed request, usage

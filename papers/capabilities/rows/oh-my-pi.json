@@ -1,0 +1,923 @@
+{
+  "id": "oh-my-pi",
+  "kind": "interactive coding agent with persistent evaluation and local agent messaging",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript",
+      "Python",
+      "Rust native supporting package"
+    ],
+    "execution": "Bun/TS agent loop; Python child kernels, JS subprocess or Worker evaluation, external shell/services. Runtime pause gates and cooperative message queues coexist with JS host event loop.",
+    "service_boundary": "Owns session tree, jobs, kernels, browser/computer and local MCP lifecycles; root async manager may be shared with descendants. Consumes model/remote MCP/memory backends but not a general shared compute fabric."
+  },
+  "summary": "Broad model-native evaluation, programmable tooling, addressable live-agent messaging and grievance reporting; lifecycle ownership and bounded nested-call records materially differ from Arconaut fabric/refit/audit goals.",
+  "inspection": {
+    "files": [
+      "quarantine/oh-my-pi/packages/coding-agent/src/sdk.ts",
+      "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/index.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/read.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/write.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/bash.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/eval.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/kernel-session-registry.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/kernel.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/context-manager.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/executor.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/tool-bridge.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/tool-bridge.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/irc/messaging.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/irc/bus.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/session/irc-bridge.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/agent-protocol.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/history-protocol.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/context-notes.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/session/session-maintenance.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/session/session-manager.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/checkpoint.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/slash-commands/builtin-marketplace.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/sqlite-reader.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/manage-skill.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/learn.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/approval.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/xd-protocol.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/tools/report-tool-issue.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/idle-timeout.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/test/tools/irc.test.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/test/eval/kernel-session-registry.test.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/test/core/js-workflow-helpers.test.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/index.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/executor.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/index.ts",
+      "quarantine/oh-my-pi/packages/coding-agent/src/session/compaction-methods.ts",
+      "quarantine/oh-my-pi/packages/natives/package.json"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "read",
+      "surface": "model tool",
+      "input": "{path}; local files, selectors, internal URLs, SQLite ?q=",
+      "output": "Rendered content and source metadata/paging",
+      "lifecycle": "Awaited; selector output can truncate",
+      "authority": "Model subject to tool tier/session routing",
+      "evidence": [
+        "e9",
+        "e10",
+        "e45",
+        "e46"
+      ]
+    },
+    {
+      "name": "write",
+      "surface": "model tool",
+      "input": "{path,content?}; disk or handler-owned URL",
+      "output": "Bytes/result metadata, LSP diagnostics or device result",
+      "lifecycle": "Awaited; whole replacement or device-specific mutation",
+      "authority": "Model write/plan gate; coordination-specific exception",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "{command,cwd?,timeout?,pty?}; optional service name/readiness/background",
+      "output": "Text/exit or jobId/service name/PID/state",
+      "lifecycle": "Foreground, auto-background on steer; owned service/job lifecycle",
+      "authority": "Model execute approval and plan policy",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "eval",
+      "surface": "model tool",
+      "input": "{language:py|js,code,title?,timeout?,reset?}",
+      "output": "Output/artifact, kernel state or ongoing job handle",
+      "lifecycle": "Persistent per-session interpreter; backgroundable and cancellable",
+      "authority": "Model code under owned interpreter/tool bridge policy",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16",
+        "e17",
+        "e19",
+        "e21"
+      ]
+    },
+    {
+      "name": "eval tools bridge",
+      "surface": "programmable API",
+      "input": "Code invokes exposed tool/helper with structured arguments",
+      "output": "Tool result value/status or error",
+      "lifecycle": "Awaited calls, helpers support budget/workpool/status/cancel; direct-only operations rejected",
+      "authority": "Model-supplied code with validated session tools",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "write agent://<id>",
+      "surface": "model tool",
+      "input": "Message body and scoped recipient; broadcast through send API",
+      "output": "Delivery receipt/status, not peer response",
+      "lifecycle": "Busy injection/queue; idle wake or plan append; bounded mailbox",
+      "authority": "Visible/session-scoped peers; advisors read-only",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e27",
+        "e28",
+        "e11"
+      ]
+    },
+    {
+      "name": "context_notes / new_context",
+      "surface": "model tools",
+      "input": "Notebook text or {} fresh-window request",
+      "output": "Current notes/write receipt or requested:true",
+      "lifecycle": "Experimental gate; notebook persisted, rollover consumed at paired-result turn boundary",
+      "authority": "Model bounded notebook/current branch",
+      "evidence": [
+        "e31",
+        "e32",
+        "e33"
+      ]
+    },
+    {
+      "name": "read history://current/full",
+      "surface": "model tool",
+      "input": "Bound current full-history URI",
+      "output": "Entry IDs/raw full branch rendering",
+      "lifecycle": "Read-only current branch; flag required",
+      "authority": "Model experimental context-management access",
+      "evidence": [
+        "e29",
+        "e30"
+      ]
+    },
+    {
+      "name": "checkpoint / rewind",
+      "surface": "model tools",
+      "input": "Goal / nonempty investigation report",
+      "output": "Checkpoint state / rewound report",
+      "lifecycle": "Session consumes direct result and branches with summary, retaining completed sibling tool pairs",
+      "authority": "Model tools settings-gated, eval bridge rejected",
+      "evidence": [
+        "e39",
+        "e40",
+        "e8",
+        "e22"
+      ]
+    },
+    {
+      "name": "manage_skill / learn",
+      "surface": "model tools",
+      "input": "Skill create/update/delete fields; memory/context/optional skill",
+      "output": "Skill path/discovery update or backend memory result",
+      "lifecycle": "Authored disk/memory mutation persists independently of turn",
+      "authority": "Model gated autolearn/backend; cannot override shipped skill name",
+      "evidence": [
+        "e47",
+        "e48"
+      ]
+    },
+    {
+      "name": "write xd://report_issue",
+      "surface": "model tool",
+      "input": "Tool name and human-readable issue content",
+      "output": "Acknowledgement and dispatch metadata",
+      "lifecycle": "Consent-aware SQLite record and asynchronous optional remote push",
+      "authority": "Model can complain; operator consent governs QA collection",
+      "evidence": [
+        "e51",
+        "e52",
+        "e53"
+      ]
+    },
+    {
+      "name": "/reload-plugins",
+      "surface": "operator command",
+      "input": "No arguments",
+      "output": "Refreshed discovery caches/MCP state",
+      "lifecycle": "Cache refresh/reconnect; full executable refit untraced",
+      "authority": "Operator TUI command",
+      "evidence": [
+        "e41",
+        "e42"
+      ]
+    },
+    {
+      "name": "AgentSession extension context",
+      "surface": "programmable API",
+      "input": "Handlers/commands, branch/compact/ephemeral turn/timers",
+      "output": "Session/continuation events and data",
+      "lifecycle": "Start prompt overrides, session lifecycle APIs; abort and idle wait",
+      "authority": "Installed extension program; not all APIs directly model-native",
+      "evidence": [
+        "e54",
+        "e55"
+      ]
+    },
+    {
+      "name": "builtin registry catalog",
+      "surface": "model tools",
+      "input": "Other named schemas: security_scan,edit,ast_grep,ast_edit,ask,debug,ida,github,glob,grep,find,lsp,task,wait,todo,web_search,memory_edit,retain,recall,reflect",
+      "output": "Per-tool results; only registry/gates traced for this residual catalog",
+      "lifecycle": "Availability filtered by settings/agent kind/recursion",
+      "authority": "Model schema visibility; detailed implementations not inferred",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local and URI file operations, structured archive/SQLite routes and LSP/editor writes are wired. Residual search/edit catalog exists but detailed edit engine not traced.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Owned foreground/background shell jobs and standing services expose handles/readiness; steering can background without killing.",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model eval executes Python or JavaScript, invoking validated native tools and program helpers.",
+      "evidence": [
+        "e14",
+        "e16",
+        "e22",
+        "e23"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-session owned Python process and persistent JS subprocess/Worker. Uncertain cells are not replayed; JS deadline kill loses variables.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model SQLite selectors read/query disk databases and write routes invoke row mutation; harness grievance DB is a separate internal store. These are local consumers, not shared fabric control.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e45",
+        "e46",
+        "e52"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Real eval scripts compose tools/budget/workpool/completion helpers; extension APIs supply ephemeral turns/timers/branching. Full helper scheduler internals outside excerpt scope.",
+      "evidence": [
+        "e22",
+        "e55"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "SDK exposes provider/model and role-based compaction candidate routing; peer bus can link sessions. Per-task model selection not traced here, so no blanket concurrent heterogeneous execution guarantee.",
+      "evidence": [
+        "e1",
+        "e34",
+        "e24"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Process-global agent bus delivers scoped live messages, revives parked recipients and injects busy peer interrupts/parent steering; mailbox cap100, no cross-host transport proved.",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e27",
+        "e28"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool completions can be concurrent but transcript pairs flush in source order; async shell/eval jobs remain live while model handles steering.",
+      "evidence": [
+        "e6",
+        "e13",
+        "e15"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native asides/steering/follow-up routes plus pure-wait interrupt and cooperative backgrounding; external abort differs from message steering.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e13",
+        "e27"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Request context synchronization, prompt replacement and yield continuation plus programmable ephemeral turns. Installed extension agency is broader than direct model tool exposure.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4",
+        "e54",
+        "e55"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Distinct remote, bitmap snapcompact, handoff, shake and summary maintenance paths; persisted summary/retained entry/method metadata. Manual eligibility differs from auto methods.",
+      "evidence": [
+        "e33",
+        "e34",
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can retrieve original branch entries, maintain notebook/request fresh window and checkpoint/rewind exploration. These primitives can repair lost working facts; dedicated automatic corruption diagnosis not traced.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31",
+        "e33",
+        "e40"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session boundaries/messages persisted and full reset history retained, with explicit disk failure recovery. Eval bridge records summarized status rather than a direct toolResult for every nested call; no complete request/process/OS audit proof.",
+      "evidence": [
+        "e22",
+        "e37",
+        "e38"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Entry-ID full-history renderer and model read path enable branch inspection; SQLite grievances queryable via storage. Not a unified all-event audit query contract.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e45",
+        "e52"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Plugin refresh clears selected discovery caches/reconnects MCP; reload() instead aborts/reopens session. No demonstrated global default after-affected-workflow activation or full hook module refit.",
+      "evidence": [
+        "e41",
+        "e42",
+        "e44",
+        "e54"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session reload and disposal terminate owned work; idle JSON-safe Python snapshots exclude full process state, JS kill loses VM. Quiescent outpost recompile/reinhabitation absent from traced paths.",
+      "evidence": [
+        "e18",
+        "e21",
+        "e43",
+        "e44"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider streaming, external compaction routes and refreshed MCP are service consumption surfaces; local kernels/services remain owned.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e34",
+        "e41",
+        "e43"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Dedicated model skill/memory modification changes procedural material; not governed harness compilation/candidate testing/promoting autoresearch.",
+      "evidence": [
+        "e47",
+        "e48",
+        "e55"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model issue-report device records grievance model/version/tool/report/time with consent and optional remote push. Not full agent-state capture, and Noted can precede durable acceptance.",
+      "evidence": [
+        "e51",
+        "e52",
+        "e53"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default yolo/autoapprove with explicit deny/tier rules; plan/device/coordination routing remains nuanced. Not a guaranteed permission-free harness.",
+      "evidence": [
+        "e49",
+        "e50",
+        "e11",
+        "e51"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Workflow tests probe actual worker script result/goal budget and fake kernel tests probe no-replay state. Eval judgment helper dispatch exists; broad scientific harness benchmarking not established.",
+      "evidence": [
+        "e22",
+        "e17"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Ordered persisted tool pairs differ from completion event order; kernel idle budget pauses restart window and uses wall time. No comprehensive causal clock/audit ordering contract.",
+      "evidence": [
+        "e6",
+        "e56"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/sdk.ts",
+      "start": 4222,
+      "end": 4308,
+      "claim": "SDK wires Agent with model/tools/context transformations, provider payload/response hooks and streaming request function."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "start": 1280,
+      "end": 1329,
+      "claim": "Loop yields, waits on process pause gate and synchronizes context before model calls."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "start": 1404,
+      "end": 1427,
+      "claim": "Assistant streaming is invoked with live context and provider options."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "start": 1619,
+      "end": 1753,
+      "claim": "Tool results enter active context; steering/asides/follow-up and onBeforeYield govern continuation."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "start": 3038,
+      "end": 3100,
+      "claim": "Pure waits interrupt promptly; side-effecting tools receive external abort plus cooperative steering rather than unconditional steering abort."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/oh-my-pi/packages/agent/src/agent-loop.ts",
+      "start": 3217,
+      "end": 3275,
+      "claim": "Concurrent completion events differ from source-ordered persisted tool result pairs; results carry IDs and wall timestamps."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/index.ts",
+      "start": 561,
+      "end": 604,
+      "claim": "Builtin registry exposes named native tools; hidden think/yield/goal are separate."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/index.ts",
+      "start": 768,
+      "end": 802,
+      "claim": "Settings/recursion gates decide which experimental context, memory, checkpoint, wait and task tools enter sessions."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/read.ts",
+      "start": 672,
+      "end": 676,
+      "claim": "Read accepts one path including inline selectors and internal URI/URL routes."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/read.ts",
+      "start": 1624,
+      "end": 1679,
+      "claim": "Filesystem pipeline resolves archives and SQLite selectors to actual readSqlite dispatch."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/write.ts",
+      "start": 777,
+      "end": 938,
+      "claim": "Write dispatches internal handlers, archive and SQLite row writers, or filesystem replacement through plan/approval checks and LSP/editor bridge."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/bash.ts",
+      "start": 1049,
+      "end": 1085,
+      "claim": "Service mode starts owned service with readiness configuration and returns name/state/PID/readiness timing."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/bash.ts",
+      "start": 1125,
+      "end": 1190,
+      "claim": "Managed shell jobs can race completion/timeout/steering, promoting ongoing process to background; external abort cancels."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/eval.ts",
+      "start": 93,
+      "end": 145,
+      "claim": "Eval schema exposes language, code, title, timeout and reset; availability filters language choice."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/eval.ts",
+      "start": 603,
+      "end": 706,
+      "claim": "Eval owns async job records and can background on steering without terminating cell; external abort cancels."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/eval.ts",
+      "start": 855,
+      "end": 952,
+      "claim": "Eval streams tail output into artifact sink and invokes backend with session/owner identity, runtime budget and reset."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/kernel-session-registry.ts",
+      "start": 359,
+      "end": 474,
+      "claim": "Kernel lifecycle is owner-refcounted; dead/uncertain failed cells are never replayed automatically."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/kernel.ts",
+      "start": 277,
+      "end": 386,
+      "claim": "Python kernel uses spawned interpreter; namespace snapshot is JSON-safe and idle-only, not complete live process serialization."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/context-manager.ts",
+      "start": 597,
+      "end": 641,
+      "claim": "JS evaluator reuses alive session workers keyed by session; new sessions retain owner IDs and pending runs."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/context-manager.ts",
+      "start": 974,
+      "end": 1009,
+      "claim": "JS eval prefers subprocess, falls back to Bun Worker; no claim of a native non-JS agent scheduler."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/executor.ts",
+      "start": 81,
+      "end": 88,
+      "claim": "JS forced deadline kill resets VM and loses preceding variables."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/js/tool-bridge.ts",
+      "start": 211,
+      "end": 346,
+      "claim": "Eval composition dispatches helper operations and validated tools; direct-only checkpoint/rewind are rejected, bridged todo explicitly persisted."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/py/tool-bridge.ts",
+      "start": 135,
+      "end": 205,
+      "claim": "Python tool bridge is token-authenticated loopback HTTP and dispatches through shared session bridge."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/irc/messaging.ts",
+      "start": 45,
+      "end": 102,
+      "claim": "Send targets visible agents via process-global bus and returns delivery receipts; broadcast is per-recipient delivery."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/irc/bus.ts",
+      "start": 22,
+      "end": 25,
+      "claim": "Mailbox capacity is 100 in process-global bus."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/irc/bus.ts",
+      "start": 97,
+      "end": 179,
+      "claim": "Recipients can be unavailable/read-only; parked live hosts are revived, pending waiter or session receives message, failure can queue."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/irc-bridge.ts",
+      "start": 174,
+      "end": 242,
+      "claim": "Busy parent-to-child messaging steers; peer messages queue interrupt, idle plan appends without wake, other idle messages wake session."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/agent-protocol.ts",
+      "start": 98,
+      "end": 130,
+      "claim": "Model-facing write agent:// target validates sender scope then sends body and returns delivery status."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/history-protocol.ts",
+      "start": 260,
+      "end": 282,
+      "claim": "Full branch rendering includes entry IDs and raw entry data."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/history-protocol.ts",
+      "start": 343,
+      "end": 365,
+      "claim": "history://current/full requires experimental context flag and bound current session, avoiding unsafe fallback."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/context-notes.ts",
+      "start": 102,
+      "end": 141,
+      "claim": "Model notebook replacement checks byte cap/current branch owner, appends custom entry and flushes."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/context-notes.ts",
+      "start": 149,
+      "end": 179,
+      "claim": "new_context returns turn-local rollover request, rather than directly replacing active history."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-maintenance.ts",
+      "start": 2581,
+      "end": 2634,
+      "claim": "Maintenance consumes model new_context at paired-result boundary, persists turn before rollover and fences abort/disposal."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-maintenance.ts",
+      "start": 1164,
+      "end": 1220,
+      "claim": "Manual compaction resolves supported remote/snapcompact/soft method and provider route fallback."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-maintenance.ts",
+      "start": 4275,
+      "end": 4343,
+      "claim": "Automatic maintenance wires shake, deferred handoff, snapcompact and remote/context-full dispatch."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-maintenance.ts",
+      "start": 2382,
+      "end": 2421,
+      "claim": "Compaction commits summary, retained entry boundary, method/preserve metadata then rebuilds active message projection."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-manager.ts",
+      "start": 2986,
+      "end": 3032,
+      "claim": "Compaction/reset/custom boundaries are stored; reset contract preserves full transcript on disk."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/session-manager.ts",
+      "start": 1420,
+      "end": 1464,
+      "claim": "Storage append distinguishes sync page-cache publication from async confirmation; failures latch and future entries retry rewrite."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/checkpoint.ts",
+      "start": 1,
+      "end": 131,
+      "claim": "checkpoint/rewind tools expose exploration goal and report, enforce active checkpoint and completion constraints."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "start": 9840,
+      "end": 9918,
+      "claim": "Direct rewind result triggers branchWithSummary; completed sibling tool pairs are reparented to remain visible."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/slash-commands/builtin-marketplace.ts",
+      "start": 25,
+      "end": 41,
+      "claim": "Plugin refresh clears discovery/skills/command caches and reconnects MCP; source does not prove all hook code reimport."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/slash-commands/builtin-marketplace.ts",
+      "start": 553,
+      "end": 565,
+      "claim": "Operator /reload-plugins command dispatches runtime refresh."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "start": 5390,
+      "end": 5433,
+      "claim": "Session disposal aborts agent/retries/compaction, drains, disposes owned jobs/kernels/browser/computer/MCP; not pause-and-refit."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "start": 10585,
+      "end": 10683,
+      "claim": "AgentSession.reload switches same on-disk session, aborting/disconnecting old session; reload naming is not executable replacement."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/sqlite-reader.ts",
+      "start": 24,
+      "end": 61,
+      "claim": "SQLite reads open connection and enable query_only plus busy timeout."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/sqlite-reader.ts",
+      "start": 561,
+      "end": 581,
+      "claim": "SQLite selectors support raw q SQL query, model-visible standing disk data distinct from kernel namespace."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/manage-skill.ts",
+      "start": 16,
+      "end": 100,
+      "claim": "Model tool create/update/delete manages authored procedural skill files, refreshes discovery, prevents overriding shipped skill name."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/learn.ts",
+      "start": 49,
+      "end": 110,
+      "claim": "Learn is backend-gated and can write scoped long-term memory; not a harness candidate evaluation loop."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/approval.ts",
+      "start": 53,
+      "end": 82,
+      "claim": "Configured default approval is yolo, explicit autoapprove forces it; missing tool context asks."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/approval.ts",
+      "start": 188,
+      "end": 238,
+      "claim": "Policy resolves tool tier/per-tool rules and explicit denial despite permissive mode."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/internal-urls/xd-protocol.ts",
+      "start": 78,
+      "end": 108,
+      "claim": "write xd://report_issue dispatches real complaint device and retains inner tool approval tier."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/report-tool-issue.ts",
+      "start": 248,
+      "end": 281,
+      "claim": "SQLite grievance schema stores model/version/tool/report/time and push/error status, not full agent snapshot."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/tools/report-tool-issue.ts",
+      "start": 591,
+      "end": 630,
+      "claim": "Complaint consent controls record/flush; acknowledgement can precede consent resolution so Noted is not durable-record oracle."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "start": 7370,
+      "end": 7396,
+      "claim": "Before-agent-start extension may replace system prompt/add messages under policy freshness fence."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/session/agent-session.ts",
+      "start": 7718,
+      "end": 7783,
+      "claim": "Extension context exposes branch/tree/compact/ephemeral turn/timers/session switching and idle/abort APIs."
+    },
+    {
+      "id": "e56",
+      "path": "quarantine/oh-my-pi/packages/coding-agent/src/eval/idle-timeout.ts",
+      "start": 1,
+      "end": 90,
+      "claim": "Runtime watchdog uses wall time/setTimeout; nested pauses restart fresh timeout window on final resume."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/oh-my-pi/packages/coding-agent/test/tools/irc.test.ts",
+      "focus": "Delivery receipts, parked revival and busy session injection",
+      "oracle": "Stub bus delivery and real AgentSession with mock prompt/forced streaming assert peer interrupt and parent steer queues; does not prove live provider consumes concurrent messages.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/oh-my-pi/packages/coding-agent/test/eval/kernel-session-registry.test.ts",
+      "focus": "Dead uncertain cells and next execution",
+      "oracle": "Fake kernel records original effect once, failing uncertain cell is not replayed; next call starts fresh. No external interpreter crash conformance.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/oh-my-pi/packages/coding-agent/test/core/js-workflow-helpers.test.ts",
+      "focus": "Code helper phases and goal budget",
+      "oracle": "executeJs worker tests assert logged phase/goal helper results with stub session tools; not executed in this study.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual live peer delivery and distinct parent steering rather than merely selecting providers.",
+    "Persistent language kernels refuse replay of uncertain side effects.",
+    "Explicit context maintenance boundaries retain source history and pair sibling results through rewind.",
+    "Model issue device is a useful rageshake precursor."
+  ],
+  "limits": [
+    "Study does not fully trace every large builtin tool or helper scheduler; residual catalog is labeled.",
+    "Host remains TS/Bun and owns kernel/service lifecycles.",
+    "No complete original audit or executable refit protocol demonstrated.",
+    "Complaint acknowledgement is weaker than durable capture and stores no comprehensive state bundle."
+  ],
+  "arconaut_questions": [
+    "Separate message-as-steering from external abort and define preserved work when applying configuration now.",
+    "Can eval and tool APIs consume shared kernel/job services without owning their lifecycle?",
+    "What exact immutable event payload preserves nested calls, provider requests and complaint state for repair/evaluation?",
+    "Use a tested quiescence/outpost refit instead of overloading plugin or session reload."
+  ]
+}

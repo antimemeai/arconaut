@@ -1,0 +1,268 @@
+{
+  "id": "coscientist",
+  "kind": "research supplementary data and simple agent example",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "A minimal synchronous OpenAI text-command loop with injected callable tools; accompanying chemistry CSV artifacts.",
+    "service_boundary": "Owns in-memory history and example callable dispatch only; full experimental robotics/search system from the article is not this simple implementation."
+  },
+  "summary": "Public supporting data plus a toy command-routing implementation; CALCULATE/RANDOM/STOP are the actually shipped example tools.",
+  "inspection": {
+    "files": [
+      "quarantine/coscientist/README.md",
+      "quarantine/coscientist/simple_implementation/coscientist.py",
+      "quarantine/coscientist/simple_implementation/tools.py",
+      "quarantine/coscientist/simple_implementation/run.py"
+    ],
+    "scope": "entire simple_implementation loop/tool bodies/launch composition and repository scope README",
+    "limits": "No full research system or first-party test suite exists in inspected inventory. No code/chemistry actions/providers executed; paper results are not runtime conformance proof."
+  },
+  "actions": [
+    {
+      "name": "Coscientist.run / get_next_message",
+      "surface": "operator/API",
+      "input": "Prompt,max_steps, injected command_name/callable/prompt objects and config model.",
+      "output": "Mutated history/log messages; no returned durable run handle.",
+      "lifecycle": "Synchronous bounded model/dispatch iterations.",
+      "authority": "Host chooses callable dictionary; provider authority external.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5"
+      ]
+    },
+    {
+      "name": "CALCULATE / RANDOM / STOP",
+      "surface": "model text commands",
+      "input": "Python expression; two integer bounds; ignored STOP input.",
+      "output": "Expression result/error string; random integer; termination exception.",
+      "lifecycle": "One command-leading line per text reply; literal substring count feedback.",
+      "authority": "Host eval authority unrestricted; no actual chemistry/robot tool is supplied.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "No native filesystem tool; eval can call arbitrary Python expression with host/module authority. That generic escape capability is not a designed file operation contract.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "No process/job API; unrestricted expression evaluation can invoke imported/host operations when composed. No lifetime/interrupt/quiescence semantics supplied.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "CALCULATE directly evals arbitrary expression; no cell/kernel/schema or incremental source-edit mechanism. Count-by-substring routing can misclassify incidental command text.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host injects callable tool objects and prompt metadata; model sequences one command per response. Fixed loop and example are not hot turn-program redefinition.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5"
+      ]
+    },
+    "multi_model": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "STOP is model-controlled termination exception and max_steps bounds iterations; no provider cancellation or operator live steering exists in inspected full simple loop.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Logging records role/text for history messages; history is in memory. No immutable raw provider calls/tool arguments/results, execution events or durable restore contract.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "OpenAI ChatCompletion call consumes configured model. Research web/robotics services are not present in shipped toy tool roster.",
+      "evidence": [
+        "e2",
+        "e5"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected entire simple_implementation loop/tool bodies/launch composition and repository scope README; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Injected callables and eval run with Python host authority; no approval/isolation gate in full simple implementation. STOP and max_steps do not bound expression effects.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "evaluation": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "The supplied runtime is a toy command example; accompanying paper data is not an executable independent evaluation/oracle in this implementation. README scopes supporting data explicitly.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Synchronous message/command loop preserves list order and logs it; no durable IDs/generations/causal ledger.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/coscientist/README.md",
+      "start": 1,
+      "end": 17,
+      "claim": "Repository labels itself supporting information with chemistry data and a simple implementation; not the full apparatus."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/coscientist/simple_implementation/coscientist.py",
+      "start": 5,
+      "end": 39,
+      "claim": "Injected callable tools generate prompt descriptions, model receives in-memory message history and model text is logged/appended."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/coscientist/simple_implementation/coscientist.py",
+      "start": 41,
+      "end": 91,
+      "claim": "Substring tool counts enforce zero/one/many feedback; first command-leading line dispatches one string argument and output becomes user message; StopIteration terminates."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/coscientist/simple_implementation/tools.py",
+      "start": 10,
+      "end": 55,
+      "claim": "CALCULATE uses unconstrained eval returning str/result or exception; RANDOM parses two integers; STOP raises custom StopIteration."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/coscientist/simple_implementation/run.py",
+      "start": 5,
+      "end": 34,
+      "claim": "Shipped example only composes CALCULATE/RANDOM/STOP with fixed gpt-4-0314 and ten-step limit."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Very small inspectable example of tools described by objects and sequential feedback.",
+    "Clear public supplementary-data boundary."
+  ],
+  "limits": [
+    "Full experimental Coscientist implementation cannot be inferred from toy example/data.",
+    "Substring command detection and unrestricted eval have no robust action/authority lifecycle."
+  ],
+  "arconaut_questions": [
+    "How can flexible operator-injected actions carry typed identity/lifetime without relying on incidental text matching?"
+  ]
+}

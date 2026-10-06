@@ -1,0 +1,924 @@
+{
+  "id": "opendev",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Rust multi-crate Tokio/ReAct core; typed tools; CLI/TUI/web surfaces; selected reqwest or curl transport",
+    "service_boundary": "Owns local shell groups, background children, session/team/mailbox files; consumes model/MCP services. Current pinned core is Rust despite Python-family registry label."
+  },
+  "summary": "Rust migrated coding agent with schema deferral, custom executable tools, staged compaction and genuine asynchronous multi-model teammates; custody and history boundaries need scrutiny.",
+  "inspection": {
+    "files": [
+      "quarantine/opendev/Cargo.toml",
+      "quarantine/opendev/crates/opendev-cli/src/runners.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/tools.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "quarantine/opendev/crates/opendev-agents/src/react_loop/execution.rs",
+      "quarantine/opendev/crates/opendev-agents/src/react_loop/phases/llm_call.rs",
+      "quarantine/opendev/crates/opendev-http/src/adapted_client.rs",
+      "quarantine/opendev/crates/opendev-http/src/client.rs",
+      "quarantine/opendev/crates/opendev-agents/src/react_loop/streaming_executor.rs",
+      "quarantine/opendev/crates/opendev-agents/src/react_loop/phases/tool_dispatch.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/bash/foreground.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/bash/background.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/custom_tool.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/file_read/mod.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/file_write.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/file_edit.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/spawn.rs",
+      "quarantine/opendev/crates/opendev-agents/src/subagents/manager/spawn.rs",
+      "quarantine/opendev/crates/opendev-agents/src/subagents/manager/spawn.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/team_tools.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/team_tools.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/spawn_teammate.rs",
+      "quarantine/opendev/crates/opendev-agents/src/subagents/runner/standard.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/check_mailbox.rs",
+      "quarantine/opendev/crates/opendev-runtime/src/mailbox/mod.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/agents/task_list_tools.rs",
+      "quarantine/opendev/crates/opendev-agents/src/react_loop/compaction.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "quarantine/opendev/crates/opendev-history/src/event_store.rs",
+      "quarantine/opendev/crates/opendev-history/src/event_store.rs",
+      "quarantine/opendev/crates/opendev-history/src/session_manager/mod.rs",
+      "quarantine/opendev/crates/opendev-history/src/session_manager/mod.rs",
+      "quarantine/opendev/crates/opendev-runtime/src/debug_logger.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/memory.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/schedule.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/notebook_edit.rs",
+      "quarantine/opendev/crates/opendev-agents/src/skills/loader.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/truncation.rs",
+      "quarantine/opendev/crates/opendev-tools-core/src/registry/execution.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "quarantine/opendev/crates/opendev-runtime/src/mailbox/tests.rs",
+      "quarantine/opendev/crates/opendev-context/src/compaction/compactor/tests.rs",
+      "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs"
+    ],
+    "scope": "Primary CLI entry, loop/provider transport, default and team tool registration, dispatch, shell process/drop paths, subagent creation/resume, mailbox and sender state, compaction/session events/debug, skill/MCP changes and relevant tests.",
+    "limits": "Source read only, reference not executed. Optional browser/LSP and other unregistered implementation modules not promoted into exposed capabilities; schedule executor consumer not traced. Source faults are inferred, not executed. TUI/web behavior not exhaustively traced."
+  },
+  "actions": [
+    {
+      "name": "Read / Glob / Grep",
+      "surface": "model tools",
+      "input": "file_path/offset/limit; file patterns; search patterns",
+      "output": "text/list/search hits or error; clipped",
+      "lifecycle": "awaited; classified concurrent-safe",
+      "authority": "Model through default registry; host filesystem and sanitizer.",
+      "evidence": [
+        "e3",
+        "e16"
+      ]
+    },
+    {
+      "name": "Write / Edit",
+      "surface": "model tools",
+      "input": "path/content/create_dirs; path/old_string/new_string/replace_all",
+      "output": "write or fuzzy replacement results",
+      "lifecycle": "awaited writes block interruption per tool declaration; outer dispatcher still selective",
+      "authority": "Model; sensitive paths refused by tools.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e10"
+      ]
+    },
+    {
+      "name": "Bash",
+      "surface": "model tool",
+      "input": "command, timeout/run_in_background/description/workdir",
+      "output": "output/exit data or background ID/PID metadata",
+      "lifecycle": "foreground awaited; background process stored; no model-native poll/kill verbs in Bash schema",
+      "authority": "Model; approvals may be disabled, dangerous-command patterns still refused.",
+      "evidence": [
+        "e13",
+        "e11",
+        "e12",
+        "e42"
+      ]
+    },
+    {
+      "name": "NotebookEdit",
+      "surface": "model tool",
+      "input": "notebook, cell selection/new source/type/op",
+      "output": "updated notebook",
+      "lifecycle": "synchronous file edit, no execution session",
+      "authority": "Model through default registry.",
+      "evidence": [
+        "e3",
+        "e39"
+      ]
+    },
+    {
+      "name": "memory",
+      "surface": "model tool",
+      "input": "read/write/search/list, file/content/query, project/global scope and match mode",
+      "output": "memory text/files/search result",
+      "lifecycle": "persistent files, per-invocation access",
+      "authority": "Model; owned file state, not external general DB.",
+      "evidence": [
+        "e37",
+        "e3"
+      ]
+    },
+    {
+      "name": "CronCreate",
+      "surface": "model tool",
+      "input": "create/list/remove/enable/disable; command/delay/interval",
+      "output": "saved schedule entries/status",
+      "lifecycle": "JSON standing-job declarations; actual executor consumer not inspected",
+      "authority": "Model default registered; schedule metadata only is traced.",
+      "evidence": [
+        "e38",
+        "e3"
+      ]
+    },
+    {
+      "name": "Agent",
+      "surface": "model tool",
+      "input": "agent type/task/model, task_id, run_in_background",
+      "output": "child text/stats and task ID; optional immediate background response",
+      "lifecycle": "isolated new child loop; ID reuse labelled resume but no saved history load in this path",
+      "authority": "Model; per-agent tool policy; prevent background-in-background spawn.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "TeamCreate / TeamDelete",
+      "surface": "model tools",
+      "input": "team_name, named typed tasked members",
+      "output": "team metadata/member task IDs",
+      "lifecycle": "TeamCreate idle registration; TeamDelete implementation not deeply traced",
+      "authority": "Model; shared team metadata.",
+      "evidence": [
+        "e4",
+        "e22"
+      ]
+    },
+    {
+      "name": "SpawnTeammate",
+      "surface": "model tool",
+      "input": "team/member/type/task, model, worktree isolation",
+      "output": "task ID and asynchronous completion event",
+      "lifecycle": "Tokio task; child context/mailbox; worktree failure shared fallback",
+      "authority": "Model; shared registry and independently chosen child model.",
+      "evidence": [
+        "e24",
+        "e20"
+      ]
+    },
+    {
+      "name": "SendMessage / CheckMailbox",
+      "surface": "model tools",
+      "input": "to/message/team; optional agent_name for CheckMailbox",
+      "output": "sent counts/errors; received unread messages",
+      "lifecycle": "file-backed send; receive marks read; automatic drain only at startup",
+      "authority": "Model; caller-supplied mailbox identity and hardcoded leader sender lack custody-bound identity.",
+      "evidence": [
+        "e23",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    {
+      "name": "TeamAddTask / TeamListTasks / TeamClaimTask / TeamCompleteTask",
+      "surface": "model tools",
+      "input": "team,title/description/dependencies; status filter; task_id/claimed_by; success/result",
+      "output": "shared task states and claim results",
+      "lifecycle": "task-list operations, claim checks readiness; no forced execution orchestration implied",
+      "authority": "Model; claimed_by supplied or constructor name.",
+      "evidence": [
+        "e4",
+        "e28"
+      ]
+    },
+    {
+      "name": "TodoWrite / TaskUpdate / TaskList / TaskStop / EnterPlanMode",
+      "surface": "model tools",
+      "input": "todo/task fields and plan mode requests",
+      "output": "task state or stop/control result",
+      "lifecycle": "default tools; dispatcher special-cases TaskStop as noninterruptible",
+      "authority": "Model; only registration/control exception traced in depth.",
+      "evidence": [
+        "e3",
+        "e10"
+      ]
+    },
+    {
+      "name": "AskUserQuestion / WebFetch / WebSearch",
+      "surface": "model tools",
+      "input": "question choices; URL/search query",
+      "output": "operator reply or network text",
+      "lifecycle": "default registered; individual network/question executors not deeply traced",
+      "authority": "Model native catalog; implementation limits disclosed.",
+      "evidence": [
+        "e3"
+      ]
+    },
+    {
+      "name": "ToolSearch / Skill",
+      "surface": "model discovery / prompt tools",
+      "input": "tool lookup; skill_name/arguments or list",
+      "output": "activated schemas/loaded prompt and optional model override",
+      "lifecycle": "tool deferral per loop; skill cache invalidates next load",
+      "authority": "Model; no transactional changed-turn activation.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6",
+        "e40"
+      ]
+    },
+    {
+      "name": "custom command manifests (.opendev/tools, .opencode/tool)",
+      "surface": "extension API",
+      "input": "manifest name/description/command/schema; JSON stdin",
+      "output": "stdout/stderr parsed into tool result",
+      "lifecycle": "construction discovery; command timeout, no proved process cleanup on dropped future",
+      "authority": "Program/operator supplies executable; model calls registered schemas.",
+      "evidence": [
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "MCP bridge discovery",
+      "surface": "extension API",
+      "input": "server config and discovered schemas/prompts",
+      "output": "native registry tools and Skill prompt additions",
+      "lifecycle": "asynchronous runtime initialization; live registry mutation",
+      "authority": "Operator/program config; consumed remote service.",
+      "evidence": [
+        "e41"
+      ]
+    },
+    {
+      "name": "query / compact / resume session",
+      "surface": "operator/runtime API",
+      "input": "prompt/current session; compact; stored session selection",
+      "output": "AgentResult, compacted/saved session",
+      "lifecycle": "loop then current-session persistence; compaction/pre_count mismatch; saved data resume, no active-work continuity",
+      "authority": "Operator; compiled runtime.",
+      "evidence": [
+        "e2",
+        "e30",
+        "e31"
+      ]
+    },
+    {
+      "name": "EventStore / debug logger",
+      "surface": "supporting audit API",
+      "input": "normalized session events; optional normalized payload debug calls",
+      "output": "sequenced JSONL events or debug lines",
+      "lifecycle": "best-effort writes, current session is primary; no complete capture guarantee",
+      "authority": "Runtime internal, not native model audit query.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e34",
+        "e35",
+        "e36"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default native file/search/edit operations and shell; sensitive-path tool checks remain with approvals off.",
+      "evidence": [
+        "e3",
+        "e16",
+        "e17",
+        "e18",
+        "e42"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Foreground group cleanup exists, but outer cancellation drops future before inner cleanup; background stored buffers are stale clones and no Bash poll/kill verbs. Custom commands lack kill-on-drop.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e13",
+        "e14"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bash and custom JSON-stdin executable tools; notebook tool edits files only. Read-only heuristic even accepts cargo test/build-script-capable commands.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e39",
+        "e48"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No notebook execution/kernel transport in inspected default tool/runtime paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Owned memory files/session events/team state and JSON schedules; general shared DB client/table action not established.",
+      "evidence": [
+        "e27",
+        "e32",
+        "e37",
+        "e38"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Agent specifications, custom tools, skills and shared task dependency claims compose workflows; ReAct loop remains compiled fixed program.",
+      "evidence": [
+        "e5",
+        "e14",
+        "e20",
+        "e28",
+        "e40"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Subagent/teammate model override and spec-specific model selection before parent fallback.",
+      "evidence": [
+        "e20",
+        "e24",
+        "e6"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real running colleagues share file-backed messages, but sender is always leader and mailbox argument not custody-bound. Automatic drain occurs only before run, not per decision.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Early read-only-classified tools overlap provider streaming; background Bash/agents and teammate Tokio tasks; effect-free classification not guaranteed.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e24",
+        "e48"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cancellation reaches reqwest and tool context but outer select drops futures; nonstreaming curl and summary omit cancellation, foreground cleanup may be bypassed.",
+      "evidence": [
+        "e8",
+        "e7",
+        "e10",
+        "e11",
+        "e29"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can invoke skills changing next prompt/model and ToolSearch schema activation; compiled loop not model-defined full turn.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e40"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Automatic staged masking/pruning/summary mutates effective messages; CLI persistence slices with stale pre_count. Manual compaction destructive current-session replacement.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31",
+        "e47"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Primary CLI append events may retain previous normalized messages, but no model original-audit repair action; child advertised resume is fresh messages with reused ID.",
+      "evidence": [
+        "e19",
+        "e21",
+        "e32",
+        "e34",
+        "e35"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Primary CLI wires sequenced normalized EventStore, but best-effort, events incomplete and saved after query; optional debug normalized payloads pre-adapter, outputs clipped before middleware.",
+      "evidence": [
+        "e2",
+        "e32",
+        "e33",
+        "e34",
+        "e35",
+        "e36",
+        "e7",
+        "e43",
+        "e44"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "EventStore and saved sessions provide local study primitives; model memory/file tools do not expose complete structured audit query.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e37",
+        "e16"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Skills reload at next access and MCP mutates registry asynchronously; no default whole-turn/affected-workflow activation transaction.",
+      "evidence": [
+        "e40",
+        "e41",
+        "e6"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Primary saved session resume is data restoration; child resume reuses ID without history; no refit with own provider/process quiescence and external outpost.",
+      "evidence": [
+        "e2",
+        "e19",
+        "e21",
+        "e10",
+        "e11"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Adapted provider clients and MCP bridges consume remote services; own shared-fabric governance not implied.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e41"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "File/program/skill tools allow modifications; no governed harness autoresearch and reinhabitation lifecycle traced.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e14",
+        "e40"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No state-rich model complaint/bead operation in default native registry/team/loop paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Approvals can be disabled, tools still refuse patterns/sensitive paths; mailbox sender/name and task claimed_by are labels supplied without actor binding.",
+      "evidence": [
+        "e42",
+        "e13",
+        "e17",
+        "e18",
+        "e23",
+        "e26",
+        "e28"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native source tests for filesystem/shell/classification/mailboxes/compaction; key lifecycle and cross-layer compaction assertions absent from inspected oracles.",
+      "evidence": [
+        "e45",
+        "e46",
+        "e47",
+        "e48"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Event sequence and task/provider IDs exist; clipped/best-effort capture and detached process/colleague tasks do not establish total causal audit/custody.",
+      "evidence": [
+        "e33",
+        "e8",
+        "e24",
+        "e35",
+        "e36",
+        "e12"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/opendev/Cargo.toml",
+      "start": 1,
+      "end": 35,
+      "claim": "Pinned OpenDev is Rust migration, edition 2024/version 0.1.9; group label does not establish Python implementation."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runners.rs",
+      "start": 52,
+      "end": 75,
+      "claim": "Primary CLI wires EventStore and saved-session resume."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/tools.rs",
+      "start": 15,
+      "end": 59,
+      "claim": "Default exposed tools; implementation modules alone are not evidence of registration."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "start": 450,
+      "end": 535,
+      "claim": "Registers agent/team/mailbox/task-list/ToolSearch tools."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/opendev/crates/opendev-agents/src/react_loop/execution.rs",
+      "start": 118,
+      "end": 237,
+      "claim": "ReAct iteration, collector/context/schema preparation, model response and dispatch continuation."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/opendev/crates/opendev-agents/src/react_loop/phases/llm_call.rs",
+      "start": 58,
+      "end": 165,
+      "claim": "Builds normalized payload, applies skill override, conditional debug logging and adapted provider stream/request."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/opendev/crates/opendev-http/src/adapted_client.rs",
+      "start": 109,
+      "end": 223,
+      "claim": "Provider request/response adapters and nonstreaming curl path with no cancellation token or kill-on-drop."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/opendev/crates/opendev-http/src/client.rs",
+      "start": 206,
+      "end": 254,
+      "claim": "reqwest request races cancellation with unique request ID; response body reading is a later phase."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/opendev/crates/opendev-agents/src/react_loop/streaming_executor.rs",
+      "start": 97,
+      "end": 158,
+      "claim": "Early read-only-classified tool tasks spawned during provider stream with child token/semaphore."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/opendev/crates/opendev-agents/src/react_loop/phases/tool_dispatch.rs",
+      "start": 450,
+      "end": 565,
+      "claim": "Outer cancellation select drops ordinary registry future; TaskStop/task_complete exceptions; result projects output/error."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/foreground.rs",
+      "start": 43,
+      "end": 162,
+      "claim": "Shell group, output reader tasks and inner cancellation/timeout group cleanup; spawned child lacks kill_on_drop."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/background.rs",
+      "start": 146,
+      "end": 175,
+      "claim": "Background handle stores clones of early output vectors while detached readers continue into separate Arc buffers."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "start": 229,
+      "end": 356,
+      "claim": "Bash schema command/deadlines/background/workdir, unconditional dangerous-command block, auto-background and truncation."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/custom_tool.rs",
+      "start": 108,
+      "end": 150,
+      "claim": "Custom subprocess receives JSON stdin and wait_with_output under timeout; no group/kill-on-drop path here."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "start": 132,
+      "end": 140,
+      "claim": "Discovers custom command manifests at runtime construction."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/file_read/mod.rs",
+      "start": 88,
+      "end": 164,
+      "claim": "Read schema, concurrency classification and bounded filesystem read dispatch."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/file_write.rs",
+      "start": 18,
+      "end": 101,
+      "claim": "Write schema and host path resolution; sensitive-file refusals even under autoapproval."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/file_edit.rs",
+      "start": 39,
+      "end": 114,
+      "claim": "Edit schema, fuzzy replacement and sensitive-file gating."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/spawn.rs",
+      "start": 264,
+      "end": 382,
+      "claim": "Agent task_id only reuses saved ID, manager.spawn fresh run; output says resume but never loads prior child messages here."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/opendev/crates/opendev-agents/src/subagents/manager/spawn.rs",
+      "start": 96,
+      "end": 124,
+      "claim": "Child model selection explicit override then spec then parent."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/opendev/crates/opendev-agents/src/subagents/manager/spawn.rs",
+      "start": 212,
+      "end": 255,
+      "claim": "Child context/tool registry and newly built messages delegated to runner; mailbox and cancellation passed."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/team_tools.rs",
+      "start": 91,
+      "end": 181,
+      "claim": "TeamCreate registers idle metadata/members, does not launch colleagues."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/team_tools.rs",
+      "start": 250,
+      "end": 343,
+      "claim": "SendMessage selects team/target and labels all messages sender leader."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/spawn_teammate.rs",
+      "start": 310,
+      "end": 435,
+      "claim": "Real independently spawned colleague with optional model/worktree and mailbox; failed worktree creation falls back to shared workdir."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/opendev/crates/opendev-agents/src/subagents/runner/standard.rs",
+      "start": 27,
+      "end": 59,
+      "claim": "Mailbox is automatically drained only before ReAct; continuing colleague must call CheckMailbox."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/check_mailbox.rs",
+      "start": 29,
+      "end": 112,
+      "claim": "CheckMailbox optional agent_name selects identity; receives and marks read."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/opendev/crates/opendev-runtime/src/mailbox/mod.rs",
+      "start": 58,
+      "end": 176,
+      "claim": "File-backed inbox, send/receive/peek/poll and corrupt-file preservation/reset."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/agents/task_list_tools.rs",
+      "start": 300,
+      "end": 344,
+      "claim": "TeamClaimTask trusts claimed_by argument then claims task with dependency/state checks."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/opendev/crates/opendev-agents/src/react_loop/compaction.rs",
+      "start": 25,
+      "end": 158,
+      "claim": "Threshold-based in-place context masking/pruning/summary; summary call has no cancellation token."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "start": 253,
+      "end": 335,
+      "claim": "pre_count before loop is reused to slice compacted result.messages; source permits wrong persistence or out-of-bounds panic."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "start": 670,
+      "end": 770,
+      "claim": "Manual compaction replaces session messages then saves."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/opendev/crates/opendev-history/src/event_store.rs",
+      "start": 32,
+      "end": 85,
+      "claim": "Normalized session/message/file events, not exhaustive provider/stream/action event vocabulary."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/opendev/crates/opendev-history/src/event_store.rs",
+      "start": 149,
+      "end": 180,
+      "claim": "JSONL sequence envelope append."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/opendev/crates/opendev-history/src/session_manager/mod.rs",
+      "start": 151,
+      "end": 220,
+      "claim": "Normalized message event on add and atomic current JSON session save."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/opendev/crates/opendev-history/src/session_manager/mod.rs",
+      "start": 389,
+      "end": 398,
+      "claim": "Event store append failure warns rather than failing operation; JSON session remains primary."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/opendev/crates/opendev-runtime/src/debug_logger.rs",
+      "start": 85,
+      "end": 181,
+      "claim": "Optional full normalized payload debug logging; append write errors ignored."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/memory.rs",
+      "start": 32,
+      "end": 75,
+      "claim": "Native memory read/write/search/list file abstraction and scopes; not SQL."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/schedule.rs",
+      "start": 38,
+      "end": 139,
+      "claim": "CronCreate persists JSON schedule entries and CRUD; scheduler consumer not traced."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/notebook_edit.rs",
+      "start": 23,
+      "end": 63,
+      "claim": "NotebookEdit manipulates ipynb cells, no kernel execution."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/opendev/crates/opendev-agents/src/skills/loader.rs",
+      "start": 214,
+      "end": 236,
+      "claim": "Skill mtime cache invalidation on next load."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/query.rs",
+      "start": 38,
+      "end": 79,
+      "claim": "MCP connection discovery mutates shared registry and Skill prompts asynchronously."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/opendev/crates/opendev-cli/src/runtime/mod.rs",
+      "start": 719,
+      "end": 725,
+      "claim": "Headless/skip approvals disables approval layer, not native sensitive-path/command checks."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/truncation.rs",
+      "start": 158,
+      "end": 203,
+      "claim": "Overflow files themselves clip beyond hard maximum, so not original capture."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/opendev/crates/opendev-tools-core/src/registry/execution.rs",
+      "start": 210,
+      "end": 251,
+      "claim": "Sanitizer runs before after middleware/cache and returned result."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "start": 629,
+      "end": 647,
+      "claim": "Process-group cleanup test calls helper but has no postkill process-death oracle."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/opendev/crates/opendev-runtime/src/mailbox/tests.rs",
+      "start": 88,
+      "end": 114,
+      "claim": "Five writer threads and count=5 oracle; does not check identities/content uniqueness."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/opendev/crates/opendev-context/src/compaction/compactor/tests.rs",
+      "start": 128,
+      "end": 150,
+      "claim": "Compaction oracle only shorter messages/first system/summary marker."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "start": 783,
+      "end": 791,
+      "claim": "Read-only heuristic accepts cargo test/clippy/check, which may execute build scripts/tests and write outputs."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/opendev/crates/opendev-tools-impl/src/bash/mod.rs",
+      "focus": "Process group custody/read-only classification",
+      "oracle": "Cleanup test invokes helper without proving descendant death; cargo test classified read-only is asserted but arbitrary test effects not ruled out.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/opendev/crates/opendev-runtime/src/mailbox/tests.rs",
+      "focus": "Concurrent inbox writes",
+      "oracle": "Five writer threads and received-count oracle; identity uniqueness, sender binding and in-loop colleague delivery untested.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/opendev/crates/opendev-context/src/compaction/compactor/tests.rs",
+      "focus": "Context compaction shape",
+      "oracle": "Checks shorter vector/system/summary marker, not stale CLI pre_count indexing or original audit repair.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Model-selected real asynchronous teammates and inbox/task primitives, distinct from simulated colleague sampling.",
+    "Native tool schema deferral and custom JSON-stdin executable extension.",
+    "Sequenced sidecar event format is a useful partial audit primitive with visible failure semantics."
+  ],
+  "limits": [
+    "Optional browser/LSP and other unregistered implementation modules not promoted into exposed capabilities; schedule executor consumer not traced. Source faults are inferred, not executed. TUI/web behavior not exhaustively traced."
+  ],
+  "arconaut_questions": [
+    "Can child cancellation own cleanup rather than race/drop the cleanup future?",
+    "Can live messages bind authenticated actor identity and delivery checkpoints rather than constructor labels?",
+    "Can compaction/persistence use message identities and projection events rather than length offsets?",
+    "Can context repair and executable refit be designed independently of current JSON chat save?"
+  ]
+}

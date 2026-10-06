@@ -1,0 +1,13 @@
+Verification complete (narrow, read-only; no edits/execution). Refinements confirmed integrated except one remaining defect.
+
+## Remaining issue (refinement-class regression)
+
+**`src/terminal.cpp:500-504` + `526-528` — anchoring lost when scrolled up and output arrives without trimming.**
+`before_trim_lines` is computed only when `transcript.size() > ui_limit`; otherwise it is `0`. In `terminal_scroll_after_output` (line 122), `growth = before_trim > previous ? before_trim - previous : 0` then yields `0` for every frame where new output arrives but no trim occurs — i.e. the common case (transcript under the 1MB cap). Trigger: PgUp during active tool/streaming output with transcript < `ui_limit`. Consequence: `end = lines.size() - scroll` grows by the appended line count each redraw, so the supposedly anchored viewport drifts downward with output — the exact behavior the PTY oracle (`check-terminal-pty:275`) asserts against. The previous code adjusted scroll whenever `lines.size() > previous_lines`; that path is gone. Fix: when no trim ran, pass the post-trim count as the pre-trim count (front removal is zero), e.g. call with `before_trim_lines != 0 ? before_trim_lines : lines.size()`, or make the helper treat `before_trim == 0` as "no trim, use after_trim". The existing tests (`tests/terminal_test.cpp:48-50`) only exercise the trim path, so they cannot catch this; add a case like `terminal_scroll_after_output(10, 100, 0, 120, 10) == 30` once the no-trim convention is fixed.
+
+## Verified correct
+- `terminal_scroll_after_output` (terminal.cpp:117-127): growth uses `before_trim - previous` (G irrespective of T), clamps to `maximum` when the anchor is gone or growth overflows the anchor; matches the stated oracle (10,100,120,110,10 → 30), confirmed by test at terminal_test.cpp:48, plus scroll-0 and anchor-trimmed clamp cases (49-50). Prewrap is gated on `scroll > 0 && transcript oversized && old_columns > 1` and uses the same width basis (`old_columns - 1`); width changes skip the helper and just clamp, as documented.
+- `session.cpp:54-57`: root now weakly-canonicalized with non-canonical fallback. `session.cpp:85-86`: `lstat` + `S_ISREG` rejects symlink/FIFO session-info (falls into the existing catch → `"damaged"`), closing the FIFO-block/symlink-substitution read vector. `session.cpp:109-111, 124-125`: explicit `last_activity_status` available/unavailable replaces bare null ambiguity.
+- `coding.cpp:606-611`: interrupted non-provider/exec tools now label `"interrupted (recorded failure)"` with no disposition change — cosmetic only, as stated.
+
+Prior report `papers/2026-10-03-a5-a6-kimi-review.md` untouched. Only the no-trim anchoring gap above needs owner action.

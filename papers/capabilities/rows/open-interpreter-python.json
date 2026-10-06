@@ -1,0 +1,534 @@
+{
+  "id": "open-interpreter-python",
+  "kind": "programmable local computer/code agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous streamed provider\u2192code loop; cached Jupyter and subprocess language runtimes; async server wraps response threads",
+    "service_boundary": "Owns local language/kernel processes and computer automation; consumes model API via LiteLLM and optional server clients"
+  },
+  "summary": "The original Python lineage exposes executable code and computer APIs with real cross-action Python/shell state, configurable continuation and auto-run. Selective transcript output, weak stop semantics and shared-state helper concurrency constrain the claims.",
+  "inspection": {
+    "files": [
+      "quarantine/open-interpreter-python/interpreter/core/respond.py",
+      "quarantine/open-interpreter-python/interpreter/core/core.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/terminal/terminal.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/jupyter_language.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/subprocess_language.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/terminal/base_language.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/shell.py",
+      "quarantine/open-interpreter-python/interpreter/core/async_core.py",
+      "quarantine/open-interpreter-python/interpreter/core/llm/llm.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/files/files.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/skills/skills.py",
+      "quarantine/open-interpreter-python/interpreter/core/computer/ai/ai.py",
+      "quarantine/open-interpreter-python/tests/core/test_core_extended.py",
+      "quarantine/open-interpreter-python/tests/test_language_subprocess.py"
+    ],
+    "scope": "Read loop/request/code admission and streaming store, terminal language caching, Jupyter/subprocess/shell run-stop-terminate, async input/settings, files/skills APIs, request trimming and representative literal tests.",
+    "limits": "No imported/executed source. Full computer-use alternative host, all language/browser/desktop backends, profiles and provider dependency internals not exhaustively traced; no feature transferred from current Rust Open Interpreter."
+  },
+  "actions": [
+    {
+      "name": "language code action",
+      "surface": "model code action",
+      "input": "Python/shell/other supported language and code",
+      "output": "streamed console/image/code output and active-line indicators",
+      "lifecycle": "cached runtime across actions; confirmation before run; Python interrupt requests preserve kernel",
+      "authority": "model under confirmation or standing auto_run",
+      "evidence": [
+        "execute",
+        "terminal",
+        "kernel",
+        "store"
+      ]
+    },
+    {
+      "name": "computer.files.edit/search",
+      "surface": "code API",
+      "input": "path and original/replacement text or search arguments",
+      "output": "actual edit or dependency search results/errors",
+      "lifecycle": "synchronous file replacement; no atomic multi-file reservation",
+      "authority": "admitted Python program with computer API",
+      "evidence": [
+        "files",
+        "execute"
+      ]
+    },
+    {
+      "name": "computer.stop/terminate; interpreter.reset",
+      "surface": "runtime API",
+      "input": "active language collection/reset request",
+      "output": "flag/signal/channel stop, cleared language/message state",
+      "lifecycle": "stop differs per language and shell inherits no-op; terminate no subprocess wait; reset combines context and runtime destruction",
+      "authority": "host/operator/program access to objects",
+      "evidence": [
+        "terminal",
+        "kernel-stop",
+        "base-stop",
+        "subprocess",
+        "reset"
+      ]
+    },
+    {
+      "name": "async input go/stop/new-message",
+      "surface": "server API",
+      "input": "chunked message or matching approval digest/command",
+      "output": "streamed reply, error or stopped response",
+      "lifecycle": "go resumes existing approval thread; new message/stop joins current thread synchronously",
+      "authority": "server client under configured authentication and exact approval match",
+      "evidence": [
+        "async"
+      ]
+    },
+    {
+      "name": "settings/model/custom instructions",
+      "surface": "operator/server/runtime config",
+      "input": "attribute/model configuration",
+      "output": "new per-use settings or partial-mutation error",
+      "lifecycle": "model setter invalidates config; settings no atomic candidate/deferred workflow fence",
+      "authority": "operator/server permitted fields; model may manipulate its admitted code environment",
+      "evidence": [
+        "settings",
+        "models",
+        "loop"
+      ]
+    },
+    {
+      "name": "skills import/create/save",
+      "surface": "code API",
+      "input": "opt-in Python skill files or teaching steps",
+      "output": "reusable function source and persisted file",
+      "lifecycle": "imports may repeat partial effects on fallback; save existence success has no experimental promotion oracle",
+      "authority": "admitted computer API, opt-in skills",
+      "evidence": [
+        "skills",
+        "skill-save"
+      ]
+    },
+    {
+      "name": "computer.ai parallel map/reduce helper",
+      "surface": "code API",
+      "input": "text chunks/query and one llm object",
+      "output": "ordered list/reduced prose",
+      "lifecycle": "thread pool temporarily mutates/restores shared interpreter context per request, isolation not guaranteed",
+      "authority": "code API invoking same model object",
+      "evidence": [
+        "ai-concurrency"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Arbitrary admitted kernel/shell programs access files; actual computer.files edit reads/replaces/writes, search delegates external aifs.",
+      "evidence": [
+        "execute",
+        "files"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent shell subprocess with streaming two readers and code-completion marker; no model live PID/job result or confirmed process-tree cleanup. Shell stop inherits no-op; terminate has no wait.",
+      "evidence": [
+        "subprocess",
+        "shell",
+        "base-stop"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model language/code blocks execute directly in cached language runtime; computer API enables further file/automation/program composition.",
+      "evidence": [
+        "execute",
+        "terminal",
+        "files"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual owned Jupyter Python kernel/client and cached language objects persist across actions; reset terminates them. Namespace/image serialization or shared service ownership not established.",
+      "evidence": [
+        "kernel",
+        "terminal",
+        "reset"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "standing_database: not established in the inspected Python core, code/language, settings and computer helper paths; not a universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable programs and opt-in reusable skill definitions compose computer actions; configured continuation text loop is an actual policy but not durable arbitrary workflow scheduling.",
+      "evidence": [
+        "execute",
+        "continue",
+        "skills",
+        "skill-save"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Current model/API configuration is captured into request; model setter invalidates loaded configuration. No independently modeled concurrent colleague roles established.",
+      "evidence": [
+        "models"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parallel computer.ai map/reduce shares and temporarily replaces one interpreter conversation rather than isolated addressable colleagues; source-inferred state interference risk.",
+      "evidence": [
+        "ai-concurrency"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Listener/reader threads and parallel AI chunk helpers overlap, but shared interpreter mutation and lack of ongoing model-facing owner handles limit meaningful independent work.",
+      "evidence": [
+        "kernel-run",
+        "subprocess",
+        "ai-concurrency"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Async new input stops/joins current response, not queued noninterrupt steering. Kernel interrupt is requested via flags; blocking stdin helper can delay it. Shell stop inherited no-op and terminate unjoined.",
+      "evidence": [
+        "async",
+        "kernel-run",
+        "kernel-stop",
+        "base-stop",
+        "subprocess"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Current custom/system instructions re-render per iteration and configured loop breakers govern continuation; Python host remains fixed respond function, no general hot turn program established.",
+      "evidence": [
+        "loop",
+        "continue"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider request token trimming is real with fallback/fail-open, not a managed model-visible summary event. Stored console truncation destroys originals independently.",
+      "evidence": [
+        "trim",
+        "store"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Current conversation data is available and saved, but clipped console/review events unavailable; reset also terminates computation, with no transformation lineage repair operation established.",
+      "evidence": [
+        "store",
+        "save",
+        "reset"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Current JSON transcript overwrites after response, clips program output and excludes reviews/active-line events; request conversion/trimming and stdin-helper calls not comprehensively captured as original attempts.",
+      "evidence": [
+        "store",
+        "save",
+        "trim",
+        "kernel-run"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Saved JSON/current message list can be read through ordinary code; no original audit query beyond selective transcript.",
+      "evidence": [
+        "save",
+        "execute",
+        "store"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Prompt re-read/model setter and settings mutate subsequent use; settings fields apply incrementally with possible partial failure, not default affected-turn/workflow deferred atomic activation.",
+      "evidence": [
+        "loop",
+        "models",
+        "settings"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Saved clipped conversation and persistent runtime objects support ordinary operation; reset terminates them and no compile/outpost/re-inhabitation protocol or VM snapshot traced.",
+      "evidence": [
+        "save",
+        "reset",
+        "kernel"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Async settings/input/output server exposes local host to clients; configured API endpoint consumes provider services. Remote compute identity/reconnect/cancellation not traced.",
+      "evidence": [
+        "async",
+        "settings",
+        "models"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Opt-in generated skill write/import defines reusable functions but success checks existence; no independent quality/performance oracle or harness refit.",
+      "evidence": [
+        "skill-save",
+        "skills"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established in the inspected Python core, code/language, settings and computer helper paths; not a universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default path yields execution confirmation, auto_run suppresses it; admitted ordinary code operates through language runtime/computer APIs. Server settings disallow selected sensitive fields separately.",
+      "evidence": [
+        "execute",
+        "store",
+        "settings"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read tests assert exact smoke markers and deliberate stream-recording loss/confirmation behavior; not a cross-cell persistence, shared-helper isolation or process-death oracle.",
+      "evidence": [
+        "runtime-test",
+        "core-test"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Jupyter silence handling uses wall time; code completion uses IOPUB idle/output marker rather than recorded causal request ID in traced listener. Server stop synchronously joins without a bound.",
+      "evidence": [
+        "kernel-run",
+        "shell",
+        "async"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "loop",
+      "path": "quarantine/open-interpreter-python/interpreter/core/respond.py",
+      "start": 14,
+      "end": 88,
+      "claim": "Each iteration re-renders current system/custom/language/computer instructions and calls selected model on copied messages."
+    },
+    {
+      "id": "execute",
+      "path": "quarantine/open-interpreter-python/interpreter/core/respond.py",
+      "start": 257,
+      "end": 362,
+      "claim": "Validates language/code, yields confirmation, re-reads edited code, syncs computer config and streams computer.run results."
+    },
+    {
+      "id": "continue",
+      "path": "quarantine/open-interpreter-python/interpreter/core/respond.py",
+      "start": 423,
+      "end": 459,
+      "claim": "Configured loop continues until model text contains a loop breaker, removes prior loop messages and coalesces assistant messages."
+    },
+    {
+      "id": "store",
+      "path": "quarantine/open-interpreter-python/interpreter/core/core.py",
+      "start": 310,
+      "end": 435,
+      "claim": "Stream recorder drops review/active-line events, auto_run suppresses confirmation and truncates stored console content after emitting output."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/open-interpreter-python/interpreter/core/core.py",
+      "start": 270,
+      "end": 302,
+      "claim": "After successful full response, overwrites one current-conversation JSON file; not an append-only original event journal."
+    },
+    {
+      "id": "reset",
+      "path": "quarantine/open-interpreter-python/interpreter/core/core.py",
+      "start": 443,
+      "end": 447,
+      "claim": "Reset terminates all owned languages, clears messages and computer import flag; context reset also kills computation."
+    },
+    {
+      "id": "terminal",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/terminal.py",
+      "start": 156,
+      "end": 207,
+      "claim": "Caches language objects across actions, closes generator via stop, terminates/removes all runtime objects on reset."
+    },
+    {
+      "id": "kernel",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/jupyter_language.py",
+      "start": 41,
+      "end": 87,
+      "claim": "Owns one started python3 Jupyter kernel/client, reused until channel stop/kernel shutdown."
+    },
+    {
+      "id": "kernel-run",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/jupyter_language.py",
+      "start": 133,
+      "end": 223,
+      "claim": "IOPUB listener interrupts on finish/stop flag, may perform blocking model stdin-helper request after output silence, sets finish even before non-Ctrl-C stdin input; idle status ends run without parent-request correlation in this path."
+    },
+    {
+      "id": "kernel-stop",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/jupyter_language.py",
+      "start": 295,
+      "end": 354,
+      "claim": "Exec sends code to cached client; output polls flags, stop sets finish_flag without joining listener or observing actual effect settlement."
+    },
+    {
+      "id": "subprocess",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/subprocess_language.py",
+      "start": 38,
+      "end": 143,
+      "claim": "Keeps subprocess with separate stdout/stderr reader threads; terminate requests immediate process stop/closes streams without wait; write failure restarts/retries potentially uncertain code."
+    },
+    {
+      "id": "base-stop",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/base_language.py",
+      "start": 12,
+      "end": 36,
+      "claim": "Default stop and terminate are no-ops despite halt/state contract comment; shell inherits stop."
+    },
+    {
+      "id": "shell",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/terminal/languages/shell.py",
+      "start": 8,
+      "end": 61,
+      "claim": "Shell subclasses persistent SubprocessLanguage, injects marker to recognize completion; no wall timeout and no stop override in class."
+    },
+    {
+      "id": "async",
+      "path": "quarantine/open-interpreter-python/interpreter/core/async_core.py",
+      "start": 136,
+      "end": 210,
+      "claim": "New input or stop sets event, cancels pending approval then synchronously joins response thread in async handler; accepted go resumes existing approved thread rather than spawning duplicate."
+    },
+    {
+      "id": "settings",
+      "path": "quarantine/open-interpreter-python/interpreter/core/async_core.py",
+      "start": 805,
+      "end": 840,
+      "claim": "Settings API validates/mutates sequential attributes; can return error after earlier fields changed, no candidate atomicity or turn/workflow activation fence."
+    },
+    {
+      "id": "trim",
+      "path": "quarantine/open-interpreter-python/interpreter/core/llm/llm.py",
+      "start": 205,
+      "end": 287,
+      "claim": "Converts request messages and token-trims; unknown context fallback 8000 and trimming exceptions fall open. Does not retain transformation originals/lineage."
+    },
+    {
+      "id": "models",
+      "path": "quarantine/open-interpreter-python/interpreter/core/llm/llm.py",
+      "start": 283,
+      "end": 337,
+      "claim": "Provider request captures model/messages/current credentials/config; assigning model invalidates loaded model config for subsequent load."
+    },
+    {
+      "id": "files",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/files/files.py",
+      "start": 8,
+      "end": 36,
+      "claim": "Computer files helper forwards search to dependency and implements actual read/replace/write."
+    },
+    {
+      "id": "skills",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/skills/skills.py",
+      "start": 94,
+      "end": 148,
+      "claim": "Opt-in imports skill Python files into kernel; combined import failure retries individual files, without effect rollback."
+    },
+    {
+      "id": "skill-save",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/skills/skills.py",
+      "start": 241,
+      "end": 259,
+      "claim": "Writes generated reusable skill and execs definition; file existence is success proxy, not behavior improvement experiment."
+    },
+    {
+      "id": "ai-concurrency",
+      "path": "quarantine/open-interpreter-python/interpreter/core/computer/ai/ai.py",
+      "start": 80,
+      "end": 110,
+      "claim": "Parallel map/reduce calls fast_llm on same llm, each mutating/restoring shared interpreter messages/system message; no per-participant isolation traced."
+    },
+    {
+      "id": "core-test",
+      "path": "quarantine/open-interpreter-python/tests/core/test_core_extended.py",
+      "start": 168,
+      "end": 216,
+      "claim": "Mock stream asserts confirmation suppression, actual stored truncation and exclusion of ephemeral events; deliberate loss oracle."
+    },
+    {
+      "id": "runtime-test",
+      "path": "quarantine/open-interpreter-python/tests/test_language_subprocess.py",
+      "start": 58,
+      "end": 98,
+      "claim": "Jupyter/Python and shell smoke tests check literal output markers, not cross-cell isolation/cancellation/settlement."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/open-interpreter-python/tests/core/test_core_extended.py",
+      "focus": "confirmation suppression and deliberate transcript loss",
+      "oracle": "Mock respond stream asserts zero yielded confirmations for auto_run, truncated stored content and ephemeral exclusions; not execution authority/cancellation integration.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/open-interpreter-python/tests/test_language_subprocess.py",
+      "focus": "basic language execution stdout",
+      "oracle": "Actual kernel/shell marker tests with bounded pytest timeout and optional runtime skips; no namespace/cancel/foreign effect lifetime oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual cross-action Python/shell state and streamed language-program interface.",
+    "Programmatic computer operations and opt-in skill functions are compact model ergonomics.",
+    "Matching approval resumes existing thread instead of spawning a duplicate."
+  ],
+  "limits": [
+    "Owned computational runtimes rather than shared fabric consumer; reset destroys them with context.",
+    "Shell stop no-op and async join/provider helper are unbounded; refit settlement unestablished.",
+    "Source-inferred shared interpreter races in AI helper and normal-input finish/interrupt conflict; no execution.",
+    "Transcript clips outputs and omits reviews; no complete original audit or governed skill experiment."
+  ],
+  "arconaut_questions": [
+    "Expose persistent service clients with identity and outcomes independently from selected context/reset.",
+    "Correlate kernel output/status to exact action request, with accepted stop separate from observed settlement.",
+    "Give parallel model helper distinct context/model state and record request/result attempts."
+  ]
+}

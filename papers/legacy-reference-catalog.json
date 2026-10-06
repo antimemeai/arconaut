@@ -1,0 +1,320 @@
+[
+  {
+    "name": "Figment",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/Figment",
+    "revision": "12dd1bc96bdd69417803bc794b6953d89c3a1af1",
+    "origin": "https://github.com/SergioBenitez/Figment.git"
+  },
+  {
+    "name": "OxideAgent",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/OxideAgent",
+    "revision": "4ad71bdb1d8c90934b54df760b0c45834a9b87f9",
+    "origin": "https://github.com/Juan-LukeKlopper/OxideAgent.git"
+  },
+  {
+    "name": "PolarisDB",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/PolarisDB",
+    "revision": "f1695bc7703df63c70e64190e4fd893cf6ad3e65",
+    "origin": "https://github.com/hugoev/PolarisDB.git"
+  },
+  {
+    "name": "SWE-bench",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/SWE-bench",
+    "revision": "f7bbbb2ccdf479001d6467c9e34af59e44a840f9",
+    "origin": "https://github.com/princeton-nlp/SWE-bench.git"
+  },
+  {
+    "name": "arbitrary",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/arbitrary",
+    "revision": "df8afe9a35263db8358674201b297639edadb0ac",
+    "origin": "https://github.com/rust-fuzz/arbitrary.git"
+  },
+  {
+    "name": "bashkit",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/bashkit",
+    "revision": "7d9f47f57e16c02fc7725326bcd397c66e6e741a",
+    "origin": "https://github.com/everruns/bashkit.git"
+  },
+  {
+    "name": "beads",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/beads",
+    "revision": "0da7f51f3bcb6ae350f836f616d8c7244c2868d0",
+    "origin": "https://github.com/steveyegge/beads.git"
+  },
+  {
+    "name": "brush-shell",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/brush-shell",
+    "revision": "f84ae8a74c43cad85824477d67ab3da5de972558",
+    "origin": "https://github.com/reubeno/brush.git"
+  },
+  {
+    "name": "cargo-fuzz",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/cargo-fuzz",
+    "revision": "f213063838d02fcab4ba55fa4d422a43f68c81a6",
+    "origin": "https://github.com/rust-fuzz/cargo-fuzz.git"
+  },
+  {
+    "name": "cargo-mutants",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/cargo-mutants",
+    "revision": "f7082f56e23438214020387ed3f766c3d31bbf13",
+    "origin": "https://github.com/sourcefrog/cargo-mutants.git"
+  },
+  {
+    "name": "chat-system",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/chat-system",
+    "revision": "8fefcaea4f51ca5cd62e58a739f617ed0912522b",
+    "origin": "https://github.com/rexlunae/chat-system.git"
+  },
+  {
+    "name": "claude-code-unofficial",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/claude-code-unofficial",
+    "revision": "6a2590911df240ff5ea56aa355696cfb94d128cb",
+    "origin": "https://github.com/codeaashu/claude-code.git"
+  },
+  {
+    "name": "claudex-pattern",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/claudex-pattern",
+    "revision": null,
+    "origin": null
+  },
+  {
+    "name": "cline",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/cline",
+    "revision": "4bb93ee5b917eed75ef4c9e3825a74380676f832",
+    "origin": "https://github.com/cline/cline.git"
+  },
+  {
+    "name": "codex",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/codex",
+    "revision": "b89ce9a2bcedcfddf3a48f387b7912d602d6d87c",
+    "origin": "https://github.com/openai/codex.git"
+  },
+  {
+    "name": "continue",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/continue",
+    "revision": "a3076b444af3fb0d9fd3805c10f75177d8f70137",
+    "origin": "https://github.com/continuedev/continue.git"
+  },
+  {
+    "name": "criterion.rs",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/criterion.rs",
+    "revision": "3dbc6c618acb48885066422d81d50729aa17b2b7",
+    "origin": "https://github.com/bheisler/criterion.rs.git"
+  },
+  {
+    "name": "devika",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/devika",
+    "revision": "80bb343cbe4a4e5f5a0ba08d2524920139baceb6",
+    "origin": "https://github.com/stitionai/devika.git"
+  },
+  {
+    "name": "flamegraph",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/flamegraph",
+    "revision": "da53bec95d19d087560f5957bdd6eabcd7d0a8e2",
+    "origin": "https://github.com/flamegraph-rs/flamegraph.git"
+  },
+  {
+    "name": "gascity",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/gascity",
+    "revision": "7d6962827469ca4dce56cad530ac4485a6003431",
+    "origin": "https://github.com/gastownhall/gascity.git"
+  },
+  {
+    "name": "gastown",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/gastown",
+    "revision": "319d33a91b2deca59bba6dd26be6b9daf8eaacf6",
+    "origin": "https://github.com/gastownhall/gastown.git"
+  },
+  {
+    "name": "gemini-cli",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/gemini-cli",
+    "revision": "f40498db644ac570a4bba90bb8711239d802ddc6",
+    "origin": "https://github.com/google-gemini/gemini-cli.git"
+  },
+  {
+    "name": "goose",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/goose",
+    "revision": "4904e3c8569a70413de86676e7a8d19fa6888640",
+    "origin": "https://github.com/aaif-goose/goose.git"
+  },
+  {
+    "name": "gpt-engineer",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/gpt-engineer",
+    "revision": "a90fcd543eedcc0ff2c34561bc0785d2ba83c47e",
+    "origin": "https://github.com/AntonOsika/gpt-engineer.git"
+  },
+  {
+    "name": "halloy",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/halloy",
+    "revision": "6c2223466a6a766eeebb4aa7b4d73be5d3d0ca6a",
+    "origin": "https://github.com/squidowl/halloy.git"
+  },
+  {
+    "name": "hyperfine",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/hyperfine",
+    "revision": "f12f3d9f86f3643b3b7deace5e160b1f0f44d2b7",
+    "origin": "https://github.com/sharkdp/hyperfine.git"
+  },
+  {
+    "name": "kimi-cli",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/kimi-cli",
+    "revision": "36c91b3874369babf2d80b140fe4bcc7be5ff8f0",
+    "origin": "https://github.com/MoonshotAI/kimi-cli.git"
+  },
+  {
+    "name": "markdown2pdf",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/markdown2pdf",
+    "revision": "e9a9f2e26b6b8162a255bea0b4b99d004891a1cb",
+    "origin": "https://github.com/theiskaa/markdown2pdf.git"
+  },
+  {
+    "name": "metagpt",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/metagpt",
+    "revision": "11cdf466d042aece04fc6cfd13b28e1a70341b1f",
+    "origin": "https://github.com/geekan/MetaGPT.git"
+  },
+  {
+    "name": "mini-swe-agent",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/mini-swe-agent",
+    "revision": "2afd0fb81bacbf0aacfac9ded6f093c5acd0bf7c",
+    "origin": "https://github.com/SWE-agent/mini-swe-agent.git"
+  },
+  {
+    "name": "oh-my-pi",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/oh-my-pi",
+    "revision": "b6d422ff6577e879ff24d6bd1eaec0d68721775a",
+    "origin": "https://github.com/can1357/oh-my-pi.git"
+  },
+  {
+    "name": "opencode",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/opencode",
+    "revision": "2006259a02a87edf9e37f253cbddf3188309026b",
+    "origin": "https://github.com/sst/opencode.git"
+  },
+  {
+    "name": "opendev",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/opendev",
+    "revision": "7caeba603322ac2804b2120102945995d9cae1b5",
+    "origin": "https://github.com/opendev-to/opendev.git"
+  },
+  {
+    "name": "openhands",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/openhands",
+    "revision": "03aab93625079c24d6f43655c9506931cf43bc17",
+    "origin": "https://github.com/All-Hands-AI/OpenHands.git"
+  },
+  {
+    "name": "pgvector",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/pgvector",
+    "revision": "12368bd79c469d82cb1914714b1b8eebab64a831",
+    "origin": "https://github.com/pgvector/pgvector.git"
+  },
+  {
+    "name": "pi",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/pi",
+    "revision": "ff3e9df5f5b32368c20b0ef553a6834b3dee9350",
+    "origin": "https://github.com/earendil-works/pi.git"
+  },
+  {
+    "name": "pi-agent-rust",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/pi-agent-rust",
+    "revision": "bbc5ade77b57a411be673e31d418534b58ad6205",
+    "origin": "https://github.com/Dicklesworthstone/pi_agent_rust.git"
+  },
+  {
+    "name": "plandex",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/plandex",
+    "revision": "e2d772072efadbe41d2946d97d79be55532dbab5",
+    "origin": "https://github.com/plandex-ai/plandex.git"
+  },
+  {
+    "name": "printpdf",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/printpdf",
+    "revision": "8a554fc5d82b4dd470264ee9024c078292da5820",
+    "origin": "https://github.com/fschutt/printpdf.git"
+  },
+  {
+    "name": "proptest",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/proptest",
+    "revision": "85a3de393331b951e20c5da1cdac9d342fc36a6f",
+    "origin": "https://github.com/proptest-rs/proptest.git"
+  },
+  {
+    "name": "qdrant",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/qdrant",
+    "revision": "44ad62f8cd69642be5afa6441612525e24a0d063",
+    "origin": "https://github.com/qdrant/qdrant.git"
+  },
+  {
+    "name": "quickcheck",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/quickcheck",
+    "revision": "eb00091c62db13b350253a5e8109b8667364117a",
+    "origin": "https://github.com/BurntSushi/quickcheck.git"
+  },
+  {
+    "name": "qwen-code",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/qwen-code",
+    "revision": "aea34fa2cb8796bac807928f010713fa19248674",
+    "origin": "https://github.com/QwenLM/qwen-code.git"
+  },
+  {
+    "name": "ratatui",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/ratatui",
+    "revision": "1c3dbd1ff4fad2696543bf332a7e413d1bb69988",
+    "origin": "https://github.com/ratatui/ratatui.git"
+  },
+  {
+    "name": "roo-code",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/roo-code",
+    "revision": "b867ec9145750d0ae1ff7f02d35406e9bf2a0b16",
+    "origin": "https://github.com/RooVetGit/Roo-Code.git"
+  },
+  {
+    "name": "rust-bash",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/rust-bash",
+    "revision": "68d6dbaf7ae059e29cfe1570a421b0e710ec8572",
+    "origin": "https://github.com/shantanugoel/rust-bash.git"
+  },
+  {
+    "name": "swe-agent",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/swe-agent",
+    "revision": "10e3e76e629ad47331af562f367b9df6501cc55c",
+    "origin": "https://github.com/princeton-nlp/SWE-agent.git"
+  },
+  {
+    "name": "sweep",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/sweep",
+    "revision": "a8b8b67bda4f89faac9314d34e7c7d5a64f76046",
+    "origin": "https://github.com/sweepai/sweep.git"
+  },
+  {
+    "name": "tabby",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/tabby",
+    "revision": "e8608d6d8f4016b9836a72037f72630d7e993468",
+    "origin": "https://github.com/TabbyML/tabby.git"
+  },
+  {
+    "name": "tarpc",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/tarpc",
+    "revision": "4d3b75bdca8ed1a2d28d688b8427835317bbbc81",
+    "origin": "https://github.com/google/tarpc.git"
+  },
+  {
+    "name": "tonic",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/tonic",
+    "revision": "66a28125580f744f43c02312d8593645673b3fa5",
+    "origin": "https://github.com/hyperium/tonic.git"
+  },
+  {
+    "name": "trae-agent",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/trae-agent",
+    "revision": "e839e559ac61bdd0e057c375dd1dee391fee797d",
+    "origin": "https://github.com/bytedance/trae-agent.git"
+  },
+  {
+    "name": "usearch",
+    "source_path": "/Users/patrickbeam/projects_old/miscellaneous/arconaut/quarantine/usearch",
+    "revision": "9fd6b0115dcdd0016e037fb5335f36824dd02090",
+    "origin": "https://github.com/unum-cloud/usearch.git"
+  }
+]

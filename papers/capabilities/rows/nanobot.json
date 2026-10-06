@@ -1,0 +1,542 @@
+{
+  "id": "nanobot",
+  "kind": "persistent multi-channel Python agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Asyncio per-session admission/queues, immutable admitted provider runtime, shared hook/tool runner and managed process sessions.",
+    "service_boundary": "Owns local session/memory/child/task state and process lifetimes; consumes providers/MCP/channel services, not a shared compute governor."
+  },
+  "summary": "A multi-channel agent with checkpointed interruption/recovery, programmable host hooks and bounded model runtime self-control.",
+  "inspection": {
+    "files": [
+      "quarantine/nanobot/nanobot/agent/loop.py",
+      "quarantine/nanobot/nanobot/agent/runner.py",
+      "quarantine/nanobot/nanobot/agent/tools/self.py",
+      "quarantine/nanobot/nanobot/agent/tools/loader.py",
+      "quarantine/nanobot/nanobot/agent/tools/filesystem.py",
+      "quarantine/nanobot/nanobot/agent/tools/exec_session.py",
+      "quarantine/nanobot/nanobot/agent/tools/shell.py",
+      "quarantine/nanobot/nanobot/session/manager.py",
+      "quarantine/nanobot/nanobot/agent/memory.py",
+      "quarantine/nanobot/nanobot/agent/autocompact.py",
+      "quarantine/nanobot/nanobot/agent/tools/sessions.py",
+      "quarantine/nanobot/nanobot/agent/subagent.py",
+      "quarantine/nanobot/nanobot/channels/manager.py",
+      "quarantine/nanobot/tests/agent/test_stop_preserves_context.py",
+      "quarantine/nanobot/tests/channels/test_channel_manager_hot_reload.py"
+    ],
+    "scope": "Read entry/runner actual provider/tool/checkpoint flow, runtime control, process/session persistence, compaction, subagents, tools, channel reload and stop/reload tests.",
+    "limits": "No source executed. Dream implementation, all channel/provider adapters and deployment restart orchestration not exhaustively traced; no universal absence claims."
+  },
+  "actions": [
+    {
+      "name": "Filesystem / search / apply_patch discovery",
+      "surface": "model tools",
+      "input": "paths, lines/text/patch/search parameters",
+      "output": "content, changed file/error",
+      "lifecycle": "tool classes scoped by loader; per-request read state",
+      "authority": "model allowlisted FS/workspace/sandbox scope",
+      "evidence": [
+        "loader",
+        "fs",
+        "write"
+      ]
+    },
+    {
+      "name": "exec sessions / stdin / poll / terminate",
+      "surface": "model tools",
+      "input": "command, cwd, timeout, existing session handle/characters",
+      "output": "bounded output, done/exit/time/handle",
+      "lifecycle": "owned ongoing process across actions; deadlines checked on poll; owner-scoped cleanup",
+      "authority": "model tool; process-tree option and host policy",
+      "evidence": [
+        "process",
+        "poll",
+        "kill",
+        "owner"
+      ]
+    },
+    {
+      "name": "my runtime inspection/changes",
+      "surface": "model tool",
+      "input": "allowlisted snapshot key/set value or model_preset",
+      "output": "snapshot or validated next-turn setting/error",
+      "lifecycle": "admitted request runtime immutable; modification default disabled",
+      "authority": "model with allow_set; core machinery deliberately blocked",
+      "evidence": [
+        "my",
+        "myset",
+        "runtime"
+      ]
+    },
+    {
+      "name": "spawn and child result routing",
+      "surface": "model/host APIs",
+      "input": "task, label, session origin, admitted runtime",
+      "output": "background task and parent notification",
+      "lifecycle": "semaphore admitted independent run; result injects before next request",
+      "authority": "model/host child tools limited by scope",
+      "evidence": [
+        "child",
+        "announce",
+        "runner"
+      ]
+    },
+    {
+      "name": "Compact / stop / checkpoint recovery",
+      "surface": "operator/host APIs",
+      "input": "session/current work/custom summary",
+      "output": "summary boundary or completed partial context",
+      "lifecycle": "explicit stop differs from shutdown; compaction captures append boundary",
+      "authority": "operator/host runner",
+      "evidence": [
+        "summary",
+        "compact",
+        "stop"
+      ]
+    },
+    {
+      "name": "search_sessions/read_session",
+      "surface": "model tools",
+      "input": "session key/handle and literal query",
+      "output": "bounded visible message excerpts",
+      "lifecycle": "persisted session retrieval; current active session excluded",
+      "authority": "model with access store scope",
+      "evidence": [
+        "readsession"
+      ]
+    },
+    {
+      "name": "Host hooks and tool plugins/channel enable-disable",
+      "surface": "program API/operator feature control",
+      "input": "Python hooks/entry-point classes or feature action",
+      "output": "modified requests/tool results; live channel clients",
+      "lifecycle": "loop hook phases, cached discovery and channel-specific reload",
+      "authority": "host programmer; model runtime control does not replace hooks",
+      "evidence": [
+        "loader",
+        "runner",
+        "channel"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scoped read/write/search/patch class discovery; actual write replaces text; request-local state.",
+      "evidence": [
+        "fs",
+        "write",
+        "loader"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Ongoing owned piped program sessions, stdin/poll/terminate; decoded/truncated streams and kill timeout limits.",
+      "evidence": [
+        "process",
+        "poll",
+        "kill",
+        "owner"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Commands can compose programs through shell; Python host hooks/plugins are executable. No traced persistent model-authored kernel API.",
+      "evidence": [
+        "loader",
+        "runner",
+        "process"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Ongoing process sessions can run interpreters but no specific shared persistent namespace/checkpoint contract traced.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Owned structured sessions/cursors and Markdown/JSONL memories; model session snippets are narrow, no general standing SQL research table interface in inspected paths.",
+      "evidence": [
+        "memory",
+        "readsession"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "AgentRunSpec injection/continuation/checkpoint callbacks and hook phases are programmable host machinery, plus scoped tool plugins.",
+      "evidence": [
+        "runner",
+        "loader",
+        "loop"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Immutable per-admission provider runtime, default/session presets and independently captured child runtime; no selection-to-collaboration inference.",
+      "evidence": [
+        "runtime",
+        "myset",
+        "child"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Child completion bus into busy-parent next-request snapshots; peer-addressed ongoing room not established.",
+      "evidence": [
+        "announce",
+        "runner"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent child semaphore/task tracking and safe tool batch dispatch; multiple owned exec sessions across actions.",
+      "evidence": [
+        "child",
+        "runner",
+        "process"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Queued injections before each provider request and explicit stop preserves partial results. Kill attempts bounded with suppressed failure/timeout, not guaranteed globally settled work.",
+      "evidence": [
+        "runner",
+        "stop",
+        "kill"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host hook/injection/continuation phases alter running loop; MyTool cannot replace core runner/hooks.",
+      "evidence": [
+        "runner",
+        "my",
+        "loop"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Managed summary replay boundary retains raw message transcript, captures concurrent append boundary and emits phase outcomes; old provider state cleared.",
+      "evidence": [
+        "summary",
+        "compact",
+        "idlecompact"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retained prefix and checkpoint restore support host reconstruction; model read_session visible excerpts exclude active session and tool stream.",
+      "evidence": [
+        "summary",
+        "stop",
+        "readsession"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Retained transcript is already normalized result data; bounded decoded process IO loses originals. Atomic replacement default not fsynced; not captured all original provider/program attempts.",
+      "evidence": [
+        "runner",
+        "process",
+        "poll",
+        "persist"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model persisted visible user/assistant session retrieval is bounded and excludes active session; full original captured IO not available.",
+      "evidence": [
+        "readsession",
+        "persist"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Future-turn config/model admissions and live channel start/stop; cached tool discovery not unrestricted live replacement.",
+      "evidence": [
+        "runtime",
+        "myset",
+        "channel",
+        "loader"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shutdown retains recovery checkpoint and persisted session; no outpost/native executable replacement or preservation of owned active process handles traced.",
+      "evidence": [
+        "stop",
+        "persist"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tool loader admits MCP/channel services and hot channel clients; lower remote work settlement and shared-service orchestration outside inspected core.",
+      "evidence": [
+        "loader",
+        "channel"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Memory Git/Dream groundwork inspected, but candidate executable-policy change/evaluate/promote machinery not traced; generic edits insufficient.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Inspected native tool/core paths do not establish universal model state-capturing grievance and separate complaint table.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Filesystem/workspace and scoped tool authority; model self-control enabled inspection but mutation false by default, core runner/hooks blocked.",
+      "evidence": [
+        "fs",
+        "my",
+        "myset"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read literal stop checkpoint and event-gated channel start/stop oracles; mocks cannot establish actual provider/program settlement or crash persistence.",
+      "evidence": [
+        "stoptest",
+        "reloadtest"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Owned exec deadlines/elapsed use monotonic; idle archival uses civil timestamps and compaction identity/boundary, no paused cross-process clock contract.",
+      "evidence": [
+        "process",
+        "poll",
+        "idlecompact",
+        "compact"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "loop",
+      "path": "quarantine/nanobot/nanobot/agent/loop.py",
+      "start": 2155,
+      "end": 2193,
+      "claim": "Actual loop runs shared agent engine and records messages/provider compaction/checkpoints and continuation."
+    },
+    {
+      "id": "runner",
+      "path": "quarantine/nanobot/nanobot/agent/runner.py",
+      "start": 432,
+      "end": 549,
+      "claim": "Finite inbox snapshot before model request, hooks, assistant checkpoint then batched tool execution and normalized results."
+    },
+    {
+      "id": "runtime",
+      "path": "quarantine/nanobot/nanobot/agent/loop.py",
+      "start": 520,
+      "end": 605,
+      "claim": "Config invalidation and default/session model choices apply to immutable future-turn admissions."
+    },
+    {
+      "id": "my",
+      "path": "quarantine/nanobot/nanobot/agent/tools/self.py",
+      "start": 30,
+      "end": 104,
+      "claim": "MyTool enabled but modification default false, narrow adapter blocks core runner/session/hook/authority replacement."
+    },
+    {
+      "id": "myset",
+      "path": "quarantine/nanobot/nanobot/agent/tools/self.py",
+      "start": 500,
+      "end": 555,
+      "claim": "Session model preset selected for next turn; direct instance-wide model/window changes refused during active session."
+    },
+    {
+      "id": "loader",
+      "path": "quarantine/nanobot/nanobot/agent/tools/loader.py",
+      "start": 36,
+      "end": 111,
+      "claim": "Cached built-in package/entry-point tool discovery, scoped create/enabled checks and native name precedence."
+    },
+    {
+      "id": "fs",
+      "path": "quarantine/nanobot/nanobot/agent/tools/filesystem.py",
+      "start": 35,
+      "end": 104,
+      "claim": "Native FS tool class permissions separate read/write allowed paths with request-scoped file state."
+    },
+    {
+      "id": "write",
+      "path": "quarantine/nanobot/nanobot/agent/tools/filesystem.py",
+      "start": 550,
+      "end": 589,
+      "claim": "Native write_file resolves write path then replaces file text and clears read state."
+    },
+    {
+      "id": "process",
+      "path": "quarantine/nanobot/nanobot/agent/tools/exec_session.py",
+      "start": 118,
+      "end": 161,
+      "claim": "Owned process sessions use monotonic start/deadline, separate bounded decoded streams; UTF-8 errors replaced."
+    },
+    {
+      "id": "poll",
+      "path": "quarantine/nanobot/nanobot/agent/tools/exec_session.py",
+      "start": 185,
+      "end": 262,
+      "claim": "Polling yields output, timeout kills, checks exit, drains output with limits; kill waits on stream tasks with suppressed timeout."
+    },
+    {
+      "id": "kill",
+      "path": "quarantine/nanobot/nanobot/agent/tools/shell.py",
+      "start": 711,
+      "end": 763,
+      "claim": "Root/process-group or Windows job-tree kill and bounded awaited root exit; suppressed timeout/errors limit guaranteed settlement."
+    },
+    {
+      "id": "owner",
+      "path": "quarantine/nanobot/nanobot/agent/tools/exec_session.py",
+      "start": 407,
+      "end": 432,
+      "claim": "Owner-scoped termination reinserts sessions on kill exceptions, avoiding loss of failed handle custody."
+    },
+    {
+      "id": "stop",
+      "path": "quarantine/nanobot/nanobot/agent/loop.py",
+      "start": 1579,
+      "end": 1608,
+      "claim": "Explicit stop restores runtime checkpoint completed results; gateway shutdown keeps durable checkpoint untouched."
+    },
+    {
+      "id": "summary",
+      "path": "quarantine/nanobot/nanobot/session/manager.py",
+      "start": 219,
+      "end": 279,
+      "claim": "Summary checkpoint changes replay boundary while retaining message transcript, legal tool-result start."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/nanobot/nanobot/agent/memory.py",
+      "start": 1241,
+      "end": 1319,
+      "claim": "Compaction serializes captured boundary, preserves concurrent appends, clears provider replay state, emits phase outcomes."
+    },
+    {
+      "id": "idlecompact",
+      "path": "quarantine/nanobot/nanobot/agent/autocompact.py",
+      "start": 63,
+      "end": 110,
+      "claim": "Idle archival skips active keys and emits failure handling; TTL uses civil wall time."
+    },
+    {
+      "id": "persist",
+      "path": "quarantine/nanobot/nanobot/session/manager.py",
+      "start": 1207,
+      "end": 1235,
+      "claim": "Session JSONL full-state atomic replacement, optional fsync default false and checkpoint overlay removed after save."
+    },
+    {
+      "id": "readsession",
+      "path": "quarantine/nanobot/nanobot/agent/tools/sessions.py",
+      "start": 164,
+      "end": 228,
+      "claim": "Model reads bounded visible user/assistant sessions with snippets, excludes active session key; no raw tool/provider stream query."
+    },
+    {
+      "id": "child",
+      "path": "quarantine/nanobot/nanobot/agent/subagent.py",
+      "start": 139,
+      "end": 166,
+      "claim": "Each child captures explicit runtime; semaphore and task maps plus isolated owned exec manager."
+    },
+    {
+      "id": "announce",
+      "path": "quarantine/nanobot/nanobot/agent/subagent.py",
+      "start": 527,
+      "end": 569,
+      "claim": "Child completion routed to parent pending injection queue via system bus rather than competing session task."
+    },
+    {
+      "id": "memory",
+      "path": "quarantine/nanobot/nanobot/agent/memory.py",
+      "start": 59,
+      "end": 90,
+      "claim": "Standing memory is Markdown/JSONL with cursor and Git tracking, not an exposed SQL research store."
+    },
+    {
+      "id": "channel",
+      "path": "quarantine/nanobot/nanobot/channels/manager.py",
+      "start": 444,
+      "end": 501,
+      "claim": "Hot channel actions reload config and start/stop owned channel clients; always-enabled feature requires restart."
+    },
+    {
+      "id": "stoptest",
+      "path": "quarantine/nanobot/tests/agent/test_stop_preserves_context.py",
+      "start": 46,
+      "end": 116,
+      "claim": "Injected cancellation oracle checks exact roles/tool result recovery, checkpoint cleared and save invoked; fake IO does not establish actual crash durability."
+    },
+    {
+      "id": "reloadtest",
+      "path": "quarantine/nanobot/tests/channels/test_channel_manager_hot_reload.py",
+      "start": 113,
+      "end": 147,
+      "claim": "Gated fake channel start/stop oracle asserts no restart required and channel removed/stopped."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/nanobot/tests/agent/test_stop_preserves_context.py",
+      "focus": "partial work preservation on cancellation",
+      "oracle": "Exact user/assistant/tool sequence and checkpoint clearing/save invoked; mocked persistence/provider, no crash durability proof.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/nanobot/tests/channels/test_channel_manager_hot_reload.py",
+      "focus": "live owned-channel start/stop",
+      "oracle": "Wait for start event, exact stopped/removal/no restart; fake channel, not all adapter replacement.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit stop/shutdown recovery distinction with direct checkpoint-content oracle.",
+    "Immutable admitted provider runtime separates active from future-turn changes.",
+    "Failed owner cleanup reinserts handle custody rather than forgetting work."
+  ],
+  "limits": [
+    "MyTool mutation opt-in/allowlisted; core hooks/runtime not model-replaceable through it.",
+    "Selective bounded transformed transcripts and IO cannot serve comprehensive audit.",
+    "Native refit/outpost and peer room not established."
+  ],
+  "arconaut_questions": [
+    "Specify checkpoint treatment for explicit interrupt, failed workflow and replacement shutdown separately.",
+    "Make refit require observed settlement rather than a sent kill/cancel signal.",
+    "Preserve model program agency while staging definition changes after affected workflows conclude."
+  ]
+}

@@ -1,0 +1,737 @@
+{
+  "id": "continue",
+  "kind": "coding agent and editor client",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node CLI with Ink/React UI and service container; separate editor GUI/core messaging path. Async provider loop launches approved tool promises in parallel.",
+    "service_boundary": "Harness owns session files, globals and shell/background jobs; consumes configured providers, MCP/HTTP and editor host capabilities. No independent shared kernel fabric traced."
+  },
+  "summary": "Pinned final/read-only Continue includes CLI and editor agents with provider/tool loops, MCP, background shells, configurable policies and beta delegated subagents; traced child/global state and destructive CLI compaction limit isolation and original audit.",
+  "inspection": {
+    "files": [
+      "quarantine/continue/README.md",
+      "quarantine/continue/extensions/cli/src/stream/streamChatResponse.ts",
+      "quarantine/continue/extensions/cli/src/stream/handleToolCalls.ts",
+      "quarantine/continue/extensions/cli/src/stream/streamChatResponse.helpers.ts",
+      "quarantine/continue/extensions/cli/src/tools/index.tsx",
+      "quarantine/continue/extensions/cli/src/tools/readFile.ts",
+      "quarantine/continue/extensions/cli/src/tools/writeFile.ts",
+      "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.ts",
+      "quarantine/continue/extensions/cli/src/tools/checkBackgroundJob.ts",
+      "quarantine/continue/extensions/cli/src/subagent/index.ts",
+      "quarantine/continue/extensions/cli/src/tools/subagent.ts",
+      "quarantine/continue/extensions/cli/src/subagent/executor.ts",
+      "quarantine/continue/extensions/cli/src/compaction.ts",
+      "quarantine/continue/extensions/cli/src/stream/streamChatResponse.autoCompaction.ts",
+      "quarantine/continue/extensions/cli/src/session.ts",
+      "quarantine/continue/core/util/history.ts",
+      "quarantine/continue/extensions/cli/src/stream/messageQueue.ts",
+      "quarantine/continue/extensions/cli/src/ui/hooks/useChat.ts",
+      "quarantine/continue/extensions/cli/src/commands/serve.ts",
+      "quarantine/continue/extensions/cli/src/services/ConfigService.ts",
+      "quarantine/continue/extensions/cli/src/tools/reportFailure.ts",
+      "quarantine/continue/extensions/cli/src/permissions/defaultPolicies.ts",
+      "quarantine/continue/gui/src/redux/thunks/streamNormalInput.ts",
+      "quarantine/continue/gui/src/redux/thunks/callToolById.ts",
+      "quarantine/continue/core/llm/streamChat.ts",
+      "quarantine/continue/core/tools/callTool.ts",
+      "quarantine/continue/extensions/cli/src/stream/streamChatResponse.autoContinuation.test.ts",
+      "quarantine/continue/extensions/cli/src/tools/subagent.test.ts",
+      "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.test.ts",
+      "quarantine/continue/extensions/cli/src/tools/allBuiltIns.ts"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "Read",
+      "surface": "model tool",
+      "input": "filepath",
+      "output": "UTF-8 text or size/security/error",
+      "lifecycle": "awaited; records read marker",
+      "authority": "model, exposed-policy check",
+      "evidence": [
+        "e7",
+        "e9"
+      ]
+    },
+    {
+      "name": "Write / Edit / MultiEdit",
+      "surface": "model tools",
+      "input": "filepath/content or edit schema; model capability chooses editing tool",
+      "output": "file mutation/diff or errors",
+      "lifecycle": "preprocess preview then approved operation; Write traced, editing internals not traced",
+      "authority": "model under configured policy",
+      "evidence": [
+        "e7",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "Bash",
+      "surface": "model tool",
+      "input": "command, optional timeout",
+      "output": "truncated stdout/stderr, error or background Job ID",
+      "lifecycle": "spawns owned shell; silence timeout resets on output; background signal transfers ownership",
+      "authority": "TUI ask/headless allow subject security evaluator",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e30"
+      ]
+    },
+    {
+      "name": "CheckBackgroundJob",
+      "surface": "model tool",
+      "input": "job_id",
+      "output": "JSON status, output, timestamps, exit/error",
+      "lifecycle": "polls existing job; not independently resumable execution",
+      "authority": "model; base registry and default allow",
+      "evidence": [
+        "e7",
+        "e15",
+        "e30"
+      ]
+    },
+    {
+      "name": "Subagent",
+      "surface": "beta model tool",
+      "input": "description,prompt,subagent_name",
+      "output": "streaming output + completed/failed task metadata",
+      "lifecycle": "awaits same loop with selected model; fresh child controller; restores globals finally",
+      "authority": "model when beta enabled; executor temporarily globally allows tools",
+      "evidence": [
+        "e7",
+        "e16",
+        "e17",
+        "e18",
+        "e19"
+      ]
+    },
+    {
+      "name": "MCP adapted tool.run",
+      "surface": "extension model tools",
+      "input": "server-advertised schema and args",
+      "output": "JSON MCP content or error",
+      "lifecycle": "awaited through consumed MCP service",
+      "authority": "policy-filtered model; service/container own connection",
+      "evidence": [
+        "e8"
+      ]
+    },
+    {
+      "name": "compactChatHistory / automatic compaction",
+      "surface": "internal/operator mechanism",
+      "input": "history,model/API,system tokens",
+      "output": "summary replacement history and index",
+      "lifecycle": "separate model request; successful auto path persists replacement",
+      "authority": "harness/operator; not native model original-restoration tool",
+      "evidence": [
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "enqueueMessage / handleInterrupt / serve /message",
+      "surface": "operator/API",
+      "input": "prompt/images or empty interrupt request",
+      "output": "queued next turn or controller abort",
+      "lifecycle": "FIFO after response; serve owns response controller; does not prove child shell cancellation",
+      "authority": "operator/remote client",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    {
+      "name": "ConfigService.reload / updateConfigPath",
+      "surface": "programmable service API",
+      "input": "configuration path and initialization state",
+      "output": "loaded config and dependent model/MCP reload",
+      "lifecycle": "no affected-workflow activation fence traced; active loop still uses passed model/API",
+      "authority": "host configuration service",
+      "evidence": [
+        "e2",
+        "e3",
+        "e28"
+      ]
+    },
+    {
+      "name": "ReportFailure",
+      "surface": "conditional model tool",
+      "input": "errorMessage, CLI --id",
+      "output": "Failure reported acknowledgement or API/auth error",
+      "lifecycle": "posts FAILED and marks task complete",
+      "authority": "model, allow default; remote agent authorization required",
+      "evidence": [
+        "e29",
+        "e30"
+      ]
+    },
+    {
+      "name": "legacy slash command.run",
+      "surface": "editor workflow API",
+      "input": "command input,history,LLM,IDE,fetch,abort context",
+      "output": "async generated assistant chunks/prompt log",
+      "lifecycle": "core generator invoked instead of normal model stream when legacy metadata present",
+      "authority": "configured command author/operator; not arbitrary model turn redefinition",
+      "evidence": [
+        "e31",
+        "e34"
+      ]
+    },
+    {
+      "name": "tools/call / callClientTool",
+      "surface": "editor operation bridge",
+      "input": "selected tool function arguments/ID",
+      "output": "ContextItems/error/MCP UI state",
+      "lifecycle": "client/core dispatch; results recorded before streamResponseAfterToolCall",
+      "authority": "editor policies approve; host supplies IDE/file/process authority",
+      "evidence": [
+        "e32",
+        "e33",
+        "e35"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "CLI Read/Write actual filesystem operations, request-gated editing catalog, plus separate editor tool bridge. Output/read limits and security checks apply.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e11",
+        "e33"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bash owns child shells, has no-output timeout and foreground-to-background job transfer with status polling. Tool dispatcher passes no provider abort signal to Bash.",
+      "evidence": [
+        "e8",
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native CLI file editing and Bash are code-action substrate; separate editor bridge supplies host tools. No language kernel or bounded structural-code oracle established by traced operations.",
+      "evidence": [
+        "e7",
+        "e11",
+        "e33"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No persistent interpreter/kernel established in inspected CLI loop, shell, child executor or editor bridge.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Inspected service container/history/job state is not an independently shared database execution/query contract.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Configured MCP functions and editor legacy slash async generators provide programmable composition. CLI beta child agents reuse its fixed streaming loop.",
+      "evidence": [
+        "e8",
+        "e18",
+        "e34",
+        "e35"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Child configuration selects its own model/API for Subagent and core editor selects role chat model. Distinguish from live peer collaboration.",
+      "evidence": [
+        "e17",
+        "e19",
+        "e34"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Beta delegated child work streams results to one parent; no peer mailbox/IRC bus traced, and executor mutates global state instead of isolating each participant.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Approved CLI tool promises start during subsequent sequential permission checks, then join in original output order. Parallel Subagent calls can overlap global overrides; inspected unit tests mock executor and do not validate isolation.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e18",
+        "e37"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator queue runs after response and local/remote abort controls provider/compaction. Fresh child controller and Bash context have no parent signal propagation in inspected dispatch, so provider interruption does not establish quiescence.",
+      "evidence": [
+        "e8",
+        "e17",
+        "e19",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Loop recomputes tools/system per iteration; editor legacy command generator replaces normal stream. No model-owned custom settlement/request scheduler or arbitrary hot turn program traced.",
+      "evidence": [
+        "e2",
+        "e34"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic and explicit summary creation replaces history; continuation can add continue after compaction. This is one summary mechanism, not interchangeable managed projections.",
+      "evidence": [
+        "e2",
+        "e20",
+        "e21",
+        "e36"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Errors retain pre-compaction history in memory; successful replacement overwrites session JSON. No model tool for original fetch/append-only restore identified in these paths.",
+      "evidence": [
+        "e20",
+        "e21",
+        "e23"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session writes current history omitting system messages; compaction replaces history and shell outputs truncate. Tool timing and editor prompt devdata are partial records, not original event/transport/effect retention.",
+      "evidence": [
+        "e8",
+        "e14",
+        "e21",
+        "e22",
+        "e23",
+        "e31"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session JSON/history and background status are inspectable records; no cross-event immutable audit query API established.",
+      "evidence": [
+        "e15",
+        "e23"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Config service reloads model/MCP and each loop step refreshes tools/system; active request loop retains its passed model/API. No deferred affected-workflow fence or atomic cross-service activation traced.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e28"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No outpost handoff, quiescent executable rebuild or preserved uncertain-action identity in inspected session/config lifecycle.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes provider APIs and MCP; serve mode queues remote chat with per-response interruption. Server owns agent state and shell jobs, rather than an independent shared compute fabric.",
+      "evidence": [
+        "e3",
+        "e8",
+        "e27",
+        "e35"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Model file/Bash tools can edit programs, but no model-governed trial/measurement/adoption loop or self-refit safety protocol established.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "ReportFailure is exposed only with agent --id and remote auth/API; it marks task FAILED/complete and sends error text. It is not a nonfatal agent-state grievance table.",
+      "evidence": [
+        "e29",
+        "e30"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Configurable ask/allow/exclude with headless wildcard allow; plan allows Bash. Beta subagent globally overwrites permissions to allow all; parallel tool launch makes that boundary materially weak for isolation.",
+      "evidence": [
+        "e5",
+        "e18",
+        "e30"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read tests assert mocked continuation/child formatting and simple real-shell outputs when executed; none establish child global isolation, compaction semantics or complete audit. Tests not run.",
+      "evidence": [
+        "e36",
+        "e37",
+        "e38"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Queue timestamps, per-dispatch Date.now duration, and original-index result ordering coexist with parallel completion and in-memory state; no durable global causal clock traced.",
+      "evidence": [
+        "e6",
+        "e8",
+        "e24"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/continue/README.md",
+      "start": 17,
+      "end": 31,
+      "claim": "Pinned README describes final 2.0 release and repository read-only maintenance status; CLI and editor hosts remain distinct source paths."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.ts",
+      "start": 443,
+      "end": 583,
+      "claim": "CLI loop refreshes history/system/tools per iteration, compacts around request/tool execution, observes provider abort and can insert continue after compaction."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.ts",
+      "start": 259,
+      "end": 285,
+      "claim": "Provider request uses passed model/API, assembled OpenAI history, tools, completion options and retry abort signal."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/continue/extensions/cli/src/stream/handleToolCalls.ts",
+      "start": 94,
+      "end": 163,
+      "claim": "Assistant call IDs persist before preprocessing and execution; failed preprocessing and rejected headless work have explicit result/state handling."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.helpers.ts",
+      "start": 469,
+      "end": 638,
+      "claim": "Each permission check is sequential, but approved tools immediately launch into promises; Promise.all joins execution, so later permission checks can overlap running tools."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.helpers.ts",
+      "start": 638,
+      "end": 648,
+      "claim": "Final tool results are assembled in original call order, distinct from completion/event ordering."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/continue/extensions/cli/src/tools/index.tsx",
+      "start": 64,
+      "end": 149,
+      "claim": "Actual dynamic tool registry includes CheckBackgroundJob, model-capability editing choice, optional beta Subagent and MCP; several allBuiltIns catalog entries are not automatically request tools."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/continue/extensions/cli/src/tools/index.tsx",
+      "start": 192,
+      "end": 275,
+      "claim": "MCP tool schemas adapt to Continue tool.run; dispatcher passes tool IDs/count, records timing/telemetry and returns or propagates results/errors."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/continue/extensions/cli/src/tools/readFile.ts",
+      "start": 35,
+      "end": 124,
+      "claim": "Read preprocess checks sensitive file concerns; actual UTF-8 read resolves path, divides output limits for parallel calls and marks read file."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/continue/extensions/cli/src/tools/writeFile.ts",
+      "start": 31,
+      "end": 86,
+      "claim": "Write validates path/content and previews existing-file diff."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/continue/extensions/cli/src/tools/writeFile.ts",
+      "start": 120,
+      "end": 158,
+      "claim": "Write creates parent directories and overwrites file, returning a diff for existing content."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.ts",
+      "start": 118,
+      "end": 213,
+      "claim": "Bash validates command/timeout, evaluates command-security policy and spawns platform shell with per-batch output limits."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.ts",
+      "start": 225,
+      "end": 285,
+      "claim": "Foreground shell can transfer the same child to background job ownership and return job ID; silence timer kills child after no-output timeout."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.ts",
+      "start": 302,
+      "end": 377,
+      "claim": "Output resets timeout and streams history; close/error clears timer, output is truncated, and nonzero exit rejects only when stderr exists."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/continue/extensions/cli/src/tools/checkBackgroundJob.ts",
+      "start": 1,
+      "end": 67,
+      "claim": "CheckBackgroundJob returns JSON identity/status/output/timing/exit/error; missing ID reports available jobs."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/continue/extensions/cli/src/subagent/index.ts",
+      "start": 3,
+      "end": 27,
+      "claim": "Subagent native schema takes description, prompt and subagent_name; metadata placeholder is replaced by actual dynamic implementation."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/continue/extensions/cli/src/tools/subagent.ts",
+      "start": 23,
+      "end": 112,
+      "claim": "Beta tool resolves configured agent/model, requires parent session, creates new AbortController, streams child output and returns completion metadata."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/continue/extensions/cli/src/subagent/executor.ts",
+      "start": 57,
+      "end": 122,
+      "claim": "Child executor temporarily replaces global permission service with wildcard allow and global system/history methods, using a local initial prompt."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/continue/extensions/cli/src/subagent/executor.ts",
+      "start": 125,
+      "end": 199,
+      "claim": "Escape can abort child; same streaming loop uses selected child model/API and finally restores global functions/permissions; parentSessionId is not used in this path."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/continue/extensions/cli/src/compaction.ts",
+      "start": 91,
+      "end": 155,
+      "claim": "Compaction makes a separate model summary request and returns a short replacement history rather than immutable context edits."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.autoCompaction.ts",
+      "start": 174,
+      "end": 216,
+      "claim": "Successful automatic compaction calls updateSessionHistory with replacement history; failure retains current history."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/continue/extensions/cli/src/session.ts",
+      "start": 210,
+      "end": 235,
+      "claim": "Persisted snapshot omits system messages and normalizes user editor state."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/continue/core/util/history.ts",
+      "start": 111,
+      "end": 134,
+      "claim": "History manager overwrites session JSON with current history and selected metadata; not an append-only original event store."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/continue/extensions/cli/src/stream/messageQueue.ts",
+      "start": 1,
+      "end": 61,
+      "claim": "FIFO in-memory queue holds message/images/timestamp and emits changes."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/continue/extensions/cli/src/ui/hooks/useChat.ts",
+      "start": 355,
+      "end": 378,
+      "claim": "Queued messages dispatch after response finally and a UI delay."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/continue/extensions/cli/src/ui/hooks/useChat.ts",
+      "start": 686,
+      "end": 735,
+      "claim": "Interrupt sends empty remote /message request or aborts local compaction/provider controller; partial non-tool assistant can be removed from visible history."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/continue/extensions/cli/src/commands/serve.ts",
+      "start": 448,
+      "end": 482,
+      "claim": "Remote serve consumes queued messages one at a time, writes user history and creates per-response abort controller."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/continue/extensions/cli/src/services/ConfigService.ts",
+      "start": 347,
+      "end": 403,
+      "claim": "Config reload/switch updates dependent model and MCP services without an inspected active-workflow fence."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/continue/extensions/cli/src/tools/reportFailure.ts",
+      "start": 8,
+      "end": 89,
+      "claim": "ReportFailure requires --id and API/auth, sets remote agent FAILED/error and marks metadata complete, unlike a nonfatal state-bearing complaint."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/continue/extensions/cli/src/permissions/defaultPolicies.ts",
+      "start": 7,
+      "end": 58,
+      "claim": "TUI defaults ask for writes/Bash/MCP; headless defaults wildcard allow; plan excludes file writes but allows Bash."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/continue/gui/src/redux/thunks/streamNormalInput.ts",
+      "start": 174,
+      "end": 256,
+      "claim": "Editor compiles/prunes context before bridge stream, attaches provider prompt/completion devdata, and passes legacy slash metadata."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/continue/gui/src/redux/thunks/streamNormalInput.ts",
+      "start": 284,
+      "end": 359,
+      "claim": "Editor tool calls preprocess and evaluate policies, including parallel approved readonly work while other calls await approval."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/continue/gui/src/redux/thunks/callToolById.ts",
+      "start": 59,
+      "end": 146,
+      "claim": "Editor routes client tools or core tools/call and stores context results/errors before continuation thunk."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/continue/core/llm/streamChat.ts",
+      "start": 25,
+      "end": 120,
+      "claim": "Core selects chat role model; legacy slash command generators receive IDE/LLM/history/abort/fetch capabilities, otherwise normal streamChat executes."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/continue/core/tools/callTool.ts",
+      "start": 70,
+      "end": 109,
+      "claim": "Core supports HTTP and MCP tool routing with input coercion, timeout and returned error context."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.autoContinuation.test.ts",
+      "start": 135,
+      "end": 197,
+      "claim": "Mocked compaction/provider test asserts inserted continue and repeated provider call, not semantic summary completeness or original retention."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/continue/extensions/cli/src/tools/subagent.test.ts",
+      "start": 83,
+      "end": 118,
+      "claim": "Mocked child executor test checks inputs, streamed callback and completion formatting; does not exercise global state isolation."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.test.ts",
+      "start": 11,
+      "end": 44,
+      "claim": "Shell tests assert actual echo output and platform-shaped cwd when run; no background/cancel/concurrency oracle in this read portion."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/continue/extensions/cli/src/stream/streamChatResponse.autoContinuation.test.ts",
+      "focus": "Automatic continuation after mocked compaction",
+      "oracle": "Asserts continue insertion and provider call count using fake provider and compaction; does not verify semantic summaries/original retention.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/continue/extensions/cli/src/tools/subagent.test.ts",
+      "focus": "Child adapter schema and output plumbing",
+      "oracle": "Mocks executor/services; asserts prompt,parent ID, callback and task formatting, not executor concurrency/permission isolation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/continue/extensions/cli/src/tools/runTerminalCommand.test.ts",
+      "focus": "Basic platform shell execution",
+      "oracle": "When run would assert echo/cwd; inspected tests do not exercise cancellation/background ownership. Not executed.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual CheckBackgroundJob handle and transfer of existing shell process avoid launching a replacement job.",
+    "Request-boundary system/tools refresh and programmable editor legacy async commands are concrete extension mechanisms.",
+    "Structured tool result IDs and stable final ordering preserve provider-call pairing under concurrent completion."
+  ],
+  "limits": [
+    "Pinned README states final 2.0 release and read-only repository; conclusions describe this snapshot.",
+    "Beta child executor temporarily overwrites global permission/system/history behavior while generic dispatcher permits concurrent tool execution; isolation is unproven and structurally fragile.",
+    "Successful CLI compaction saves replacement history; system messages and untruncated shell/provider originals are not durably retained by these paths.",
+    "Provider abort is not evidence of Bash/child quiescence; global services can reload while active loop holds older model/API.",
+    "ReportFailure closes task status and is remote-auth dependent, unlike nonfatal state-bearing rageshake."
+  ],
+  "arconaut_questions": [
+    "Make each arconaut participant a scoped consumer of provider/context/authority services; which exact state must never be a mutable process-global override?",
+    "Use immutable originals plus separately versioned projections so models can repair compaction through an ordinary authorized API.",
+    "What ownership handles and acknowledgements prove every harness-owned active shell/provider is quiescent before arcorefit?",
+    "Separate nonfatal LLMmmshake filing from task failure/completion and record complaint state in an external database."
+  ]
+}

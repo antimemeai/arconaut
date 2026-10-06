@@ -1,0 +1,758 @@
+{
+  "id": "forgecode",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Tokio application tasks; streamed provider HTTP; sequential native actions and parallel child tasks; one shared async shell mutex.",
+    "service_boundary": "Owns conversations/config/tool execution and child chats; consumes providers, MCP and workspace search services."
+  },
+  "summary": "Tailcall ForgeCode is a native Rust agent with configurable personas, child task delegation, deterministic context compression, filesystem/shell/MCP operations and compiled lifecycle hooks.",
+  "inspection": {
+    "files": [
+      "quarantine/forgecode/crates/forge_main/src/main.rs",
+      "quarantine/forgecode/crates/forge_app/src/app.rs",
+      "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "quarantine/forgecode/crates/forge_repo/src/provider/openai.rs",
+      "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs",
+      "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "quarantine/forgecode/crates/forge_app/src/tool_registry.rs",
+      "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "quarantine/forgecode/crates/forge_app/src/agent_executor.rs",
+      "quarantine/forgecode/crates/forge_infra/src/executor.rs",
+      "quarantine/forgecode/crates/forge_stream/src/mpsc_stream.rs",
+      "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "quarantine/forgecode/crates/forge_app/src/compact.rs",
+      "quarantine/forgecode/crates/forge_app/src/hooks/compaction.rs",
+      "quarantine/forgecode/crates/forge_app/src/app.rs",
+      "quarantine/forgecode/crates/forge_repo/src/conversation/conversation_repo.rs",
+      "quarantine/forgecode/crates/forge_app/src/hooks/tracing.rs",
+      "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "quarantine/forgecode/crates/forge_api/src/forge_api.rs",
+      "quarantine/forgecode/crates/forge_services/src/agent_registry.rs",
+      "quarantine/forgecode/crates/forge_repo/src/agent_definition.rs",
+      "quarantine/forgecode/crates/forge_domain/src/hook.rs",
+      "quarantine/forgecode/crates/forge_app/src/hooks/pending_todos.rs",
+      "quarantine/forgecode/crates/forge_app/src/orch_spec/orch_spec.rs",
+      "quarantine/forgecode/crates/forge_stream/src/mpsc_stream.rs",
+      "quarantine/forgecode/crates/forge_app/src/compact.rs",
+      "quarantine/forgecode/crates/forge_app/src/agent.rs",
+      "quarantine/forgecode/crates/forge_app/src/orch_spec/orch_spec.rs",
+      "quarantine/forgecode/crates/forge_app/src/mcp_executor.rs",
+      "quarantine/forgecode/crates/forge_repo/src/provider/chat.rs",
+      "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs",
+      "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs"
+    ],
+    "scope": "Traced native main -> ForgeApp -> Orchestrator -> transformed streamed provider -> action registry -> results/context/save/continuation; inspected child sessions, abort/drop, shell ownership, compactor, SQLite, config cache, hooks and substantive tests.",
+    "limits": "Source read only, reference not executed. No reference execution. Other provider formats inspected at router boundary only; no claim of complete external MCP/search implementations. Quiescence/rebuild not established. Abrupt stream abort bypasses final post-run save; latest completed-step saves remain."
+  },
+  "actions": [
+    {
+      "name": "read, write, fs_search, remove, patch, multi_patch, undo",
+      "surface": "model tools",
+      "input": "file_path/path, line range/pattern, contents or edits; write.overwrite",
+      "output": "file/image values, matching lines, mutation result/diff or error; undo latest tracked change",
+      "lifecycle": "awaited under native timeout; read-before-edit metrics for edit/overwrite",
+      "authority": "agent tool allowlist; optional restricted policy; ordinary host filesystem",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "sem_search",
+      "surface": "model tool",
+      "input": "queries with query/use_case",
+      "output": "deduplicated codebase query result groups",
+      "lifecycle": "query work parallel within one awaited tool; indexed-workspace requirement",
+      "authority": "agent allowlist and workspace search service",
+      "evidence": [
+        "e7"
+      ]
+    },
+    {
+      "name": "shell",
+      "surface": "model tool",
+      "input": "command,cwd,keep_ansi,env variable names,description",
+      "output": "stdout/stderr/exit_code; oversized output prefix/suffix plus retained file path",
+      "lifecycle": "one shared executor serializes; streams terminal output; tool timeout/drop kills direct child; no returned ongoing-job handle",
+      "authority": "optional restricted native policy, otherwise operator OS authority",
+      "evidence": [
+        "e7",
+        "e10",
+        "e13",
+        "e35"
+      ]
+    },
+    {
+      "name": "fetch",
+      "surface": "model tool",
+      "input": "url,raw",
+      "output": "fetched content or error; large result archive path",
+      "lifecycle": "awaited native timeout",
+      "authority": "allowlist and optional native policy",
+      "evidence": [
+        "e7",
+        "e9",
+        "e10",
+        "e35"
+      ]
+    },
+    {
+      "name": "followup",
+      "surface": "model tool",
+      "input": "question,multiple,option1 through option5",
+      "output": "operator answer or absence",
+      "lifecycle": "interactive awaited tool; orchestrator yields so next user chat continues",
+      "authority": "model invokes; operator selects",
+      "evidence": [
+        "e7",
+        "e35",
+        "e36"
+      ]
+    },
+    {
+      "name": "plan, skill, todo_write, todo_read",
+      "surface": "model tools",
+      "input": "plan_name/version/content; skill.name; todo items content/status",
+      "output": "plan artifact; skill text; updated/current todo state",
+      "lifecycle": "awaited; todos owned by conversation metrics and content keys",
+      "authority": "agent tools; no governed executable self-change",
+      "evidence": [
+        "e7",
+        "e27",
+        "e35"
+      ]
+    },
+    {
+      "name": "task; dynamically named agent tools",
+      "surface": "model tools",
+      "input": "agent_id,tasks,optional session_id; custom agent tasks",
+      "output": "each child final text with conversation ID or error, some child stream events forwarded",
+      "lifecycle": "parallel awaited independent/resumed child chats; no timeout; parent cannot separately address a live child in this interface",
+      "authority": "per-agent definitions/model/provider/tools; shared host services",
+      "evidence": [
+        "e6",
+        "e10",
+        "e11",
+        "e12",
+        "e25"
+      ]
+    },
+    {
+      "name": "MCP tools / mcp reload",
+      "surface": "model tools / operator command",
+      "input": "server-discovered tool arguments; reload configured servers",
+      "output": "server-specific values or error; refreshed catalog",
+      "lifecycle": "MCP calls timed; service owns connection lifecycle",
+      "authority": "agent tool validation; native restricted policy branch does not wrap MCP dispatch",
+      "evidence": [
+        "e10",
+        "e33"
+      ]
+    },
+    {
+      "name": "ForgeApp.chat; EventHandle / Hook",
+      "surface": "programmable API / supplied primitive",
+      "input": "agent ID plus ChatRequest conversation/event; compiled event handlers mutate Conversation",
+      "output": "bounded response stream; completion/interrupt; handler-injected context",
+      "lifecycle": "owned task aborted on stream drop; normal terminal save; End additions can resume model loop",
+      "authority": "host program; compiled hooks selected by app, not model-loaded turn code",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e14",
+        "e26"
+      ]
+    },
+    {
+      "name": "/compact; compact_conversation",
+      "surface": "operator command / programmable API",
+      "input": "current conversation and active agent compact policy",
+      "output": "before/after messages/tokens plus persisted structured summary",
+      "lifecycle": "in-place lossy context replacement, automatic response-hook path too",
+      "authority": "operator/API; no traced model restoration operation",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "/dump; conversation JSON import",
+      "surface": "operator commands",
+      "input": "HTML/JSON dump option; CLI conversation file",
+      "output": "current parent/related child records; editable imported conversation",
+      "lifecycle": "snapshot export/import across launches",
+      "authority": "operator; requires previously retained snapshot for repair",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "update_config / reload_agents",
+      "surface": "operator / programmable API",
+      "input": "typed ConfigOperation session model/provider or other config",
+      "output": "written config; invalidated/reloaded agent cache",
+      "lifecycle": "future chats capture new agent; no staged executable refit or continuity transaction",
+      "authority": "operator/API config writes; cache reload error ignored",
+      "evidence": [
+        "e2",
+        "e23",
+        "e24"
+      ]
+    },
+    {
+      "name": "Ctrl-C",
+      "surface": "operator action",
+      "input": "interrupt signal",
+      "output": "prompt returns or headless exit",
+      "lifecycle": "drops chat consumer; abort task; last completed persisted step remains; final-save block may never run",
+      "authority": "operator",
+      "evidence": [
+        "e2",
+        "e14",
+        "e15",
+        "e29"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Concrete native read/search/edit/undo with per-agent tools, optional restricted policies and prior-read path gate; freshness is not checked.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real shell execution and streaming, but global executor mutex serializes commands and no model-addressable ongoing handle; cancellation kills direct child only by drop.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e13",
+        "e14"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Arbitrary ordinary shell programs can compute; native action schema has no persistent general-purpose program kernel or code-action orchestration language.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e13"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Not established in catalog, orchestration or shell execution; no kernel session traced.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Internal SQLite conversation/todo persistence is host-owned; shell/MCP can compose external database access but no standing DB model contract traced.",
+      "evidence": [
+        "e7",
+        "e19",
+        "e33"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Declarative agent/tool/prompt policies, parallel delegation and compiled mutable lifecycle hooks; no exposed programmable workflow interpreter. CI workflows are not agent workflows.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e25",
+        "e26"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-agent model/provider and concurrent child conversations; adapter normalizes model-specific reasoning; no common live multi-model room.",
+      "evidence": [
+        "e3",
+        "e10",
+        "e12",
+        "e25",
+        "e34"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parent-child task delegation supports continued conversation ID and returned text; no live peer send/receive/observe/identity channel traced.",
+      "evidence": [
+        "e6",
+        "e10",
+        "e12"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Task calls and semantic queries run concurrently, then pair results in original order; ordinary tools sequential, shared shell serial, no child handle for detached work.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e11",
+        "e13"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Ctrl-C drop aborts owned chat task; tools expire by timeout. No queued in-flight prompt steering traced; abrupt abort can bypass final save.",
+      "evidence": [
+        "e2",
+        "e10",
+        "e14",
+        "e15"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled lifecycle hooks mutate context; End additions resume loop. Model request/finish/tool phases remain compiled, not hot programmable model/operator turn replacement.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e26",
+        "e27"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Deterministic structured transformer compaction, threshold response hook and manual compact; retention/eviction ranges and preserved usage/last reasoning. Originals spliced away.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e30"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Editable conversation JSON dump/import lets operator restore supplied snapshot; no automatic repair of lost originals nor model context retrieval/repair action traced.",
+      "evidence": [
+        "e16",
+        "e19",
+        "e21",
+        "e22"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stored context overwrites same DB row and compaction destroys originals. Tracing skips request payload and does not capture all success/delta events.",
+      "evidence": [
+        "e16",
+        "e19",
+        "e20",
+        "e22"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Conversation SQLite lookup/list and related-conversation dump support history inspection, not a queryable complete original audit.",
+      "evidence": [
+        "e19",
+        "e21",
+        "e22"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Typed configuration writes invalidate agent cache; new chat captures agent/settings. MCP reload exists; no settled-turn pending change transaction traced; reload error ignored.",
+      "evidence": [
+        "e2",
+        "e23",
+        "e24",
+        "e33"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Conversation import/resume is available, but quiescence/outpost handoff and unresolved-work continuity through executable replacement not established in inspected paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider HTTP streams, MCP actions, fetch and workspace query services consumed; host owns its conversation database and shell execution.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e33",
+        "e34"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "File edits and prompt/agent files enable ordinary development; no governed measured harness-improvement loop traced.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Tracing/retry/error responses exist; model-authored grievance with state snapshot and external tracking not established.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agent tool validation plus optional restricted-mode native operation policies and read-before-edit; MCP/agent dispatch has distinct authority branch.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read source tests assert drop cancellation, compaction accounting, config merge, history/reminder ordering; no reference tests executed.",
+      "evidence": [
+        "e28",
+        "e29",
+        "e30",
+        "e31",
+        "e32"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Request count, ordered pairing, Tokio timeout and wall-clock conversation timestamps; no causal audit sequence or replay clock established.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e11",
+        "e19"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/forgecode/crates/forge_main/src/main.rs",
+      "start": 47,
+      "end": 69,
+      "claim": "Native Rust Tokio entry into UI/application services."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/forgecode/crates/forge_app/src/app.rs",
+      "start": 60,
+      "end": 197,
+      "claim": "Per-chat agent/model/tool configuration is resolved; compiled hooks build orchestrator; task saves after normal dispatch."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "start": 201,
+      "end": 244,
+      "claim": "Request context transformers normalize tool calls/images/reasoning and stream model completion through AgentService."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "start": 246,
+      "end": 467,
+      "claim": "Turn loops request, response hooks, paired actions, stored context; yields on followup/stop/error/request limits; End hooks adding messages resume."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/forgecode/crates/forge_repo/src/provider/openai.rs",
+      "start": 214,
+      "end": 257,
+      "claim": "OpenAI-compatible adapter serializes transformed request and consumes HTTP eventsource."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs",
+      "start": 40,
+      "end": 100,
+      "claim": "Concrete native catalog and task agent_id/tasks/session_id schema."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "start": 155,
+      "end": 339,
+      "claim": "Native read/write/search/semantic queries/remove/patch/undo/shell/fetch/followup/plan/skill/todo dispatch."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "start": 347,
+      "end": 388,
+      "claim": "Patch/multipatch and overwrite require prior read; operation emits UI output, dumps large data, produces paired result."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/forgecode/crates/forge_app/src/tool_executor.rs",
+      "start": 33,
+      "end": 111,
+      "claim": "Prior-read checks accessed-path metrics, not current bytes; full large shell/fetch outputs saved to non-cleaning temporary file."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/forgecode/crates/forge_app/src/tool_registry.rs",
+      "start": 48,
+      "end": 219,
+      "claim": "Allowed-tool validation; restricted-only native policy checks; timed native/MCP actions; Task/custom agents parallel untimed child chats."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/forgecode/crates/forge_app/src/orch.rs",
+      "start": 59,
+      "end": 166,
+      "claim": "Task tool calls run concurrently, other tools sequentially with UI acknowledgement and hooks; final pairing reconstructs original order."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/forgecode/crates/forge_app/src/agent_executor.rs",
+      "start": 50,
+      "end": 144,
+      "claim": "Child new/resumed conversation via ForgeApp; stream-forward selected events and return final task text plus conversation identity."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/forgecode/crates/forge_infra/src/executor.rs",
+      "start": 26,
+      "end": 150,
+      "claim": "Shared async mutex serializes shell commands; inherited stdin, captured concurrent stdout/stderr, kill_on_drop child, awaited exit."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/forgecode/crates/forge_stream/src/mpsc_stream.rs",
+      "start": 8,
+      "end": 40,
+      "claim": "Chat stream owns spawned task; Drop closes receiver and aborts JoinHandle."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "start": 379,
+      "end": 425,
+      "claim": "Ctrl-C select drops active UI future and returns to prompt/finishes headless run."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/forgecode/crates/forge_app/src/compact.rs",
+      "start": 39,
+      "end": 169,
+      "claim": "Pure structured compaction selects range, summarizes transformations, splices away originals, transfers usage and last reasoning."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/forgecode/crates/forge_app/src/hooks/compaction.rs",
+      "start": 33,
+      "end": 51,
+      "claim": "Response hook checks thresholds and replaces conversation context in place."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/forgecode/crates/forge_app/src/app.rs",
+      "start": 220,
+      "end": 275,
+      "claim": "Explicit compact API computes before/after messages/tokens and persists compacted conversation."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/forgecode/crates/forge_repo/src/conversation/conversation_repo.rs",
+      "start": 46,
+      "end": 76,
+      "claim": "SQLite upsert replaces same conversation context/metrics/title rather than immutable event journal."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/forgecode/crates/forge_app/src/hooks/tracing.rs",
+      "start": 45,
+      "end": 129,
+      "claim": "Request hook logs no payload; response logs usage/count; tool failures have output logging. Not complete request/delta/success event audit."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "start": 3841,
+      "end": 3874,
+      "claim": "Operator conversation-file import accepts editable full ConversationDump or Conversation JSON and upserts context."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/forgecode/crates/forge_main/src/ui.rs",
+      "start": 4104,
+      "end": 4127,
+      "claim": "JSON dump exports current conversation and related child conversations, not original event history."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/forgecode/crates/forge_api/src/forge_api.rs",
+      "start": 243,
+      "end": 255,
+      "claim": "Session config update invalidates agent cache after write; reload error intentionally ignored."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/forgecode/crates/forge_services/src/agent_registry.rs",
+      "start": 98,
+      "end": 120,
+      "claim": "Agents cached in memory; reload clears cache then reloads; no executable replacement."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/forgecode/crates/forge_repo/src/agent_definition.rs",
+      "start": 16,
+      "end": 68,
+      "claim": "Agent files configure model/provider/prompt templates/tools/compact/maxturns; these are declarative policies."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/forgecode/crates/forge_domain/src/hook.rs",
+      "start": 103,
+      "end": 165,
+      "claim": "Compiled lifecycle EventHandle can mutate Conversation and handlers compose in order."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/forgecode/crates/forge_app/src/hooks/pending_todos.rs",
+      "start": 42,
+      "end": 132,
+      "claim": "End hook injects pending-todo reminder once per same set; unchanged pending items need not prevent second Stop completion."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/forgecode/crates/forge_app/src/orch_spec/orch_spec.rs",
+      "start": 605,
+      "end": 658,
+      "claim": "Source oracle asserts reminder content; two Stop replies finish even though todos remain pending."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/forgecode/crates/forge_stream/src/mpsc_stream.rs",
+      "start": 64,
+      "end": 99,
+      "claim": "Virtual-time Drop test asserts task completed flag remains false, not OS descendant or save durability."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/forgecode/crates/forge_app/src/compact.rs",
+      "start": 574,
+      "end": 666,
+      "claim": "Compaction oracle checks usage accumulation across destroyed original messages and surviving messages."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/forgecode/crates/forge_app/src/agent.rs",
+      "start": 296,
+      "end": 332,
+      "claim": "Compaction merge regression explicitly expects default agent retention_window zero to override workflow retention ten."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/forgecode/crates/forge_app/src/orch_spec/orch_spec.rs",
+      "start": 408,
+      "end": 493,
+      "claim": "Repeated-call test asserts fourth successful action retained and next-request reminder follows triggering history."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/forgecode/crates/forge_app/src/mcp_executor.rs",
+      "start": 16,
+      "end": 41,
+      "claim": "MCP discovery accepts legacy and Claude name styles and routes tool call through service."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/forgecode/crates/forge_repo/src/provider/chat.rs",
+      "start": 65,
+      "end": 113,
+      "claim": "Provider routing and model-cache refresh task retained via abort handle, separate from chat request task."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs",
+      "start": 592,
+      "end": 720,
+      "claim": "Concrete shell/fetch/followup/plan/skill/todo arguments."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/forgecode/crates/forge_domain/src/tools/catalog.rs",
+      "start": 903,
+      "end": 923,
+      "claim": "Tool name lookup normalizes catalog names; followup asks orchestrator to yield."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/forgecode/crates/forge_stream/src/mpsc_stream.rs",
+      "focus": "Drop cancellation",
+      "oracle": "Virtual-time completion flag stays false after stream drop; does not assert process descendants or final context durability.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forgecode/crates/forge_app/src/compact.rs",
+      "focus": "Accounting through lossy compaction",
+      "oracle": "Explicit summed usage and surviving message equality; safe threshold simulation tests policy estimates, not a live provider window.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forgecode/crates/forge_app/src/orch_spec/orch_spec.rs",
+      "focus": "Tool-loop reminder ordering / completion",
+      "oracle": "Mock replies assert reminder after repeated successful tool history; pending-todo test confirms two Stop responses complete with unchanged pending items.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forgecode/crates/forge_app/src/agent.rs",
+      "focus": "Agent/workflow defaults",
+      "oracle": "Regression expects default retention_window=0 to win over workflow ten; records current behavior, not independent desired requirement.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Native scheduler and explicit stream ownership make cancellation path inspectable.",
+    "Tool-call IDs and original order retained across concurrent child task batch.",
+    "Pure structured compaction avoids extra provider request and transfers accounting.",
+    "End-hook continuation is a concrete host program composition point."
+  ],
+  "limits": [
+    "No reference execution. Other provider formats inspected at router boundary only; no claim of complete external MCP/search implementations. Quiescence/rebuild not established. Abrupt stream abort bypasses final post-run save; latest completed-step saves remain."
+  ],
+  "arconaut_questions": [
+    "Should dropping a UI observer cancel work, or detach only its view? How does persistence survive interrupted phases?",
+    "How should per-agent child workflows consume shared process/database services without secretly serializing independent computations?",
+    "Can deterministic compression preserve references to originals and give the model selective repair operations?",
+    "Which configuration defaults mean unset versus deliberate zero, and which activation transaction enforces current-turn/workflow boundaries?"
+  ]
+}

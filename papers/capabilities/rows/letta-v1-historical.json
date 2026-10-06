@@ -1,0 +1,527 @@
+{
+  "id": "letta-v1-historical",
+  "kind": "retired stateful agent API server",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Async server persists agent/block/message/run/step state; V3 model adapter streams then dispatches typed server or client tools.",
+    "service_boundary": "Historical server owns persistent agent memory/state and sandbox execution; consumes providers/MCP/E2B; current Letta implementation is a separate source tree."
+  },
+  "summary": "Memory-editing model agent with searchable persisted messages, managed compaction, tool rules, approval handoff and multi-agent service primitives.",
+  "inspection": {
+    "files": [
+      "quarantine/letta-v1-historical/README.md",
+      "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_manager.py",
+      "quarantine/letta-v1-historical/letta/services/summarizer/compact.py",
+      "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_sandbox.py",
+      "quarantine/letta-v1-historical/letta/functions/function_sets/base.py",
+      "quarantine/letta-v1-historical/letta/services/message_manager.py",
+      "quarantine/letta-v1-historical/letta/functions/function_sets/multi_agent.py",
+      "quarantine/letta-v1-historical/letta/groups/round_robin_multi_agent.py",
+      "quarantine/letta-v1-historical/tests/test_compaction_thresholds.py",
+      "quarantine/letta-v1-historical/tests/test_provider_trace_summarization.py"
+    ],
+    "scope": "V3 request/dispatch/checkpoint/compaction, tool execution/sandbox, memory/search/messaging and historical direct test assertions",
+    "limits": "Retired implementation only; no live APIs/tests. Older agent/group classes coexist and their mechanisms are not automatically the V3 entry path."
+  },
+  "actions": [
+    {
+      "name": "V3 step / stream",
+      "surface": "service API",
+      "input": "agent/conversation, user/approval messages, max_steps and stream settings",
+      "output": "stream messages, run/step/tool IDs, stop reason",
+      "lifecycle": "provider then tools/checkpoint; pause on approval/client handoff",
+      "authority": "actor and tool rules",
+      "evidence": [
+        "e2",
+        "e3",
+        "e7"
+      ]
+    },
+    {
+      "name": "ToolExecutionManager.execute_tool_async",
+      "surface": "model dispatch",
+      "input": "function name/args, Tool type/config and step ID",
+      "output": "ToolExecutionResult/status/value/stdout/stderr, truncated return if oversized",
+      "lifecycle": "await typed executor; cancellation reports error without remote settlement",
+      "authority": "actor and exposed tool authority",
+      "evidence": [
+        "e4",
+        "e5",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "memory_replace (and sibling insert/rethink/patch)",
+      "surface": "model memory tool",
+      "input": "block label, unique old string/new string",
+      "output": "updated model-visible memory or validation error",
+      "lifecycle": "next request uses block; separate service persistence",
+      "authority": "writable agent block authority",
+      "evidence": [
+        "e15"
+      ]
+    },
+    {
+      "name": "conversation_search",
+      "surface": "model recall tool",
+      "input": "query, roles, limit; signature also date args",
+      "output": "formatted matching message text/roles or no results",
+      "lifecycle": "service query projection, date args ignored by this native implementation",
+      "authority": "same agent actor; omitted record classes explicit",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "compact / compact_messages",
+      "surface": "service policy/API",
+      "input": "messages, per-call/agent compaction settings, model/tools and trigger/stats",
+      "output": "attributed summary and new system/summary/tail context",
+      "lifecycle": "new provider request; original objects kept apart from context IDs",
+      "authority": "configured summarizer/model policy",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "send_message_to_agent_and_wait_for_reply",
+      "surface": "model peer tool",
+      "input": "same-org target agent ID/message",
+      "output": "formatted target ID and assistant reply",
+      "lifecycle": "synchronous API chain; automatically attributed but input may be lowercase duplicated",
+      "authority": "sandbox client organization authority",
+      "evidence": [
+        "e16"
+      ]
+    },
+    {
+      "name": "send_message_to_agent_async",
+      "surface": "model peer tool",
+      "input": "same-org target ID/one-way notification",
+      "output": "confirmation after synchronous message create",
+      "lifecycle": "not a nonblocking pending delivery handle; rejects prod Cloud",
+      "authority": "local/self-host environment and actor organization",
+      "evidence": [
+        "e17"
+      ]
+    },
+    {
+      "name": "_checkpoint_messages",
+      "surface": "server persistence primitive",
+      "input": "completed new messages and current context IDs, run/step/conversation IDs",
+      "output": "persisted objects and selected context position",
+      "lifecycle": "only successful/safe-step checkpoint; split persistence calls after effects",
+      "authority": "server actor DB authority",
+      "evidence": [
+        "e7"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed file/custom tool sandbox execution is wired; direct mode executes generated Python with fresh globals and process-global stdout/env mutation, E2B optional.",
+      "evidence": [
+        "e4",
+        "e11",
+        "e12"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed file/custom tool sandbox execution is wired; direct mode executes generated Python with fresh globals and process-global stdout/env mutation, E2B optional.",
+      "evidence": [
+        "e4",
+        "e11",
+        "e12"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed file/custom tool sandbox execution is wired; direct mode executes generated Python with fresh globals and process-global stdout/env mutation, E2B optional.",
+      "evidence": [
+        "e4",
+        "e11",
+        "e12"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local direct exec has fresh globals; environment/venv/E2B reuse is not a contracted shared standing interpreter heap.",
+      "evidence": [
+        "e11",
+        "e12"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agent memory blocks, messages and in-context IDs persist through service managers; archival memory is another service primitive, not model-governed infrastructure.",
+      "evidence": [
+        "e7",
+        "e13",
+        "e15"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tool rules/terminal/approval/client handoff and group orchestration compose server loops; no arbitrary model-authored orchestration program in traced V3 paths.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e6",
+        "e18"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agent provider/config and configurable summarizer model, plus distinct participant agents; not solely model selection mistaken for collaboration.",
+      "evidence": [
+        "e2",
+        "e10",
+        "e18"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Agent-to-agent service API and historical speaker runner exist; one-way async-named tool is sync create and forbidden in production Cloud, no room/event delivery contract.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Only tools marked parallel gathered; gathered group executes before serial group, result order restored by index.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model invocation/client approval handoff and async cancellation exist; CancelledError becomes tool error but arbitrary local/E2B side effects may continue or be partial.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Memory/tool/config and compaction policy influence next step; actual model loop/scheduling remains server code, not general hot program turn.",
+      "evidence": [
+        "e2",
+        "e6",
+        "e10",
+        "e15"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Configurable summary/sliding/other compaction modes build new context, rebuild memory/system and persist identified summary before overflow retry.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Searchable original message objects separated from context IDs and memory edits provide repair inputs; search projection omits roles/tool records and date filters are not forwarded by native helper.",
+      "evidence": [
+        "e7",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Messages/run/step attribution retained, but action return trimmed before persistence and direct exec/global capture does not cover every original provider/OS byte.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e12"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Message ID/query retrieval useful; native conversation_search forwards only query/roles/limit and searchable projection excludes specific tools/nonchat roles.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Memory/block and configuration changes refresh next request, compaction repairs persisted system; no wired server executable hot reload traced.",
+      "evidence": [
+        "e9",
+        "e15"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent message/context/agent state loads future requests; completed-step checkpoint not an atomic external action journal and no active program/provider refit migration.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e9"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider model adapters, MCP executor/E2B and agent-message APIs; historical server governance separate from Arconaut consumer.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e11",
+        "e16"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model edits memory/skills/config and separate sleeptime types exist; traced path does not establish experimental evaluated harness promotion.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e15"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Step/tool error/stdout/stderr and telemetry context useful diagnostics; full captured-state complaint tracking not established.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e20"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actor organization and tool roster/types/approval rules; client-side actions return approval request boundary rather than executed by server.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e16",
+        "e17"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Exact threshold test useful for policy calculations; inspected summary attribution test suppresses all exceptions and cannot certify output success/fidelity.",
+      "evidence": [
+        "e19",
+        "e20"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Context position/run/step IDs and indexed result order; parallel-before-serial scheduling differs from original call-list effect order.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/letta-v1-historical/README.md",
+      "start": 7,
+      "end": 11,
+      "claim": "This source identifies itself as legacy V1 API; active development and self-hosting moved to letta-code App Server."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 1090,
+      "end": 1109,
+      "claim": "V3 builds provider request from messages/memory/system/config and allowed tools."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 1150,
+      "end": 1178,
+      "claim": "Actual model adapter streams invocation with requires-approval/client tool set and actor/step attribution."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_manager.py",
+      "start": 32,
+      "end": 69,
+      "claim": "Tool type selects core/memory/files/builtin/MCP/sandbox executor; fallback custom tool executes in sandbox."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_manager.py",
+      "start": 95,
+      "end": 154,
+      "claim": "Exec awaits typed executor then truncates return payload to tool char limit; CancelledError converted to error/stderr, not proof remote action stopped."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 1822,
+      "end": 1872,
+      "claim": "Eligible parallel tool batch gather runs before sequential tools, results put in original indices; not global call-list side-effect order."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 758,
+      "end": 816,
+      "claim": "Safe completed-step checkpoint persists message objects separately from in-context message-ID/conversation ordering; external tool effect precedes this point."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/letta-v1-historical/letta/services/summarizer/compact.py",
+      "start": 426,
+      "end": 472,
+      "claim": "Compaction constructs attributed summary and final system/summary/tail list; original message DB is not deleted by this helper."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 1239,
+      "end": 1276,
+      "claim": "Overflow compaction rebuilds persisted system/memory, refreshes messages and checkpoints summary/context before retry provider."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/letta-v1-historical/letta/agents/letta_agent_v3.py",
+      "start": 2077,
+      "end": 2134,
+      "claim": "Compaction configurable per call/agent defaults/model and statistics, passes available tools for self-summary/cache compatibility."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_sandbox.py",
+      "start": 94,
+      "end": 109,
+      "claim": "Configured E2B vs local sandbox dispatch; environment/runtime branch explicit, not a permanent universal kernel."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/letta-v1-historical/letta/services/tool_executor/tool_execution_sandbox.py",
+      "start": 255,
+      "end": 290,
+      "claim": "Direct Python execution creates fresh globals but temporarily redirects process-global stdout/stderr and environment; no retained heap guarantee."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/letta-v1-historical/letta/functions/function_sets/base.py",
+      "start": 137,
+      "end": 163,
+      "claim": "conversation_search implementation calls message-manager query_text/roles/limit; documented date args are not forwarded in this path."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/letta-v1-historical/letta/services/message_manager.py",
+      "start": 129,
+      "end": 153,
+      "claim": "Search projection only assistant/user/tool roles and omits send_message/conversation_search tool records; not complete audit query coverage."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/letta-v1-historical/letta/functions/function_sets/base.py",
+      "start": 350,
+      "end": 390,
+      "claim": "memory_replace requires unique exact text, updates model-visible block and returns value; ambiguity fails."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/letta-v1-historical/letta/functions/function_sets/multi_agent.py",
+      "start": 60,
+      "end": 99,
+      "claim": "Synchronous agent messaging uses service API, automatically adds sender identity but duplicates mixed-case text lowercase before dispatch."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/letta-v1-historical/letta/functions/function_sets/multi_agent.py",
+      "start": 163,
+      "end": 191,
+      "claim": "One-way messaging explicitly disallowed prod Cloud; implementation calls non-stream create synchronously, return confirmation not live-peer delivery handle."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/letta-v1-historical/letta/groups/round_robin_multi_agent.py",
+      "start": 34,
+      "end": 66,
+      "claim": "Separate older group runner loads agents and iterates speakers; not evidence V3 arbitrary live concurrent room."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/letta-v1-historical/tests/test_compaction_thresholds.py",
+      "start": 23,
+      "end": 53,
+      "claim": "Exact numeric family thresholds/force-proactive behavior tested; not semantic compaction correctness."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/letta-v1-historical/tests/test_provider_trace_summarization.py",
+      "start": 99,
+      "end": 117,
+      "claim": "Summary test catches all exceptions then asserts telemetry context attribution only; cannot prove summarization succeeds."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/letta-v1-historical/tests/test_compaction_thresholds.py",
+      "focus": "numeric compaction policy",
+      "oracle": "Exact 90% GPT5/proactive and full nonGPT threshold; not summary correctness.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/letta-v1-historical/tests/test_provider_trace_summarization.py",
+      "focus": "summary telemetry attribution",
+      "oracle": "Mocks assert agent/tags/run/step/call_type, but blanket exception suppression permits failed summary; explicitly limited oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Persisted message objects distinct from compacted context IDs.",
+    "Model-native precise memory edits and conversation retrieval support continuity.",
+    "Executor type and client approval boundaries explicit."
+  ],
+  "limits": [
+    "Retired V1 cannot stand in for current Letta Code.",
+    "Return truncation before persistence/search projection limits original audit.",
+    "Direct local exec mutates global capture/env and does not give persistent kernel or reliable quiescence."
+  ],
+  "arconaut_questions": [
+    "How can retrieval see every original while serving bounded context?",
+    "Do advertised search inputs actually reach query execution?",
+    "Should parallel mutation ordering be explicit in model-facing program semantics?"
+  ]
+}

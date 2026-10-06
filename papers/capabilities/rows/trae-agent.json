@@ -1,0 +1,631 @@
+{
+  "id": "trae-agent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Asyncio step orchestration with synchronous provider SDK requests; optional local shared Bash or Docker tool routing",
+    "service_boundary": "Owns shell/processes, optional Docker, local code index; consumes provider/MCP services."
+  },
+  "summary": "Tool-driven coding benchmark/CLI harness with configurable native tools, normalized trajectories and optional code index; completion interception and ownership gaps matter.",
+  "inspection": {
+    "files": [
+      "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "quarantine/trae-agent/trae_agent/tools/base.py",
+      "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/edit_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/edit_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/json_edit_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/sequential_thinking_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/ckg_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/ckg/ckg_database.py",
+      "quarantine/trae-agent/trae_agent/tools/ckg/ckg_database.py",
+      "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "quarantine/trae-agent/trae_agent/tools/mcp_tool.py",
+      "quarantine/trae-agent/trae_agent/tools/docker_tool_executor.py",
+      "quarantine/trae-agent/trae_agent/utils/llm_clients/openai_compatible_base.py",
+      "quarantine/trae-agent/trae_agent/utils/llm_clients/openai_compatible_base.py",
+      "quarantine/trae-agent/trae_agent/utils/trajectory_recorder.py",
+      "quarantine/trae-agent/trae_agent/utils/trajectory_recorder.py",
+      "quarantine/trae-agent/trae_agent/cli.py",
+      "quarantine/trae-agent/tests/tools/test_bash_tool.py",
+      "quarantine/trae-agent/tests/agent/test_trae_agent.py",
+      "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "quarantine/trae-agent/trae_agent/tools/__init__.py"
+    ],
+    "scope": "Entry interactive loop, BaseAgent/Trae dispatch/results/completion, concrete OpenAI request/history, Bash/editor/JSON/thought/CKG/MCP lifecycles, Docker and recorder/test oracles.",
+    "limits": "Source read only, reference not executed. Source only; no SDK/Docker/MCP dependency internals executed. Local Bash state claim contradicted by subshell. Cancellation cleanup and mixed completion batches require discriminating experiments."
+  },
+  "actions": [
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "command and restart",
+      "output": "stdout/stderr/error code, restart text",
+      "lifecycle": "single owned shell; commands subshell, timeout needs restart; no job IDs",
+      "authority": "automatic local OS/Docker authority",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "str_replace_based_edit_tool",
+      "surface": "model tool",
+      "input": "command=view/create/str_replace/insert, absolute path, range/text/line",
+      "output": "numbered content/snippet/errors",
+      "lifecycle": "awaited edit; unique replacement; no undo",
+      "authority": "no approval; absolute path check not workspace containment",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "json_edit_tool",
+      "surface": "model tool",
+      "input": "operation=view/set/add/remove,file_path,json_path,value,pretty_print",
+      "output": "JSON selected content/update counts/error",
+      "lifecycle": "awaited file read/write",
+      "authority": "automatic files",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "sequentialthinking",
+      "surface": "model tool",
+      "input": "thought,next_thought_needed,thought_number,total_thoughts and revision/branch fields",
+      "output": "thought count/status/branches",
+      "lifecycle": "in-memory thought store; not running branch work",
+      "authority": "model records own thoughts",
+      "evidence": [
+        "e12"
+      ]
+    },
+    {
+      "name": "task_done",
+      "surface": "model tool/completion sentinel",
+      "input": "no args",
+      "output": "agent final_result and optional nonempty patch check",
+      "lifecycle": "completion detected before executing entire returned batch",
+      "authority": "model ends task; not behavioral verification",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "ckg",
+      "surface": "optional model tool",
+      "input": "command=search_function/search_class/search_class_method,path,identifier,print_body",
+      "output": "indexed bodies,file/line locations",
+      "lifecycle": "SQLite index cached by tool and snapshot hash; global expiry",
+      "authority": "configured tool, owns index lifecycle",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "MCP discovered tool names",
+      "surface": "model extension",
+      "input": "configured allow-listed server and native tool schema",
+      "output": "first text result only/error",
+      "lifecycle": "async remote call, cleanup after task",
+      "authority": "operator supplies allowed servers; no per-call approvals traced",
+      "evidence": [
+        "e16",
+        "e17"
+      ]
+    },
+    {
+      "name": "new_task / execute_task / set_chat_history",
+      "surface": "host API",
+      "input": "task,project/issue/base_commit/must_patch/patch_path; messages",
+      "output": "AgentExecution and steps; explicit history setter",
+      "lifecycle": "fixed step loop; provider history remains unless host resets",
+      "authority": "host subclasses/configures agent",
+      "evidence": [
+        "e1",
+        "e26",
+        "e27",
+        "e19"
+      ]
+    },
+    {
+      "name": "ToolExecutor.parallel_tool_call / sequential_tool_call",
+      "surface": "host API",
+      "input": "ToolCall list",
+      "output": "paired ToolResult list",
+      "lifecycle": "gather locally; serialized Docker; shared Bash not invocation-locked",
+      "authority": "host config parallel flag",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7",
+        "e18"
+      ]
+    },
+    {
+      "name": "run / interactive",
+      "surface": "operator CLI",
+      "input": "task/config/provider/model/project/step limits",
+      "output": "CLI updates and trajectory/patch file",
+      "lifecycle": "tasks awaited then next input; Ctrl-C",
+      "authority": "operator",
+      "evidence": [
+        "e23",
+        "e1"
+      ]
+    },
+    {
+      "name": "TrajectoryRecorder / get_trajectory_path",
+      "surface": "host API",
+      "input": "normalized interactions/steps and path",
+      "output": "rewritten JSON trajectory",
+      "lifecycle": "incremental snapshot, write errors warning only",
+      "authority": "host/operator reads; not model query API",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "CKGDatabase.update",
+      "surface": "host primitive",
+      "input": "codebase directory",
+      "output": "reconstructed local index",
+      "lifecycle": "local owned SQLite; not consumer fabric service",
+      "authority": "host",
+      "evidence": [
+        "e15"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native text/JSONPath editing plus Bash; absolute paths not contained to workspace.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local Bash shell has restart/timeout/close but commands subshell; no native job handles and no shared-session concurrency lock.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Arbitrary Bash execution plus precise file/JSONPath operations and index search.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e11",
+        "e13"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Shell process persists, but per-command subshell loses shell mutations; no resident language kernel traced.",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model-facing ckg is local cached/expiring code index, not shared general standing DB.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Subclass BaseAgent and supply Tool/config; native thought branches only record metadata, not workflow programs.",
+      "evidence": [
+        "e26",
+        "e12",
+        "e1"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Selected provider/model config per agent; host can instantiate different agents, no peer coordination.",
+      "evidence": [
+        "e26",
+        "e19"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No peer agent bus/message protocol in inspected loop/registry.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local gather for tool batch; Docker serializes. Shared Bash process has no call serialization.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7",
+        "e18"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Interactive input only between awaited tasks; synchronous provider blocks event loop. CancelledError can bypass post-finally tool/MCP cleanup.",
+      "evidence": [
+        "e23",
+        "e19",
+        "e1"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host subclass hooks fixed step architecture; no model hot turn replacement mechanism.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e26"
+      ]
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No managed compactor in inspected BaseAgent/OpenAI accumulated history.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Explicit set_chat_history and trajectory reads give host history replacement; no model repair operation.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e22"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Trajectory captures normalized completed replies and delta inputs, not full accumulated provider request or raw retries/events. Rewrites can fail silently.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21",
+        "e22"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "JSON trajectory and recorder path host read; no native model audit query.",
+      "evidence": [
+        "e22"
+      ]
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Captured config/tool map and no atomic after-turn/workflow activation in inspected paths.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No outpost transfer or quiescent executable re-inhabitation established.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider and allowed MCP clients, optional owned Docker deployment.",
+      "evidence": [
+        "e16",
+        "e19",
+        "e26"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Agent can edit/code/test through tools, but no controlled harness improvement experiment.",
+      "evidence": [
+        "e7",
+        "e9"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model state-capturing complaint artifact traced.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic configured tools local or Docker; allow-listed MCP discovery. No routine command confirmation traced.",
+      "evidence": [
+        "e26",
+        "e16",
+        "e5"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Source tests exercise shell outputs and nonempty patch acceptance; completion not task correctness, mixed batch untested.",
+      "evidence": [
+        "e24",
+        "e25",
+        "e3"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Step numbers/order and shell deadlines; gather has shared resource races; wall timestamps and mutable JSON not total audit.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e7",
+        "e21",
+        "e22"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "start": 147,
+      "end": 200,
+      "claim": "Async task loop calls synchronous provider; docker stop finally but tool/MCP cleanup after finally can be bypassed by cancellation."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "start": 209,
+      "end": 244,
+      "claim": "Completion checked before dispatch; finalize overrides error state to completed."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "start": 228,
+      "end": 249,
+      "claim": "Any task_done call denotes completion, must_patch checks non-test patch only, not correctness."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "start": 314,
+      "end": 352,
+      "claim": "Config parallel option dispatches gather versus sequential then paired results."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/trae-agent/trae_agent/tools/base.py",
+      "start": 182,
+      "end": 244,
+      "claim": "Normalized cached name map executes tool with standardized result/error and asyncio.gather."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "start": 19,
+      "end": 85,
+      "claim": "Owned persistent Bash shell; direct-process terminate/kill+communicate deadlines, not process-group kill."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "start": 87,
+      "end": 159,
+      "claim": "Each command wrapped in subshell; private buffers polled until sentinel, timeout marks unusable without immediate kill; no invocation lock."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/trae-agent/trae_agent/tools/bash_tool.py",
+      "start": 177,
+      "end": 246,
+      "claim": "bash schema command/restart, description promises state persistence and raw background shell usage."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/trae-agent/trae_agent/tools/edit_tool.py",
+      "start": 101,
+      "end": 151,
+      "claim": "Text editor dispatch view/create/str_replace/insert with absolute path and existence checks."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/trae-agent/trae_agent/tools/edit_tool.py",
+      "start": 197,
+      "end": 290,
+      "claim": "Unique replacement and insert write files; undo explicitly removed."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/trae-agent/trae_agent/tools/json_edit_tool.py",
+      "start": 56,
+      "end": 153,
+      "claim": "JSONPath view/set/add/remove with absolute file_path and value/pretty-print."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/trae-agent/trae_agent/tools/sequential_thinking_tool.py",
+      "start": 278,
+      "end": 319,
+      "claim": "Thought/revision/branch records held in memory, returns counts and branch IDs; not executable workflow."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/trae-agent/trae_agent/tools/ckg_tool.py",
+      "start": 50,
+      "end": 133,
+      "claim": "Optional ckg tool searches function/class/class_method cached code index."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/trae-agent/trae_agent/tools/ckg/ckg_database.py",
+      "start": 107,
+      "end": 119,
+      "claim": "Old code-index DB files deleted after expiry."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/trae-agent/trae_agent/tools/ckg/ckg_database.py",
+      "start": 148,
+      "end": 203,
+      "claim": "Snapshot-hash SQLite index owned locally; updates reconstruct; no general standing data API."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "start": 65,
+      "end": 99,
+      "claim": "Allowed MCP server discovery extends model tool list; failures/cancellations cleaned and skipped."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/trae-agent/trae_agent/tools/mcp_tool.py",
+      "start": 48,
+      "end": 58,
+      "claim": "MCP projects first text content only; isError path lacks nonzero error_code."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/trae-agent/trae_agent/tools/docker_tool_executor.py",
+      "start": 70,
+      "end": 75,
+      "claim": "Docker parallel execution deliberately sequential."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/trae-agent/trae_agent/utils/llm_clients/openai_compatible_base.py",
+      "start": 94,
+      "end": 147,
+      "claim": "Synchronous provider call uses accumulated message_history, retries, current schemas."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/trae-agent/trae_agent/utils/llm_clients/openai_compatible_base.py",
+      "start": 149,
+      "end": 215,
+      "claim": "Normalized response and accumulated assistant history; trajectory recorder sees passed delta messages, not full transport history."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/trae-agent/trae_agent/utils/trajectory_recorder.py",
+      "start": 77,
+      "end": 128,
+      "claim": "Normalized response/content/usage/calls plus passed messages recorded after successful response."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/trae-agent/trae_agent/utils/trajectory_recorder.py",
+      "start": 220,
+      "end": 260,
+      "claim": "Trajectory rewritten in place; save failures swallowed; serialized tool results omit name."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/trae-agent/trae_agent/cli.py",
+      "start": 516,
+      "end": 592,
+      "claim": "Simple interactive loop runs tasks then accepts next input; KeyboardInterrupt handling, not live steering."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/trae-agent/tests/tools/test_bash_tool.py",
+      "start": 28,
+      "end": 59,
+      "claim": "Actual shell tests check echo/error/restart, no cd/variable persistence or parallel sharing oracle."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/trae-agent/tests/agent/test_trae_agent.py",
+      "start": 78,
+      "end": 98,
+      "claim": "Patch filtering and mocked nonempty completion oracle; no task_done mixed batch assertion."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/trae-agent/trae_agent/agent/base_agent.py",
+      "start": 29,
+      "end": 81,
+      "claim": "Configuration selects tool classes and local/Docker caller; initial creation clears old CKG."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/trae-agent/trae_agent/agent/trae_agent.py",
+      "start": 102,
+      "end": 153,
+      "claim": "New task clears task messages but provider history reset not here; tool_names only applied if tool list empty."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/trae-agent/trae_agent/tools/__init__.py",
+      "start": 27,
+      "end": 34,
+      "claim": "Native registry bash, text/json editors, thought, task_done, optional ckg."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/trae-agent/tests/tools/test_bash_tool.py",
+      "focus": "Echo, invalid command and explicit shell restart",
+      "oracle": "Checks concrete output/nonzero error/new echo; does not assert cd/env persistence, deadline cleanup or concurrent call isolation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/trae-agent/tests/agent/test_trae_agent.py",
+      "focus": "Patch filtering/completion",
+      "oracle": "Empty test-only patch rejected, mocked nonempty patch accepted; no semantic correctness or combined task_done/tool call oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit normalized action/result IDs across provider implementations.",
+    "JSONPath editor and cached symbol index add expressive targeted actions."
+  ],
+  "limits": [
+    "Source only; no SDK/Docker/MCP dependency internals executed. Local Bash state claim contradicted by subshell. Cancellation cleanup and mixed completion batches require discriminating experiments."
+  ],
+  "arconaut_questions": [
+    "Should completion acknowledge every co-issued action or forbid mixed completion batches?",
+    "Can the harness prove owned processes are stopped after async cancellation, including descendants?",
+    "What distinguishes a persistent shell process from persistent shell state and a persistent compute service?"
+  ]
+}

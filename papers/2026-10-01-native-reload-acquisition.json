@@ -1,0 +1,41 @@
+{
+  "recorded_at": "2026-10-01T07:21:40.025901+00:00",
+  "input": "context/native-reload-acquisition-input.json",
+  "references": [
+    {
+      "name": "fungos-cr",
+      "repository": "https://github.com/fungos/cr",
+      "destination": "quarantine/fungos-cr",
+      "revision": "1c3f8302320dee8206cf85d6aeb9e9a9cd78b527",
+      "download_url": "https://codeload.github.com/fungos/cr/zip/1c3f8302320dee8206cf85d6aeb9e9a9cd78b527",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-native-reload-2026-10-01/fungos-cr-1c3f8302320d.zip",
+      "archive_bytes": 128738,
+      "sha256": "978f1e1717b5e969564a5a9790a17c2412b05284984cad4d1cedd1bb0de3dc3b",
+      "archive_root": "cr-1c3f8302320dee8206cf85d6aeb9e9a9cd78b527",
+      "retained_files": 34,
+      "retained_bytes": 589534,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    },
+    {
+      "name": "runtime-compiled-cplusplus",
+      "repository": "https://github.com/RuntimeCompiledCPlusPlus/RuntimeCompiledCPlusPlus",
+      "revision": "005c05145d98b87d974c36fc885003ea88bf3932",
+      "destination": "quarantine/runtime-compiled-cplusplus",
+      "status": "acquired",
+      "archive_root": "RuntimeCompiledCPlusPlus-005c05145d98b87d974c36fc885003ea88bf3932",
+      "retained_files": 884,
+      "retained_bytes": 30906281,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-native-reload-2026-10-01/runtime-compiled-cplusplus-005c05145d98.zip",
+      "archive_bytes": 10089444,
+      "sha256": "991f6ee33d2b4fd413df0f87b264c5e2772d41888b74156e9b484a93fa546793",
+      "provenance": "immutable upstream source ZIP",
+      "download_url": "https://codeload.github.com/RuntimeCompiledCPlusPlus/RuntimeCompiledCPlusPlus/zip/005c05145d98b87d974c36fc885003ea88bf3932",
+      "initial_download_failure": "curl failed (92): curl: (92) HTTP/2 stream 1 was not closed cleanly: CANCEL (err 8)"
+    }
+  ]
+}

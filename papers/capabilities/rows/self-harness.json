@@ -1,0 +1,318 @@
+{
+  "id": "self-harness",
+  "kind": "candidate harness optimization workflow",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "CLI orchestration evaluates separate candidate harness surfaces in Harbor/DeepAgents environment, with diagnosis/proposal and acceptance phases.",
+    "service_boundary": "Owns experimental candidate/branch records; consumes task evaluator/model/backend rather than supplying full live operator harness."
+  },
+  "summary": "Bounded hook edits, candidate queues and explicit train/heldout promotion support a real harness improvement experiment, without live native refit.",
+  "inspection": {
+    "files": [
+      "quarantine/self-harness/workflow/scripts/run_self_harness_loop.py",
+      "quarantine/self-harness/proposer/src/self_harness_proposer/hooks.py",
+      "quarantine/self-harness/proposer/src/self_harness_proposer/materialize.py",
+      "quarantine/self-harness/acceptance/scripts/run_acceptance_gate.py",
+      "quarantine/self-harness/eval/harness_workspace/self_harness_harbor/backend_bridge.py",
+      "quarantine/self-harness/README.md"
+    ],
+    "scope": "Read workflow candidate lifecycle/branch finalization, materialization, hook edit policy, acceptance metric validation and backend execution boundary.",
+    "limits": "No Harbor/model execution or results reproduction; backend dependencies and full task-identity/oracle integrity not audited."
+  },
+  "actions": [
+    {
+      "name": "run_self_harness_loop",
+      "surface": "workflow CLI",
+      "input": "Eval config, work dir, proposal/diagnosis sources and candidate cap",
+      "output": "Persisted queue, baseline, candidate evaluations and branch state",
+      "lifecycle": "Resumes pending candidate workflow; sequential evaluation/finalization.",
+      "authority": "Operator/program launch",
+      "evidence": [
+        "queue",
+        "branch"
+      ]
+    },
+    {
+      "name": "apply_candidate_values / materialize_candidate",
+      "surface": "candidate API",
+      "input": "Virtual hook edit, declared surfaces and output dir",
+      "output": "Executable candidate files and manifest",
+      "lifecycle": "Separate candidate artifact before evaluation.",
+      "authority": "Bounded edit menu",
+      "evidence": [
+        "hooks",
+        "materialize"
+      ]
+    },
+    {
+      "name": "run_acceptance_gate",
+      "surface": "evaluation CLI/API",
+      "input": "Baseline/candidate split repeated metrics",
+      "output": "Accepted/rejected reason with split means/deltas",
+      "lifecycle": "Evaluation selection; does not deploy current harness.",
+      "authority": "Independent workflow gate",
+      "evidence": [
+        "gate",
+        "metric"
+      ]
+    },
+    {
+      "name": "HarborSandbox.aexecute",
+      "surface": "supplied backend API",
+      "input": "Command and timeout",
+      "output": "Output/exit result or timeout 124",
+      "lifecycle": "Awaited task-environment operation; remote cleanup unproven.",
+      "authority": "Task environment authority",
+      "evidence": [
+        "backend"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Candidate materialization writes declared relative files; task backend provides file operations via external Harbor boundary.",
+      "evidence": [
+        "materialize",
+        "backend"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "HarborSandbox command API waits asynchronously and reports timeout; process lifetime beyond await belongs to environment.",
+      "evidence": [
+        "backend"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Editable Python hook programs shape prompts/tools/subagents/middleware/runtime policy, rather than only prose.",
+      "evidence": [
+        "hooks"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "role",
+      "detail": "persistent_kernel: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Explicit persisted candidate queue and evaluation/accept/finalize pipeline are executable.",
+      "evidence": [
+        "queue",
+        "branch"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "na",
+      "basis": "role",
+      "detail": "concurrent_work: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Timeout wraps environment await and editable interrupt hook exists; no traced busy operator steering loop or confirmation that remote command terminates.",
+      "evidence": [
+        "backend",
+        "hooks"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Candidate/diagnosis/evaluation/acceptance records are useful experimental provenance, not full original provider/program/transformation IO capture.",
+      "evidence": [
+        "queue",
+        "role"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Branch/queue/acceptance JSON is programmatically accessible; this is an experimental corpus, not universal agent audit.",
+      "evidence": [
+        "queue",
+        "gate"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Accepted candidates become child branch records after evaluation; no after-current-turn live definition activation established.",
+      "evidence": [
+        "branch"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "No compiled executable/outpost handoff or provider/context re-inhabitation path established in candidate/evaluation/branch workflow.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Dedicated diagnose/propose/materialize/evaluate/promote flow for bounded harness hooks; evaluated branch creation, not in-situ core refit.",
+      "evidence": [
+        "queue",
+        "hooks",
+        "gate"
+      ]
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies candidate harness optimization workflow; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Hook aliases and declared surfaces bound changes; actual task authority comes from backend and mutable permission hooks.",
+      "evidence": [
+        "hooks",
+        "materialize"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Gate validates repeated split metrics and rejects regression in any mean; evaluator/task identity integrity is externally supplied.",
+      "evidence": [
+        "gate",
+        "metric"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Candidates record evaluated_at wall time; per-command async timeout exists, not durable agent causal/pause clock.",
+      "evidence": [
+        "queue",
+        "backend"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "queue",
+      "path": "quarantine/self-harness/workflow/scripts/run_self_harness_loop.py",
+      "start": 437,
+      "end": 497,
+      "claim": "Pending candidates are materialized, evaluated, gated and persisted before merge-group finalization."
+    },
+    {
+      "id": "branch",
+      "path": "quarantine/self-harness/workflow/scripts/run_self_harness_loop.py",
+      "start": 501,
+      "end": 545,
+      "claim": "Groups wait for pending evaluations then create child branch for accepted candidate, not hot-activate current harness."
+    },
+    {
+      "id": "hooks",
+      "path": "quarantine/self-harness/proposer/src/self_harness_proposer/hooks.py",
+      "start": 9,
+      "end": 111,
+      "claim": "Hook menu covers prompts, subagents, tools, middleware and runtime controls; one virtual hook change required."
+    },
+    {
+      "id": "materialize",
+      "path": "quarantine/self-harness/proposer/src/self_harness_proposer/materialize.py",
+      "start": 79,
+      "end": 114,
+      "claim": "Candidate files are bounded to declared safe relative surfaces and changed values recorded."
+    },
+    {
+      "id": "gate",
+      "path": "quarantine/self-harness/acceptance/scripts/run_acceptance_gate.py",
+      "start": 77,
+      "end": 130,
+      "claim": "Accept when no split mean pass rate decreases and at least one improves; default train/heldout and two repeats."
+    },
+    {
+      "id": "metric",
+      "path": "quarantine/self-harness/acceptance/scripts/run_acceptance_gate.py",
+      "start": 140,
+      "end": 188,
+      "claim": "Validate repeat cardinality/uniqueness and passed/total ranges, and compare repeat denominators."
+    },
+    {
+      "id": "backend",
+      "path": "quarantine/self-harness/eval/harness_workspace/self_harness_harbor/backend_bridge.py",
+      "start": 33,
+      "end": 91,
+      "claim": "Backend executes task-environment commands asynchronously with timeout result 124; timeout of await is not proof remote process died."
+    },
+    {
+      "id": "role",
+      "path": "quarantine/self-harness/README.md",
+      "start": 16,
+      "end": 22,
+      "claim": "Authored loop holds weights/evaluator fixed while proposing bounded harness edits and promoting candidates."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Harness edit surfaces include runtime/tool policy, with evaluation and promotion recorded separately.",
+    "Per-split acceptance prevents aggregate gain from hiding a mean drop in one split."
+  ],
+  "limits": [
+    "Mean pass-rate gain with two default repeats is not statistical confidence or proof of task identity equality.",
+    "Promotion to branch records does not establish safe in-place activation, shared-service boundary or native rebuild continuity."
+  ],
+  "arconaut_questions": [
+    "Which mutable programs are candidate surfaces, and which independent invariant oracles survive their replacement?",
+    "How should model-governed experiment selection expose uncertainty and generalization while permitting operator steering?"
+  ]
+}

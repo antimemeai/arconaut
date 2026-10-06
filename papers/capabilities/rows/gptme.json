@@ -1,0 +1,647 @@
+{
+  "id": "gptme",
+  "kind": "programmable Python coding/operator harness",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous CLI model/tool loop; threaded and subprocess children; process-global IPython; context-local shell/hooks/log handles",
+    "service_boundary": "Owns its interpreter, shell jobs and child lifecycle; consumes model providers. Shared external computational service leases and executable refit were not established."
+  },
+  "summary": "A useful combination of executable Python, runtime hook registration, continuing shell jobs, multi-model subagents and separately stored compacted views. Interpreter isolation and event custody have important limits.",
+  "inspection": {
+    "files": [
+      "quarantine/gptme/gptme/chat.py",
+      "quarantine/gptme/gptme/llm/__init__.py",
+      "quarantine/gptme/gptme/hooks/registry.py",
+      "quarantine/gptme/gptme/hooks/auto_confirm.py",
+      "quarantine/gptme/gptme/tools/base.py",
+      "quarantine/gptme/gptme/tools/python.py",
+      "quarantine/gptme/gptme/tools/save.py",
+      "quarantine/gptme/gptme/tools/patch.py",
+      "quarantine/gptme/gptme/tools/shell.py",
+      "quarantine/gptme/gptme/tools/subagent/execution.py",
+      "quarantine/gptme/gptme/tools/subagent/api.py",
+      "quarantine/gptme/gptme/tools/subagent/hooks.py",
+      "quarantine/gptme/gptme/logmanager/manager.py",
+      "quarantine/gptme/gptme/tools/autocompact/engine.py",
+      "quarantine/gptme/gptme/tools/autocompact/hook.py",
+      "quarantine/gptme/gptme/logmanager/eventlog.py",
+      "quarantine/gptme/tests/test_logmanager.py",
+      "quarantine/gptme/tests/test_subagent_parent_isolation.py",
+      "quarantine/gptme/tests/test_shell_foreground_promotion.py",
+      "quarantine/gptme/tests/test_eventlog.py",
+      "quarantine/gptme/tests/test_tools_python.py",
+      "quarantine/gptme/tests/test_hooks_registry.py"
+    ],
+    "scope": "Read CLI loop/provider hook wiring, actual save/patch writes, Python namespace and output capture, shell promotion/interruption, child configuration/control/steering, hook registry, compaction view publication, transcript/recovery writes and direct source-test oracles.",
+    "limits": "No acquired code executed. Server immediate-persistence path, every adapter, MCP/ACP transport, all compaction strategies and evaluation packages not exhaustively inspected."
+  },
+  "actions": [
+    {
+      "name": "save / append / patch",
+      "surface": "model tool",
+      "input": "file path and model-authored content/edit blocks",
+      "output": "changed files, preview and error/result messages",
+      "lifecycle": "synchronous actual writes with pre/post hooks; no multi-operation atomic transaction",
+      "authority": "model tool under confirmation hooks",
+      "evidence": [
+        "save",
+        "patch"
+      ]
+    },
+    {
+      "name": "python / register_function / register_hook",
+      "surface": "model tool / programmable host API",
+      "input": "Python program; callable helper or lifecycle callback",
+      "output": "cell streams/value/messages, persistent variables and later hook effects",
+      "lifecycle": "in-process continuing singleton; hook snapshot per invocation; async hooks detached daemon threads",
+      "authority": "model executable code can import exposed host APIs; configured confirmation",
+      "evidence": [
+        "python",
+        "cell",
+        "capture",
+        "registry",
+        "registry-context"
+      ]
+    },
+    {
+      "name": "shell / output / wait / background completion",
+      "surface": "model tool",
+      "input": "OS command, job ID and optional wait/timeout",
+      "output": "stdout/stderr/exit or ongoing promoted job handle",
+      "lifecycle": "soft timeout transfers original shell/worker; successor shell permits more work; kill request is distinct from settlement",
+      "authority": "model tool with configured policy",
+      "evidence": [
+        "promotion",
+        "interrupt",
+        "shell-test"
+      ]
+    },
+    {
+      "name": "subagent / subagent_wait / subagent_cancel / subagent_steer",
+      "surface": "model helper / orchestration API",
+      "input": "child ID, prompt, model/profile/context selection; steer text",
+      "output": "child log/results/progress or cooperative cancellation acknowledgement",
+      "lifecycle": "thread/subprocess child; queue read at checkpoint; ACP weaker; cancellation marks cache before effects stop",
+      "authority": "orchestrator/model calls; child profile restricts loaded tools",
+      "evidence": [
+        "child",
+        "cancel",
+        "steer",
+        "checkpoint"
+      ]
+    },
+    {
+      "name": "compact / create_view / switch_view / switch_to_master",
+      "surface": "context tool / programmable host API",
+      "input": "context/log and budget/strategy; view name",
+      "output": "projected view plus retained main history and output references",
+      "lifecycle": "check pending calls, evaluate savings, publish view; dual-write following messages; reload current view",
+      "authority": "model/tool and programmable log/context mechanisms",
+      "evidence": [
+        "pending",
+        "publish",
+        "views",
+        "reference",
+        "dual-write"
+      ]
+    },
+    {
+      "name": "append / write(sync=True) / recover_messages",
+      "surface": "persistence primitive",
+      "input": "message/file attachment; conversation and recovery log",
+      "output": "disk transcript/view, content hashes, sequence event/checkpoint or recovered state",
+      "lifecycle": "append; atomic rewrites and optional sync; checkpoint prunes old recovery mutations",
+      "authority": "host persistence API; normal file/program access can consume retained data",
+      "evidence": [
+        "jsonl",
+        "dual-write",
+        "eventlog",
+        "checkpoint-prune",
+        "recovery-test"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model save/append/patch operations write actual files and expose hooks; relative path check plus intentional absolute paths, no transaction across tool calls.",
+      "evidence": [
+        "save",
+        "patch"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Continuing shell commands can be transferred to background job handles without rerunning them; cancellation escalation helper lacks final settlement proof.",
+      "evidence": [
+        "promotion",
+        "interrupt",
+        "shell-test"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-authored Python executes arbitrary code, imports host APIs and uses registered helpers in a continuing interpreter. Fresh-container sandbox is a different execution contract.",
+      "evidence": [
+        "python",
+        "cell"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "IPython namespace persists but singleton and stdout/stderr capture are process-global. Context-local child registries do not establish per-agent kernel/output isolation or shared external-service ownership.",
+      "evidence": [
+        "python",
+        "capture",
+        "child",
+        "python-test"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "standing_database: not established beyond the inspected CLI/Python/shell/subagent/hook/history surfaces; no universal absence inferred.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable Python can register functions and lifecycle hooks; native synchronous CLI loop remains host code, not a fully traced replaceable orchestration program.",
+      "evidence": [
+        "python",
+        "registry",
+        "loop"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Selected main model and separately configured child model/profile/context allow different model choices. Provider choice alone does not establish live peer room.",
+      "evidence": [
+        "step",
+        "child"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parent can steer active thread/subprocess colleague and receive results/progress. Inspected channel is orchestrator-to-child; ACP cannot accept steer and no general peer-addressed room traced.",
+      "evidence": [
+        "steer",
+        "checkpoint",
+        "cancel"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Background shell and child threads/subprocesses run concurrently with handles and eventual results. Python singleton/capture complicate parallel Python; cache completion/cancellation is weaker than worker settlement.",
+      "evidence": [
+        "promotion",
+        "child",
+        "cancel",
+        "capture"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Actual queued mid-turn steering consumed at STEP_PRE. Thread/ACP cancellation may return while work continues; subprocess path waits for root only. Shell SIGTERM escalation has no final wait here.",
+      "evidence": [
+        "steer",
+        "checkpoint",
+        "cancel",
+        "interrupt"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Runtime hooks affect step boundaries, generation context, tool use and continuation; same-process Python gives agency to call registry APIs. General arbitrary replacement of loop/turn scheduler not established.",
+      "evidence": [
+        "loop",
+        "generation",
+        "tool",
+        "registry-context",
+        "cell"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Pending-call pairing gate; token/savings-driven projected trimming and separate compacted views preserve main messages. Multiple strategy internals remain outside inspection.",
+      "evidence": [
+        "pending",
+        "compact",
+        "publish",
+        "dual-write"
+      ]
+    },
+    "context_repair": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Can switch back to master, reload view plus original messages and retrieve indexed byte ranges for trimmed output. This is retained message repair, not restoration of events never captured.",
+      "evidence": [
+        "views",
+        "reference",
+        "view-test",
+        "reload-test"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Message/file snapshots and recovery events are useful. CLI buffers entire step until tool completion; direct Python Message return omits captured streams; recovery checkpoints prune older events. Neither full raw provider/program IO nor all attempts retained by these paths.",
+      "evidence": [
+        "step",
+        "cell",
+        "eventlog",
+        "checkpoint-prune",
+        "dual-write"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Master byte references, file-backed logs and switch-to-master expose retained messages for program/model file access. A unified query API over original provider/effect events is not established.",
+      "evidence": [
+        "reference",
+        "views",
+        "jsonl"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Callable registry edits affect later hook invocation snapshots and Python helper state can change live. No default turn/workflow completion activation transaction or compiled refit handoff traced.",
+      "evidence": [
+        "registry",
+        "registry-context",
+        "python",
+        "loop"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Saved conversation and selected context view reload are concrete. Background job/child/interpreter preservation through executable replacement and independently authenticated outpost activation not established.",
+      "evidence": [
+        "reload-test",
+        "python",
+        "promotion"
+      ]
+    },
+    "remote_services": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "remote_services: not established beyond the inspected CLI/Python/shell/subagent/hook/history surfaces; no universal absence inferred.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "self_improvement: not established beyond the inspected CLI/Python/shell/subagent/hook/history surfaces; no universal absence inferred.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established beyond the inspected CLI/Python/shell/subagent/hook/history surfaces; no universal absence inferred.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Autonomous TOOL_CONFIRM hook permits normal tool execution and model Python can modify host functions/hooks. Additional direct confirm paths, e.g. missing parent directory, exist; exact deployment policy depends on configured hooks.",
+      "evidence": [
+        "confirm",
+        "cell",
+        "registry-context",
+        "save"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Useful source oracles attack actual promotion liveness/output, child-parent state, view/master disk persistence, reload and transcript corruption recovery; no harness improvement promotion gate inspected.",
+      "evidence": [
+        "shell-test",
+        "child-test",
+        "view-test",
+        "reload-test",
+        "recovery-test",
+        "hook-test"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Foreground budget uses monotonic elapsed time and recovery events sequence mutations. Sentinel freshness and cooldowns use wall-clock time; root/process result status is not causal effect settlement.",
+      "evidence": [
+        "promotion",
+        "steer",
+        "eventlog",
+        "cancel"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "loop",
+      "path": "quarantine/gptme/gptme/chat.py",
+      "start": 550,
+      "end": 666,
+      "claim": "STEP_PRE, buffered step generation/tool outputs, append after step, continuation after mid-turn compaction, TURN_POST and final sync."
+    },
+    {
+      "id": "step",
+      "path": "quarantine/gptme/gptme/chat.py",
+      "start": 896,
+      "end": 982,
+      "claim": "Selected model/tools and overflow recovery; post-generation hook results only debug-logged; CLI buffers tool effects before persisting assistant/results."
+    },
+    {
+      "id": "generation",
+      "path": "quarantine/gptme/gptme/llm/__init__.py",
+      "start": 377,
+      "end": 414,
+      "claim": "GENERATION_PRE receives messages and yields extra generation context before selected provider call; provider-origin exception tagging follows hooks."
+    },
+    {
+      "id": "registry",
+      "path": "quarantine/gptme/gptme/hooks/registry.py",
+      "start": 190,
+      "end": 319,
+      "claim": "Snapshot enabled hooks per invocation; asynchronous hooks use unjoined daemon threads; synchronous failures log and continue except session-complete signal."
+    },
+    {
+      "id": "registry-context",
+      "path": "quarantine/gptme/gptme/hooks/registry.py",
+      "start": 428,
+      "end": 440,
+      "claim": "Registry is context-local and runtime set/get/registration APIs are callable."
+    },
+    {
+      "id": "confirm",
+      "path": "quarantine/gptme/gptme/hooks/auto_confirm.py",
+      "start": 21,
+      "end": 44,
+      "claim": "Autonomous hook returns confirmed execution and registers as TOOL_CONFIRM."
+    },
+    {
+      "id": "tool",
+      "path": "quarantine/gptme/gptme/tools/base.py",
+      "start": 926,
+      "end": 1046,
+      "claim": "Mutable ToolExecutePreData contains actual ToolUse; native-call generator results buffer and stamp only final result with call ID; current tool ContextVar encloses execution."
+    },
+    {
+      "id": "python",
+      "path": "quarantine/gptme/gptme/tools/python.py",
+      "start": 1,
+      "end": 235,
+      "claim": "Module-global IPython singleton and host helper registry; functions pushed into the continuing interpreter."
+    },
+    {
+      "id": "capture",
+      "path": "quarantine/gptme/gptme/tools/python.py",
+      "start": 260,
+      "end": 269,
+      "claim": "Capture replaces process-global sys.stdout and stderr then restores previous handles."
+    },
+    {
+      "id": "cell",
+      "path": "quarantine/gptme/gptme/tools/python.py",
+      "start": 271,
+      "end": 409,
+      "claim": "Default run_cell persists namespace; isolated sandbox is distinct path; direct Message/list result returns early before captured streams are emitted; plot artifacts detected."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/gptme/gptme/tools/save.py",
+      "start": 122,
+      "end": 205,
+      "claim": "Actual file writes, relative-path confinement but intentional absolute paths, pre/post hooks and conditional parent directory creation."
+    },
+    {
+      "id": "patch",
+      "path": "quarantine/gptme/gptme/tools/patch.py",
+      "start": 322,
+      "end": 379,
+      "claim": "Read file, apply model-authored patch, write changed bytes and return success/error."
+    },
+    {
+      "id": "promotion",
+      "path": "quarantine/gptme/gptme/tools/shell.py",
+      "start": 2897,
+      "end": 3060,
+      "claim": "POSIX soft foreground budget transfers the actual running shell/worker into a background job, creates replacement shell and asynchronously publishes eventual completion."
+    },
+    {
+      "id": "interrupt",
+      "path": "quarantine/gptme/gptme/tools/shell.py",
+      "start": 3266,
+      "end": 3294,
+      "claim": "SIGINT group and root wait; escalation sends SIGTERM without a final wait/death proof in this helper."
+    },
+    {
+      "id": "child",
+      "path": "quarantine/gptme/gptme/tools/subagent/execution.py",
+      "start": 315,
+      "end": 470,
+      "claim": "Child thread initializes separate tools/hook registry and selected model/profile/context subset; these scoped registries do not make module-global Python interpreter per-child."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/gptme/gptme/tools/subagent/api.py",
+      "start": 1206,
+      "end": 1287,
+      "claim": "Thread cancellation marks result immediately and requests next checkpoint; subprocess root terminate/wait then kill; ACP cache-mark-only branch has no cooperative checkpoint despite returned prose."
+    },
+    {
+      "id": "steer",
+      "path": "quarantine/gptme/gptme/tools/subagent/api.py",
+      "start": 1292,
+      "end": 1431,
+      "claim": "Live thread/subprocess steering writes prompt queue, rejects closed or exited recipient before/after; sentinel freshness compares wall-clock mtime/start; ACP steering rejected."
+    },
+    {
+      "id": "checkpoint",
+      "path": "quarantine/gptme/gptme/tools/subagent/hooks.py",
+      "start": 43,
+      "end": 118,
+      "claim": "STEP_PRE drains cancellation and mid-turn steer; cancellation ends chat at cooperative boundary, steer becomes user input before next model step."
+    },
+    {
+      "id": "jsonl",
+      "path": "quarantine/gptme/gptme/logmanager/manager.py",
+      "start": 158,
+      "end": 208,
+      "claim": "Transcript appends or atomic rewrites through symlink with temp fsync, replacement and directory sync; no original provider wire event ledger."
+    },
+    {
+      "id": "dual-write",
+      "path": "quarantine/gptme/gptme/logmanager/manager.py",
+      "start": 542,
+      "end": 672,
+      "claim": "On compacted view, new messages append to both main and view; file attachment snapshots by hash; sync barrier available."
+    },
+    {
+      "id": "views",
+      "path": "quarantine/gptme/gptme/logmanager/manager.py",
+      "start": 875,
+      "end": 934,
+      "claim": "Creates separate view, saves prior state before switch, returns to master and persists selected view marker."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/gptme/gptme/tools/autocompact/engine.py",
+      "start": 332,
+      "end": 404,
+      "claim": "Compaction computes projected copies and master byte-range index; original master remains available in this architecture."
+    },
+    {
+      "id": "reference",
+      "path": "quarantine/gptme/gptme/tools/autocompact/engine.py",
+      "start": 540,
+      "end": 569,
+      "claim": "Truncated result is replaced in projection and receives indexed master byte-range reference when available."
+    },
+    {
+      "id": "publish",
+      "path": "quarantine/gptme/gptme/tools/autocompact/hook.py",
+      "start": 296,
+      "end": 329,
+      "claim": "After actual savings check accepted trim creates/switches view; preserves main, retains failure latch rather than falsely resetting retries."
+    },
+    {
+      "id": "pending",
+      "path": "quarantine/gptme/gptme/tools/autocompact/hook.py",
+      "start": 57,
+      "end": 112,
+      "claim": "Pending tool calls block compaction using call-ID matching or markdown result count; UI notices do not satisfy tool-result coverage."
+    },
+    {
+      "id": "eventlog",
+      "path": "quarantine/gptme/gptme/logmanager/eventlog.py",
+      "start": 47,
+      "end": 122,
+      "claim": "Recovery events cover appended messages, checkpoint, undo and edits with sequence and wall timestamp."
+    },
+    {
+      "id": "checkpoint-prune",
+      "path": "quarantine/gptme/gptme/logmanager/eventlog.py",
+      "start": 148,
+      "end": 180,
+      "claim": "Recovery log compaction removes all events before latest state checkpoint; recoverable current state is not complete event history."
+    },
+    {
+      "id": "view-test",
+      "path": "quarantine/gptme/tests/test_logmanager.py",
+      "start": 463,
+      "end": 501,
+      "claim": "Literal disk oracle retains main originals after compaction view/new input while view has summary/new input."
+    },
+    {
+      "id": "reload-test",
+      "path": "quarantine/gptme/tests/test_logmanager.py",
+      "start": 577,
+      "end": 603,
+      "claim": "Fresh LogManager reload retains selected compacted view and original master; switching back survives another load."
+    },
+    {
+      "id": "child-test",
+      "path": "quarantine/gptme/tests/test_subagent_parent_isolation.py",
+      "start": 1,
+      "end": 97,
+      "claim": "Offline echo child and real subsequent parent shell call assert parent tool format/hooks/cwd survive; does not test global Python/stdout isolation."
+    },
+    {
+      "id": "shell-test",
+      "path": "quarantine/gptme/tests/test_shell_foreground_promotion.py",
+      "start": 60,
+      "end": 94,
+      "claim": "Actual short-budget shell is still running after promotion, then completion contains before/after and zero exit; independent liveness/output assertions."
+    },
+    {
+      "id": "recovery-test",
+      "path": "quarantine/gptme/tests/test_eventlog.py",
+      "start": 563,
+      "end": 600,
+      "claim": "Delete primary transcript and recover exact messages from events; checkpoint oracle explicitly expects prior events removed."
+    },
+    {
+      "id": "python-test",
+      "path": "quarantine/gptme/tests/test_tools_python.py",
+      "start": 31,
+      "end": 69,
+      "claim": "Literal cell outputs, namespace persistence and print/value combination; no concurrent namespace/capture isolation oracle."
+    },
+    {
+      "id": "hook-test",
+      "path": "quarantine/gptme/tests/test_hooks_registry.py",
+      "start": 547,
+      "end": 592,
+      "claim": "Failing normal hook does not stop another hook; session-complete exception is deliberately propagated."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/gptme/tests/test_shell_foreground_promotion.py",
+      "focus": "Actual command ownership after soft deadline",
+      "oracle": "Checks prompt return under one second, continuing job liveness, later original before/after output and exit zero. Does not prove kill settles descendants or restart continuity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gptme/tests/test_subagent_parent_isolation.py",
+      "focus": "Child does not corrupt parent selected tool/hook state",
+      "oracle": "Offline mock/echo drives real child chat/complete and subsequent real parent shell call. Does not test singleton IPython variables or concurrent global stdout capture.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gptme/tests/test_logmanager.py",
+      "focus": "Independent on-disk original retention and restored view",
+      "oracle": "Read persisted main/view after append, fresh-load selected view and original master, switch-to-master reload. Does not restore uncaptured provider attempts or interpreter state.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gptme/tests/test_eventlog.py",
+      "focus": "Recovery when main transcript removed and explicit checkpoint pruning",
+      "oracle": "Deletes primary file and compares literal recovered content; checkpoint expects exactly latest checkpoint plus five events, proving state recovery rather than permanent event history.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gptme/tests/test_tools_python.py",
+      "focus": "Persistent variables and captured ordinary result output",
+      "oracle": "Literal prints/values and reused variable assertions; no simultaneous cell isolation or direct Message-return captured-output oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gptme/tests/test_hooks_registry.py",
+      "focus": "Normal callback failure versus session-end signal",
+      "oracle": "Failing hook still allows later hook; session-complete exception must propagate. No transaction/rollback of callback effects or async settlement oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Executable Python plus callable hook registry is a concrete route to normal model agency.",
+    "Separate master and compacted view with dual-write and reload supports context repair.",
+    "Shell promotion transfers the running computation instead of restarting it, with a direct liveness/output oracle."
+  ],
+  "limits": [
+    "Process-global IPython and sys.stdout capture leave parallel-agent state/output isolation unestablished.",
+    "Immediate cancelled result cache is not worker/provider/effect settlement.",
+    "CLI step buffering and checkpoint pruning limit original audit custody; no executable refit protocol traced."
+  ],
+  "arconaut_questions": [
+    "Expose editable decision/workflow programs directly while keeping effect custody in a smaller host boundary.",
+    "Preserve separate original history and mutable context views, including failed transformations and repair provenance.",
+    "Test simultaneous Python clients with distinct variable/output witnesses, continuing child work after cancellation, and executable replacement with no active host-owned effects."
+  ]
+}

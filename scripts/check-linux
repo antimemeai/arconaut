@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Run ordinary native checks on the operator-selected Neuroses host; never mutants."""
+import argparse
+import hashlib
+import io
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path(__file__).resolve().parent.parent
+SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "neuroses"]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--test-regex", help="Run the matching CTest cases in each declared profile")
+    args = parser.parse_args()
+    # Explicit current native unit source scope, excluding history, credentials and captures.
+    paths = ["CMakeLists.txt", "include", "src", "tests", "programs", "tooling/probes",
+             "scripts/check-foundation-api", "scripts/check-terminal-pty", "scripts/check-rrc", "scripts/arco"]
+    lua_archive = ROOT.parent / "quarantine_proj/archives/lua-5.4.8.tar.gz"
+    if hashlib.sha256(lua_archive.read_bytes()).hexdigest() != "4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae":
+        raise RuntimeError("Lua 5.4.8 source archive checksum mismatch")
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w:gz") as bundle:
+        bundle.add(lua_archive, arcname="tooling/dependencies/lua-5.4.8.tar.gz")
+        for name in paths:
+            path = ROOT / name
+            if path.is_symlink():
+                raise RuntimeError(f"unqualified source symlink: {name}")
+            bundle.add(path, arcname=name)
+    parent = ROOT / "context/linux"
+    parent.mkdir(parents=True, exist_ok=True)
+    capture = Path(tempfile.mkdtemp(prefix="run-", dir=parent))
+    print(f"Linux capture: {capture}", flush=True)
+    remote = subprocess.check_output([*SSH, "mktemp -d /tmp/arconaut-linux-XXXXXXXX"], text=True, timeout=15).strip()
+    if not remote.startswith("/tmp/arconaut-linux-") or len(remote.splitlines()) != 1:
+        raise RuntimeError("unexpected remote workspace")
+    try:
+        subprocess.run([*SSH, "tar -xzf - -C " + shlex.quote(remote)], input=archive.getvalue(), check=True, timeout=30)
+        commands = '''import platform, subprocess, tarfile
+from pathlib import Path
+root = Path.cwd()
+print(platform.platform(), flush=True)
+for tool in ('/usr/bin/clang++-18', '/usr/bin/cmake', '/usr/bin/ninja'):
+    subprocess.run([tool, '--version'], check=True)
+macros = subprocess.check_output(['/usr/bin/clang++-18', '-stdlib=libstdc++', '-std=c++20', '-dM', '-E', '-x', 'c++', '-include', 'version', '/dev/null'], text=True)
+if '#define _GLIBCXX_RELEASE 13\\n' not in macros:
+    raise RuntimeError('Linux profile requires installed libstdc++ 13')
+print('Linux standard library: libstdc++ 13', flush=True)
+print('CTest selection:', test_regex if test_regex is not None else 'all', flush=True)
+with tarfile.open(root / 'tooling/dependencies/lua-5.4.8.tar.gz', 'r:gz') as archive:
+    archive.extractall(root / 'tooling/dependencies', filter='data')
+lua = root / 'tooling/dependencies/lua-5.4.8/src'
+subprocess.run(['make', '-C', str(lua), 'liblua.a', 'CC=/usr/bin/clang-18', 'MYCFLAGS=-DLUA_USE_LINUX -fPIC'], check=True)
+
+for name, mode, instrumentation in [('debug', 'Debug', 'none'), ('release', 'Release', 'none'), ('asan', 'Debug', 'address')]:
+    build = root / 'build' / name
+    subprocess.run(['/usr/bin/cmake', '-S', str(root), '-B', str(build), '-G', 'Ninja', '-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18', '-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja', '-DARCONAUT_COMPILER_PROFILE=linux-clang18', '-DCMAKE_BUILD_TYPE='+mode, '-DARCONAUT_INSTRUMENTATION='+instrumentation, '-DLUA_INCLUDE_DIR='+str(lua), '-DLUA_LIBRARY='+str(lua / 'liblua.a')], check=True)
+    subprocess.run(['/usr/bin/cmake', '--build', str(build), '--parallel', '4'], check=True)
+    tests = ['/usr/bin/ctest', '--test-dir', str(build), '--output-on-failure', '--no-tests=error']
+    if test_regex is not None:
+        tests += ['-R', test_regex]
+    subprocess.run(tests, check=True)
+'''
+        commands = "test_regex = " + repr(args.test_regex) + "\n" + commands
+        with (capture / "checks.log").open("wb") as output:
+            result = subprocess.run([*SSH, "cd " + shlex.quote(remote) + " && timeout --kill-after=5 600 python3 -"], input=commands.encode(), stdout=output, stderr=subprocess.STDOUT, timeout=620)
+        if result.returncode:
+            raise RuntimeError(f"Linux checks failed ({result.returncode}); inspect {capture / 'checks.log'}")
+        selection = f" (CTest filter: {args.test_regex})" if args.test_regex is not None else ""
+        print("Linux debug/release/ASan+UBSan native checks passed" + selection + ".")
+    finally:
+        try:
+            subprocess.run([*SSH, "rm -rf -- " + shlex.quote(remote)], check=True, timeout=15)
+        except (subprocess.SubprocessError, OSError) as error:
+            warning = f"Remote cleanup failed for {remote}: {error}"
+            try:
+                (capture / "cleanup-error.txt").write_text(warning + "\n")
+            except OSError:
+                warning += " (could not retain cleanup-error.txt)"
+            print(warning, file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

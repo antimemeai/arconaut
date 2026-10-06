@@ -1,0 +1,294 @@
+{
+  "id": "squirreling",
+  "kind": "streaming SQL query engine",
+  "runtime": {
+    "languages": [
+      "JavaScript"
+    ],
+    "execution": "Host JS event loop, async row/cell generators and pluggable sources/UDFs.",
+    "service_boundary": "A read/query composition library over supplied data; not a standing storage engine or agent."
+  },
+  "summary": "Lazy cell materialization makes expensive API/model calls query demand-driven; strong idea independent of its JS runtime.",
+  "inspection": {
+    "files": [
+      "quarantine/squirreling/src/execute/execute.js",
+      "quarantine/squirreling/src/expression/evaluate.js",
+      "quarantine/squirreling/src/execute/utils.js",
+      "quarantine/squirreling/README.md",
+      "quarantine/squirreling/test/execute/expensive.test.js",
+      "quarantine/squirreling/test/execute/abort.test.js"
+    ],
+    "scope": "Read public exports, SQL normalization/planning/scan/abort path, UDF dispatch, collect and expensive-cell/abort tests.",
+    "limits": "No full SQL conformance or join/window algorithm audit; no persistent DB, agent scheduling or original audit supplied."
+  },
+  "actions": [
+    {
+      "name": "executeSql / executePlan",
+      "surface": "supplied primitive",
+      "input": "SQL/plan, tables, asynchronous functions and AbortSignal",
+      "output": "QueryResults with columns and async rows/cells",
+      "lifecycle": "Demand-driven stream; interruption can expose partial values plus error.",
+      "authority": "Host-provided source/UDF authority",
+      "evidence": [
+        "query",
+        "scan"
+      ]
+    },
+    {
+      "name": "collect",
+      "surface": "supplied primitive",
+      "input": "QueryResults",
+      "output": "Fully materialized record array",
+      "lifecycle": "Collects rows then evaluates cells concurrently; may consume substantial memory.",
+      "authority": "Calling program",
+      "evidence": [
+        "collect"
+      ]
+    },
+    {
+      "name": "UDF apply / data-source scan",
+      "surface": "supplied primitive",
+      "input": "Evaluated SQL arguments or pushdown hints/signal",
+      "output": "Awaited scalar or async scan rows",
+      "lifecycle": "Caller-defined IO lifetime and side effects.",
+      "authority": "Caller supplied callback",
+      "evidence": [
+        "udf",
+        "scan"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host-supplied asynchronous UDFs execute as demanded cells; arbitrary model code installation is outside engine.",
+      "evidence": [
+        "udf"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection scope",
+      "detail": "This is a query engine over host sources/UDFs, not an executable persistent language kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Queryable sources are supplied by caller and README limits SQL to read-only; no standing write/durable database engine.",
+      "evidence": [
+        "contract",
+        "query"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Declarative SQL composes filtering, projection and asynchronous sources/UDFs with lazy evaluation.",
+      "evidence": [
+        "query",
+        "udf"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "collect materializes gathered cells concurrently; execution is JS async, not independent agent/process ownership.",
+      "evidence": [
+        "collect"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "AbortSignal is threaded through scans and checked after cooperative stream exhaustion; arbitrary UDF/external call termination is not established.",
+      "evidence": [
+        "scan"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "na",
+      "basis": "role",
+      "detail": "original_audit: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "SQL can query a supplied audit-shaped source; audit capture, retention and persistence are not part of this engine.",
+      "evidence": [
+        "query"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tables/functions are passed per query so later queries can receive new definitions; no transaction for active queries or harness replacement.",
+      "evidence": [
+        "query"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "role",
+      "detail": "rebuild_continuity: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "A supplied async source/UDF can consume APIs; transport/session/authority is host-supplied.",
+      "evidence": [
+        "udf"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller supplies sources/functions; engine executes those with host authority, without model-specific approvals.",
+      "evidence": [
+        "query"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Demand-sensitive call counts and explicit abort/result-count tests attack waste and truncated-success errors.",
+      "evidence": [
+        "tests",
+        "scan"
+      ]
+    },
+    "time_order": {
+      "status": "na",
+      "basis": "role",
+      "detail": "time_order: this reference supplies streaming SQL query engine; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "query",
+      "path": "quarantine/squirreling/src/execute/execute.js",
+      "start": 24,
+      "end": 62,
+      "claim": "SQL executes over supplied tables/functions/signal and returns planned lazy results; host event-loop yield interval is 4000."
+    },
+    {
+      "id": "scan",
+      "path": "quarantine/squirreling/src/execute/execute.js",
+      "start": 380,
+      "end": 417,
+      "claim": "Scan receives pushdown hints/signal, invalid partial pushdown errors and cooperative abort is surfaced after scan completion."
+    },
+    {
+      "id": "udf",
+      "path": "quarantine/squirreling/src/expression/evaluate.js",
+      "start": 679,
+      "end": 685,
+      "claim": "User-defined functions are awaited after case-insensitive name lookup."
+    },
+    {
+      "id": "collect",
+      "path": "quarantine/squirreling/src/execute/utils.js",
+      "start": 84,
+      "end": 101,
+      "claim": "collect first gathers rows then materializes cells concurrently; stream interface avoids whole-result collection."
+    },
+    {
+      "id": "contract",
+      "path": "quarantine/squirreling/README.md",
+      "start": 13,
+      "end": 24,
+      "claim": "Documented scope is streaming async read-only SQL and lazy async cells, not storage durability."
+    },
+    {
+      "id": "tests",
+      "path": "quarantine/squirreling/test/execute/expensive.test.js",
+      "start": 50,
+      "end": 113,
+      "claim": "Call-count assertions distinguish zero unselected work from selected/filter/limit-driven expensive calls."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/squirreling/test/execute/expensive.test.js",
+      "focus": "Unnecessary expensive cell/API work.",
+      "oracle": "Counters expect zero for unselected columns and exact 1/2/5 demand-dependent calls; not cost/latency benchmark.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/squirreling/test/execute/abort.test.js",
+      "focus": "Abort before/during a streamed scan.",
+      "oracle": "Rejects with aborted error; exactly Alice/Bob and two produced rows remain when aborted after second row.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Lazy structured queries can orchestrate expensive computations while avoiding unused work.",
+    "Abort surfaces truncation rather than silently treating partial scan as success."
+  ],
+  "limits": [
+    "JS event-loop dependency conflicts with core preference; mechanism study does not select this library.",
+    "No durable storage or agent action lifecycle supplied."
+  ],
+  "arconaut_questions": [
+    "Can a standing evidence/query interface lazily call remote computation without obscuring cost, identity and cancellation?",
+    "How is partial streamed data represented separately from completed query success?"
+  ]
+}

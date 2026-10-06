@@ -1,0 +1,617 @@
+{
+  "id": "agentchat",
+  "kind": "WebSocket agent room/marketplace plus MCP and connection daemon",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node event-loop WebSocket server/client and stdio MCP; independent file-backed connection daemon; optional external Claude wrapper",
+    "service_boundary": "server governs shared rooms/identity/marketplace; external agent owns provider/computation/context; client consumes service"
+  },
+  "summary": "A real IRC-like multi-peer channel service with model-facing MCP tools, identity and proposal receipts. Current implementation disables advertised DMs/file transfer and has lossy cursor/inbox/audit boundaries.",
+  "inspection": {
+    "files": [
+      "quarantine/agentchat/README.md",
+      "quarantine/agentchat/mcp-server/index.js",
+      "quarantine/agentchat/mcp-server/tools/index.js",
+      "quarantine/agentchat/mcp-server/tools/send.js",
+      "quarantine/agentchat/lib/client.ts",
+      "quarantine/agentchat/lib/server/handlers/message.ts",
+      "quarantine/agentchat/mcp-server/tools/listen.js",
+      "quarantine/agentchat/mcp-server/state.js",
+      "quarantine/agentchat/mcp-server/tools/connect.js",
+      "quarantine/agentchat/mcp-server/inbox-writer.js",
+      "quarantine/agentchat/lib/daemon.ts",
+      "quarantine/agentchat/mcp-server/tools/claim.js",
+      "quarantine/agentchat/lib/floor-control.ts",
+      "quarantine/agentchat/lib/server.ts",
+      "quarantine/agentchat/mcp-server/tools/marketplace/proposals.js",
+      "quarantine/agentchat/lib/server/handlers/proposal.ts",
+      "quarantine/agentchat/lib/receipts.ts",
+      "quarantine/agentchat/tools/claude-deadman.mjs",
+      "quarantine/agentchat/test/client.integration.test.js",
+      "quarantine/agentchat/test/floor-control.test.js",
+      "quarantine/agentchat/test/receipts.test.js",
+      "quarantine/agentchat/package.json"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "agentchat_connect / client.connect / JOIN",
+      "surface": "model MCP / CLI / TypeScript API",
+      "input": "server URL, agent identity/name, channel",
+      "output": "assigned agent ID and peer membership",
+      "lifecycle": "WebSocket identification/challenge, invite/verified gate; recent replay on join",
+      "authority": "operator chooses server/identity; model uses connected MCP",
+      "evidence": [
+        "mcp",
+        "join",
+        "catalog"
+      ]
+    },
+    {
+      "name": "agentchat_send / client.send / dm",
+      "surface": "model MCP / API",
+      "input": "target, message, optional in_reply_to",
+      "output": "optimistic success/socket queued; channel message ID later from server",
+      "lifecycle": "socket send or memory queue; server DMs disabled",
+      "authority": "identified/member agent with server lurk/rate policy",
+      "evidence": [
+        "sendtool",
+        "send",
+        "queue",
+        "route"
+      ]
+    },
+    {
+      "name": "agentchat_listen / agentchat_inbox",
+      "surface": "model MCP",
+      "input": "channels, optional tail count",
+      "output": "reduced/capped messages, timeout metadata",
+      "lifecycle": "file scan then settle/watch/poll; shared timestamp cursor advances",
+      "authority": "connected MCP participant; missing IDs limit claim/thread ergonomics",
+      "evidence": [
+        "listen",
+        "listenwait",
+        "cursor",
+        "idloss"
+      ]
+    },
+    {
+      "name": "agentchat_channels / leave / create_channel / nick / presence",
+      "surface": "model MCP catalog / protocol",
+      "input": "channel/name/invite/verification/presence arguments",
+      "output": "membership/presence/channel events",
+      "lifecycle": "server owns live membership; selected handlers traced, remaining catalog bounds explicit",
+      "authority": "identified agent, channel/admin gates per server",
+      "evidence": [
+        "catalog",
+        "join",
+        "route"
+      ]
+    },
+    {
+      "name": "agentchat_claim / RESPONDING_TO / YIELD",
+      "surface": "model MCP / protocol",
+      "input": "channel and message ID; local started_at",
+      "output": "tool reports sent; server claim grant/denial yields event",
+      "lifecycle": "TTL floor arbitration; YIELD is advisory and does not stop model work",
+      "authority": "peer agent supplies timestamp; model must respond cooperatively",
+      "evidence": [
+        "claim",
+        "floor",
+        "yield",
+        "idloss"
+      ]
+    },
+    {
+      "name": "agentchat_daemon_start / stop / inbox-outbox",
+      "surface": "operator/model MCP / OS process",
+      "input": "instance/server/channel config; outbound JSONL entries",
+      "output": "persistent connection files/PID and inbound stream",
+      "lifecycle": "owned background connection; failed outbox lines lost on whole-file truncate",
+      "authority": "local process owner/model via MCP; no provider daemon inside",
+      "evidence": [
+        "daemon",
+        "daemonstore",
+        "outbox"
+      ]
+    },
+    {
+      "name": "agentchat_propose / accept / reject / complete / dispute",
+      "surface": "model MCP / marketplace protocol",
+      "input": "proposal recipient/task/price/expiry/stake; proposal ID/proof/reason",
+      "output": "signed proposal lifecycle/status and COMPLETE receipts",
+      "lifecycle": "server state machine and reputation/escrow hooks; does not perform advertised work",
+      "authority": "persistent verified signature identity; lifecycle recipient/age gates",
+      "evidence": [
+        "propose",
+        "serverproposal",
+        "complete",
+        "receipts",
+        "catalog"
+      ]
+    },
+    {
+      "name": "ReceiptStore.add / getAll / export",
+      "surface": "TypeScript API",
+      "input": "COMPLETE record/path, optional agent filter/format",
+      "output": "portable receipt JSONL and reputation stats",
+      "lifecycle": "append then best-effort rating; malformed records skipped",
+      "authority": "local consumer composes audit separately",
+      "evidence": [
+        "receipts"
+      ]
+    },
+    {
+      "name": "agentchat file-transfer tools / FILE_CHUNK",
+      "surface": "exposed MCP / protocol with disabled server implementation",
+      "input": "target/file transfer metadata/chunks",
+      "output": "server error: disabled",
+      "lifecycle": "unavailable effect in this server snapshot",
+      "authority": "catalog exposure cannot override server disable",
+      "evidence": [
+        "file-disabled",
+        "catalog"
+      ]
+    },
+    {
+      "name": "claude-deadman",
+      "surface": "operator command / separate wrapper",
+      "input": "Claude CLI args, timeout and deny patterns",
+      "output": "forwarded terminal I/O and textual approve decisions",
+      "lifecycle": "resident child; timed heuristic prompt approval",
+      "authority": "operator wrapper decides approval; model calls remain external",
+      "evidence": [
+        "deadman"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Client daemon/MCP use local identity/inbox/outbox/receipt files; model file-transfer catalog is present but server disables FILE_CHUNK. No coding editor engine.",
+      "evidence": [
+        "daemon",
+        "receipts",
+        "file-disabled"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Own background connection daemon and separate Claude deadman subprocess wrapper; no native coding-agent execution scheduler. Stop exits without full in-flight file-write drain.",
+      "evidence": [
+        "daemon",
+        "deadman"
+      ]
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Communication/marketplace service supplies named protocol/MCP tools, not executable model-authored code cells or coding engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Room and connection-service role has no computation kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "File inbox/outbox/receipts and server proposal state support shared coordination data; not a general model-standing database/query service.",
+      "evidence": [
+        "daemonstore",
+        "outbox",
+        "receipts",
+        "serverproposal"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Protocol/MCP room and signed work proposal lifecycle plus daemon inbox/outbox can be composed into workflows; server callback markers schedule messages rather than execute arbitrary engineering plans.",
+      "evidence": [
+        "catalog",
+        "route",
+        "serverproposal"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider-neutral WebSocket/MCP peers may use different external agents; service neither chooses nor runs providers. AGENT_MODEL environment is metadata, not provider dispatch.",
+      "evidence": [
+        "role",
+        "daemon"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Server implements multi-peer channels, membership, replay and advisory response floor; model MCP sends/listens. Direct messages disabled and message receipt/identity loss constrain interaction.",
+      "evidence": [
+        "route",
+        "join",
+        "listen",
+        "floor",
+        "idloss"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Independent connected peers and server async event handling allow concurrent participants; floor arbitration reduces pile-ons but does not own/cancel their concurrent model work.",
+      "evidence": [
+        "route",
+        "floor",
+        "yield"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "YIELD floor event is advisory, daemon stop disconnects/exits, deadman can defer approval to user. No typed cancellation/quiescence of external model work.",
+      "evidence": [
+        "yield",
+        "daemon",
+        "deadman"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "External harness owns model turn; service supplies messages/MCP/proposal events only.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Listen/inbox drop older messages and truncate content/count; this bounds delivery, not managed LLM context compaction.",
+      "evidence": [
+        "listen",
+        "inbox",
+        "daemonstore"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Server join replay and local inbox/tail provide selected message recovery; timestamp cursor/filter/cap and retention can permanently omit messages, no authoritative model-context repair.",
+      "evidence": [
+        "join",
+        "listen",
+        "cursor",
+        "inbox"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Selected server JSONL audit is fire-and-forget and metadata-only for channel messages; redaction alters routed content. Inbox truncates; receipt log captures selected marketplace completion, not full model/process actions.",
+      "evidence": [
+        "audit",
+        "route",
+        "inbox",
+        "receipts"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inbox read/tail and ReceiptStore reader/filter/export support selected communication/marketplace study; no full causal/original agent audit.",
+      "evidence": [
+        "listen",
+        "receipts"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Live membership/nick/presence/claims are mutable protocol state; no exposed safe code/config replacement or affected-turn activation fence in traced server/daemon/MCP path.",
+      "evidence": [
+        "catalog",
+        "join",
+        "floor"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent identity, reconnect cursor and file inbox/outbox survive connection changes; bounded buffers and optimistic send/truncate lose unresolved delivery evidence. No executable refit/outpost transfer.",
+      "evidence": [
+        "cursor",
+        "inbox",
+        "outbox",
+        "daemon"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider-neutral clients consume independently operated WebSocket room; server owns room/moderation/marketplace fabric, matching external service reference role.",
+      "evidence": [
+        "role",
+        "join",
+        "serverproposal"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Communication and marketplace substrate does not govern harness self-development; peers may perform arbitrary tasks outside this implementation.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Signed proposal dispute carries reason and lifecycle for marketplace work; no universal model rageshake with captured agent state and separate repair table.",
+      "evidence": [
+        "catalog",
+        "complete",
+        "receipts"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Membership/invite/verified/lurk/rate gates and signed proposal/completion identities; content redaction and moderation govern shared service. MCP optimistic send/claim reports do not establish server acceptance.",
+      "evidence": [
+        "route",
+        "join",
+        "serverproposal",
+        "complete",
+        "sendtool",
+        "claim"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read localhost client integration asserts exact channel sender/name/content; pure floor tests assert timestamp/tie arbitration and real-file receipt tests serialize selected records. No model/provider or timestamp-cursor-loss/disabled-transfer conformance implied.",
+      "evidence": [
+        "floor",
+        "listen",
+        "file-disabled"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Timestamp-only shared cursor, same-timestamp prefix dedup, cap-newest policy and no send/claim ACK can skip or misstate lifecycle; response-floor clock supplied by client.",
+      "evidence": [
+        "listen",
+        "cursor",
+        "queue",
+        "claim",
+        "floor"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "role",
+      "path": "quarantine/agentchat/README.md",
+      "start": 14,
+      "end": 32,
+      "claim": "Pinned README states official public server decommissioned; source is independently operated WebSocket collaboration server/client/MCP, not provider engine."
+    },
+    {
+      "id": "mcp",
+      "path": "quarantine/agentchat/mcp-server/index.js",
+      "start": 24,
+      "end": 58,
+      "claim": "MCP starts tool registry on stdio; SIGINT disconnects client/stops daemon then exits; no provider/tool-turn engine."
+    },
+    {
+      "id": "catalog",
+      "path": "quarantine/agentchat/mcp-server/tools/index.js",
+      "start": 32,
+      "end": 67,
+      "claim": "Reachable registry installs chat, daemon, claim, marketplace, moderation and file-transfer tool families; registry presence does not prove server allows each effect."
+    },
+    {
+      "id": "sendtool",
+      "path": "quarantine/agentchat/mcp-server/tools/send.js",
+      "start": 12,
+      "end": 62,
+      "claim": "agentchat_send ensures connection/joins channel, awaits client send then reports success with no server delivery acknowledgment."
+    },
+    {
+      "id": "send",
+      "path": "quarantine/agentchat/lib/client.ts",
+      "start": 306,
+      "end": 333,
+      "claim": "Client optional identity signs target/content/timestamp; send/dm only pass message to low-level socket function."
+    },
+    {
+      "id": "queue",
+      "path": "quarantine/agentchat/lib/client.ts",
+      "start": 881,
+      "end": 895,
+      "claim": "Low-level send writes open WebSocket or queues while disconnected; queued is not accepted/delivered/read."
+    },
+    {
+      "id": "route",
+      "path": "quarantine/agentchat/lib/server/handlers/message.ts",
+      "start": 32,
+      "end": 134,
+      "claim": "Server validates identity/lurk/rate/member, redacts content, extracts delayed callbacks and broadcasts/buffers channel message; direct messages explicitly disabled."
+    },
+    {
+      "id": "join",
+      "path": "quarantine/agentchat/lib/server/handlers/message.ts",
+      "start": 140,
+      "end": 205,
+      "claim": "Join enforces invites/verification, idempotently adds membership and replies with peers then replays recent memory history."
+    },
+    {
+      "id": "file-disabled",
+      "path": "quarantine/agentchat/lib/server/handlers/message.ts",
+      "start": 385,
+      "end": 390,
+      "claim": "Server FILE_CHUNK handler always returns file transfers disabled despite exposed transfer catalog."
+    },
+    {
+      "id": "listen",
+      "path": "quarantine/agentchat/mcp-server/tools/listen.js",
+      "start": 67,
+      "end": 154,
+      "claim": "Inbox scan filters ts<=shared cursor, strips message/thread IDs, dedups timestamp/sender/50-character prefix, caps newest 50/32KB and truncates oversized content."
+    },
+    {
+      "id": "listenwait",
+      "path": "quarantine/agentchat/mcp-server/tools/listen.js",
+      "start": 219,
+      "end": 287,
+      "claim": "Listen batches by settle window then advances cursor to newest returned timestamp; watch/poll resolves next batch rather than durable per-message consumption acknowledgment."
+    },
+    {
+      "id": "cursor",
+      "path": "quarantine/agentchat/mcp-server/state.js",
+      "start": 110,
+      "end": 135,
+      "claim": "One disk-backed lastSeenTimestamp is monotonic across reconnect, shared by channel selection; clearing file needed for reset."
+    },
+    {
+      "id": "idloss",
+      "path": "quarantine/agentchat/mcp-server/tools/connect.js",
+      "start": 64,
+      "end": 96,
+      "claim": "Direct message handler excludes own/server/replay-old events then appends reduced shape without msg_id/in_reply_to; claim tool cannot get required message ID through this listen path."
+    },
+    {
+      "id": "inbox",
+      "path": "quarantine/agentchat/mcp-server/inbox-writer.js",
+      "start": 16,
+      "end": 91,
+      "claim": "MCP inbox writer retains 1000 lines with process-local promise mutex and atomic rename; not a cross-process daemon lock or permanent original ledger."
+    },
+    {
+      "id": "daemonstore",
+      "path": "quarantine/agentchat/lib/daemon.ts",
+      "start": 197,
+      "end": 224,
+      "claim": "Daemon separately appends/truncates same inbox nonatomically; local MCP mutex does not synchronize this separate process writer."
+    },
+    {
+      "id": "outbox",
+      "path": "quarantine/agentchat/lib/daemon.ts",
+      "start": 251,
+      "end": 294,
+      "claim": "Daemon reads outbox and attempts sends, logs per-line failures then truncates whole outbox; failed/unknown sends lack durable retry receipt."
+    },
+    {
+      "id": "daemon",
+      "path": "quarantine/agentchat/lib/daemon.ts",
+      "start": 472,
+      "end": 534,
+      "claim": "Daemon creates files, owns persistent connection/outbox watcher and signal shutdown; stop disconnects/unlinks PID then process.exit, not await all in-flight writes."
+    },
+    {
+      "id": "claim",
+      "path": "quarantine/agentchat/mcp-server/tools/claim.js",
+      "start": 15,
+      "end": 69,
+      "claim": "Model claim supplies channel/msg_id and current local timestamp; tool reports send success without server grant acknowledgment."
+    },
+    {
+      "id": "floor",
+      "path": "quarantine/agentchat/lib/floor-control.ts",
+      "start": 70,
+      "end": 149,
+      "claim": "Server floor claim chooses earliest client started_at, lexicographic tie, server-clock expiration and release on response/disconnect; supporting social arbitration."
+    },
+    {
+      "id": "yield",
+      "path": "quarantine/agentchat/lib/server.ts",
+      "start": 1290,
+      "end": 1309,
+      "claim": "Denied/displaced floor claim emits YIELD notice, not cancellation of peer LLM/provider work."
+    },
+    {
+      "id": "audit",
+      "path": "quarantine/agentchat/lib/server.ts",
+      "start": 670,
+      "end": 701,
+      "claim": "Audit selects allowed event names after log-level filter, writes async with empty callback and ignored errors; channel content omitted by handler."
+    },
+    {
+      "id": "propose",
+      "path": "quarantine/agentchat/mcp-server/tools/marketplace/proposals.js",
+      "start": 12,
+      "end": 64,
+      "claim": "Model proposal carries recipient/task/amount/currency/expiry/stake and returns correlated proposal ID/status."
+    },
+    {
+      "id": "serverproposal",
+      "path": "quarantine/agentchat/lib/server/handlers/proposal.ts",
+      "start": 46,
+      "end": 106,
+      "claim": "Proposal requires persistent identity and valid signature, verifies target online, redacts task, creates stored proposal and echoes assigned ID."
+    },
+    {
+      "id": "complete",
+      "path": "quarantine/agentchat/lib/server/handlers/proposal.ts",
+      "start": 307,
+      "end": 358,
+      "claim": "Completion requires identity/signature/minimum age and proposal-store lifecycle; proof is supplied string, not execution of engineering result evaluator here."
+    },
+    {
+      "id": "receipts",
+      "path": "quarantine/agentchat/lib/receipts.ts",
+      "start": 82,
+      "end": 139,
+      "claim": "COMPLETE receipts append JSONL with storage timestamp, selected reputation update best-effort; reader skips malformed lines. These are marketplace receipts, not chat read acknowledgments."
+    },
+    {
+      "id": "deadman",
+      "path": "quarantine/agentchat/tools/claude-deadman.mjs",
+      "start": 89,
+      "end": 160,
+      "claim": "Separate Claude wrapper watches textual permission prompts and auto-types y after countdown unless deny-match/user input; external CLI owns model turn, heuristic not typed tool authority."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/agentchat/test/client.integration.test.js",
+      "focus": "WebSocket channel sender/name/content",
+      "oracle": "Real localhost server/two clients exact message assertion; lurk disabled in fixture, source includes older DM expectations inconsistent with disabled server; no models.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/agentchat/test/floor-control.test.js",
+      "focus": "First claim, earlier timestamp, lexicographic tie and release",
+      "oracle": "Pure in-memory floor object with synthetic client timestamps asserts grants/holders; does not enforce model/provider interruption.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/agentchat/test/receipts.test.js",
+      "focus": "File append/read and proposal receipt fields",
+      "oracle": "Real temp file parses selected COMPLETE samples with fake signatures; not cryptographic proof or original agent audit.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual provider-independent channel room, peer presence and replay.",
+    "Advisory response arbitration and signed work lifecycle are useful collaboration protocol primitives.",
+    "Connection daemon separates communication service persistence from provider execution."
+  ],
+  "limits": [
+    "DM/file transfer tool descriptions exceed server implementation.",
+    "Direct MCP path loses msg_id/in_reply_to; listen also removes IDs required by floor claim.",
+    "Shared timestamp cursor plus cap-newest and prefix dedup can omit messages; outbox clears failed lines.",
+    "Audit metadata writes ignore completion/errors and originals are not retained."
+  ],
+  "arconaut_questions": [
+    "Which message IDs/receipts must survive every layer for model floor/thread ergonomics?",
+    "Should per-channel acknowledged sequence offsets replace global timestamp cursor?",
+    "Can room services remain independent OS daemons while local harness refit drains only its consumer requests?"
+  ]
+}

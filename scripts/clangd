@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /opt/homebrew/Cellar/llvm/23.1.2/bin/clangd --background-index --clang-tidy "$@"

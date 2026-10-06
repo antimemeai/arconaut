@@ -1,0 +1,596 @@
+{
+  "id": "openai4s",
+  "kind": "scientific coding agent and owned execution runtime",
+  "runtime": {
+    "languages": [
+      "Python",
+      "R",
+      "TypeScript"
+    ],
+    "execution": "Provider-neutral synchronous Python engine, threaded provider/kernel control, JSON-lines persistent workers, SQLite host; TypeScript frontend.",
+    "service_boundary": "Owns its per-session kernels and database; consumes model APIs, MCP and BYOC/SSH scientific compute. It is not evidence of Anthropic internals."
+  },
+  "summary": "An independent hybrid native-tool/code-cell agent with ledger reconstruction, compaction archives, generation-bound execution and conservative recovery.",
+  "inspection": {
+    "files": [
+      "quarantine/openai4s/openai4s/agent/engine.py",
+      "quarantine/openai4s/openai4s/agent/actions.py",
+      "quarantine/openai4s/openai4s/tools/registry.py",
+      "quarantine/openai4s/openai4s/host_dispatch.py",
+      "quarantine/openai4s/openai4s/agent/runtime.py",
+      "quarantine/openai4s/openai4s/kernel/manager.py",
+      "quarantine/openai4s/openai4s/kernel/worker.py",
+      "quarantine/openai4s/openai4s/agent/control.py",
+      "quarantine/openai4s/openai4s/kernel/background.py",
+      "quarantine/openai4s/openai4s/agent/delegation.py",
+      "quarantine/openai4s/openai4s/agent/ledger.py",
+      "quarantine/openai4s/openai4s/agent/compaction.py",
+      "quarantine/openai4s/openai4s/store.py",
+      "quarantine/openai4s/openai4s/kernel/recovery.py",
+      "quarantine/openai4s/openai4s/tools/session.py",
+      "quarantine/openai4s/openai4s/host/session.py",
+      "quarantine/openai4s/openai4s/tools/write_file.py",
+      "quarantine/openai4s/openai4s/tools/dynamic_control.py",
+      "quarantine/openai4s/openai4s/update/README.md",
+      "quarantine/openai4s/docs/architecture.md",
+      "quarantine/openai4s/docs/compute.md",
+      "quarantine/openai4s/openai4s/diagnostics.py",
+      "quarantine/openai4s/tests/test_agent_engine.py",
+      "quarantine/openai4s/tests/test_action_ledger_runtime.py",
+      "quarantine/openai4s/tests/test_compaction_ledger.py",
+      "quarantine/openai4s/tests/test_execution_coordinator.py",
+      "quarantine/openai4s/tests/test_kernel_recovery.py"
+    ],
+    "scope": "outer engine, native dispatch, kernel RPC/namespace, ledger/compaction/query, child controls, recovery and selected offline test assertions",
+    "limits": "Source was inspected but never executed. Flagged auto-review/remote features are documented separately from traced default paths; update apply modules are absent from this pinned tree."
+  },
+  "actions": [
+    {
+      "name": "AgentEngine.run",
+      "surface": "programmable API",
+      "input": "RunState/messages, max_turns and composed model/context/executor/interceptor/events/cancel/completion ports.",
+      "output": "EngineResult with messages, completion, stop_reason, turns and last reply.",
+      "lifecycle": "Synchronous state machine; cancelled/max_turns/no-progress are not completion.",
+      "authority": "Composition owner chooses ports; policy stays in adapters/dispatcher.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    {
+      "name": "native tool batch / execute_tool_call",
+      "surface": "model tool dispatcher",
+      "input": "Provider-normalized IDs/raw+parsed arguments and session catalog.",
+      "output": "One paired observation/error per declaration, success indicator and durable action identity.",
+      "lifecycle": "Read-only leading calls may parallelize; mutation barrier retains provider order.",
+      "authority": "Schema/precheck then common host permission/egress/audit envelope.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e8"
+      ]
+    },
+    {
+      "name": "Python/R cell; host RPC",
+      "surface": "model code action",
+      "input": "First complete language cell; host.method arguments mid-Python-cell.",
+      "output": "Captured output/error/interrupt plus matching host_response data/error.",
+      "lifecycle": "Lazy persistent worker; manager sole read path; same-call correlation and generation bindings.",
+      "authority": "Worker execution and host capabilities are separate authorities; lone soft-error object raises.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "host.exec_background / exec_peek / exec_interrupt",
+      "surface": "model host capability",
+      "input": "Independent code or exec_id.",
+      "output": "Immediate exec_id/status; accumulated bounded stdout; cancellation delivery verdict.",
+      "lifecycle": "Independent worker, manager-memory lifetime, not foreground namespace or durable daemon restart continuation.",
+      "authority": "Exact kernel object gets idempotent interrupt; no job from guessed display ID.",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "send_message / stop_child / continue_child / materialize_child",
+      "surface": "delegation API",
+      "input": "child_id, steering message, optional wait or artifact path selections.",
+      "output": "Queued message_id/delivery state; stopped/continued child result; materialized version refs.",
+      "lifecycle": "Subtree cancellation precedes signal; restart never automatically continues child provider work.",
+      "authority": "Parent owns direct child; publication uses recorded artifact identities.",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "host.query",
+      "surface": "model host capability",
+      "input": "Read-only SQL SELECT/CTE, parameters, optional row limit (default None), statement timeout (default five seconds) and host-derived scope.",
+      "output": "Rows or authorizer/timeout errors; omitted/falsy limit fetches all rows rather than imposing an output-row bound.",
+      "lifecycle": "Serialized statement on standing SQLite connection; authorizer bracket removed afterward.",
+      "authority": "Agent forbidden tables/CTE shadowing/writes refused; scoped views supplied by trusted host.",
+      "evidence": [
+        "e15"
+      ]
+    },
+    {
+      "name": "create_checkpoint / fork_session / session_status",
+      "surface": "model native tools",
+      "input": "Optional expected head; exactly one checkpoint/cell/message source and branch name.",
+      "output": "Immutable checkpoint/branch/recovery/pending-approval metadata.",
+      "lifecycle": "Append-only checkpoint; view-only branch; activation/replay remains distinct.",
+      "authority": "Current root session only; gateway supplies filesystem-aware domain.",
+      "evidence": [
+        "e18",
+        "e19"
+      ]
+    },
+    {
+      "name": "define_dynamic_tool / list_dynamic_tools / promote_dynamic_tool",
+      "surface": "model native extension tools",
+      "input": "Name, schemas, Python execute(args), smoke_args and ttl_s; promotion scope.",
+      "output": "Scoped version/manifest catalogue or test/approval result (definition service not fully traced).",
+      "lifecycle": "One-shot sandbox execution declared; definition TTL and human promotion are explicit contract.",
+      "authority": "High-risk schema; promotion explicitly requires human approval; not engine refit.",
+      "evidence": [
+        "e21"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native write_file uses descriptor-anchored staging/publication; kernels and tools access their scoped workspace and versioned artifacts. This does not audit all arbitrary native extension IO.",
+      "evidence": [
+        "e20",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Persistent kernel execution and separately identified background processes expose interruption; host RPC shares permission/generation context. Arbitrary shell process-tree proof is outside inspected lines.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e9",
+        "e10"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "One Python/R code cell is an engine action; native batches have priority and finalize is distinct. Python worker actually executes in persistent namespace; no LSP semantic engine is implied.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e7"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Foreground worker namespace persists across cells; background execs have separate namespaces. Restart creates a candidate generation and only safe, verified replay can restore selected state; this is owned session computation, not an external shared kernel fabric.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e9",
+        "e16",
+        "e17"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "SQLite host persists agent/control/scientific records and exposes read-only SELECT/CTE through host.query with scoped views and a real authorizer. Statement timeout defaults to five seconds; row limit is optional (None or another falsy limit fetches all rows). Generic mutating SQL and cross-user credential reads are not granted.",
+      "evidence": [
+        "e15"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Engine ports, code-as-action and native tool metadata compose orchestration. The model can define sandboxed execute(args) tools, but promotion is human-governed and no general live workflow DSL is established here.",
+      "evidence": [
+        "e1",
+        "e21"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider selection and child overrides are part of composition; inspected child continuation/control handles are real. Full cross-provider peer collaboration is not established; model adapter can leave cancelled network work detached.",
+      "evidence": [
+        "e5",
+        "e11"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Parent can message child via queued message_id, stop subtree, explicitly continue or materialize child artifacts. This is a delegation tree, not a general peer room.",
+      "evidence": [
+        "e11"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read-only native waves and separate background workers/child futures coexist, with mutations ordered. Background records are in memory; trusted artifact capture can impose serial delegation (documented engine package contract).",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Engine checks cancellation before/after execution, provider cancellation stays monotonic, child stop publishes tree cancellation before signals, and background interrupt reports undelivered verdicts.",
+      "evidence": [
+        "e1",
+        "e5",
+        "e10",
+        "e11"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model/context/executor/interceptor/event/cancellation/completion ports define executable turn composition. This is an owned API seam; no live arbitrary replacement of an underway turn program was established.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Budgeted head/handoff/tail transformation archives raw summarized slice, metadata and digest; ledger records handoff coverage transactionally. Preserving raw context enables later recovery without pretending the summary is original.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Raw compaction archive, canonical ledger history and exact session checkpoint/fork cursors provide repair inputs. Kernel recovery is separate conservative replay and may be partial; no automatic full conversation correction oracle is shown.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Append-oriented routed action/outcome/terminal records, raw native metadata and compaction archives preserve reconstructable histories. Redaction and bounded output/capture mean these are not every original provider byte/OS effect; mutable projections are separate.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e12",
+        "e13",
+        "e14"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read-only SQL and current-session status/checkpoint/branch projection query durable records; team/scoped authorizer protects forbidden data. No global complete physical-execution view is implied.",
+      "evidence": [
+        "e15",
+        "e18",
+        "e19"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Per-call schema source and current-session dynamic tool definition/promotion provide callable mutation points with explicit schemas and TTL. Dynamic execute(args) does not replace the running engine.",
+      "evidence": [
+        "e5",
+        "e21"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Durable history/checkpoint and candidate kernel recovery preserve selected local state; child restore requires explicit continuation. Pinned updater apply/relaunch transaction is absent, so discovery/verification must not be sold as working harness refit.",
+      "evidence": [
+        "e11",
+        "e16",
+        "e17",
+        "e22"
+      ]
+    },
+    "remote_services": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Official pinned docs describe consumed SSH/BYOC jobs and poll-driven verified harvest; relevant adapter implementation was not fully traced, and future provider list is explicitly excluded.",
+      "evidence": [
+        "e24"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Versioned dynamic tool definition is a model-facing extension primitive, not autonomous evaluation/improvement of the harness. Update machinery is deliberately unreachable from a turn.",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Diagnostics support bundles capture redacted operational state/logs for operator issues. They exclude research DB and do not automatically open a model complaint bead/external tracking row.",
+      "evidence": [
+        "e25"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native and in-kernel calls share permission/action/generation envelope, scoped SQL and current-root orchestration. Human-governed dynamic promotion and hard safety gates are stronger than the desired low-approval Arconaut posture.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e15",
+        "e21",
+        "e19"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Documented opt-in reviewer stages freeze evidence/identity and distinguish shadow from gated promotion; storage-only state must not count as executed review. Inspected offline tests exercise concrete routing/redaction/recovery/identity faults, not scientific general validity.",
+      "evidence": [
+        "e23"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Ordered native call ordinals/results, transactional compaction coverage and source/candidate generation identities provide explicit local causality. Correlated child messages and exact-owner interruption avoid recycled-event confusion; not a distributed universal clock.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e8",
+        "e11",
+        "e13",
+        "e16"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/openai4s/openai4s/agent/engine.py",
+      "start": 42,
+      "end": 145,
+      "claim": "Engine composes model/context/executor/events/cancellation/completion ports; each turn prepares messages, completes provider, routes, executes, appends result and checks terminal state."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/openai4s/openai4s/agent/actions.py",
+      "start": 47,
+      "end": 94,
+      "claim": "Code/native/finalize action types retain native wire ID, ordinal, raw arguments, parse errors and provider metadata."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/openai4s/openai4s/tools/registry.py",
+      "start": 657,
+      "end": 711,
+      "claim": "Native invocation resolves catalog, validates/prechecks, dispatches and returns bounded observation plus success indicator; errors are observations."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/openai4s/openai4s/host_dispatch.py",
+      "start": 2070,
+      "end": 2129,
+      "claim": "Permission denial is soft failure; actual handler results are screened and host calls finally log action/permission/resource identities."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/openai4s/openai4s/agent/runtime.py",
+      "start": 462,
+      "end": 505,
+      "claim": "Provider calls select current tool schemas; detached cancellation is monotonic so a recycled session cancel event cannot revive old responses."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/openai4s/openai4s/kernel/manager.py",
+      "start": 928,
+      "end": 988,
+      "claim": "Mid-cell host RPC binds generation/action/sandbox context and returns same-call-ID data/error; a lone error object becomes worker error."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/openai4s/openai4s/kernel/worker.py",
+      "start": 1095,
+      "end": 1140,
+      "claim": "Cells compile/evaluate/execute in persistent _NS, latch signals before user statements and distinguish delivered interrupt from user-raised KeyboardInterrupt."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/openai4s/openai4s/agent/control.py",
+      "start": 62,
+      "end": 145,
+      "claim": "Native batches close each declaration and admit only leading positively read-only/non-conflicting calls to parallel waves; mutations are barriers."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/openai4s/openai4s/kernel/background.py",
+      "start": 1,
+      "end": 16,
+      "claim": "Background code gets independent subprocess and exec_id, not the foreground namespace."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/openai4s/openai4s/kernel/background.py",
+      "start": 275,
+      "end": 320,
+      "claim": "Background jobs live in manager memory and expose peek/idempotent interrupt with actual undelivered-signal diagnosis."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/openai4s/openai4s/agent/delegation.py",
+      "start": 2069,
+      "end": 2196,
+      "claim": "Child continuation is explicit after restart, publication materialization copies version refs, subtree cancellation publishes before signals, messages are queued with distinct IDs."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/openai4s/openai4s/agent/ledger.py",
+      "start": 338,
+      "end": 371,
+      "claim": "Ledger records user, routed action/outcome and terminal groups from engine events; stored user messages are redacted."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/openai4s/openai4s/agent/ledger.py",
+      "start": 693,
+      "end": 729,
+      "claim": "Compaction handoff plus covered-through-group/archive reference commit as one group/event transaction, leaving prior ledger history retained."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/openai4s/openai4s/agent/compaction.py",
+      "start": 1474,
+      "end": 1549,
+      "claim": "Context uses head/handoff/tail; raw summarized middle and summary are saved in digest-addressed JSON with branch/recovery metadata and before/after budgets."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/openai4s/openai4s/store.py",
+      "start": 5826,
+      "end": 5898,
+      "claim": "host.query exposes read-only SELECT/CTE with real SQLite authorizer, scoped views, default five-second statement timeout and serialized shared connection; output-row limit is optional and omitted/falsy limit fetches all rows."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/openai4s/openai4s/kernel/recovery.py",
+      "start": 996,
+      "end": 1040,
+      "claim": "Recovery constructs distinct candidate generation and journals each phase with source/candidate/branch identity."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/openai4s/openai4s/kernel/recovery.py",
+      "start": 1080,
+      "end": 1141,
+      "claim": "Replay verifies source hashes and safety; skipped/nonreplayable/failed steps yield partial and candidate is shut down rather than promoted."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/openai4s/openai4s/tools/session.py",
+      "start": 12,
+      "end": 120,
+      "claim": "Native session status/checkpoint/fork schemas expose exact source cursor and compare-and-swap head; model cannot choose arbitrary host root through these tools."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/openai4s/openai4s/host/session.py",
+      "start": 1,
+      "end": 7,
+      "claim": "Model orchestration is bound to current root; filesystem-aware mutations need gateway domain service."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/openai4s/openai4s/tools/write_file.py",
+      "start": 12,
+      "end": 77,
+      "claim": "Native write_file stages and publishes through verified parent descriptor, preserving permissions and refusing partial-overwrite exposure."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/openai4s/openai4s/tools/dynamic_control.py",
+      "start": 25,
+      "end": 106,
+      "claim": "Dynamic tool definition accepts Python execute(args), schemas/smoke arguments/TTL; promotion is explicitly human governed and declared high risk."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/openai4s/openai4s/update/README.md",
+      "start": 5,
+      "end": 16,
+      "claim": "Pinned updater ships discovery/verification only; apply transaction and routes are planned, and model-turn imports are forbidden."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/openai4s/docs/architecture.md",
+      "start": 79,
+      "end": 140,
+      "claim": "Flagged auto-mode stages distinguish storage-only/shadow review from gated promotion and frozen independent review snapshots; documentation is not default execution proof."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/openai4s/docs/compute.md",
+      "start": 5,
+      "end": 80,
+      "claim": "Documented BYOC/SSH stage/run/harvest consumer has explicit poll-driven harvest and remote timeout/group-cancellation; unsupported provider families remain future."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/openai4s/openai4s/diagnostics.py",
+      "start": 1,
+      "end": 20,
+      "claim": "Diagnostics collects redacted bounded operational metadata and logs, deliberately excluding research database; this is a support bundle rather than automatic complaint submission."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/openai4s/tests/test_agent_engine.py",
+      "focus": "Tool/code priority and false terminal success",
+      "oracle": "Scripted model/executor asserts native batch wins over a Python assertion fence, grouped tool call results retained, and plain prose ends max_turns with no completion. Adapter mocks do not prove actual worker execution.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openai4s/tests/test_action_ledger_runtime.py",
+      "focus": "Lost raw metadata or secrets in reconstructed history",
+      "oracle": "Real temporary SQLite store plus synthetic engine events asserts user/native/terminal groups, call-ID pairing and literal secret absence/redacted markers. This is deliberate transformed history, not original-byte audit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openai4s/tests/test_compaction_ledger.py",
+      "focus": "Durable handoff lost after process-local Store closes",
+      "oracle": "Real SQLite close/reopen asserts reconstructed compacted history equality. It proves storage/reducer consistency, not that a model summary faithfully retained every fact.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openai4s/tests/test_execution_coordinator.py",
+      "focus": "Wrong owner/session/ticket cancellation and queue corruption",
+      "oracle": "Exact wrong-session, queued-ticket and wrong-owner requests must not set events; correct request cancels only active ticket and next FIFO ticket is admitted. This does not deliver OS signals.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openai4s/tests/test_kernel_recovery.py",
+      "focus": "Mutable sidecar replacing frozen recovery code",
+      "oracle": "Known old/new source bytes, manifest and generated bootstrap assert old module value/hash/origin despite changed disk. This independently selected literal oracle tests recovery provenance; not all scientific kernel state.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Small provider-neutral Python engine with explicit ports and deterministic action routing.",
+    "Canonical action ledger and raw compaction archive distinguish projection from history.",
+    "Candidate generation recovery rejects false successful restoration and explicit child continuation prevents replaying remote effects."
+  ],
+  "limits": [
+    "Owned per-session kernels/database differ from Arconaut consuming shared computation.",
+    "Redaction, bounded channels and capture coverage still prevent universal original audit.",
+    "Opt-in staged auto-mode contracts and absent updater apply paths must not be equated with default autonomous repair/refit."
+  ],
+  "arconaut_questions": [
+    "Can Arconaut make context transformation a recorded event referencing immutable originals while allowing model repair?",
+    "How will provider cancellation distinguish detached but still-billable requests from quiescent refit readiness?",
+    "Which service handles must preserve request identity separately from attempts across explicit continuation?"
+  ]
+}

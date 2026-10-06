@@ -1,0 +1,617 @@
+{
+  "id": "mini-swe-agent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous Python run/query/execute loop; blocking LiteLLM provider call and subprocess.run action. Benchmark throughput uses ThreadPoolExecutor across independent agents. Docker owns one container per environment, not a resident computation namespace.",
+    "service_boundary": "Owns in-memory conversation/config/counters, optional JSON trajectory and environment/container; consumes model provider and OS commands. No common shared compute/DB control plane is supplied."
+  },
+  "summary": "A deliberately small replaceable query\u2192bash\u2192observation loop with explicit recovery flow exceptions, interactive operator modes, raw-output/response preservation and benchmark generation. Tiny core makes boundaries legible; it does not furnish the richer Arconaut control/audit/refit semantics.",
+  "inspection": {
+    "files": [
+      "quarantine/mini-swe-agent/src/minisweagent/run/mini.py",
+      "quarantine/mini-swe-agent/src/minisweagent/agents/default.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/litellm_model.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/utils/actions_toolcall.py",
+      "quarantine/mini-swe-agent/src/minisweagent/environments/local.py",
+      "quarantine/mini-swe-agent/src/minisweagent/agents/interactive.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/litellm_textbased_model.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/utils/actions_text.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/extra/roulette.py",
+      "quarantine/mini-swe-agent/src/minisweagent/agents/__init__.py",
+      "quarantine/mini-swe-agent/src/minisweagent/__init__.py",
+      "quarantine/mini-swe-agent/src/minisweagent/environments/docker.py",
+      "quarantine/mini-swe-agent/src/minisweagent/models/utils/retry.py",
+      "quarantine/mini-swe-agent/src/minisweagent/run/utilities/inspector.py",
+      "quarantine/mini-swe-agent/src/minisweagent/run/benchmarks/swebench.py",
+      "quarantine/mini-swe-agent/tests/agents/test_default.py",
+      "quarantine/mini-swe-agent/tests/agents/test_interactive.py",
+      "quarantine/mini-swe-agent/tests/models/test_format_error_response_persistence.py",
+      "quarantine/mini-swe-agent/src/minisweagent/config/default.yaml"
+    ],
+    "scope": "CLI/class selection through complete default and interactive loops, concrete LiteLLM request and tool/text action parse/result pairing, local/Docker lifecycle, successive-model routing, serialization/inspection, batch scheduling and relevant failure-oracle tests.",
+    "limits": "Source read only, reference not executed. LiteLLM and SWE-ReX dependency internals, remote backends beyond Docker, process-tree cancellation and full provider-retry persistence are outside inspection. A source-inferred budget concern: malformed paid replies increment global model stats but raise before DefaultAgent adds returned message cost, so its cost budget can undercount FormatError calls."
+  },
+  "actions": [
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "command string; any shell-supported program/file operation",
+      "output": "combined output, returncode, exception info; full raw_output in trajectory alongside rendered content",
+      "lifecycle": "sequential, blocking fresh subshell per action; timeout yields error/partial output, no resumable process handle",
+      "authority": "model through selected environment; DefaultAgent has no command approval layer, interactive confirm/yolo/whitelist controls operator interaction",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e10"
+      ]
+    },
+    {
+      "name": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT",
+      "surface": "model shell convention",
+      "input": "successful command stdout whose first nonblank line is this sentinel; following text is final submission",
+      "output": "Submitted flow event and submission text",
+      "lifecycle": "ends run, or interactive confirmation permits a new task",
+      "authority": "model through ordinary bash output; protocol trusts command stdout, not a separate signed control channel",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "text action fence / action_regex",
+      "surface": "model text surface",
+      "input": "exactly one mswea_bash_command block or configured regex match",
+      "output": "one command action or recoverable FormatError",
+      "lifecycle": "alternative model adapter reuses same environment and loop",
+      "authority": "model; parser enforces exactly one text action, while tool-call adapter can parse several",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "/u /c /y /m /h; Ctrl+C steering",
+      "surface": "operator commands",
+      "input": "mode switch, multiline comment or interruption/new-task text",
+      "output": "mutable mode and user/rejection/interruption message",
+      "lifecycle": "prompt-driven; Ctrl+C caught around step and continues, not asynchronous queued submission",
+      "authority": "operator; yolo removes confirmation prompts, human sends commands without model query",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "DefaultAgent.run / step / query / execute_actions / add_messages",
+      "surface": "programmable API",
+      "input": "task, model/environment implementations and mutable message/config state",
+      "output": "flow messages, observations, terminal status/submission",
+      "lifecycle": "synchronous duck-typed loop, subclass hooks can replace stages; no hot-load contract",
+      "authority": "host programmer/operator; model gets bash, not these loop mutation APIs",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e15",
+        "e16"
+      ]
+    },
+    {
+      "name": "serialize / save",
+      "surface": "programmable API and CLI output",
+      "input": "optional output path and extra merged dictionaries",
+      "output": "JSON trajectory including message/raw-response/raw-output metadata, config and stats",
+      "lifecycle": "whole-file replacement after each step; no native reload/reinhabitation operation",
+      "authority": "host/operator can examine or rewrite saved data; no model-authorized context repair operation",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    {
+      "name": "RouletteModel / InterleavingModel",
+      "surface": "programmable model adapter",
+      "input": "list of model configs, optional interleaving sequence",
+      "output": "one selected model response with model_name",
+      "lifecycle": "selects one model each successive synchronous query, shared conversation",
+      "authority": "operator/program chooses routing policy, no live agents or model-selected peer channels",
+      "evidence": [
+        "e14"
+      ]
+    },
+    {
+      "name": "mini CLI class/config selection",
+      "surface": "operator command",
+      "input": "--agent-class/--model-class/--environment-class, merged config specs, task/yolo/output",
+      "output": "instantiated replaceable loop/model/environment and saved trajectory",
+      "lifecycle": "startup configuration; interactive mode mutation thereafter",
+      "authority": "operator custom class import; no automatic file/code reload",
+      "evidence": [
+        "e1",
+        "e15"
+      ]
+    },
+    {
+      "name": "LocalEnvironment.execute / DockerEnvironment.execute",
+      "surface": "programmable environment API",
+      "input": "command action, cwd and optional timeout; Docker image/interpreter config",
+      "output": "structured combined stdout/stderr result or submission flow event",
+      "lifecycle": "local fresh shell; Docker owns persistent container but exec launches fresh interpreter; provider/kernel resources not shared-agent governance",
+      "authority": "host/plugin environment replaceable; command authority is environment/operator choice",
+      "evidence": [
+        "e8",
+        "e17"
+      ]
+    },
+    {
+      "name": "inspector",
+      "surface": "operator utility",
+      "input": "saved trajectory paths, navigation or full JSON inspection",
+      "output": "step/trajectory pages and JSON view",
+      "lifecycle": "read-only analysis of saved snapshots",
+      "authority": "operator; not a core audit-query database",
+      "evidence": [
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "SWE-bench batch runner",
+      "surface": "operator evaluation support",
+      "input": "dataset instances, models/environments, worker count/output directory",
+      "output": "prediction patches, trajectories, per-instance exit/progress",
+      "lifecycle": "independent agents overlap in thread pool; interrupt cancels pending jobs and waits for running ones",
+      "authority": "operator benchmark generation, not live collaborating agent scheduling or autonomous harness optimization",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native bash can read/write/edit files using ordinary OS programs in local/container environment. There are no separate native file-tool semantics in inspected catalog.",
+      "evidence": [
+        "e6",
+        "e8",
+        "e17"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Blocking subprocess.run returns output/exit/error; every action starts a fresh shell. There is no agent-level resumable PTY/background handle/owned-process-group contract. Backend timeout and model-call wall limits have separate scope.",
+      "evidence": [
+        "e3",
+        "e8",
+        "e17"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can author/execute scripts through shell and invoke any available interpreter; no dedicated code-cell tool or persistent-program service is supplied.",
+      "evidence": [
+        "e6",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local/Docker actions use new interpreter invocation each time. Persistent container filesystem is not a persistent Python/JS namespace; external kernel clients could be composed through bash.",
+      "evidence": [
+        "e8",
+        "e17"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No standing DB/query interface is established in the inspected default/interactive agents, bash catalog, local/Docker environments and serialized state; arbitrary shell DB clients would be operator composition.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Duck-typed agent/model/environment replacement and subclassable query/step provide a small host programmable base; bash scripts compose OS workflows. No in-session model-facing workflow language or managed workflow identity was established.",
+      "evidence": [
+        "e3",
+        "e15",
+        "e16"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Roulette/interleaving adapters route successive queries in one history across configured models, recording selected model name. This is more than a static provider selector but does not create colleagues.",
+      "evidence": [
+        "e14"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No messaging/shared-room/child-agent operation was established in synchronous agent protocols, bash catalog or successive-model routing; benchmark threads are independent instances.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Benchmark ThreadPoolExecutor runs independent agent/environment instances concurrently; ordinary default/interactive actions within one run execute sequentially and cannot be steered as a live team.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e22"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "KeyboardInterrupt caught around interactive step prompts a user message and can resume; partial/unexecuted action results are paired. No queued steering or real provider/process cancellation oracle was inspected; batch interruption waits for running jobs.",
+      "evidence": [
+        "e9",
+        "e22",
+        "e24"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host subclasses can replace query/step/execute_actions through class imports and protocols. Normal model surface remains bash, with no exposed hot definition of turn admission/completion/compaction.",
+      "evidence": [
+        "e3",
+        "e15",
+        "e16"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "LiteLLM ContextWindowExceededError is an abort exception rather than a managed compression path in the inspected loop/model. Long tool output is rendered with elision, a different mechanism from conversation compaction.",
+      "evidence": [
+        "e5",
+        "e27"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mutable messages and serialized raw-output/response metadata permit programmer/operator reconstruction and re-injection. No model repair tool or native restore/merge lineage protocol is exposed.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Trajectories keep returned response dumps, full raw command output and malformed-format replies, but save overwrites a JSON snapshot after steps, without append/crash-atomic observations or all retry/wire events. A cost-calculation exception can precede response recording.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e7",
+        "e18"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inspector navigates saved steps/trajectories and opens step/full JSON; model can use shell on files. This is saved-data analysis rather than authoritative original-event query.",
+      "evidence": [
+        "e19",
+        "e20"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Operator mode/limits mutate at interactive prompts; host can mutate Python objects or replace subclass stages. Startup class/config selection is not a watcher or executable refit protocol.",
+      "evidence": [
+        "e1",
+        "e10",
+        "e11",
+        "e15"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No outpost, executable replacement or serialized continuation restore is established in run/save/CLI/environment lifecycle. Python source editability alone does not preserve live state through replacement.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model calls consume LiteLLM provider service synchronously; backend is replaceable and Docker is a separate container boundary. Provider adapter internals and remote deployment behavior are not inspected here.",
+      "evidence": [
+        "e5",
+        "e16",
+        "e17"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Bash can change source and host classes are replaceable, but inspected loops/config/benchmarks do not establish a model-governed experiment/measurement/selection or self-reinhabitation protocol.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No captured-state model complaint/bead/external-DB operation established in agent loop, tool catalog, interactive commands or trajectory inspector.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default agent invokes environment without approval. Interactive human/confirm/yolo and regex whitelist control execution prompts, with CLI yolo/exit-immediately. No claim of an additional command-policy or sandbox gate in local backend.",
+      "evidence": [
+        "e1",
+        "e8",
+        "e10"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Source tests have independent computed partial-output, exact interruption-message and malformed-response serialization oracles. Batch runner saves SWE-bench predictions/trajectories; grading and real in-flight cancellation are not implied, and tests were not run.",
+      "evidence": [
+        "e21",
+        "e23",
+        "e24",
+        "e25",
+        "e26"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Serial action/message order is explicit; timestamps and budget elapsed time use time.time. Wall limit is checked only before a query, cannot interrupt an outstanding request/action, and start/counters persist if the same agent object is rerun.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e7",
+        "e18"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/run/mini.py",
+      "start": 65,
+      "end": 109,
+      "claim": "CLI composes agent/model/environment classes and config, selects interactive local defaults and offers yolo/exit-immediately/output options."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/default.py",
+      "start": 38,
+      "end": 72,
+      "claim": "Agent owns a mutable message list, model and environment; call/cost counters and wall-clock start are initialized once on construction."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/default.py",
+      "start": 86,
+      "end": 130,
+      "claim": "run resets messages and loops query\u2192actions, appends flow exceptions, saves each step, and exits on an exit message. Budget checks precede model calls; cost increments only after a returned model message."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/default.py",
+      "start": 131,
+      "end": 171,
+      "claim": "Actions execute sequentially; serialization includes configuration/stats/messages, and save replaces one JSON file without a replay/append journal."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/litellm_model.py",
+      "start": 49,
+      "end": 114,
+      "claim": "Concrete provider path calls synchronous LiteLLM completion with bash tool; successful and malformed replies retain response dumps, but parse FormatError is raised before returning cost to the agent."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/utils/actions_toolcall.py",
+      "start": 11,
+      "end": 65,
+      "claim": "Native exposed function is bash(command); multiple valid bash calls are parsed, unknown/missing/invalid actions become FormatError."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/utils/actions_toolcall.py",
+      "start": 68,
+      "end": 103,
+      "claim": "Observation formatting preserves raw output separately from model-visible template; unexecuted calls receive explicit paired placeholders."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/environments/local.py",
+      "start": 12,
+      "end": 79,
+      "claim": "Each local action invokes fresh shell=True subprocess.run with merged environment/cwd, combined stderr/stdout and timeout; no ongoing execution handle is returned. Successful first-line submit sentinel raises completion."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/interactive.py",
+      "start": 101,
+      "end": 132,
+      "claim": "KeyboardInterrupt prompts operator steering; partial action outputs are formatted in finally, with unexecuted action placeholders supplied by the model formatter."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/interactive.py",
+      "start": 160,
+      "end": 209,
+      "claim": "Human/confirm/yolo modes and regex whitelist control confirmation; slash mode changes mutate config during a prompt, without a watcher or executable reload."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/interactive.py",
+      "start": 69,
+      "end": 94,
+      "claim": "TimeExceeded exits rather than asking for budgets; noninteractive stdin prevents the limits prompt from crashing unattended runs."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/litellm_textbased_model.py",
+      "start": 7,
+      "end": 45,
+      "claim": "Alternate text model extracts a configured code fence rather than native tool calls and requests exactly one action."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/utils/actions_text.py",
+      "start": 17,
+      "end": 40,
+      "claim": "Text parser enforces exactly one regex action and stores malformed model text in FormatError metadata."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/extra/roulette.py",
+      "start": 13,
+      "end": 64,
+      "claim": "Roulette selects one configured model per query; interleaving uses a model sequence. This is successive routing in one conversation, not concurrent colleague interaction."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/agents/__init__.py",
+      "start": 15,
+      "end": 28,
+      "claim": "Operator/program config can import arbitrary agent classes; subclassing/replacing protocols is actual host programmability."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/__init__.py",
+      "start": 43,
+      "end": 85,
+      "claim": "Model/environment/agent duck-typed protocols supply synchronous query/execute/run/save replacement boundaries."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/environments/docker.py",
+      "start": 72,
+      "end": 139,
+      "claim": "Docker backend owns a long-lived container but each action uses a separate docker exec interpreter, with merged bounded output and timeout."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/models/utils/retry.py",
+      "start": 9,
+      "end": 25,
+      "claim": "Provider retries are bounded exponential waits up to sixty seconds, with selected abort exceptions including KeyboardInterrupt."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/run/utilities/inspector.py",
+      "start": 24,
+      "end": 43,
+      "claim": "Trajectory inspector groups saved assistant/action messages into step pages."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/run/utilities/inspector.py",
+      "start": 75,
+      "end": 109,
+      "claim": "Inspector supplies operator next/previous/first/last step and trajectory navigation plus full/step JSON inspection."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/run/benchmarks/swebench.py",
+      "start": 134,
+      "end": 176,
+      "claim": "Batch runner creates independent agent/environment instances, saves trajectories and predictions even after exceptions; this generation path does not itself establish benchmark grading."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/run/benchmarks/swebench.py",
+      "start": 245,
+      "end": 271,
+      "claim": "ThreadPoolExecutor overlaps independent benchmark instances; interruption cancels only not-yet-running futures and waits for running work."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/mini-swe-agent/tests/agents/test_default.py",
+      "start": 206,
+      "end": 227,
+      "claim": "Timeout partial-output oracle derives 111\u00d79 independently and requires that output in the timeout observation plus successful later submission."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/mini-swe-agent/tests/agents/test_interactive.py",
+      "start": 263,
+      "end": 310,
+      "claim": "Interruption test mocks query to raise KeyboardInterrupt, then verifies exactly one steering message and final submission; it does not interrupt a real busy provider/process."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/mini-swe-agent/tests/models/test_format_error_response_persistence.py",
+      "start": 77,
+      "end": 103,
+      "claim": "Malformed tool-response test forces unknown tool, then checks retained nonempty JSON-serializable response and JSON-mode serialization."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/mini-swe-agent/tests/agents/test_default.py",
+      "start": 152,
+      "end": 183,
+      "claim": "Step-limit test asserts exactly one call and LimitsExceeded; cost test checks an exit status but does not cover paid malformed responses."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/mini-swe-agent/src/minisweagent/config/default.yaml",
+      "start": 123,
+      "end": 149,
+      "claim": "Configured model-visible output keeps head/tail and elides long middle content; raw_output retained by formatter is a distinct representation."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/mini-swe-agent/tests/agents/test_default.py",
+      "focus": "Timeout partial output and budget boundary.",
+      "oracle": "Computes 111\u00d79 independently, requires that output after timeout and a subsequent final submission; step limit asserts one call. Cost test does not exercise paid malformed replies.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mini-swe-agent/tests/agents/test_interactive.py",
+      "focus": "Operator interruption\u2192continued agent flow.",
+      "oracle": "Mocks query raising KeyboardInterrupt then checks exactly one interruption message and final submission; not a real in-flight provider/process cancel test.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mini-swe-agent/tests/models/test_format_error_response_persistence.py",
+      "focus": "Malformed tool response remains inspectable.",
+      "oracle": "Forces unknown tool name and checks retained response is nonempty, JSON serializable and dumped in JSON mode; does not prove all provider errors/retries are audited.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Very small synchronous stage interfaces make model, environment and loop replacement straightforward for host programs.",
+    "Full raw command output is kept separately from elided model observations, and malformed formatted responses are explicitly preserved.",
+    "Tool-call formatter supplies a result for unexecuted actions, preserving pairing under operator rejection/interruption."
+  ],
+  "limits": [
+    "LiteLLM and SWE-ReX dependency internals, remote backends beyond Docker, process-tree cancellation and full provider-retry persistence are outside inspection. A source-inferred budget concern: malformed paid replies increment global model stats but raise before DefaultAgent adds returned message cost, so its cost budget can undercount FormatError calls."
+  ],
+  "arconaut_questions": [
+    "Should authority/mode changes leave identical action-result-continuation behavior while removing routine confirmation friction?",
+    "Can a cost oracle charge a deliberately malformed paid response even when parsing raises before the ordinary success return?",
+    "How should a queued interrupt distinguish cancelling owned shell descendants from preserving externally shared kernel/DB services?",
+    "What minimal event log makes raw provider/program observations recoverable before a step finishes, rather than after snapshot save?",
+    "How can model-accessible turn programs and workflow identities grow from this small stage interface without hiding activation/refit semantics?"
+  ]
+}

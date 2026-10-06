@@ -1,0 +1,24 @@
+[
+  {
+    "name": "claude-code",
+    "repo": "https://github.com/anthropics/claude-code",
+    "pin": "8e60c4cac989c0e0cc6d2c49407a5c67f5a4a8e6",
+    "archive": "quarantine/arco-ext-mods-claude-code.tar.gz",
+    "extracted": "quarantine/arco-ext-mods-claude-code",
+    "sha256": "7d02facc39f7d03e38116ad02f8399165cc8fb3721ab9c076af27f912a10cdeb",
+    "omitted": [],
+    "restore": "curl -L https://codeload.github.com/anthropics/claude-code/tar.gz/8e60c4cac989c0e0cc6d2c49407a5c67f5a4a8e6 -o quarantine/arco-ext-mods-claude-code.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/arco-ext-mods-claude-code.tar.gz quarantine/arco-ext-mods-claude-code",
+    "status": "acquired"
+  },
+  {
+    "name": "playground",
+    "repo": "https://github.com/anthropics/claude-code-playground",
+    "pin": "569c5283d9a0a7ee7938df85bb32e4f48cbb8c86",
+    "archive": "quarantine/arco-ext-mods-playground.tar.gz",
+    "extracted": "quarantine/arco-ext-mods-playground",
+    "sha256": "beddce7cbf96dbfbd4707bd0249b401cf2a2fdb931fa00dfebf8ac524751c303",
+    "omitted": [],
+    "restore": "curl -L https://codeload.github.com/anthropics/claude-code-playground/tar.gz/569c5283d9a0a7ee7938df85bb32e4f48cbb8c86 -o quarantine/arco-ext-mods-playground.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/arco-ext-mods-playground.tar.gz quarantine/arco-ext-mods-playground",
+    "status": "acquired"
+  }
+]

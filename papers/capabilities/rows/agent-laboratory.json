@@ -1,0 +1,390 @@
+{
+  "id": "agent-laboratory",
+  "kind": "phased scientific-research coding workflow",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous role/phase loop, model text commands, fresh multiprocessing child for each generated-code execution.",
+    "service_boundary": "Owns report/code/phase-object snapshots and code children; consumes model SDKs/search. No shared kernel/database service is present in traced execution."
+  },
+  "summary": "Role-based research phases refine experiment code with execution feedback and model reward before report review.",
+  "inspection": {
+    "files": [
+      "quarantine/agent-laboratory/ai_lab_repo.py",
+      "quarantine/agent-laboratory/agents.py",
+      "quarantine/agent-laboratory/inference.py",
+      "quarantine/agent-laboratory/mlesolver.py",
+      "quarantine/agent-laboratory/tools.py"
+    ],
+    "scope": "phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback",
+    "limits": "No first-party test suite found in inspected file inventory; application UI/AgentRxiv service not fully traced. Source only, no provider/code/PDF execution."
+  },
+  "actions": [
+    {
+      "name": "LaboratoryWorkflow.perform_research / set_model / save_state",
+      "surface": "operator/library API",
+      "input": "Research topic, phase map/limits, role notes and optional human-loop flags.",
+      "output": "Phase products/status/stats and overwritten PaperN.pkl snapshot.",
+      "lifecycle": "Sequential phases with repeat/refinement backedges; model activation at subtask boundary.",
+      "authority": "Host configures roles/providers and trusted snapshot serialization.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "REPLACE / EDIT",
+      "surface": "model text commands",
+      "input": "Entire fenced Python candidate or inclusive line range/new lines.",
+      "output": "Accepted candidate/output/reward or repair/rollback feedback.",
+      "lifecycle": "Executes dataset+candidate in fresh child before acceptance; failed text candidate reverted, external side effects not rolled back.",
+      "authority": "Child host OS authority; no true process sandbox in traced runner.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "execute_code",
+      "surface": "execution API",
+      "input": "Python source and timeout.",
+      "output": "Captured stdout/traceback or timeout error string.",
+      "lifecycle": "Fresh multiprocessing child; direct terminate after join timeout; no durable handle.",
+      "authority": "Operator/runtime host account; substring prohibitions are not comprehensive isolation.",
+      "evidence": [
+        "e9"
+      ]
+    },
+    {
+      "name": "get_score / ReviewersAgent.inference / report_refinement",
+      "surface": "evaluation/workflow API",
+      "input": "Plan/code/output or plan/report and configured reward/reviewer model.",
+      "output": "Model score/persona reviews and loop-repeat decision.",
+      "lifecycle": "Synchronous model calls; fixed override may end review regardless of findings.",
+      "authority": "Authored model judgement over artifact text, not independent rerun oracle.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "human_in_loop",
+      "surface": "operator interaction",
+      "input": "Phase product and user Y/N plus rejection notes.",
+      "output": "Accept or reset histories/repeat phase with notes.",
+      "lifecycle": "Phase boundary only; not live provider steering.",
+      "authority": "Explicit operator feedback selects repeat.",
+      "evidence": [
+        "e12"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Generated experiment code/output/report files and overwritten pickle workflow snapshots are owned by host; arbitrary generated Python can access host files with child OS authority.",
+      "evidence": [
+        "e1",
+        "e9",
+        "e13"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fresh child per code execution; timeout terminates direct process. No durable job ID, process-group descendant proof or shared external execution service appears.",
+      "evidence": [
+        "e9"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Fenced REPLACE and EDIT inclusive-line commands form actual executable coding actions; candidate code runs before acceptance, repairs have bounded retries and rollback only covers text candidate.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Each execution starts fresh globals/process; persistent model/workflow objects and dataset_code string are not a persistent scientific namespace.",
+      "evidence": [
+        "e9"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fixed phase scheduler and configurable per-phase model/notes/human feedback steer research; editing experiment programs does not expose arbitrary turn/workflow graph programming.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e12"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-phase model map selects provider/model at subtask boundary; role agents and reviewers may change model through host. Three reviewer personas are same configured model, not independent peers.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4",
+        "e11"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Role prompts exchange shared attributes and human phase feedback in the authored workflow; inspected paths provide no addressed asynchronous peer messages or busy-target delivery.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e12"
+      ]
+    },
+    "concurrent_work": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Human rejection repeats phase with new notes after phase product; code execution has timeout. No in-flight provider abort/steer contract was traced.",
+      "evidence": [
+        "e9",
+        "e12"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Context history expires selected feedback or drops oldest at max length; prior content is not archived by that transformation.",
+      "evidence": [
+        "e3"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Phase rejection clears role histories and adds feedback; experiment repair edits code. Neither operation retrieves originals to repair lost active conversation.",
+      "evidence": [
+        "e8",
+        "e12"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Phase objects, code/output logs and latest workflow pickle preserve selected state. Expired history and overwritten files/snapshot lose originals; no all-IO audit.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e13"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-phase model updates and candidate experiment code take effect within workflow; no harness executable refit or arbitrary hot engine reload is shown.",
+      "evidence": [
+        "e2",
+        "e8"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Latest pickled phase state is a checkpoint primitive; inspected saves do not supply a resume loader, active-call/process continuity, executable rebuild or re-inhabitation.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Direct model SDK requests consume chosen providers; local code children are owned. Search roles exist separately, no remote shared kernel control plane inferred.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected phase scheduler/model dispatch/command parser, code worker and timeout, history expiry, object snapshots and review/human feedback; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Generated code runs under child host authority with substring filters for exit/pubmed; optional human review is phase-level and direct model SDK branches modify process environment credentials.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e12"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Code acceptance checks error substring; reward is parsed LLM score over plan/code/output, three report reviewers are persona calls to same model. This evaluates research artifacts, not independent scientific truth or harness self-improvement.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e11"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Sequential phase/step/history and process join timeout establish local order; snapshot lacks immutable run/attempt event identities.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e9"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/agent-laboratory/ai_lab_repo.py",
+      "start": 60,
+      "end": 113,
+      "claim": "Fixed phases map to model names and role agents; save_state overwrites one pickled workflow object per paper."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/agent-laboratory/ai_lab_repo.py",
+      "start": 139,
+      "end": 204,
+      "claim": "Research traverses phase/subtask loops, changes models at boundaries, preserves phase_status and can recursively reset experiment phases after refinement."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/agent-laboratory/agents.py",
+      "start": 204,
+      "end": 277,
+      "claim": "Agent rebuilds prompt from phase/context/history/notes, calls query_model, tracks response and drops expired/old history entries at bounded length."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/agent-laboratory/inference.py",
+      "start": 35,
+      "end": 103,
+      "claim": "Provider branches construct SDK requests from system/prompt, retry, select OpenAI/Gemini/Anthropic and set global environment credentials."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/agent-laboratory/mlesolver.py",
+      "start": 55,
+      "end": 82,
+      "claim": "REPLACE parses fenced code and executes dataset+new code before accepting text as candidate."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/agent-laboratory/mlesolver.py",
+      "start": 99,
+      "end": 138,
+      "claim": "EDIT parses inclusive line range, splices candidate and executes dataset+new code; substring execution error is rejection oracle."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/agent-laboratory/mlesolver.py",
+      "start": 141,
+      "end": 162,
+      "claim": "Reward model reads plan/code/output and emits a SCORE float; validity is parsed model output rather than independently measured objective."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/agent-laboratory/mlesolver.py",
+      "start": 329,
+      "end": 374,
+      "claim": "Command dispatch tests edits, repairs up to fixed attempts and rolls back candidate code on failure; successful code gets model score."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/agent-laboratory/tools.py",
+      "start": 292,
+      "end": 325,
+      "claim": "Code executes in fresh multiprocessing globals, captured stdout queue; timeout terminates direct process, not proven descendant group; simple substring filters are no sandbox."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/agent-laboratory/ai_lab_repo.py",
+      "start": 207,
+      "end": 237,
+      "claim": "Report refinement reads three reviewer outputs and either bounded override or model decision returns to planning; optional human branch has distinct behavior."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/agent-laboratory/agents.py",
+      "start": 184,
+      "end": 201,
+      "claim": "Three reviewers are sequential persona prompts to same configured model over plan/report."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/agent-laboratory/ai_lab_repo.py",
+      "start": 547,
+      "end": 574,
+      "claim": "Human phase rejection resets agents, records notes and repeats phase; no live provider interrupt handle supplied."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/agent-laboratory/ai_lab_repo.py",
+      "start": 319,
+      "end": 336,
+      "claim": "Best experiment code/output written to deliverable files after solver iterations; selecting best score is model-reward based."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Concrete staged research loop and experiment candidate rollback/feedback mechanics.",
+    "Configurable model roles and human phase review are visible rather than marketing-only."
+  ],
+  "limits": [
+    "Text rollback does not undo generated program effects.",
+    "Same-model reward/persona review is not independent evaluation.",
+    "Fresh process execution, destructive history expiry and overwritten pickle are weak continuity/audit."
+  ],
+  "arconaut_questions": [
+    "How can research-program candidate evaluation avoid conflating no traceback with validity?",
+    "What independent task oracle and retained original execution evidence should govern autoresearch?"
+  ]
+}

@@ -1,0 +1,987 @@
+{
+  "id": "mistral-vibe",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python",
+      "Rust",
+      "TypeScript in embedded V8"
+    ],
+    "execution": "Default Python AgentLoop/app-server scheduler; experimental Rust pure state machine/Python hosts; local managed terminal readers and alternate native CLI surfaces",
+    "service_boundary": "Owns selected shell sessions/file state and harness sessions; provider/tool-IO/MCP/connector/hosted teleport clients. Rust core emits actions; Python drivers own external effects."
+  },
+  "summary": "Dual coding harness with typed concurrent tools, real task child loops, projected compaction and hot configuration; experimental native protocol and replayable TypeScript orchestration give distinct design leads.",
+  "inspection": {
+    "files": [
+      "quarantine/mistral-vibe/vibe/cli/cli.py",
+      "quarantine/mistral-vibe/vibe/_experimental_harness.py",
+      "quarantine/mistral-vibe/vibe/app_server/local.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/llm/backend/mistral.py",
+      "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/write_file.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/read_file.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/edit.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/bash.py",
+      "quarantine/mistral-vibe/vibe/core/utils/async_subprocess.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "quarantine/mistral-vibe/vibe/core/tools/builtins/managed_shell/_posix.py",
+      "quarantine/mistral-vibe/vibe/core/subagents.py",
+      "quarantine/mistral-vibe/vibe/app_server/_sessions.py",
+      "quarantine/mistral-vibe/vibe/app_server/_sessions.py",
+      "quarantine/mistral-vibe/vibe/app_server/_runtime.py",
+      "quarantine/mistral-vibe/vibe/core/compaction/manager.py",
+      "quarantine/mistral-vibe/vibe/core/compaction/context.py",
+      "quarantine/mistral-vibe/vibe/core/session/session_logger.py",
+      "quarantine/mistral-vibe/vibe/core/session/session_logger.py",
+      "quarantine/mistral-vibe/vibe/core/rewind/manager.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "quarantine/mistral-vibe/vibe/core/teleport/teleport.py",
+      "quarantine/mistral-vibe/vibe/core/teleport/orchestrator.py",
+      "quarantine/mistral-vibe/harness/core/src/engine.rs",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/tools.rs",
+      "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/tools.rs",
+      "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/execution.rs",
+      "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/execution.rs",
+      "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/code_mode/v8.rs",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_subagents/_controller.py",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_host.py",
+      "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_host.py",
+      "quarantine/mistral-vibe/tests/core/compaction/test_compaction_manager.py",
+      "quarantine/mistral-vibe/tests/agent_loop/test_hook_reload.py",
+      "quarantine/mistral-vibe/harness/core/src/tests/compaction_and_reconfiguration.rs",
+      "quarantine/mistral-vibe/harness/core/src/tests/compaction_and_reconfiguration.rs",
+      "quarantine/mistral-vibe/harness/core/src/tests/programmatic_tools.rs"
+    ],
+    "scope": "Default entry/app-server/turn/request/dispatch/results/continuation, native file and both shell variants, child create/cancel, projected compaction/log/rewind/reload, teleport; bounded unified Engine/driver/model result/code-mode dispatch and configured child receipts; relevant source tests.",
+    "limits": "Source read only, reference not executed. Both implementations substantial: default Python branch traced more completely; unified app-server host complete cancellation/resource/recovery machinery, connector/MCP/network executors, native Rust CLI/frontend, all code-mode builtins and multi-model child binding details not exhaustively audited. Bare unified defaults disable compaction/subagents/background, application config may enable. No reference execution."
+  },
+  "actions": [
+    {
+      "name": "read_file / write_file / edit / grep",
+      "surface": "model tools",
+      "input": "absolute file_path/range/content/replacements; search",
+      "output": "typed file/change/search results",
+      "lifecycle": "awaited native tools or consumed IO backend",
+      "authority": "Model profile/tool selection and permissions; full grep executor not deeply traced.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e17",
+        "e7",
+        "e11",
+        "e13"
+      ]
+    },
+    {
+      "name": "bash (legacy fresh process)",
+      "surface": "model tool",
+      "input": "command/timeout",
+      "output": "clipped captured stdout/stderr/exit",
+      "lifecycle": "fresh shell or IO terminal, timeout then finally group kill/reap",
+      "authority": "Model; permission decision/bypass.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e38"
+      ]
+    },
+    {
+      "name": "bash (managed variant)",
+      "surface": "model tool",
+      "input": "command/background/cwd/env/shell/timeout_seconds/hard_timeout",
+      "output": "session ID/status/log path",
+      "lifecycle": "persistent terminal job; soft timeout hands over ongoing process, hard abort kills",
+      "authority": "Model when selected available variant; variants do not imply every profile default.",
+      "evidence": [
+        "e14",
+        "e20",
+        "e22",
+        "e24",
+        "e25"
+      ]
+    },
+    {
+      "name": "bash_output / bash_stdin / bash_sessions / bash_log_file",
+      "surface": "managed model tools",
+      "input": "session_id/cursor/wait/max_bytes; text/control/base64; list/inspect/kill/reset; log read/write/append",
+      "output": "cursor output/status/path; bytes written; session metadata",
+      "lifecycle": "ongoing terminal handles and log access; kill joins readers",
+      "authority": "Model selected tool family; log write means these logs are mutable, not immutable audit.",
+      "evidence": [
+        "e21",
+        "e23",
+        "e13"
+      ]
+    },
+    {
+      "name": "task",
+      "surface": "model tool (legacy)",
+      "input": "agent/task",
+      "output": "response/turns_used/completed plus streamed child progress",
+      "lifecycle": "child independent loop inside awaited parent task; cancel interrupts and awaits child",
+      "authority": "Model with profile permissions, parent-shared grants.",
+      "evidence": [
+        "e26",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    {
+      "name": "skill / todo / ask_user_question / exit_plan_mode / web_fetch / web_search",
+      "surface": "model tools",
+      "input": "skill name, todo action read/write, question, plan acceptance, URL/query",
+      "output": "prompt/task/user/plan/network results",
+      "lifecycle": "native discovered catalog; individual network/question executors not exhaustively traced",
+      "authority": "Model under permission/profile and prompt invocation controls.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e7",
+        "e4"
+      ]
+    },
+    {
+      "name": "run_typescript",
+      "surface": "experimental unified model tool",
+      "input": "inline async main TypeScript and discovered tools namespace",
+      "output": "value/error/pending tool effects resumed through operation receipts",
+      "lifecycle": "new isolated V8 evaluation/replay at pending effects, bounded effects/ops/heap/watchdog",
+      "authority": "Model configured unified harness; ambient OS/network unavailable inside VM, provided tool handlers supply effects.",
+      "evidence": [
+        "e46",
+        "e47",
+        "e48",
+        "e49",
+        "e50",
+        "e53"
+      ]
+    },
+    {
+      "name": "subagent.spawn / subagent.list / subagent.wait / subagent.send_message / subagent.interrupt / subagent.stop",
+      "surface": "configured unified tools",
+      "input": "agentName/type/message/timeout and target child",
+      "output": "durable child receipt/state/turn generation/status",
+      "lifecycle": "send admission can steer running/start idle; operation-key ack and watcher",
+      "authority": "Model when feature configured; no assertion bare host exposes it by default.",
+      "evidence": [
+        "e51",
+        "e52",
+        "e53"
+      ]
+    },
+    {
+      "name": "Engine create/restore/apply/inspect/checkpoint",
+      "surface": "native programmable API",
+      "input": "config/history/checkpoint/input_id/command/determinism",
+      "output": "transition/actions/observation/checkpoint or rejection",
+      "lifecycle": "Rust serialized state advancement; Python host drives external action completion",
+      "authority": "Program author/runtime; checkpoint alone does not own provider/process termination.",
+      "evidence": [
+        "e41",
+        "e42",
+        "e43",
+        "e44",
+        "e45"
+      ]
+    },
+    {
+      "name": "middleware/hooks/custom Python tools",
+      "surface": "extension API",
+      "input": "before-turn/tool/hooks; BaseTool modules in user/project paths",
+      "output": "stop/continue/rewrite/tool result",
+      "lifecycle": "Python programs construction/reload; sys.modules cache limits code refresh",
+      "authority": "Operator/program; model editing source does not automatically replace turn.",
+      "evidence": [
+        "e4",
+        "e11",
+        "e12",
+        "e35",
+        "e36"
+      ]
+    },
+    {
+      "name": "compact / rewind",
+      "surface": "operator/runtime API",
+      "input": "extra summary instruction; prior user index/restore_files/inplace",
+      "output": "appended context boundary or fork/truncated history/file restoration errors",
+      "lifecycle": "summary snapshot then append; effective model projection; inplace rewind destructive",
+      "authority": "Operator/runtime; no native model original-audit restoration transaction traced.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e34"
+      ]
+    },
+    {
+      "name": "reload_with_initial_messages / switch_agent / config update",
+      "surface": "runtime/operator APIs",
+      "input": "new profile/config/hook reload",
+      "output": "atomically swapped managers/prompt/backend",
+      "lifecycle": "generation guards stale prepare; live active-turn swap possible, old transport deferred close",
+      "authority": "Operator/client; not default after-affected-workflow transaction.",
+      "evidence": [
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    {
+      "name": "teleport",
+      "surface": "operator/service action",
+      "input": "prompt, hosted project/conversation IDs and packed/summary context",
+      "output": "hosted workflow URL",
+      "lifecycle": "checks/potentially pushes Git then starts hosted workflow; no main executable continuity",
+      "authority": "Operator; Git push requires service approval branch.",
+      "evidence": [
+        "e39",
+        "e40"
+      ]
+    },
+    {
+      "name": "SessionLogger.save_interaction",
+      "surface": "supporting persistence API",
+      "input": "normalized history/stats/tools/profile",
+      "output": "message JSONL/current metadata",
+      "lifecycle": "serialized append or fsynced atomic rewrite, nonsystem only",
+      "authority": "Runtime/program; not comprehensive original event log.",
+      "evidence": [
+        "e32",
+        "e33"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native typed filesystem/edit tools with permission hooks, delegated IO; checkpointer supports selected file rewind.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e17",
+        "e34"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Legacy shell group kill/reap; managed terminal IDs/output/stdin/control/kill/soft handoff and reader manifests; transport-dependent behavior.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20",
+        "e21",
+        "e22",
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "General Bash; experimental Rust dispatches replayable isolated TypeScript/V8 orchestrated external tools. Separate feature scopes.",
+      "evidence": [
+        "e18",
+        "e46",
+        "e47",
+        "e48",
+        "e49",
+        "e50"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent terminal process with stdin could host interpreter by composition; no native managed Python notebook namespace in traced paths. V8 evaluates replay rather than continuous kernel.",
+      "evidence": [
+        "e21",
+        "e24",
+        "e48",
+        "e49"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session/checkpoint/task receipts and file logs persistent state; generic shared SQL/kernel service client not established.",
+      "evidence": [
+        "e32",
+        "e41",
+        "e51"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Python middleware/hooks/custom tools; configured unified model TypeScript supports async external-tool programs with replay state/IDs.",
+      "evidence": [
+        "e4",
+        "e11",
+        "e12",
+        "e47",
+        "e48",
+        "e49"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Copied child config plus selected agent profile, multiple backend adapters/compaction model; not provider selection alone claimed live peers.",
+      "evidence": [
+        "e29",
+        "e10",
+        "e30"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Legacy child runs during parent task with streamed progress; configured unified send steers running child/starts idle via receipts. Parent-child scope, not unrestricted authenticated IRC peers.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e51",
+        "e52",
+        "e53"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Python concurrent tool batch and child loop; managed background terminals, runtime directive tasks and separately gated title generation.",
+      "evidence": [
+        "e6",
+        "e27",
+        "e24",
+        "e42",
+        "e4"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Legacy cancellation cancels/awaits tool batch, closes provider stream and child interrupt wait; GeneratorExit path weaker; unified core interrupt is protocol action, host custody not fully audited.",
+      "evidence": [
+        "e6",
+        "e10",
+        "e28",
+        "e41",
+        "e42"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Middleware/hooks and TypeScript effects configure sophisticated programs; native core turn protocol still authored/compiled, no model live loop replacement.",
+      "evidence": [
+        "e4",
+        "e47",
+        "e48",
+        "e41"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default Python appends boundary with prior user/summary and selects effective projection, retaining previous messages; configured Rust supports checkpointed compaction state.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e54",
+        "e56",
+        "e57"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Prior normalized history retained after compaction, operator fork/rewind/file restore; inplace rewind destroys current old log. No model managed original-history repair traced.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e32",
+        "e34"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Normalized nonsystem messages and some persisted typed results, but clipping precedes capture, logger can rewrite and provider raw payload/chunks omitted. Unified transitions/checkpoints are state receipts, not all original external evidence.",
+      "evidence": [
+        "e18",
+        "e32",
+        "e33",
+        "e34",
+        "e44",
+        "e45",
+        "e58"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session message/log file and Engine.inspect/checkpoint primitives; model terminal log read can inspect but also mutate its log.",
+      "evidence": [
+        "e21",
+        "e32",
+        "e41"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Generation-based off-loop preparation and synchronous swap protect partial/stale config; active turn may adopt swapped objects and defer old backend close. Cached Python modules limit source hot reload.",
+      "evidence": [
+        "e35",
+        "e36",
+        "e37",
+        "e12"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native checkpoint+explicit input cursor restores pending compaction/projection and state protocol; runtime data resume exists, no quiescent own provider/process outpost/recompile handoff proved.",
+      "evidence": [
+        "e41",
+        "e45",
+        "e56",
+        "e57",
+        "e42"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mistral/alternate backends, MCP/connector contexts, consumed tool IO and hosted teleport workflow.",
+      "evidence": [
+        "e10",
+        "e7",
+        "e39",
+        "e40"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Editable owned programs, hooks and replayable TypeScript orchestrator support search; no governed harness autodroit research/refit loop traced.",
+      "evidence": [
+        "e15",
+        "e11",
+        "e47",
+        "e48"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No state-rich model complaint/bead operation in inspected native catalog/loop/protocol; operator/telemetry events are not that contract.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bypass execution, per-tool/profile grants, shared child permissions, sandbox no ambient effect access; caller handlers supply actual authority.",
+      "evidence": [
+        "e38",
+        "e29",
+        "e46",
+        "e43"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Concrete compaction append/focus oracle, hook-binding mock and native restored/live checkpoint/projected result comparisons; pure-state equality not external custody proof.",
+      "evidence": [
+        "e54",
+        "e55",
+        "e56",
+        "e57",
+        "e58"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Unified core explicit sequenced input IDs/action/operation IDs/determinism, plus runtime child-generation receipt admission; original external byte audit still limited.",
+      "evidence": [
+        "e45",
+        "e49",
+        "e51",
+        "e41"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/mistral-vibe/vibe/cli/cli.py",
+      "start": 228,
+      "end": 292,
+      "claim": "Interactive CLI creates LocalHarness and app-server client."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/mistral-vibe/vibe/_experimental_harness.py",
+      "start": 80,
+      "end": 135,
+      "claim": "Default legacy or rollout/explicit unified selection; native host module factory."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/mistral-vibe/vibe/app_server/local.py",
+      "start": 74,
+      "end": 112,
+      "claim": "Local app-server transport in-process; cannot mix harness backends on one LocalHarnessHost."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 2050,
+      "end": 2136,
+      "claim": "Python conversation middleware/model/tool continuation, overflow recovery, per-step save, pending injections and clear requests."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 2464,
+      "end": 2488,
+      "claim": "Provider generation followed by parsed/resolved tool calls."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 2610,
+      "end": 2657,
+      "claim": "Concurrent tool tasks; cancellation cancels and awaits; GeneratorExit cancels tasks but does not directly gather same way."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 2828,
+      "end": 2904,
+      "claim": "Native invocation context with subagent/terminal/sampling/hooks/permissions; serializes typed results."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 3013,
+      "end": 3043,
+      "claim": "Normalized tool message plus persisted result appended, host telemetry sent."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 3231,
+      "end": 3277,
+      "claim": "Streaming request consumes projected history/tools, model config and backend metadata."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/mistral-vibe/vibe/core/llm/backend/mistral.py",
+      "start": 527,
+      "end": 578,
+      "claim": "Actual Mistral stream_async conversion and async-with stream closure."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "start": 145,
+      "end": 166,
+      "claim": "Tools discovered in configured/project/user paths."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "start": 198,
+      "end": 237,
+      "claim": "Imported Python modules cached in sys.modules and expose concrete BaseTool subclasses; config reload alone need not reload code."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "start": 310,
+      "end": 338,
+      "claim": "Availability/profile enabled and disabled filters."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/manager.py",
+      "start": 394,
+      "end": 434,
+      "claim": "Tool variants selected by availability, priority and discovery order."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/write_file.py",
+      "start": 114,
+      "end": 138,
+      "claim": "Actual write delegation/result and size/path preparation."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/read_file.py",
+      "start": 59,
+      "end": 82,
+      "claim": "Native file read parameters and typed result shape."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/edit.py",
+      "start": 40,
+      "end": 64,
+      "claim": "Native replacement schema and edit result."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/bash.py",
+      "start": 747,
+      "end": 818,
+      "claim": "Legacy fresh-shell or consumed terminal IO; bounded result and finally kill_async_subprocess."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/mistral-vibe/vibe/core/utils/async_subprocess.py",
+      "start": 13,
+      "end": 63,
+      "claim": "Force kill process group/direct child per platform then await reap."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "start": 1283,
+      "end": 1309,
+      "claim": "Managed shell command/background/hard-or-soft timeout/cwd/env/shell schemas."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "start": 1331,
+      "end": 1440,
+      "claim": "Output cursor, stdin control/raw bytes, sessions list/inspect/kill/reset and log read/write/append schemas."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "start": 584,
+      "end": 633,
+      "claim": "Managed terminal OS backend starts, stable ID/manifest/log and daemon reader thread."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "start": 722,
+      "end": 747,
+      "claim": "Managed kill updates status, terminates, restores running on failure, joins readers and saves manifest."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/experimental_bash.py",
+      "start": 1849,
+      "end": 1921,
+      "claim": "Foreground owns kill-on-abort scope; soft timeout returns live background handle, hard timeout kills."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/mistral-vibe/vibe/core/tools/builtins/managed_shell/_posix.py",
+      "start": 116,
+      "end": 157,
+      "claim": "Managed terminal creates new session and group termination; persistent process, not Python namespace."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/mistral-vibe/vibe/core/subagents.py",
+      "start": 16,
+      "end": 31,
+      "claim": "Legacy task args only agent/task, returns response/turn count/completed."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/mistral-vibe/vibe/app_server/_sessions.py",
+      "start": 315,
+      "end": 354,
+      "claim": "Legacy Task creates independent child runtime and persists/links child before start with failure cleanup."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/mistral-vibe/vibe/app_server/_sessions.py",
+      "start": 361,
+      "end": 390,
+      "claim": "Child turn launched/awaited; cancelled/closed task interrupts child and awaits completion."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/mistral-vibe/vibe/app_server/_runtime.py",
+      "start": 1000,
+      "end": 1048,
+      "claim": "Child has copied orchestrator, selected agent profile, own session lease and shared permissions."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/mistral-vibe/vibe/core/compaction/manager.py",
+      "start": 89,
+      "end": 110,
+      "claim": "Compaction appends boundary/envelope only after summary, preserves old normalized history and saves."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/mistral-vibe/vibe/core/compaction/context.py",
+      "start": 144,
+      "end": 161,
+      "claim": "Model context selects last compaction boundary plus preceding system prompts."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/mistral-vibe/vibe/core/session/session_logger.py",
+      "start": 508,
+      "end": 556,
+      "claim": "Normalized nonsystem message append when fingerprint boundary unchanged, otherwise current log rewrite."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/mistral-vibe/vibe/core/session/session_logger.py",
+      "start": 413,
+      "end": 429,
+      "claim": "Rewrite uses temp/fsync/replace, not append-only original history."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/mistral-vibe/vibe/core/rewind/manager.py",
+      "start": 86,
+      "end": 120,
+      "claim": "Rewind optionally restores files; fork preserves prior log, inplace drops rewound turns and overwrites."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 3815,
+      "end": 3867,
+      "claim": "Config reload builds managers off-loop, generation rejects stale preparations and commits synchronously."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 3906,
+      "end": 3940,
+      "claim": "Live commit swaps backend/tools/skills/system/hooks; old backend close deferred until active turn ends."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 1480,
+      "end": 1506,
+      "claim": "Backend close deferral explicitly assumes subagent inside parent turn; detached child would not be protected."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/mistral-vibe/vibe/core/agent_loop/_loop.py",
+      "start": 2940,
+      "end": 2950,
+      "claim": "Bypass permissions immediately grants execution."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/mistral-vibe/vibe/core/teleport/teleport.py",
+      "start": 106,
+      "end": 163,
+      "claim": "Git branch/commit checked/push approval then hosted workflow start with packed context; returns URL."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/mistral-vibe/vibe/core/teleport/orchestrator.py",
+      "start": 57,
+      "end": 103,
+      "claim": "Builds/summarizes supplied message context before teleport service."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/mistral-vibe/harness/core/src/engine.rs",
+      "start": 60,
+      "end": 99,
+      "claim": "Rust native session create/restore/apply/inspect/checkpoint; owns state machine, external actions supplied by runtime."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "start": 272,
+      "end": 313,
+      "claim": "Simple reference driver schedules actions on asyncio and awaits first completions; external custody not owned by Rust state alone."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "start": 333,
+      "end": 365,
+      "claim": "Driver routes emitted completion/hook/native/provided action to Python handlers then applies result event."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "start": 448,
+      "end": 512,
+      "claim": "Python model handler stream assembled and explicit action-ID success/failure applied."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/runtime.py",
+      "start": 575,
+      "end": 598,
+      "claim": "Input ID sequence plus explicit time/random determinism envelope and matching transition check."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/tools.rs",
+      "start": 19,
+      "end": 43,
+      "claim": "run_typescript native code-action contract describes isolated replayable orchestration; docs part implemented tool definition."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/tools.rs",
+      "start": 137,
+      "end": 150,
+      "claim": "run_typescript dispatch enters owned execution, not merely advertised schema."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/execution.rs",
+      "start": 28,
+      "end": 48,
+      "claim": "Starts program with inline code, partial evaluation state and explicit determinism."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/execution.rs",
+      "start": 134,
+      "end": 177,
+      "claim": "V8 evaluation returns pending tool effects routed with stable operation/action IDs and hooks."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/mistral-vibe/harness/core/src/core/features/programmatic_tool_calling/code_mode/v8.rs",
+      "start": 80,
+      "end": 132,
+      "claim": "Owned V8 heap-limit termination guard/watchdog and joined thread lifetime."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_subagents/_controller.py",
+      "start": 936,
+      "end": 1033,
+      "claim": "Configured unified send uses durable receipt, child-generation operation key/admission/acknowledge and watcher; can steer running or start idle child."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_host.py",
+      "start": 525,
+      "end": 556,
+      "claim": "Unified subagent controller only enabled when configured runtime feature; not universal default."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/mistral-vibe/harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_host.py",
+      "start": 4376,
+      "end": 4392,
+      "claim": "Bare native-host defaults disable subagents/background/compaction, enable bounded programmatic tools; application may configure later."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/mistral-vibe/tests/core/compaction/test_compaction_manager.py",
+      "start": 113,
+      "end": 140,
+      "claim": "Mock summary oracle verifies previous messages plus appended boundary/user preservation."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/mistral-vibe/tests/agent_loop/test_hook_reload.py",
+      "start": 17,
+      "end": 40,
+      "claim": "Mock hook loader tests bound managers/diagnostics after reload, not full workflow/refit."
+    },
+    {
+      "id": "e56",
+      "path": "quarantine/mistral-vibe/harness/core/src/tests/compaction_and_reconfiguration.rs",
+      "start": 127,
+      "end": 153,
+      "claim": "Manual compaction checkpoint while completion pending; later compares restored/live projection."
+    },
+    {
+      "id": "e57",
+      "path": "quarantine/mistral-vibe/harness/core/src/tests/compaction_and_reconfiguration.rs",
+      "start": 202,
+      "end": 224,
+      "claim": "Actual pure-state oracle compares live/restored checkpoint and next model messages."
+    },
+    {
+      "id": "e58",
+      "path": "quarantine/mistral-vibe/harness/core/src/tests/programmatic_tools.rs",
+      "start": 983,
+      "end": 1004,
+      "claim": "Restored programmatic tool projection stable and excludes private/intermediary/image material; checkpoint equality."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/mistral-vibe/tests/core/compaction/test_compaction_manager.py",
+      "focus": "Compaction success/retention",
+      "oracle": "Mock completion verifies old messages remain and boundary/prior users appended; semantic summary correctness not established.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mistral-vibe/tests/agent_loop/test_hook_reload.py",
+      "focus": "Hook reload binding",
+      "oracle": "Mock loader verifies hook manager/diagnostics/runtime policy, not affected-workflow timing/refit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mistral-vibe/harness/core/src/tests/compaction_and_reconfiguration.rs",
+      "focus": "Pending compaction restoration",
+      "oracle": "Pure state actual checkpoint compares live/restored next context and atomic bad-reconfiguration rejection, not external provider/process custody.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/mistral-vibe/harness/core/src/tests/programmatic_tools.rs",
+      "focus": "Replay/projection boundaries",
+      "oracle": "Live/restored result/checkpoint equality and private output exclusion; intentionally projected intermediary data is not original audit.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Compaction boundary/projection preserves prior normalized messages.",
+    "Model-programmable replayable TypeScript effects routed by stable IDs separate from state-machine implementation.",
+    "Managed shell soft timeout transfers an ongoing handle with cursor/stdin/kill access.",
+    "Config preparation generation and synchronous commit reveal useful partial-update protections."
+  ],
+  "limits": [
+    "Both implementations substantial: default Python branch traced more completely; unified app-server host complete cancellation/resource/recovery machinery, connector/MCP/network executors, native Rust CLI/frontend, all code-mode builtins and multi-model child binding details not exhaustively audited. Bare unified defaults disable compaction/subagents/background, application config may enable. No reference execution."
+  ],
+  "arconaut_questions": [
+    "Can complete original effects be captured before projection/clipping and protected against log rewrite?",
+    "Can native state replay/refit be joined to external effect custody without reissuing uncertain work?",
+    "Can change transaction default to whole affected workflow end while keeping strong stale-generation guards?",
+    "How should parent-child message receipts generalize to shared multi-model peers without owning shared compute?"
+  ]
+}

@@ -1,0 +1,746 @@
+{
+  "id": "gemini-cli",
+  "kind": "coding agent CLI and agent protocol",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node provider/chat loop and event-driven Scheduler; CLI has traditional and config-gated AgentSession host paths; tool/service children include PTY processes.",
+    "service_boundary": "Owns local session JSONL, tool registries, hooks and shell/background lifecycle; consumes Gemini content generators, MCP and A2A agents. Local child tools are scoped/cloned rather than independent fabric consumers."
+  },
+  "summary": "Gemini CLI implements hook-programmable requests/continuations, concurrent tool scheduling, cancellable shell/background handles and local/A2A delegation. Conversation JSONL and protocol replay provide partial originals/continuity but not complete audit or quiescent executable refit.",
+  "inspection": {
+    "files": [
+      "quarantine/gemini-cli/packages/cli/src/nonInteractiveCli.ts",
+      "quarantine/gemini-cli/packages/core/src/agent/legacy-agent-session.ts",
+      "quarantine/gemini-cli/packages/core/src/core/client.ts",
+      "quarantine/gemini-cli/packages/core/src/core/turn.ts",
+      "quarantine/gemini-cli/packages/core/src/core/geminiChat.ts",
+      "quarantine/gemini-cli/packages/core/src/scheduler/scheduler.ts",
+      "quarantine/gemini-cli/packages/core/src/scheduler/tool-executor.ts",
+      "quarantine/gemini-cli/packages/core/src/config/config.ts",
+      "quarantine/gemini-cli/packages/core/src/tools/definitions/base-declarations.ts",
+      "quarantine/gemini-cli/packages/core/src/tools/read-file.ts",
+      "quarantine/gemini-cli/packages/core/src/tools/write-file.ts",
+      "quarantine/gemini-cli/packages/core/src/tools/shell.ts",
+      "quarantine/gemini-cli/packages/core/src/services/shellExecutionService.ts",
+      "quarantine/gemini-cli/packages/core/src/tools/shellBackgroundTools.ts",
+      "quarantine/gemini-cli/packages/core/src/agents/agent-tool.ts",
+      "quarantine/gemini-cli/packages/core/src/agents/local-executor.ts",
+      "quarantine/gemini-cli/packages/core/src/agents/remote-subagent-protocol.ts",
+      "quarantine/gemini-cli/packages/core/src/agents/remote-session-invocation.ts",
+      "quarantine/gemini-cli/packages/core/src/context/chatCompressionService.ts",
+      "quarantine/gemini-cli/packages/core/src/services/chatRecordingService.ts",
+      "quarantine/gemini-cli/packages/core/src/agent/agent-session.ts",
+      "quarantine/gemini-cli/packages/core/src/hooks/hookSystem.ts",
+      "quarantine/gemini-cli/packages/core/src/hooks/hookRunner.ts",
+      "quarantine/gemini-cli/packages/cli/src/ui/commands/bugCommand.ts",
+      "quarantine/gemini-cli/packages/core/src/hooks/runtimeHooks.test.ts",
+      "quarantine/gemini-cli/packages/core/src/scheduler/scheduler_hooks.test.ts",
+      "quarantine/gemini-cli/packages/core/src/context/chatCompressionService.test.ts",
+      "quarantine/gemini-cli/packages/cli/src/ui/hooks/useGeminiStream.ts"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "read_file",
+      "surface": "model tool",
+      "input": "file_path,start_line,end_line",
+      "output": "processed text/media or typed path/read error",
+      "lifecycle": "awaited workspace filesystem-service read",
+      "authority": "model; workspace access validation and policy",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "write_file / replace",
+      "surface": "model tools",
+      "input": "file_path/content or replacement declaration",
+      "output": "write/diff or typed error",
+      "lifecycle": "write path lock and abort checked; replace catalog/name traced, internals untraced",
+      "authority": "model; scheduler/policy/confirmation plus workspace validation",
+      "evidence": [
+        "e8",
+        "e10",
+        "e11",
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "run_shell_command",
+      "surface": "model tool",
+      "input": "command,is_background,optional wait_for_previous/additional permissions",
+      "output": "stdout/stderr/events, PGID/PID or background handle",
+      "lifecycle": "shared signal reaches shell; promotion moves existing process to service ownership; PTY abort escalates group kill",
+      "authority": "model, approval/sandbox execution options",
+      "evidence": [
+        "e8",
+        "e9",
+        "e11",
+        "e15",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "list_background_processes / read_background_output",
+      "surface": "model tools",
+      "input": "empty list request or pid/delay/output limits",
+      "output": "session PID/status/exit list or bounded log tail",
+      "lifecycle": "polls owned background job; delay path ignores abort; log may be removed",
+      "authority": "current-session model only",
+      "evidence": [
+        "e10",
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "invoke_agent",
+      "surface": "model tool",
+      "input": "agent_name,prompt",
+      "output": "streamed child activity + tool result",
+      "lifecycle": "local/remote/browser routing; feature-gated session mode propagates abort; local nested agents excluded",
+      "authority": "model/configured agent registry and derived confirmation bus",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "RemoteSubagentSession.send / getSessionState / abort",
+      "surface": "agent protocol API",
+      "input": "text content and seeded contextId/taskId",
+      "output": "streamId,event deltas,result,updated context/task handles",
+      "lifecycle": "one active send, reusable process-map A2A conversation state; updates/actions unused",
+      "authority": "harness/remote service authentication, not native peer messaging tool",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    {
+      "name": "HookSystem.registerHook / setHookEnabled",
+      "surface": "host programming API",
+      "input": "command/runtime action,event,matcher,sequential/source",
+      "output": "hook output,modified request/tools,stop/retry/context decisions",
+      "lifecycle": "synchronous loop boundaries; runtime timeout cooperative; installed command plumbing separately supplied",
+      "authority": "host/operator or code extension; no native model registration tool established",
+      "evidence": [
+        "e5",
+        "e7",
+        "e34",
+        "e35"
+      ]
+    },
+    {
+      "name": "tryCompressChat / ChatCompressionService.compress",
+      "surface": "internal/operator mechanism",
+      "input": "history,model,force,prompt_id,abortSignal",
+      "output": "verified state snapshot + retained tail or truncation/failure status",
+      "lifecycle": "summary and verification requests; active history replaced while recorder retained",
+      "authority": "harness/operator; self-correction summary prompt is not post hoc native repair",
+      "evidence": [
+        "e28",
+        "e29"
+      ]
+    },
+    {
+      "name": "AgentSession.stream",
+      "surface": "programmable protocol API",
+      "input": "eventId/streamId cursor",
+      "output": "agent_start through agent_end events",
+      "lifecycle": "subscribe before replay; reject invalid or not-yet-started cursor; in-memory protocol state",
+      "authority": "host protocol consumers",
+      "evidence": [
+        "e33"
+      ]
+    },
+    {
+      "name": "AgentsRefreshed \u2192 setTools/updateSystemInstruction",
+      "surface": "hot configuration mechanism",
+      "input": "refreshed registry event",
+      "output": "new active tool/system definitions",
+      "lifecycle": "immediate active-client refresh; no affected-workflow deferred fence traced",
+      "authority": "host registry/configuration",
+      "evidence": [
+        "e36"
+      ]
+    },
+    {
+      "name": "/bug",
+      "surface": "operator command",
+      "input": "description",
+      "output": "chat-history file + prefilled GitHub issue URL",
+      "lifecycle": "exports then opens browser; does not itself file issue",
+      "authority": "operator; no model grievance action or external table",
+      "evidence": [
+        "e37"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workspace-validated native reads/writes, same-path write locking, typed results and native replacement catalog.",
+      "evidence": [
+        "e10",
+        "e12",
+        "e13",
+        "e14"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Shell propagates combined abort, streams output, background promotion returns PID and polls session logs; PTY cancellation escalates process-group kill.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "File replacement/write, Bash-like shell and configurable agent/MCP tools supply code operations; no independently shared compiler/kernel contract established.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e22"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Persistent interpreter namespace not established in inspected shell/service/agent loop paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Task tracker/tool catalog and conversation JSONL are not a shared queryable computation/database contract in inspected paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual before/after agent/model/tool and tool-selection hook wiring can inject/rewrite/filter/block/retry. Runtime action API is programmable; cooperative cancellation limit matters.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e9",
+        "e34",
+        "e35"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-request model config/hook model rewrite and definition-driven local/remote agents expose real model routing, without implying shared-peer dialogue.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e21",
+        "e22"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Delegated local/A2A work has streamed observability and reusable context/task handles, but remote protocol rejects active-stream send and ignores update/action/elicitations; local child excludes nested agent tools.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e27"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scheduler runs contiguous parallelizable tool groups; edit/write/topic serialize and wait_for_previous gives model ordering control. Child registry isolates cloned tool state.",
+      "evidence": [
+        "e8",
+        "e23"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Signal crosses provider/turn/scheduler/native shell and remote session; tool events carry cancellation. Remote active-message steering is limited; delayed background-log read ignores signal.",
+      "evidence": [
+        "e3",
+        "e6",
+        "e9",
+        "e18",
+        "e20",
+        "e24",
+        "e26"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Hooks rewrite request model/config/contents/tools and AfterAgent controls halt/retry/context clear with bounded recursive continuation. Turn orchestration remains fixed host implementation.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e34"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Separate summary plus model verification requests use original inputs when fitting; new active history preserves recording object/file and distinguishes content truncation.",
+      "evidence": [
+        "e28",
+        "e29"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Compaction verifier can correct its own summary before activation and originals remain in recorder path; no native model original-fetch/restore protocol established. Model critique is not independent correctness oracle.",
+      "evidence": [
+        "e28",
+        "e29",
+        "e30",
+        "e31"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Append-only same-ID conversation versions and retained recorder across compression preserve selected conversation originals. ENOSPC disables writes, foreground temp artifacts are cleaned, and full transport/effect audit is not established.",
+      "evidence": [
+        "e17",
+        "e29",
+        "e30",
+        "e31",
+        "e32"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Conversation JSONL materialization plus event-cursor replay and background log polling are usable primitives. In-memory protocol events are not a complete durable global audit/query API.",
+      "evidence": [
+        "e20",
+        "e30",
+        "e31",
+        "e33"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Runtime hook registration/toggle and agent refresh update active client definitions immediately. No deferred affected-workflow activation or compilation handoff traced.",
+      "evidence": [
+        "e34",
+        "e36"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Protocol event replay and reusable remote IDs support reconnect composition but rely on object/static state; do not establish quiescent executable refit or uncertain-effect continuity.",
+      "evidence": [
+        "e27",
+        "e33"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes Gemini content generator, configured MCP catalog and authenticated A2A remote agents; shell/service state still owned by local harness.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e22",
+        "e25",
+        "e26"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Programmable hooks and file/process actions do not demonstrate model-governed measured improvement or self-recompile/reinhabit protocol.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator /bug packages active chat plus issue URL/browser opening; no native model complaint carrying full agent state into independently tracked table.",
+      "evidence": [
+        "e37"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scheduler confirmation context, derived child bus/cloned registry, workspace path validation and shell sandbox options are traced. Operator-free configurations are possible only within configured policy; policy internals not exhaustively audited.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e15",
+        "e23"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read source tests cover runtime hook registration/input, hook-stop nonexecution and Unicode-safe history collapse. Mocks/pure transforms do not prove live summary adequacy or OS cancellation convergence; not executed.",
+      "evidence": [
+        "e38",
+        "e39",
+        "e40"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "UUID conversation IDs/timestamps, call IDs and protocol cursor/stream lifecycle support ordering; no cross-service durable causal clock or exactly-once effect log established.",
+      "evidence": [
+        "e3",
+        "e31",
+        "e33"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/gemini-cli/packages/cli/src/nonInteractiveCli.ts",
+      "start": 72,
+      "end": 85,
+      "claim": "Noninteractive host chooses ADK/AgentSession branch via configuration; traditional loop remains separately wired."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/gemini-cli/packages/cli/src/nonInteractiveCli.ts",
+      "start": 312,
+      "end": 338,
+      "claim": "Traditional CLI sends current parts through GeminiClient with common abort signal and bounded turn counter."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/gemini-cli/packages/cli/src/nonInteractiveCli.ts",
+      "start": 482,
+      "end": 510,
+      "claim": "Native calls schedule with same abort signal; structured streaming results carry timestamp/call ID/status."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/gemini-cli/packages/core/src/agent/legacy-agent-session.ts",
+      "start": 174,
+      "end": 305,
+      "claim": "Session loop sends provider work, collects calls, handles errors/abort, nudges empty post-tool answers, schedules operations and emits paired results."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/gemini-cli/packages/core/src/core/client.ts",
+      "start": 924,
+      "end": 1047,
+      "claim": "BeforeAgent injects/blocks/stops; AfterAgent can clear context, halt or recursively request bounded continuation with hook state reset."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/gemini-cli/packages/core/src/core/turn.ts",
+      "start": 269,
+      "end": 319,
+      "claim": "Turn calls GeminiChat with model config, request/history override and signal; transforms retries/cancellation/hook responses into events."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/gemini-cli/packages/core/src/core/geminiChat.ts",
+      "start": 992,
+      "end": 1088,
+      "claim": "BeforeModel modifies model/config/contents, can synthesize blocked response, and BeforeToolSelection modifies tools before actual content generator stream."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/gemini-cli/packages/core/src/scheduler/scheduler.ts",
+      "start": 456,
+      "end": 594,
+      "claim": "Contiguous parallelizable requests validate and execute together; edit/write/topic serialize and wait_for_previous overrides; terminal calls finalize."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/gemini-cli/packages/core/src/scheduler/tool-executor.ts",
+      "start": 63,
+      "end": 155,
+      "claim": "Executor passes signal, shell config, PID callback and live output through hook-wrapped tool invocation; abort results become cancellation."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/gemini-cli/packages/core/src/config/config.ts",
+      "start": 4009,
+      "end": 4123,
+      "claim": "Config registers native file/search/shell/background/web/MCP/skill/plan/task/agent tools with configuration-dependent availability."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/definitions/base-declarations.ts",
+      "start": 51,
+      "end": 65,
+      "claim": "Native file/process names are read_file, run_shell_command, write_file and replace."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/read-file.ts",
+      "start": 123,
+      "end": 169,
+      "claim": "Read validates real workspace path and returns processed file content/range or typed error."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/write-file.ts",
+      "start": 371,
+      "end": 428,
+      "claim": "Write validates path and serializes same-path writers with cancellable lock before apply."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/write-file.ts",
+      "start": 459,
+      "end": 494,
+      "claim": "Write creates directories, normalizes line endings, writes through filesystem service and produces diff."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/shell.ts",
+      "start": 681,
+      "end": 735,
+      "claim": "Shell streams text/binary events, uses combined controller and sandbox/session execution options."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/shell.ts",
+      "start": 764,
+      "end": 825,
+      "claim": "Background timer promotes existing PID and returns initial output after race; foreground awaits result."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/shell.ts",
+      "start": 1158,
+      "end": 1182,
+      "claim": "Background ownership transfers temp directory to execution service; foreground finally removes temp artifacts and abort listeners."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/gemini-cli/packages/core/src/services/shellExecutionService.ts",
+      "start": 1700,
+      "end": 1714,
+      "claim": "PTY abort invokes escalating process-group kill and returns process identity/result handle."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/shellBackgroundTools.ts",
+      "start": 45,
+      "end": 89,
+      "claim": "list_background_processes enumerates current-session command PID/status/exit metadata."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/gemini-cli/packages/core/src/tools/shellBackgroundTools.ts",
+      "start": 133,
+      "end": 185,
+      "claim": "read_background_output checks PID session ownership and reads bounded log tail with O_NOFOLLOW; delay ignores abort in this path."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/agent-tool.ts",
+      "start": 43,
+      "end": 108,
+      "claim": "invoke_agent schema resolves agent_name and comprehensive prompt into registry-specific inputs."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/agent-tool.ts",
+      "start": 156,
+      "end": 238,
+      "claim": "Delegate selects browser/local/remote and feature-gated session invocation, propagates signal and live output through actual invocation."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/local-executor.ts",
+      "start": 174,
+      "end": 224,
+      "claim": "Local child clones tools into isolated registry and derived confirmation bus; nested agent tools and update_topic are excluded."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/remote-subagent-protocol.ts",
+      "start": 94,
+      "end": 146,
+      "claim": "Remote protocol exposes events and context/task state; rejects message send while stream active and ignores update/action/elicitations."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/remote-subagent-protocol.ts",
+      "start": 211,
+      "end": 265,
+      "claim": "A2A stream consumes context/task IDs, updates them from responses and emits streamed deltas/progress."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/remote-session-invocation.ts",
+      "start": 117,
+      "end": 175,
+      "claim": "Session invocation seeds prior A2A state, wires parent abort, observes progress and detects empty-result abort."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/gemini-cli/packages/core/src/agents/remote-session-invocation.ts",
+      "start": 242,
+      "end": 250,
+      "claim": "A2A context/task state is retained in process-static invocation map even on abort/error, not a durable executable handoff."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/gemini-cli/packages/core/src/context/chatCompressionService.ts",
+      "start": 576,
+      "end": 654,
+      "claim": "Compression prefers original history when it fits and makes separate initial summary plus model verification/self-correction requests."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/gemini-cli/packages/core/src/core/client.ts",
+      "start": 1220,
+      "end": 1265,
+      "claim": "Compression creates a new active chat while carrying recording conversation/file; truncation updates current history without resetting failure flag."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/gemini-cli/packages/core/src/services/chatRecordingService.ts",
+      "start": 563,
+      "end": 633,
+      "claim": "Normal record append is JSONL; ENOSPC disables persistence and unreadable-file recovery attempts backup then atomic rewrite."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/gemini-cli/packages/core/src/services/chatRecordingService.ts",
+      "start": 650,
+      "end": 714,
+      "claim": "Full same-ID updates append to log but latest overwrite in-memory materialization; messages get durable UUID/time and selected thoughts/tokens."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/gemini-cli/packages/core/src/services/chatRecordingService.ts",
+      "start": 725,
+      "end": 808,
+      "claim": "Synthetic messages, thought summaries/tokens and enriched tool calls are recorded; not all provider transport/OS effects."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/gemini-cli/packages/core/src/agent/agent-session.ts",
+      "start": 123,
+      "end": 223,
+      "claim": "Wrapper replays event cursor/stream boundaries and listens for new events; unknown/pre-agent-start resume cursors reject. Protocol event history is object state."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/gemini-cli/packages/core/src/hooks/hookSystem.ts",
+      "start": 175,
+      "end": 216,
+      "claim": "Host hook API supports enable/disable and runtime registration by event/matcher/sequencing."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/gemini-cli/packages/core/src/hooks/hookRunner.ts",
+      "start": 252,
+      "end": 301,
+      "claim": "Runtime hook action runs against timeout race and cooperative abort controller; timeout/error requests abort, not forcibly terminating JS action."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/gemini-cli/packages/core/src/config/config.ts",
+      "start": 4222,
+      "end": 4232,
+      "claim": "Agent refresh event immediately updates active client tools/system if initialized."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/gemini-cli/packages/cli/src/ui/commands/bugCommand.ts",
+      "start": 80,
+      "end": 125,
+      "claim": "Operator /bug exports active chat history and opens prefilled GitHub URL; no native model complaint/database submission traced."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/gemini-cli/packages/core/src/hooks/runtimeHooks.test.ts",
+      "start": 47,
+      "end": 96,
+      "claim": "Runtime hook test asserts registration/callback input/finalOutput using mock action."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/gemini-cli/packages/core/src/scheduler/scheduler_hooks.test.ts",
+      "start": 143,
+      "end": 159,
+      "claim": "Hook stop test asserts error and nonexecution of mocked tool."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/gemini-cli/packages/core/src/context/chatCompressionService.test.ts",
+      "start": 946,
+      "end": 997,
+      "claim": "Pure collapse test checks emoji/surrogate/UTF-8 integrity and recent output preservation; not semantic adequacy of model summary."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/gemini-cli/packages/core/src/hooks/runtimeHooks.test.ts",
+      "focus": "Runtime registration and event action input",
+      "oracle": "Uses mocked action and asserts registry source/input/output; no uncooperative timeout or full turn integration oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gemini-cli/packages/core/src/scheduler/scheduler_hooks.test.ts",
+      "focus": "Stopped-hook prevents operation",
+      "oracle": "Asserts error and mocked executor never invoked; not OS side-effect audit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gemini-cli/packages/core/src/context/chatCompressionService.test.ts",
+      "focus": "Unicode-safe old-tool-output collapse",
+      "oracle": "Pure fabricated history asserts no replacement/unpaired characters and UTF-8 roundtrip; not semantic state-snapshot quality.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Hooks alter actual request/continuation lifecycle rather than only appending prompts.",
+    "Model wait_for_previous plus serial edit/topic classes make tool-order authority explicit.",
+    "Append-only message versions and recorder retained through compaction are stronger than overwriting a transcript.",
+    "A2A context/task handles persist across same-process delegated invocations and aborts; actual remote consumer protocol."
+  ],
+  "limits": [
+    "Traditional CLI and feature-gated AgentSession scopes remain distinct; source replay does not establish default host use everywhere.",
+    "Remote protocol is sequential delegation, rejects sends while active and ignores update/action/elicitations; local nested delegation excluded.",
+    "Self-verifying summaries have no independent semantic-loss oracle.",
+    "Audit is selected conversation data; ENOSPC disables persistence, temp/output cleanup and external effects bound originals.",
+    "Runtime hook timeout only requests cooperative abort; active definitions can refresh immediately; no refit quiescence/standing-pause contract."
+  ],
+  "arconaut_questions": [
+    "How can Arconaut expose programmable request/settlement boundaries with model authority while preserving scoped services and explicit activation versions?",
+    "Retain immutable provider/tool/context originals and attach projection versions; let models inspect and repair without relying only on summary self-critique.",
+    "Generalize remote context/task IDs into an outpost consumer protocol with live messaging and durable checkpoint\u2014not a process-static map.",
+    "What verified quiescence barrier distinguishes cancellable requests from arbitrary hooks or standing/background owned computation?"
+  ]
+}

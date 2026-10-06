@@ -1,0 +1,578 @@
+{
+  "id": "ironclaw",
+  "kind": "native durable-process Rust agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "TypeScript (web UI)"
+    ],
+    "execution": "Current Reborn workspace: canonical sealed loop families/stages, durable turn/process coordination, native/WASM hook middleware and per-user Docker command substrate.",
+    "service_boundary": "Owns turn/process journals and sandbox lifecycle; host ports consume model/filesystem/DB services. Per-user sandbox is governed by harness, unlike Arconaut consumer-only shared compute."
+  },
+  "summary": "Strong typed lifecycle and projection boundaries, bounded native/WASM hooks and atomic swaps of individual provider wrappers; current composition disables model subagent spawning despite implementation/tests.",
+  "inspection": {
+    "files": [
+      "quarantine/ironclaw/Cargo.toml",
+      "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/default_planner.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/executor/pipeline.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/kinds/mutator.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/middleware/prompt_port.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/loop_driver_host.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/self_authored.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/wasm/runtime.rs",
+      "quarantine/ironclaw/crates/kernel/ironclaw_processes/src/cancellation.rs",
+      "quarantine/ironclaw/crates/kernel/ironclaw_processes/src/supervisor.rs",
+      "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/shell.rs",
+      "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/mod.rs",
+      "quarantine/ironclaw/crates/lanes/ironclaw_sandbox/src/sandbox_process.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_loop_host/src/compaction_task.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/state/compaction.rs",
+      "quarantine/ironclaw/crates/events/ironclaw_event_log/src/runtime_event.rs",
+      "quarantine/ironclaw/crates/domains/ironclaw_llm/src/runtime.rs",
+      "quarantine/ironclaw/crates/product/ironclaw_operator/src/llm_admin/llm_reload.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/runtime.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/subagent/spawn_result.rs",
+      "quarantine/ironclaw/tests/reborn_subagent_spawn_e2e.rs",
+      "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/executor/tests/compaction.rs"
+    ],
+    "scope": "Traced current workspace rather than removed src monolith: planner/stages, prompt middleware production wiring, process cancellation/supervisor, shell/sandbox, compaction artifacts/effectiveness, provider reload and subagent deny filter.",
+    "limits": "No acquired code run. Every domain/extension, full original transcript storage, hook install entry point and crash recovery not exhaustively audited. Self-authored hook types not credited as exposed model operation; production caller not found in scope."
+  },
+  "actions": [
+    {
+      "name": "builtin.shell / scoped output",
+      "surface": "model capability",
+      "input": "command/workdir/time/environment",
+      "output": "exit/status/rendered output and readable saved-output path",
+      "lifecycle": "new shell action in persistent workspace; hard120s; async owned sandbox task",
+      "authority": "Ask manifest plus runtime policy/scoped mounts/credential binding",
+      "evidence": [
+        "shell",
+        "output",
+        "sandbox",
+        "detached"
+      ]
+    },
+    {
+      "name": "Hook before_prompt / before_capability observers",
+      "surface": "host extension API",
+      "input": "installed native/WASM hook, context",
+      "output": "additive prompt patches, gate decision and event metadata",
+      "lifecycle": "bounded extension calls around compiled loop; not whole-turn replace",
+      "authority": "trust-tier/host-granted hook sink, model self-authorship caller not found",
+      "evidence": [
+        "mutator",
+        "prompt",
+        "wiring",
+        "wasm",
+        "self-hook"
+      ]
+    },
+    {
+      "name": "Compaction task / projection summary",
+      "surface": "host lifecycle",
+      "input": "safe completed message range and trigger",
+      "output": "summary artifact identity, ratio/redaction metrics",
+      "lifecycle": "separate range artifact selected into projection, bounded ineffective automatic attempts",
+      "authority": "host service scoped transcript access",
+      "evidence": [
+        "compact",
+        "summary",
+        "effectiveness"
+      ]
+    },
+    {
+      "name": "Provider reload",
+      "surface": "operator API",
+      "input": "operator config/provider/key selection",
+      "output": "candidate chain swap or typed error",
+      "lifecycle": "per-call provider snapshot; newly-added cheap slot restart-required",
+      "authority": "operator config/key-store service",
+      "evidence": [
+        "adapter",
+        "reload",
+        "per-call"
+      ]
+    },
+    {
+      "name": "Process cancel / supervisor shutdown",
+      "surface": "host control API",
+      "input": "scoped process identity or shutdown",
+      "output": "cancel wake or awaited supervisor closure",
+      "lifecycle": "cancel request cooperative; Drop request differs from awaited shutdown; external effects separate",
+      "authority": "host scoped process registry/journal",
+      "evidence": [
+        "cancel",
+        "supervisor",
+        "shutdown"
+      ]
+    },
+    {
+      "name": "spawn_subagent (disabled by default)",
+      "surface": "currently disabled model capability",
+      "input": "task/flavor/background mode",
+      "output": "child run/thread and terminal/result metadata",
+      "lifecycle": "implemented dependent-run machinery; default policy removes model surface",
+      "authority": "explicit host configuration override needed",
+      "evidence": [
+        "deny",
+        "default-deny",
+        "child-status",
+        "child-test"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled coding manifests and scoped saved-output publication; individual file operations not exhaustively traced.",
+      "evidence": [
+        "registration",
+        "output"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native shell with per-user sandbox task/container ownership; normal output publish and resource ceiling.",
+      "evidence": [
+        "shell",
+        "sandbox",
+        "output"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell executes ordinary programs and WASM extension hook bodies; no model persistent interpreter kernel established.",
+      "evidence": [
+        "shell",
+        "wasm"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent filesystem workspace, but shell process state explicitly does not persist; no shared Python namespace path established.",
+      "evidence": [
+        "workspace-state",
+        "shell"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established beyond inspected current Reborn loop, process, hook, shell, compaction and model reload paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native sealed stage/family composition plus bounded additive/gate hooks; arbitrary model/operator turn program replacement unavailable in inspected API.",
+      "evidence": [
+        "planner",
+        "pipeline",
+        "mutator",
+        "wiring"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Primary/cheap provider chains configurable and hot swapped; simultaneous child override policy not established.",
+      "evidence": [
+        "reload",
+        "adapter"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Child lifecycle/result vocabulary exists, model spawning default-denied; no unrestricted live peer room proved.",
+      "evidence": [
+        "deny",
+        "default-deny",
+        "child-status"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Leased supervisor task pool and independently owned sandbox execution tasks; model children default disabled.",
+      "evidence": [
+        "supervisor",
+        "detached",
+        "deny"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cooperative token + wake and leased execution fencing; outer command await can detach owned execution, not quiescence.",
+      "evidence": [
+        "cancel",
+        "supervisor",
+        "detached"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Default planner slots sealed, hooks additive/policy/observer; full executable turn cannot be hot replaced through traced surface.",
+      "evidence": [
+        "planner",
+        "mutator",
+        "pipeline"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Validated range summary artifacts and rebuilt-prompt effectiveness circuit; retain projection separation rather than mutate core stage.",
+      "evidence": [
+        "compact",
+        "summary",
+        "effectiveness",
+        "compact-test"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Range-addressed separate summary artifacts support replacing selection while retaining reference to source span; arbitrary model repair operation/source retention storage not fully traced.",
+      "evidence": [
+        "summary"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Typed sanitized runtime events and saved command outputs are useful, but event schema deliberately excludes raw provider/program payload.",
+      "evidence": [
+        "event",
+        "output"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Durable scoped event/result references are query primitives; model full-original audit query API not established.",
+      "evidence": [
+        "event",
+        "child-status",
+        "output"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual candidate provider-chain replacement; each in-flight request retains its wrapper snapshot, but primary and cheap wrappers swap separately rather than as one atomic generation. An initially absent cheap wrapper cannot newly activate without restart.",
+      "evidence": [
+        "reload",
+        "per-call",
+        "adapter"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Durable process/turn vocabulary supports recovery, but no compiled refit/outpost transfer and external-effect settlement barrier established.",
+      "evidence": [
+        "supervisor",
+        "detached",
+        "child-status"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider/host-scoped filesystem/process ports and credentialed sandbox consumers; harness still owns per-user container lifecycle.",
+      "evidence": [
+        "shell",
+        "sandbox",
+        "adapter"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Self-authored hook contract is restrictive/run-scoped and source caller only found in tests during inspection; cannot credit as model-governed autoresearch.",
+      "evidence": [
+        "self-hook",
+        "planner"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established beyond inspected current Reborn loop, process, hook, shell, compaction and model reload paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Shell Ask default, hard120s/resource bounds, scoped credentials and disabled spawn; authority vocabulary a substantial mismatch with unrestricted operator brief.",
+      "evidence": [
+        "shell",
+        "sandbox",
+        "deny"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Direct rebuilt-prompt compaction oracle; child scripted e2e is ignored by default and must be explicitly enabled, not normal capability evidence.",
+      "evidence": [
+        "compact-test",
+        "child-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host runtime stamps UTC loop start, Instant-backed latency and task heartbeat/deadline vocabulary; not logical paused-time/refit contract.",
+      "evidence": [
+        "wiring",
+        "supervisor",
+        "shell"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "workspace",
+      "path": "quarantine/ironclaw/Cargo.toml",
+      "start": 62,
+      "end": 76,
+      "claim": "Legacy monolith deleted; current root package only integration tests."
+    },
+    {
+      "id": "planner",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/default_planner.rs",
+      "start": 1,
+      "end": 69,
+      "claim": "Default strategy composition sealed/crate-private, not operator/model mutable slots."
+    },
+    {
+      "id": "pipeline",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/executor/pipeline.rs",
+      "start": 11,
+      "end": 55,
+      "claim": "Actual compiled stage objects and order vocabulary."
+    },
+    {
+      "id": "mutator",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/kinds/mutator.rs",
+      "start": 1,
+      "end": 55,
+      "claim": "Prompt patches additive snippets/metadata only; cannot replace messages or identity."
+    },
+    {
+      "id": "prompt",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/middleware/prompt_port.rs",
+      "start": 143,
+      "end": 155,
+      "claim": "Actual before-prompt dispatch called by middleware."
+    },
+    {
+      "id": "wiring",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/loop_driver_host.rs",
+      "start": 1886,
+      "end": 1922,
+      "claim": "Production wraps prompt port with instruction materialization and refreshed bundle authority."
+    },
+    {
+      "id": "self-hook",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/self_authored.rs",
+      "start": 1,
+      "end": 26,
+      "claim": "Self-authorship contract only restriction and current run; durable surface future, no exposed model caller established."
+    },
+    {
+      "id": "wasm",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_hooks/src/wasm/runtime.rs",
+      "start": 28,
+      "end": 70,
+      "claim": "Installed WASM hook resolution and bounded sink vocabulary, not arbitrary hot core replacement."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_processes/src/cancellation.rs",
+      "start": 37,
+      "end": 78,
+      "claim": "Cooperative cancellation atomic flag and wake token, not resource termination."
+    },
+    {
+      "id": "supervisor",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_processes/src/supervisor.rs",
+      "start": 587,
+      "end": 647,
+      "claim": "Leased task heartbeat fencing stops local execution on lease loss; does not confirm every external effect settled."
+    },
+    {
+      "id": "shutdown",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_processes/src/supervisor.rs",
+      "start": 343,
+      "end": 365,
+      "claim": "Explicit shutdown awaits supervisor; Drop only requests it."
+    },
+    {
+      "id": "shell",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/shell.rs",
+      "start": 27,
+      "end": 100,
+      "claim": "Shell actual native dispatch, Ask default and hard120s maximum."
+    },
+    {
+      "id": "output",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/shell.rs",
+      "start": 128,
+      "end": 184,
+      "claim": "Saved output published through scoped filesystem before rendered JSON result."
+    },
+    {
+      "id": "registration",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/mod.rs",
+      "start": 242,
+      "end": 263,
+      "claim": "Actual first-party shell/file/skill/trigger manifests registered before policy filters."
+    },
+    {
+      "id": "workspace-state",
+      "path": "quarantine/ironclaw/crates/kernel/ironclaw_host_runtime/src/first_party_tools/mod.rs",
+      "start": 306,
+      "end": 321,
+      "claim": "Persistent per-user workspace guidance explicitly says shell process state does not persist between calls."
+    },
+    {
+      "id": "sandbox",
+      "path": "quarantine/ironclaw/crates/lanes/ironclaw_sandbox/src/sandbox_process.rs",
+      "start": 767,
+      "end": 825,
+      "claim": "Per-user lifecycle gate, credential guard and container ensure performed by harness."
+    },
+    {
+      "id": "detached",
+      "path": "quarantine/ironclaw/crates/lanes/ironclaw_sandbox/src/sandbox_process.rs",
+      "start": 888,
+      "end": 919,
+      "claim": "Command wrapped in spawned owned task; dropping outer await does not itself abort task."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_loop_host/src/compaction_task.rs",
+      "start": 266,
+      "end": 290,
+      "claim": "Validate range, build input, model summary, sanitize and persist artifact."
+    },
+    {
+      "id": "summary",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_loop_host/src/compaction_task.rs",
+      "start": 578,
+      "end": 613,
+      "claim": "Separate range-addressed summary artifact with replace-when-selected cumulative-barrier policy."
+    },
+    {
+      "id": "effectiveness",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/state/compaction.rs",
+      "start": 24,
+      "end": 79,
+      "claim": "Effectiveness judged after rebuilt prompt including summary; third ineffective automatic compact trips run circuit."
+    },
+    {
+      "id": "event",
+      "path": "quarantine/ironclaw/crates/events/ironclaw_event_log/src/runtime_event.rs",
+      "start": 72,
+      "end": 135,
+      "claim": "Runtime event schema carries redacted safe metadata/byte counts and bounded closed labels, not original IO."
+    },
+    {
+      "id": "reload",
+      "path": "quarantine/ironclaw/crates/domains/ironclaw_llm/src/runtime.rs",
+      "start": 315,
+      "end": 346,
+      "claim": "Reload builds candidate then swaps primary/cheap wrappers; adding absent cheap wrapper needs restart."
+    },
+    {
+      "id": "per-call",
+      "path": "quarantine/ironclaw/crates/domains/ironclaw_llm/src/runtime.rs",
+      "start": 196,
+      "end": 222,
+      "claim": "Each model call snapshots current provider wrapper; in-flight call retains prior object."
+    },
+    {
+      "id": "adapter",
+      "path": "quarantine/ironclaw/crates/product/ironclaw_operator/src/llm_admin/llm_reload.rs",
+      "start": 86,
+      "end": 122,
+      "claim": "Operator live reload resolves file/provider stored key then invokes actual handle."
+    },
+    {
+      "id": "deny",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/runtime.rs",
+      "start": 850,
+      "end": 863,
+      "claim": "Composition global deny removes spawn_subagent model surface; explicit config override can re-enable."
+    },
+    {
+      "id": "default-deny",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/runtime.rs",
+      "start": 294,
+      "end": 299,
+      "claim": "Default disabled IDs includes spawn_subagent."
+    },
+    {
+      "id": "child-status",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_turn_runner/src/subagent/spawn_result.rs",
+      "start": 8,
+      "end": 57,
+      "claim": "Child run/thread identity and CancelRequested distinct from Cancelled in event vocabulary."
+    },
+    {
+      "id": "child-test",
+      "path": "quarantine/ironclaw/tests/reborn_subagent_spawn_e2e.rs",
+      "start": 23,
+      "end": 85,
+      "claim": "Ignored test proves parked parent/child result in scripted model when explicitly enabled, not default availability."
+    },
+    {
+      "id": "compact-test",
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/executor/tests/compaction.rs",
+      "start": 77,
+      "end": 124,
+      "claim": "Direct prompt-stage oracle counts ineffective rebuilt prompts and fourth automatic compact suppression."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/ironclaw/crates/loop/ironclaw_agent_loop/src/executor/tests/compaction.rs",
+      "focus": "rebuilt summary effectiveness",
+      "oracle": "Exactly third ineffective compact opens circuit and fourth automatic attempt suppressed; mocked prompts, not summary fidelity; not run.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ironclaw/tests/reborn_subagent_spawn_e2e.rs",
+      "focus": "dependent parent/child lifecycle",
+      "oracle": "Scripted provider park/resume with child result; explicitly ignored while spawn default disabled; not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Typed durable identity/status and honest request-vs-terminal distinctions.",
+    "Separate summary artifacts and actual rebuilt-prompt compaction usefulness test.",
+    "Production hook materialization and bundle-authority reissue wired rather than just interface declarations."
+  ],
+  "limits": [
+    "Model subagent capability denied by current default composition; README/test presence cannot imply availability.",
+    "Loop strategy slots sealed and hook mutations additive.",
+    "Sandbox owned task survives cancellation of outer await; complete settlement needs additional state.",
+    "Runtime events sanitized metadata, not raw original audit.",
+    "Provider snapshots are atomic per wrapper; primary/cheap replacements are separate, with no shared-generation activation barrier."
+  ],
+  "arconaut_questions": [
+    "Adopt lifecycle distinctions conceptually while allowing model ordinary program changes.",
+    "Test hot activation across whole turn/workflow boundary, not only provider object swap.",
+    "Separate durable internal fencing from confirmed foreign program/provider settlement."
+  ]
+}

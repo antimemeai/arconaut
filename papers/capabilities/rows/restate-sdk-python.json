@@ -1,0 +1,383 @@
+{
+  "id": "restate-sdk-python",
+  "kind": "durable workflow/service SDK",
+  "runtime": {
+    "languages": [
+      "Python",
+      "Rust native VM wrapper"
+    ],
+    "execution": "Python ASGI service invocation runs through a protocol VM; async run actions or sync actions in a thread executor. Server owns durable storage/replay/scheduling.",
+    "service_boundary": "Consumes Restate server and user external systems; SDK owns only invocation attempt/client resources, not an agent loop or shared service governor."
+  },
+  "summary": "Python context APIs for journaled code, state, calls, waits and invocation identity",
+  "inspection": {
+    "files": [
+      "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "quarantine/restate-sdk-python/python/restate/context.py",
+      "quarantine/restate-sdk-python/tests/servercontext.py",
+      "quarantine/restate-sdk-python/tests/disconnect_hotloop.py"
+    ],
+    "scope": "context contracts and server_context run/replay/proposal/state/RPC/teardown; direct retry and disconnect tests",
+    "limits": "Core protocol VM and server durability studied separately; SDK source alone does not certify settlement of arbitrary external effects."
+  },
+  "actions": [
+    {
+      "name": "ctx.run / ctx.run_typed(name, action, options, *args)",
+      "surface": "Programmable journaled action",
+      "input": "Sync/async function, args/serde and retry overrides",
+      "output": "Serialized result or terminal failure via VM durable handle",
+      "lifecycle": "Recorded result replay bypasses closure; external effect precedes result proposal and may repeat if not durably settled",
+      "authority": "Developer/client programs execute arbitrary action; host credentials/OS authority",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "ctx.get/set/state_keys/clear/clear_all",
+      "surface": "Object/workflow structured state",
+      "input": "Key names and serialized values",
+      "output": "Durable contextual key/value state",
+      "lifecycle": "Server VM state/journal; no persistent Python locals across attempts",
+      "authority": "Context capabilities; server owns storage",
+      "evidence": [
+        "e3"
+      ]
+    },
+    {
+      "name": "ctx.service_call/object_call/workflow_call and *_send",
+      "surface": "Typed durable RPC",
+      "input": "Handler, serialized arg, object/workflow key, idempotency/scope/limit and optional delay",
+      "output": "Durable call future or send handle/invocation identity",
+      "lifecycle": "Server schedules/correlates calls; delayed/background send independent of local await",
+      "authority": "Calling handler/server service routing authority",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "ctx.awakeable/promise/signal; resolve/reject",
+      "surface": "Durable external completion primitive",
+      "input": "Opaque awakeable ID or invocation ID/name and payload",
+      "output": "Future/promise resolved result",
+      "lifecycle": "Server retains pending wait; does not keep Python process stack alive",
+      "authority": "Client/external signal sender with endpoint authority",
+      "evidence": [
+        "e5",
+        "e8"
+      ]
+    },
+    {
+      "name": "ctx.cancel_invocation / attach_invocation",
+      "surface": "Invocation control/follow-up",
+      "input": "Invocation ID",
+      "output": "Cancellation command or future attached to result",
+      "lifecycle": "Protocol cancel does not prove arbitrary external thread/side effect stopped",
+      "authority": "Context invoker; server controls durable invocation",
+      "evidence": [
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    {
+      "name": "ctx.time/random/uuid; request.attempt_finished_event",
+      "surface": "Replay-stable time/identity and attempt lifecycle",
+      "input": "Context and invocation seed",
+      "output": "Journaled wall timestamp, deterministic RNG/UUID, local cleanup signal",
+      "lifecycle": "Stable per invocation replay; attempt signal closes/cancels client resources, no universal quiescence",
+      "authority": "Handler/client context",
+      "evidence": [
+        "e8",
+        "e9",
+        "e7"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Arbitrary sync/async closures inside run compose external tools; durable serialized result rather than resident process memory.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Context get/set/keys/clear exposes server-owned object/workflow key-value state; no generic SQL or agent-facing database supplied.",
+      "evidence": [
+        "e3"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python async programs compose VM run/call/send/wait/state primitives; replay constraints and external idempotency remain caller responsibilities.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed one-shot signal and external awakeable are communication primitives, not a live model-peer room.",
+      "evidence": [
+        "e5",
+        "e8"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Multiple durable call/send handles compose, but sync run executes in a thread; cancellation of its future cannot establish thread/remote effect settlement.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cancel command, attempt-finished event and local task cancellation; inspected paths do not wait for arbitrary third-party activity to physically end.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e9"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Journal serializes chosen action results/state/calls and handler output/error, not every external/provider request, stdout or action internal effect.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4"
+      ]
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Service can replay recorded result via fresh handler attempt; SDK does not rebuild executable/transfer model context or guarantee changed code replay compatibility.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Consumes durable server and external function services with explicit IDs/keys/serde; shared governor remains separate.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Python context APIs for journaled code, state, calls, waits and invocation identity rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Developer-supplied actions execute under service process authority; no approval policy or host model grant machinery supplied.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Real server retry test counts attempts; disconnect fake protocol test verifies bounded no-hang behavior. Neither checks external-effect duplication crash window.",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Journaled wall time/seeded identity, delayed sends and wall-clock retry-duration accounting; no monotonic external-effect deadline or refit pause clock.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e8"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 916,
+      "end": 984,
+      "claim": "Run schedules action only when VM does not replay result; returns durable future handle."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 846,
+      "end": 912,
+      "claim": "Async action or executor-thread action runs before success/failure proposal; serialized result, wall-clock attempt duration and retry overrides."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 768,
+      "end": 807,
+      "claim": "VM state reads/writes, encoded values and request/attempt/idempotency identity."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 993,
+      "end": 1061,
+      "claim": "Handler/serde discovery and delayed send with key/idempotency/scope/limit, underlying protocol VM dispatch."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 1230,
+      "end": 1277,
+      "claim": "Awakeable ID+future, promise, cancel and attach invocation primitives."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 420,
+      "end": 448,
+      "claim": "Attempt task list cancels futures, clears list; no wait for underlying executor thread."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 603,
+      "end": 646,
+      "claim": "Teardown flushes protocol output, waits input close, closes output; finished event then cancels tasks."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/restate-sdk-python/python/restate/server_context.py",
+      "start": 827,
+      "end": 843,
+      "claim": "Addressed signal and stable seeded UUID/random; time implemented as journaled wall-time action."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/restate-sdk-python/python/restate/context.py",
+      "start": 118,
+      "end": 127,
+      "claim": "Attempt-finished resource-cleanup contract, not guarantee arbitrary third-party call physically ended."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/restate-sdk-python/tests/servercontext.py",
+      "start": 85,
+      "end": 112,
+      "claim": "Server integration retry-after/terminal-error test counts exactly two attempts; latest container image not pinned by test helper."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/restate-sdk-python/tests/disconnect_hotloop.py",
+      "start": 38,
+      "end": 74,
+      "claim": "Fake receive channel checks finite prompt disconnect result after drained queue; concrete no-hang oracle."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/restate-sdk-python/tests/servercontext.py",
+      "focus": "Retry-after versus terminal failure",
+      "oracle": "Real server service test literal attempts==2; helper uses latest image, not pinned server. No action-success-before-journal crash oracle here.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/restate-sdk-python/tests/disconnect_hotloop.py",
+      "focus": "Receive-channel disconnect hot loop/no-hang",
+      "oracle": "Fake ASGI stream returns known event sequence; wait_for and literal disconnect checks bound liveness fault. Not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit journal result versus local action execution and invocation/attempt identity.",
+    "Protocol disconnect/retry tests attack actual lifecycle faults."
+  ],
+  "limits": [
+    "Durability is external server composition; arbitrary side effects can occur before result settlement.",
+    "Attempt-finished or canceled executor future is not physical external quiescence."
+  ],
+  "arconaut_questions": [
+    "Which external actions require idempotency/reconciliation before a durable result can safely support replay?",
+    "Can refit account for executor threads and external calls rather than treating attempt-finished as enough?"
+  ]
+}

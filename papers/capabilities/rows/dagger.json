@@ -1,0 +1,660 @@
+{
+  "id": "dagger",
+  "kind": "container workflow engine and programmable agent runtime",
+  "runtime": {
+    "languages": [
+      "Go"
+    ],
+    "execution": "Engine evaluates typed content-addressed DAG objects; session agent registry runs detached Go loops and container/module/MCP actions.",
+    "service_boundary": "Owns session agent/control registry, build execution, services and telemetry; consumes model providers and host/remote resources. Its service management must not become Arconaut governance of shared computation."
+  },
+  "summary": "Typed immutable conversations with actual continuation tools and addressable live agents; execution cache/archives are separate from durable external-effect settlement.",
+  "inspection": {
+    "files": [
+      "quarantine/dagger/core/agent.go",
+      "quarantine/dagger/core/llm.go",
+      "quarantine/dagger/core/mcp.go",
+      "quarantine/dagger/core/agent_context.go",
+      "quarantine/dagger/core/schema/agent.go",
+      "quarantine/dagger/core/container_exec.go",
+      "quarantine/dagger/core/schema/container.go",
+      "quarantine/dagger/core/service.go",
+      "quarantine/dagger/core/schema/service.go",
+      "quarantine/dagger/internal/cmd/dagger/restore.go",
+      "quarantine/dagger/internal/cmd/dagger/restore_archive.go",
+      "quarantine/dagger/engine/archive/verify.go",
+      "quarantine/dagger/core/llm_recording.go",
+      "quarantine/dagger/core/agent_telemetry.go",
+      "quarantine/dagger/core/schema/llm.go",
+      "quarantine/dagger/core/agent_reseed_test.go",
+      "quarantine/dagger/core/agent_rewind_ctx_test.go",
+      "quarantine/dagger/engine/archive/verify_test.go",
+      "quarantine/dagger/internal/cmd/dagger/restore_test.go",
+      "quarantine/dagger/core/llm_recording_test.go"
+    ],
+    "scope": "LLM step/provider/tool schedule, agent mailbox/lifecycle/reseed, typed container/service actions, recording comparison, trace inspection, archive restore and direct tests",
+    "limits": "Source-only; no execution. No exhaustive cache/BuildKit conformance or cloud archive review; API is explicitly experimental."
+  },
+  "actions": [
+    {
+      "name": "LLM.step / loop",
+      "surface": "operator/program API",
+      "input": "immutable conversation, maxTokens/maxSteps and bound module/MCP tools",
+      "output": "next LLM object ID, protocol results/errors, usage/trace",
+      "lifecycle": "step provider+tools; loop until no pending input; completed prefix returned on cancel",
+      "authority": "caller capabilities and allowed module/provider policy",
+      "evidence": [
+        "e2",
+        "e3",
+        "e20",
+        "e26"
+      ]
+    },
+    {
+      "name": "module tool returning LLM (continuation)",
+      "surface": "model/program tool",
+      "input": "injected current conversation plus authored transform program",
+      "output": "new model/tools/workspace/history continued by same agent",
+      "lifecycle": "runs after ordinary mutations, one continuation per turn; validates tools and missing state",
+      "authority": "bound callable module has substantial control of next conversation",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "LLM.spawn / agent(handle)",
+      "surface": "program API",
+      "input": "conversation seed/name; optional restoration handle/lifecycle/parent",
+      "output": "unique agent runtime handle and immutable object recipe",
+      "lifecycle": "inert until send/resume; live entry per session; restoration preserves identity",
+      "authority": "handle capability; restoration refuses existing collision and live-state fiction",
+      "evidence": [
+        "e1",
+        "e21",
+        "e26"
+      ]
+    },
+    {
+      "name": "Agent.send / AgentMessage.ref,delivery,response",
+      "surface": "model/operator/program API",
+      "input": "target handle, text/media, optional replyTo mailbox ref",
+      "output": "permanent #N message record; actual delivery evidence and correlated reply",
+      "lifecycle": "nonblocking enqueue; response waits; failed pending records can retry after resume",
+      "authority": "sender derived from caller context; wait graph refuses self/cycles",
+      "evidence": [
+        "e6",
+        "e7",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "Agent.notify / wait",
+      "surface": "program/model supervisor",
+      "input": "target/subscriber handle and state list or desired/settled state",
+      "output": "attributed lifecycle messages or state result",
+      "lifecycle": "subscription active across transitions; waits cancelable, settled includes failure/stop",
+      "authority": "known agent handles and cycle guard",
+      "evidence": [
+        "e10",
+        "e12"
+      ]
+    },
+    {
+      "name": "Agent.pause(interrupt) / resume / stop",
+      "surface": "operator/program/model lifecycle",
+      "input": "handle and cooperative/preemptive/kill option",
+      "output": "paused/stopped snapshot or relaunched same entry",
+      "lifecycle": "interrupt cancels current step; consumed input remains pending, queued mail discarded; stop ends loop",
+      "authority": "capability-bound handle access; does not undo external effects",
+      "evidence": [
+        "e7",
+        "e8",
+        "e12"
+      ]
+    },
+    {
+      "name": "Agent.reseed",
+      "surface": "operator/program API",
+      "input": "same runtime handle and replacement LLM conversation",
+      "output": "same instance with changed committed snapshot; old consumed prompt receives rewind error",
+      "lifecycle": "refuses active step/drain/stopped instance; next queued turn uses replacement",
+      "authority": "caller with handle and new LLM can replace history/model/tools",
+      "evidence": [
+        "e9",
+        "e12"
+      ]
+    },
+    {
+      "name": "Container.withExec / stdout / directory",
+      "surface": "program/model bound object tools",
+      "input": "container object, argv/stdin/options/mounts",
+      "output": "new lazy container, joint filesystem/exec metadata, stdout",
+      "lifecycle": "evaluation realizes/caches outputs; not durable external transaction",
+      "authority": "container/module exposure and explicit capabilities",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "Service.start / up / stop",
+      "surface": "program/model bound object tools",
+      "input": "service recipe, port mappings/kill flag",
+      "output": "health-checked runtime/tunnel endpoint or exit",
+      "lifecycle": "uncached imperative service state; owned session lifetime",
+      "authority": "service handle/runtime authority; keep shared fabric consumption distinct",
+      "evidence": [
+        "e15",
+        "e16"
+      ]
+    },
+    {
+      "name": "LoadTrace / ReadLogs / ReadTrace / FindSpans / InspectCall",
+      "surface": "model native introspection",
+      "input": "trace ID/span/query/digest/view/limits",
+      "output": "imported root IDs, bounded logs/reports/timings/call recipe",
+      "lifecycle": "LoadTrace inspects only; paging/filtering needed for omitted data",
+      "authority": "session trace access; cloud import uses connecting client auth",
+      "evidence": [
+        "e18",
+        "e19"
+      ]
+    },
+    {
+      "name": "archive restore graph",
+      "surface": "operator CLI implementation",
+      "input": "sealed trace/control roster, recipe anchors, optional focus",
+      "output": "inert original-handle agent graph, subscriptions and selected focus",
+      "lifecycle": "verify/import then rehydrate; skip named broken agents; no old active process preservation",
+      "authority": "operator and archived capability/recipe data",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "recording/ model SendQuery",
+      "surface": "test/program provider",
+      "input": "exported messages and incoming rendered history",
+      "output": "next recorded assistant response or divergence error",
+      "lifecycle": "replay drives real loop/tool schedule; no live model invoked",
+      "authority": "test-authored recording",
+      "evidence": [
+        "e24"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed directory/container/module tools compose actual code execution and joint cached outputs; arbitrary external side effects are outside DAG value identity.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed directory/container/module tools compose actual code execution and joint cached outputs; arbitrary external side effects are outside DAG value identity.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed directory/container/module tools compose actual code execution and joint cached outputs; arbitrary external side effects are outside DAG value identity.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Long-lived services/container state can host a kernel; no standing shared interpreter heap is supplied by immutable LLM or lazy exec itself.",
+      "evidence": [
+        "e13",
+        "e15",
+        "e16"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Trace/control/archive state is queryable infrastructure; standing application DB would be an independently consumed service, not the LLM conversation object.",
+      "evidence": [
+        "e15",
+        "e19",
+        "e22"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Typed DAG module programs, explicit step/loop and ordered continuation tools compose execution; cache replay does not atomically settle remote side effects.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e13",
+        "e26"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Each immutable LLM composition carries provider/model and can be swapped by returned-LLM continuation or same-instance reseed; different seeded agents can run concurrently.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e5",
+        "e9"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Addressable agent handles, attributed FIFO mailbox/reply refs, lifecycle subscriptions and caller-injected Agent primitives support concurrent peer/parent collaboration.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e11",
+        "e12"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Detached agents and concurrent readonly batches; writes in a batch sequential. Shared-state mutation order is deliberate.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e7"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mail arriving during open turn joins at step boundary. Pause is cooperative; interrupt cancels a step and parks with committed history, discarding unconsumed queue.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "A tool can return an entirely new LLM with tools/model/workspace/history; next step adopts it, validates new tools and records transform, with one continuation per turn.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Self-compaction can return a replacement LLM; engine supports conversation transformation but inspected paths do not establish automatic faithful summarization policy.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e9"
+      ]
+    },
+    "context_repair": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Same-instance reseed/continuation and original trace recipes support explicit replacement/rewind; no guarantee arbitrary missing external content can be reconstructed.",
+      "evidence": [
+        "e9",
+        "e21",
+        "e25"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Recipe/telemetry/archive retain many original events and rewind markers, but raw oversized tool return values explicitly have no retained original escape hatch; not every OS/provider byte.",
+      "evidence": [
+        "e17",
+        "e22",
+        "e25"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-native LoadTrace/ReadLogs/ReadTrace/FindSpans/InspectCall query session telemetry and call recipes with bounded projections and external auth for cloud imports.",
+      "evidence": [
+        "e18",
+        "e19"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Continuation tools can carry edited/rebound workspace/tool env into same loop; reseed refuses active execution/drain. This differs from default whole-turn activation.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e9"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Archive restore rehydrates inert agents under original handles and dependency closures; old RUNNING state cannot survive. No compiled harness refit with full effect-quiescence established.",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23",
+        "e26"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model provider requests, container/MCP services and host tunnels are wired; service runtime owns managed containers, consuming Arconaut must respect external fabric boundary.",
+      "evidence": [
+        "e2",
+        "e15",
+        "e16",
+        "e26"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Module execution/edit→continuation/reload supports in-situ program change; no inspected autonomous hypothesis/evaluator/promotion protocol.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e13"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Agent failure/rewind telemetry and trace query expose diagnostics; no full-state complaint/bead workflow traced.",
+      "evidence": [
+        "e19",
+        "e25"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Module/tool capability binding, caller provenance and allowed-model modules; new unknown Git module model use can prompt. Handle possession addresses agent.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e20"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Inspected direct tests assert reseed race rejection, exported rewind identity, recipe closure failure and restore ordering; recording provider detects rendered-history divergence, not model reasoning quality.",
+      "evidence": [
+        "e9",
+        "e21",
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mailbox refs/delivery commit, turn-resolution lock, ordered writes/parallel reads and sealed archive high-water cut distinguish causal/physical order.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e7",
+        "e22"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 27,
+      "end": 64,
+      "claim": "Spawn identity is a fresh runtime handle; immutable seed/object is separate from mutable session registry."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/dagger/core/llm.go",
+      "start": 2311,
+      "end": 2408,
+      "claim": "Step derives exposed tools, renders history, sends provider request, materializes assistant response before calling tools and captures entering bound state."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/dagger/core/llm.go",
+      "start": 2420,
+      "end": 2490,
+      "claim": "Continuation adopts returned LLM; workspace/tool changes recorded as selectors. Cancellation still records pure result history detached from cancellation before returning cause."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/dagger/core/mcp.go",
+      "start": 1879,
+      "end": 1909,
+      "claim": "Readonly tool runs can execute concurrently; mutations sequential in list order; continuation tools scheduled last after earlier effects."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/dagger/core/mcp.go",
+      "start": 965,
+      "end": 1005,
+      "claim": "Only one returned-LLM continuation per turn; rejects missing/null env and unreflected state changes. New model/history/workspace/tool state is actual continuation, not merely a prompt."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 1418,
+      "end": 1488,
+      "claim": "Mailbox assigns monotonic per-agent refs and provenance; stopped/failed/paused/running delivery states differ; steering is only finalized on actual drain."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 1950,
+      "end": 2038,
+      "claim": "Loop commits each successfully recorded prefix even on cancellation; late steering serialized with turn resolution, consumed messages correlate to final reply."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 2063,
+      "end": 2123,
+      "claim": "Pause retains suspended turn; interrupt cancels active step, keeps consumed input pending and discards queued unconsumed mail."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 2233,
+      "end": 2276,
+      "claim": "Reseed replaces same agent conversation only without active step/drain, settles abandoned suspended-turn messages with rewind error and retains lifecycle identity."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/dagger/core/agent.go",
+      "start": 372,
+      "end": 423,
+      "claim": "Waits-for graph rejects self waits and cycles with actionable errors; non-agent callers are outside graph guard."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/dagger/core/agent_context.go",
+      "start": 10,
+      "end": 56,
+      "claim": "Tool LLM/Agent arguments resolve caller context/function-call provenance, enabling child-parent messaging without forgeable sender argument."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/dagger/core/schema/agent.go",
+      "start": 62,
+      "end": 144,
+      "claim": "Public send/message/pause/resume/wait/notify/stop/reseed methods wire actual lifecycle and explicit reply refs."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/dagger/core/container_exec.go",
+      "start": 1283,
+      "end": 1338,
+      "claim": "withExec creates lazy joint FS/exec metadata/mount outputs, evaluated through engine cache; code action is container execution not permanent interpreter heap."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/dagger/core/schema/container.go",
+      "start": 1680,
+      "end": 1743,
+      "claim": "Public exec inputs check stdin conflict, clone container, dispatch owned WithExec; stdout evaluation materializes execution metadata."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/dagger/core/service.go",
+      "start": 510,
+      "end": 576,
+      "claim": "Service dispatch owns container/tunnel/reverse-tunnel startup and attaches cached container under client session; separate from external resource ownership."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/dagger/core/schema/service.go",
+      "start": 126,
+      "end": 145,
+      "claim": "Public imperative start/up/stop are uncached; start health check, host tunnel and kill-vs-grace semantics are distinct."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/dagger/core/mcp.go",
+      "start": 1800,
+      "end": 1845,
+      "claim": "Tool result safety cap drops middle/long lines; source explicitly says raw return value was never persisted elsewhere, unlike captured logs."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/dagger/core/mcp.go",
+      "start": 2729,
+      "end": 2753,
+      "claim": "LoadTrace imports authenticated historical trace for inspection, without executing recipes or restoring agents; read-log IDs returned."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/dagger/core/mcp.go",
+      "start": 3217,
+      "end": 3294,
+      "claim": "ReadTrace inspect/timings/report and FindSpans query session trace; tool reports are filtered/bounded projections."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/dagger/core/llm.go",
+      "start": 2968,
+      "end": 3006,
+      "claim": "Git modules need allowed-model capability or operator prompt; local/nonmodule requests allowed; this is configurable authority rather than command approval on every action."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/dagger/internal/cmd/dagger/restore.go",
+      "start": 83,
+      "end": 170,
+      "claim": "Restore orders parents first, resolves anchors and subscriptions, skips unrestorable entries explicitly, creates inert runtimes before adopting/prompting."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/dagger/internal/cmd/dagger/restore_archive.go",
+      "start": 21,
+      "end": 89,
+      "claim": "Archive roster selected from sealed witnessed revisions and fixed timestamp/high-water cut; missing implementation evidence is not reconstructed by guesses."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/dagger/engine/archive/verify.go",
+      "start": 35,
+      "end": 75,
+      "claim": "Recipe dependency closure checked without evaluating calls; missing/cyclic dependencies fail. Closure validation is not external-effect settlement."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/dagger/core/llm_recording.go",
+      "start": 149,
+      "end": 180,
+      "claim": "Recorded provider compares model-rendered history text/roles/media identity and reports divergence; it supplies next response rather than live-provider correctness oracle."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/dagger/core/agent_telemetry.go",
+      "start": 103,
+      "end": 138,
+      "claim": "Rewind marker preserves from/to recipe digests and original trace visibility; best-effort event, not removal of old telemetry."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/dagger/core/schema/llm.go",
+      "start": 181,
+      "end": 235,
+      "claim": "Public skills/MCP/step/loop/spawn surfaces; restoring explicit handles refuses RUNNING/WAITING_INPUT because old process died."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/dagger/core/agent_reseed_test.go",
+      "focus": "paused-drain race and suspended-turn abandonment",
+      "oracle": "Exact old snapshot and unresolved message preserved on reject; after drain ends replacement adopted and consumed message gets rewind error.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/dagger/core/agent_rewind_ctx_test.go",
+      "focus": "rewind telemetry context",
+      "oracle": "SpanRecorder asserts one exported rewind span and exact agent ID; proves event export under mock tracer, not archive retention.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/dagger/engine/archive/verify_test.go",
+      "focus": "missing/cyclic recipes and truncated bootstrap",
+      "oracle": "Exact closure length and errors; truncated stream invokes zero partial callbacks. No recipes run in the oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/dagger/internal/cmd/dagger/restore_test.go",
+      "focus": "restore ordering and partial failures",
+      "oracle": "Fake destination exact call sequence requires all rehydration before address/adopt; named unrestorable entries skipped. Does not prove runtime external effects survive.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/dagger/core/llm_recording_test.go",
+      "focus": "tool-result telemetry",
+      "oracle": "Exact authoritative patch payload/content type in log records; recorded-provider display tests preserve production nesting, not raw unbounded external return archive.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual tools can redefine the next conversation/program; identity-preserving reseed has race checks.",
+    "Addressable peer agents with correlated replies and wait-cycle refusal closely match sophisticated collaboration needs.",
+    "Trace-native query and inert archive restore make continuity inspectable."
+  ],
+  "limits": [
+    "Go engine is a studied reference, not an architecture choice.",
+    "Raw oversized tool result originals are not retained; cache/recipe closure does not settle external effects.",
+    "Experimental session-agent restore is not compiled refit or ongoing provider/process migration."
+  ],
+  "arconaut_questions": [
+    "Can continuation-as-return-value make arbitrary turn programs model-ergonomic without monolithic policy?",
+    "What changes from step-boundary Dagger activation to the operator-selected default turn/workflow conclusion?",
+    "How should independent shared services be addressed without importing engine service governance?",
+    "Can every tool/provider original survive separately from bounded context and rendered telemetry?"
+  ]
+}

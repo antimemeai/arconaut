@@ -1,0 +1,528 @@
+{
+  "id": "jido-ai",
+  "kind": "AI integration and programmable ReAct runtime",
+  "runtime": {
+    "languages": [
+      "Elixir"
+    ],
+    "execution": "Task-coordinated ReAct runner or Jido actor strategy; ReqLLM provider dependency, typed action modules, configurable concurrent tools.",
+    "service_boundary": "Owns request/reasoning state and local retrieval memory, consumes provider/action/service dependencies; independent external kernel/DB lifecycle remains outside."
+  },
+  "summary": "Composable model request transforms, tool interceptors, steering and signed caller-owned continuation tokens; logical restore explicitly loses active process handles.",
+  "inspection": {
+    "files": [
+      "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "quarantine/jido-ai/lib/jido_ai/turn.ex",
+      "quarantine/jido-ai/lib/jido_ai/tool_interceptor.ex",
+      "quarantine/jido-ai/lib/jido_ai/agent.ex",
+      "quarantine/jido-ai/lib/jido_ai/reasoning/react/token.ex",
+      "quarantine/jido-ai/lib/jido_ai/checkpoint.ex",
+      "quarantine/jido-ai/lib/jido_ai/retrieval/store.ex",
+      "quarantine/jido-ai/lib/jido_ai/observe/sanitize.ex",
+      "quarantine/jido-ai/test/jido_ai/checkpoint_test.exs",
+      "quarantine/jido-ai/test/jido_ai/react/token_test.exs",
+      "quarantine/jido-ai/test/jido_ai/integration/react_steering_integration_test.exs",
+      "quarantine/jido-ai/lib/jido_ai/test.ex"
+    ],
+    "scope": "request/stream loop, turn execution/tool batches, checkpoints/tokens, request transform/hooks, steering, retrieval and observable-event sanitization, direct test oracles",
+    "limits": "ReqLLM/Jido.Action dependencies not populated here; no live model calls; no general automatic compaction/rebuild protocol established."
+  },
+  "actions": [
+    {
+      "name": "Agent.ask / ask_stream / ask_sync / await",
+      "surface": "operator/application API",
+      "input": "actor PID, query, per-request options",
+      "output": "request ID/handle, event stream or final result/error",
+      "lifecycle": "task/actor-backed model-tool loop; asynchronous handle tracked to terminal",
+      "authority": "application owns provider credentials and exposed action roster",
+      "evidence": [
+        "e1",
+        "e2",
+        "e7"
+      ]
+    },
+    {
+      "name": "Turn.execute / execute_module",
+      "surface": "application/model dispatch primitive",
+      "input": "tool name/module, params, context, timeout and action map",
+      "output": "canonical result/error/effects",
+      "lifecycle": "await action; agent callbacks apply only in managed runtime, standalone bypass explicit",
+      "authority": "advertised typed action module and application context",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    },
+    {
+      "name": "request_transformer.transform_request",
+      "surface": "program hook",
+      "input": "request/state/config/runtime context",
+      "output": "validated effective model/messages/tools/options or error",
+      "lifecycle": "each model step; transformer participates in token fingerprint",
+      "authority": "authored module can redefine request; no implicit model permission needed",
+      "evidence": [
+        "e6",
+        "e16"
+      ]
+    },
+    {
+      "name": "before_tool_call / after_tool_call",
+      "surface": "program hooks",
+      "input": "resolved tool identity+arguments/context or final retried result",
+      "output": "changed arguments, interrupt/error, changed result/effects",
+      "lifecycle": "before validation/retries; after once final result; standalone bypasses callbacks",
+      "authority": "application agent module/effect policy; identity immutable",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "steer / inject / cancel",
+      "surface": "operator/program/inter-agent API",
+      "input": "active actor/request ID, content/source/refs or reason",
+      "output": "accepted queue/error; injected event/canceled result",
+      "lifecycle": "steering drained at boundary; undrained best-effort input may drop; cancellation cooperative",
+      "authority": "expected request ID/source and application actor access",
+      "evidence": [
+        "e7",
+        "e8",
+        "e14"
+      ]
+    },
+    {
+      "name": "ReAct.stream_from_state / rt2 Token.issue/decode_state",
+      "surface": "application continuation API",
+      "input": "logical state/query/config, signed token",
+      "output": "streamed continuation/state or signature/expiry/config error",
+      "lifecycle": "after model/tools/terminal checkpoints; does not migrate active tasks",
+      "authority": "token secret and matching config fingerprint",
+      "evidence": [
+        "e1",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "Retrieval.Store.upsert / recall / clear",
+      "surface": "application primitive",
+      "input": "namespace/id/text/metadata/query/top_k",
+      "output": "stored memory or token-overlap-ranked results/deletion count",
+      "lifecycle": "in-process ETS lifetime; no external DB lease implied",
+      "authority": "application namespace policy",
+      "evidence": [
+        "e12"
+      ]
+    },
+    {
+      "name": "AI agent checkpoint/restore sanitizer",
+      "surface": "storage integration",
+      "input": "agent state containing requests/strategy",
+      "output": "serializable state with interrupted stream error and idle strategy",
+      "lifecycle": "drops live handles; new runtime after restore",
+      "authority": "application storage/agent callbacks",
+      "evidence": [
+        "e11",
+        "e15"
+      ]
+    },
+    {
+      "name": "Test.expect_react script",
+      "surface": "test API",
+      "input": "user prompt, named tool calls and scripted answers",
+      "output": "deterministic provider boundary consumed by real runtime",
+      "lifecycle": "per test process tree or explicit script; no live provider",
+      "authority": "test author chooses expected sequence and must assert real output",
+      "evidence": [
+        "e18"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authored typed action modules can perform arbitrary application I/O/programs; no built-in unrestricted shell/kernel implied by tool execution.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authored typed action modules can perform arbitrary application I/O/programs; no built-in unrestricted shell/kernel implied by tool execution.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authored typed action modules can perform arbitrary application I/O/programs; no built-in unrestricted shell/kernel implied by tool execution.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Long-lived actors and checkpoint state are logical state; active worker/process handles reset explicitly, not retained interpreter heap.",
+      "evidence": [
+        "e1",
+        "e11"
+      ]
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Retrieval memory is namespace ETS with token-overlap recall; no shared durable service standing DB contract from this store.",
+      "evidence": [
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Reasoning strategies, per-turn request transforms and bounded concurrent action execution/interceptors are actual programmable orchestration.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Effective model can change in per-turn transformer; separate actor configurations/strategies can compose models through Jido runtime.",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inter-agent inject is a wired same-run input primitive; Jido actor messaging supplies peers, but a full live multi-model room/roster is application composition.",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Monitored runner tasks and bounded concurrent tools with original order results; timeouts/retries bound rounds, not remote transaction settlement.",
+      "evidence": [
+        "e1",
+        "e4"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Request-scoped cancel and steer/inject are real; steering can be dropped before drain and cancellation checks do not undo or universally stop external action effects.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e14"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Request transforms control model/messages/tools/options; agent before/after tool callbacks control arguments/results/effects. Identity restrictions and standalone bypass are explicit.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Transformer can replace model messages; inspected core does not supply managed summarization with original archive/semantic fidelity oracle.",
+      "evidence": [
+        "e6",
+        "e13"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller-owned continuation state and request message transform can rebuild context; redacted/truncated telemetry alone cannot restore lost originals.",
+      "evidence": [
+        "e6",
+        "e9",
+        "e13"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Identified sequence events/checkpoints and context capture are useful, but sanitization/redaction/truncation and configured delta capture prevent all-byte audit claim.",
+      "evidence": [
+        "e10",
+        "e13",
+        "e14"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Consumer receives identified events/checkpoint tokens; telemetry/result inspection external composition, not queryable all-original core DB.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e13"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-turn transformer redefines effective request; checkpoint token fingerprint rejects changed model/transformer config rather than silently accepting arbitrary hot program replacement.",
+      "evidence": [
+        "e6",
+        "e9",
+        "e16"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Signed tokens support caller-owned completed-boundary continuation; logical actor checkpoint removes live worker/stream handles and interrupted requests fail. No effect-settled refit/outpost.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11",
+        "e15"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "ReqLLM provider stream/generate integration and authored action service calls; ownership stays with independently configured service.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Transformers/actions/test scripts can support controlled experiments; no model-governed hypothesis/promotion loop in inspected runtime.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e18"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Structured interceptor/provider/runtime errors and attributed events useful for complaints, but no full-state externally tracked bead action traced.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e8",
+        "e10"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Named action roster, preflight, effect/interceptor policies and signed/fingerprinted continuation token; not mandatory per-command operator approval.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e9"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scripted provider and direct checkpoint/signature/steering assertions test actual state transitions with mocked model boundary; not semantic model or external side-effect oracle.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Event IDs/monotonic seq; ordered concurrent tool output and heartbeat sequence adoption; checkpoint emitted before terminal to avoid lost final state.",
+      "evidence": [
+        "e4",
+        "e8",
+        "e10"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 45,
+      "end": 108,
+      "claim": "Runner starts monitored task and streamed events; stream_from_state appends new input to checkpoint state."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 491,
+      "end": 530,
+      "claim": "Stream/generate provider dispatch via ReqLLM; scripted testing boundary uses same consumption path."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/jido-ai/lib/jido_ai/turn.ex",
+      "start": 235,
+      "end": 282,
+      "claim": "Tool name map resolves authored action module, timeout/context/options passed to execution; missing tool produces structured error."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 706,
+      "end": 787,
+      "claim": "Tool preflight, active tool map, ordered bounded concurrent Task.async_stream with retries; heartbeat sequence range adopted before completion events."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/jido-ai/lib/jido_ai/tool_interceptor.ex",
+      "start": 1,
+      "end": 86,
+      "claim": "Before interceptor can change arguments or interrupt, not action identity; after interceptor changes result/effects once after retries; standalone Turn execution does not use agent callbacks."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 338,
+      "end": 382,
+      "claim": "Per-turn request transformer overrides messages/tools/model/options and validates effective request; errors/exceptions structured."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/jido-ai/lib/jido_ai/agent.ex",
+      "start": 845,
+      "end": 902,
+      "claim": "Public cancel emits request-scoped signal; steer/inject target active run with best-effort queue and explicitly drop if never drained before termination."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 1752,
+      "end": 1802,
+      "claim": "Drain injects attributed input into same state/context and emits input_injected; incomplete blank terminal responses rejected."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/token.ex",
+      "start": 1,
+      "end": 91,
+      "claim": "Signed rt2 token includes run/request IDs, minimal state, config fingerprint, issuance/expiration; validates before continuation and can mark checkpoint canceled."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 1245,
+      "end": 1275,
+      "claim": "Checkpoint issued after model/tools/terminal; terminal token emitted before terminal event and sink closure. Events monotonic seq/run/request/iteration identities."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/jido-ai/lib/jido_ai/checkpoint.ex",
+      "start": 1,
+      "end": 84,
+      "claim": "Logical agent checkpoints remove request stream sinks/worker processes and reset interrupted runs to idle; interrupted streamed request recorded failed."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/jido-ai/lib/jido_ai/retrieval/store.ex",
+      "start": 1,
+      "end": 89,
+      "claim": "Local namespace ETS memory upsert/recall/clear; retrieval is token-overlap ranking, not external durable vector/SQL service."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/jido-ai/lib/jido_ai/observe/sanitize.ex",
+      "start": 160,
+      "end": 189,
+      "claim": "Observation applies sensitive redaction, payload summaries and truncation markers; telemetry projection is not a complete original archive."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/jido-ai/lib/jido_ai/reasoning/react/runner.ex",
+      "start": 1700,
+      "end": 1718,
+      "claim": "Tool args can be redacted and cancel is cooperative check of request ref; stopping underlying external action effect requires its implementation."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/jido-ai/test/jido_ai/checkpoint_test.exs",
+      "start": 82,
+      "end": 111,
+      "claim": "Direct oracle asserts failed interrupted stream, no process-local handles, term serialization and restored idle state with new task supervisor."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/jido-ai/test/jido_ai/react/token_test.exs",
+      "start": 42,
+      "end": 82,
+      "claim": "Token tampering/model/request-transformer mismatch rejected; config fingerprint deliberately constrains reuse under changed program."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/jido-ai/test/jido_ai/integration/react_steering_integration_test.exs",
+      "start": 60,
+      "end": 95,
+      "claim": "Mock provider observes next request containing Q1/Q2 and prior A1; original request yields A2, idle inject rejected."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/jido-ai/lib/jido_ai/test.ex",
+      "start": 1,
+      "end": 73,
+      "claim": "Public deterministic model scripts exercise actual ReAct/tools/event projection without claiming live model correctness."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/jido-ai/test/jido_ai/checkpoint_test.exs",
+      "focus": "logical vs process continuity",
+      "oracle": "Exact stream_interrupted/failed/idle states, no runtime handles and roundtrip serializable payload; old active request does not magically resume.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/jido-ai/test/jido_ai/react/token_test.exs",
+      "focus": "continuation authenticity/config drift",
+      "oracle": "Tampered signature and changed model/transformer produce exact errors; no proof of physical external task settlement.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/jido-ai/test/jido_ai/integration/react_steering_integration_test.exs",
+      "focus": "same-request steering",
+      "oracle": "Stubbed provider captures exact user/assistant messages on second call; original handle resolves A2 and idle inject rejects.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Request/response/tool transform program hooks are substantial agency surfaces.",
+    "Explicitly sanitizes dead process handles instead of fabricating active continuation.",
+    "Signed caller-owned tokens and monotonic boundary events make continuity contract testable."
+  ],
+  "limits": [
+    "Local ETS retrieval is not shared durable computation.",
+    "Redacted bounded telemetry cannot serve complete original audit.",
+    "Config mismatch limits token reuse across program refit; cooperative cancellation and retries do not settle external effects."
+  ],
+  "arconaut_questions": [
+    "How can a refit deliberately migrate/fingerprint logical state rather than merely reject changed config?",
+    "How should model-program hooks be authored/reloaded while retaining original inputs/results?",
+    "Should accepted steering return a durable delivery handle to avoid undrained input loss?"
+  ]
+}

@@ -1,0 +1,492 @@
+{
+  "id": "restate",
+  "kind": "distributed durable execution service/runtime",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Ingress/API, replicated log/partition processors, durable journal/state/outbox, service invoker HTTP protocol and SQL introspection. User code runs separately in SDK service deployments.",
+    "service_boundary": "Owns scheduling/storage/replay/service control plane. Arconaut would consume this boundary, not govern its shared fleet. User service/provider/OS effects remain external."
+  },
+  "summary": "durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery",
+  "inspection": {
+    "files": [
+      "quarantine/restate/crates/ingress-http/src/handler/service_handler.rs",
+      "quarantine/restate/crates/invoker-impl/src/invocation_task/service_protocol_runner_v4.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/entries/mod.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/entries/set_state_command.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/entries/call_commands.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_pause.rs",
+      "quarantine/restate/crates/worker/src/partition/leadership/leader_state.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/cancel.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_resume.rs",
+      "quarantine/restate/crates/admin/src/rest_api/query.rs",
+      "quarantine/restate/crates/storage-query-datafusion/src/journal/schema.rs",
+      "quarantine/restate/crates/storage-query-datafusion/src/journal_events/schema.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/purge_journal.rs",
+      "quarantine/restate/crates/worker/src/partition/state_machine/tests/idempotency.rs",
+      "quarantine/restate/crates/worker/src/partition/leadership/mod.rs"
+    ],
+    "scope": "ingress call/send/visibility, v4 invoker journal replay/completion proposal, state-machine journal/state/outbox, pause/cancel/resume/deployment fencing, query schema/retention and direct lifecycle/idempotency/fencing tests",
+    "limits": "Not a full replication/fleet correctness audit; no server launch/test occurred. External SDK closures and semantic replay compatibility are not certified by protocol compatibility."
+  },
+  "actions": [
+    {
+      "name": "Ingress service/object/workflow call and send",
+      "surface": "Public HTTP/service routing",
+      "input": "Target handler/key, body/headers/idempotency and optional send delay",
+      "output": "Call result or202 invocation ID/execution time/Accepted|PreviouslyAccepted",
+      "lifecycle": "Server invocation outlives submitting client; call delay disallowed; sends recorded/scheduled",
+      "authority": "Public handler schema at ingress; service fleet owns work",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "SDK v4 run completion/journal replay",
+      "surface": "Durable service protocol",
+      "input": "Invocation attempt, stored journal/state and SDK serialized result proposal",
+      "output": "Replay frames, completion notifications and exact journal entries",
+      "lifecycle": "Fresh service attempt replays recorded results; arbitrary external action precedes settlement",
+      "authority": "Registered SDK deployment, VM protocol and partition service",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "State and CallCommand/OneWayCallCommand",
+      "surface": "Durable state/RPC action dispatch",
+      "input": "Keyed state entry or target/payload/retention/idempotency",
+      "output": "Stored state, outbox invocation and correlated invocation-ID result",
+      "lifecycle": "Partition state-machine scope; external systems beyond Restate are not in transaction",
+      "authority": "Service handler context; runtime owns state/log/outbox",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "PauseInvocation / ResumeInvocation with deployment patch",
+      "surface": "Administrative invocation lifecycle",
+      "input": "Invocation ID; optional pinned/latest deployment and run_at",
+      "output": "Accepted/Paused/NotRunning or resumed invocation/error",
+      "lifecycle": "Journal retained; abort current attempt, fence stragglers, replay later; protocol compatibility only",
+      "authority": "Admin/server control, not consumer-wide service shutdown",
+      "evidence": [
+        "e8",
+        "e9",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "CancelInvocation",
+      "surface": "Durable cancellation control",
+      "input": "Invocation ID",
+      "output": "Appended for active waits; Done for queued/scheduled; AlreadyCompleted/NotFound",
+      "lifecycle": "Active cancellation is a durable signal, not guarantee all external activity stopped",
+      "authority": "Runtime admin/SDK call authority",
+      "evidence": [
+        "e10"
+      ]
+    },
+    {
+      "name": "POST /query",
+      "surface": "SQL introspection API",
+      "input": "Query string and Accept JSON/Arrow",
+      "output": "Streaming rows, raw journal bytes/decoded entries/events/state views",
+      "lifecycle": "Retained platform data only; availability/rate limits; journal purge reduces history",
+      "authority": "Admin endpoint/program access",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "PurgeJournal completed invocation",
+      "surface": "Retention/admin operation",
+      "input": "Completed invocation ID",
+      "output": "Dropped journal, retained completion with zero journal length",
+      "lifecycle": "Active invocation rejected; irreversible original journal deletion by retention/admin",
+      "authority": "Service administrator/governor",
+      "evidence": [
+        "e16"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Keyed service state plus SQL introspection of system/service records; is this service’s state platform, not a resident agent DB.",
+      "evidence": [
+        "e6",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "External SDK programs consume durable state/RPC/replay/wait primitives; runtime does not supply a model agent turn program.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e7"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Call/send invocations with separate IDs, outbox and deferred scheduling compose concurrent service work.",
+      "evidence": [
+        "e2",
+        "e7"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Pause/abort with internal fencing and explicit cancellation signals; Appended is not Done, and runtime cannot prove arbitrary external action physically settled.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Raw journal command/completion plus ordered lifecycle events retained/queryable; closure-internal IO/provider envelopes/OS effects outside protocol are not captured; completed journal can be purged.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e14",
+        "e15",
+        "e16"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "POST/query streams JSON/Arrow over retained journal/state; raw/version2 decoded entries and event index link are actual query schema.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Explicit resume can patch pinned deployment at log position after protocol validation. It does not hot-patch resident stacks or validate changed program’s semantic replay compatibility.",
+      "evidence": [
+        "e11",
+        "e12"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fresh service attempt replays journal and explicit resume can repoint deployment; no harness/model context rebuild/outpost transfer and no atomic external-effect guarantee.",
+      "evidence": [
+        "e3",
+        "e11",
+        "e12"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Runtime invokes separately deployed SDK endpoints with journal/state start and result protocol; this is a service governor external to an Arconaut consumer.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this distributed durable execution service/runtime role: the reference supplies durable invocation, state, RPC/wait and administrative pause/replay/deployment/query machinery rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Public ingress rejects private handlers; admin lifecycle/query controls operate platform state. No model/operator approval policy or permissions for arbitrary handler OS effects supplied.",
+      "evidence": [
+        "e1",
+        "e13",
+        "e10"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Direct state-machine and committed-log oracles test pause/abort/state, protocol replacement rejection, literal retained output and stale-attempt fencing. No claim full distributed or arbitrary external-effect conformance.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Exact journal index, record-created append timestamp and after-journal event index provide platform causal order; external effects/time are outside captured protocol.",
+      "evidence": [
+        "e5",
+        "e14",
+        "e15"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/restate/crates/ingress-http/src/handler/service_handler.rs",
+      "start": 130,
+      "end": 154,
+      "claim": "Latest target resolution rejects private handler at public ingress."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/restate/crates/ingress-http/src/handler/service_handler.rs",
+      "start": 284,
+      "end": 368,
+      "claim": "Call versus send routing, retained ID/idempotency, delayed schedule and202 acceptance/prior acceptance response."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/restate/crates/invoker-impl/src/invocation_task/service_protocol_runner_v4.rs",
+      "start": 307,
+      "end": 375,
+      "claim": "Attempt starts with state/seed/journal metadata then streams stored journal replay from transaction."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/restate/crates/invoker-impl/src/invocation_task/service_protocol_runner_v4.rs",
+      "start": 998,
+      "end": 1037,
+      "claim": "SDK run result decoded into raw notification proposal; this follows external closure execution, not atomic third-party settlement."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/entries/mod.rs",
+      "start": 355,
+      "end": 414,
+      "claim": "Apply notification, append raw journal at exact index/deterministic record timestamp, update invocation status."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/entries/set_state_command.rs",
+      "start": 35,
+      "end": 52,
+      "claim": "User state mutation written through same state-machine context for keyed service target."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/entries/call_commands.rs",
+      "start": 96,
+      "end": 151,
+      "claim": "Durable call request enqueued into outbox, invocation-ID completion correlated back to caller."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_pause.rs",
+      "start": 27,
+      "end": 97,
+      "claim": "Manual pause preserves journal, aborts running attempt; suspended pause drops wait set for replay recomputation."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/restate/crates/worker/src/partition/leadership/leader_state.rs",
+      "start": 840,
+      "end": 866,
+      "claim": "Write-time current-attempt fencing token prevents stale effects entering durable log, not external effect settlement."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/cancel.rs",
+      "start": 65,
+      "end": 115,
+      "claim": "Cancel signal appended for invoked/suspended/paused; queued/scheduled terminated; response distinguishes Appended/Done/completed/missing."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_resume.rs",
+      "start": 68,
+      "end": 101,
+      "claim": "Replacement deployment must exist/support pinned protocol version; semantic handler program equivalence is not checked here."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_resume.rs",
+      "start": 187,
+      "end": 227,
+      "claim": "Deployment patch resolved at command log position, pinned ID updated and paused/suspended invocation resumed."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/restate/crates/admin/src/rest_api/query.rs",
+      "start": 103,
+      "end": 166,
+      "claim": "POST/query executes SQL, JSON or Arrow streaming results; availability/errors/rate limit handled."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/restate/crates/storage-query-datafusion/src/journal/schema.rs",
+      "start": 19,
+      "end": 72,
+      "claim": "Journal query exposes indices/targets/raw binary/version2 JSON/append timestamps."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/restate/crates/storage-query-datafusion/src/journal_events/schema.rs",
+      "start": 17,
+      "end": 35,
+      "claim": "Events carry invocation ID, after-journal index, timestamp/type/event JSON."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/purge_journal.rs",
+      "start": 39,
+      "end": 83,
+      "claim": "Only completed invocation journal can be dropped; result status survives with length/commands reset."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_pause.rs",
+      "start": 129,
+      "end": 159,
+      "claim": "Pause state-machine test checks Accepted+abort action and stored Paused status."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_resume.rs",
+      "start": 355,
+      "end": 415,
+      "claim": "Literal protocol-incompatible/unknown/unpinned replacement errors."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/tests/idempotency.rs",
+      "start": 142,
+      "end": 165,
+      "claim": "Completed idempotent call produces stored literal123 response; this range does not independently count actual external effects."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/restate/crates/worker/src/partition/leadership/mod.rs",
+      "start": 1259,
+      "end": 1343,
+      "claim": "Controlled attempts/pause/stragglers test reads committed log and asserts only current attempt effects appended."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_pause.rs",
+      "focus": "Pause transitions and running-attempt abort",
+      "oracle": "State-machine environment asserts exact reply/action and persistent Paused state; does not assert third-party OS work ended.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/lifecycle/manual_resume.rs",
+      "focus": "Deployment patch compatibility",
+      "oracle": "Literal protocol-incompatible/unknown/unpinned errors; protocol oracle does not validate changed workflow semantic replay.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/restate/crates/worker/src/partition/state_machine/tests/idempotency.rs",
+      "focus": "Stored result on completed keyed invocation",
+      "oracle": "Known stored123 result expected for repeated idempotency key; scoped to state machine, not external payment/model request exactly once.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/restate/crates/worker/src/partition/leadership/mod.rs",
+      "focus": "Write-time stale attempt fencing",
+      "oracle": "Distinguishable current/stale effects with pause/resume; reads committed log and asserts only accepted current effects. Direct fault oracle, not physical external cancellation.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Durable replay, result identity, state/outbox and explicit invocation lifecycle are separated in source.",
+    "Current-attempt fencing tested by reading actual committed log against distinguishable stale/current effects.",
+    "Query exposes raw journal plus causal event links rather than only aggregate logs."
+  ],
+  "limits": [
+    "External closure/provider/OS effects are not atomically settled or fully audited by durable protocol.",
+    "Deployment protocol compatibility does not prove semantic journal replay compatibility.",
+    "Cancellation appended/pause accepted is not physical external quiescence; retained journal can be purged."
+  ],
+  "arconaut_questions": [
+    "Which client operations can consume durable service identity without transferring shared governor responsibilities into Arconaut?",
+    "What replay compatibility, idempotency/reconciliation and outstanding-effect accounting must compiled refit enforce beyond protocol versions?",
+    "Can original core audit retain consumed service journal references even after external retention deletes them?"
+  ]
+}

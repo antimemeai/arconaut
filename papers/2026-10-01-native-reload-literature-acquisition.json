@@ -1,0 +1,58 @@
+{
+  "recorded_at": "2026-10-01T07:20:29.668936+00:00",
+  "materials": [
+    {
+      "name": "godot-gdextension-manager",
+      "url": "https://docs.godotengine.org/en/stable/classes/class_gdextensionmanager.html",
+      "resolved_url": "https://docs.godotengine.org/en/stable/classes/class_gdextensionmanager.html",
+      "local_path": "papers/native-reload/godot-gdextension-manager.html",
+      "bytes": 1304147,
+      "sha256": "1729440be443a8a091c649112f67eb696ae66707eebb0d965d3dd67d12436d9d",
+      "status": "acquired"
+    },
+    {
+      "name": "jenova-hot-reload",
+      "url": "https://jenova-framework.github.io/docs/pages/Advanced/Hot-Reload/",
+      "resolved_url": "https://jenova-framework.github.io/docs/pages/Advanced/Hot-Reload/",
+      "local_path": "papers/native-reload/jenova-hot-reload.html",
+      "bytes": 62849,
+      "sha256": "cee6a78a4ae828874c674d48641a020324ff972597944053ebd2517a702962fe",
+      "status": "acquired"
+    },
+    {
+      "name": "jenova-getting-started",
+      "url": "https://jenova-framework.github.io/docs/pages/Getting-Started/",
+      "resolved_url": "https://jenova-framework.github.io/docs/pages/Getting-Started/",
+      "local_path": "papers/native-reload/jenova-getting-started.html",
+      "bytes": 57250,
+      "sha256": "7a7f004385b348a7df576882ec1ceedfe33eb0cd919671e711257551bd02fb9e",
+      "status": "acquired"
+    },
+    {
+      "name": "GameAIPro chapter 15",
+      "authors": [
+        "Doug Binks",
+        "Matthew Jack",
+        "Will Wilson"
+      ],
+      "url": "https://www.gameaipro.com/GameAIPro/GameAIPro_Chapter15_Runtime_Compiled_C%2B%2B_for_Rapid_AI_Development.pdf",
+      "download_url": "https://gameaipro.com/GameAIPro/GameAIPro_Chapter15_Runtime_Compiled_C%2B%2B_for_Rapid_AI_Development.pdf",
+      "local_path": "papers/native-reload/gameaipro-ch15-runtime-compiled-cpp.pdf",
+      "bytes": 885248,
+      "sha256": "9e81186e9b788c5df8f63481fa1cb228f9dd493a8a339c28c46aebe8d32816de",
+      "status": "acquired",
+      "note": "www endpoint connection reset; same publisher without www succeeded"
+    },
+    {
+      "name": "jenova-readme",
+      "repository": "https://github.com/Jenova-Framework/Jenova-Runtime",
+      "revision": "084e02830d07e6d3dfdb309dc9df9d3a165b9056",
+      "url": "https://raw.githubusercontent.com/Jenova-Framework/Jenova-Runtime/084e02830d07e6d3dfdb309dc9df9d3a165b9056/ReadMe.md",
+      "local_path": "papers/native-reload/jenova-readme.md",
+      "bytes": 5176,
+      "sha256": "42560cfb238d6aeb1021e73ee80e621ff94907f2e825278d4e894cfcdee6d541",
+      "status": "acquired",
+      "note": "main/README.md returned404; actual default branch/root readme resolved from public GitHub metadata"
+    }
+  ]
+}

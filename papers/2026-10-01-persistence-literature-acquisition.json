@@ -1,0 +1,15 @@
+{
+  "papers": [
+    {
+      "date": "2026-10-01",
+      "title": "All File Systems Are Not Created Equal: On the Complexity of Crafting Crash-Consistent Applications",
+      "publication": "OSDI 2014",
+      "source": "https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai",
+      "download_url": "https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-pillai.pdf",
+      "local_path": "papers/pdfs/osdi14-paper-pillai.pdf",
+      "sha256": "44dd92938871b09d3233a09ca1234313e920c451863eb85e5cc719b61ccfc18b",
+      "bytes": 453389,
+      "reading_scope": "Introduction; persistence properties and ALICE/update protocol method (sections 2-3); not a validation of current APFS or runtime qualification"
+    }
+  ]
+}

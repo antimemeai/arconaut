@@ -1,0 +1,580 @@
+{
+  "recorded_at": "2026-10-01T03:20:03.478430+00:00",
+  "kind": "bounded scientific-workbench source and public material acquisition",
+  "sources": [
+    {
+      "name": "k-dense-byok",
+      "source": "https://github.com/K-Dense-AI/k-dense-byok",
+      "revision": "ef60be84a27bd2096851ab307514ac3de734214f",
+      "destination": "quarantine/k-dense-byok",
+      "archive": "../quarantine_proj/archives/arconaut-science-workbenches-2026-09-30/k-dense-byok/k-dense-byok-ef60be84a27b-public-reference.zip",
+      "archive_root": "k-dense-byok",
+      "sha256": "4a0131678e3f5bc25b80b29a3f5f1d80a8708213e2da5612bb50ba47dc02be1b",
+      "archive_bytes": 10013403,
+      "retained_files": 774,
+      "retained_bytes": 16486200,
+      "source_files": 766,
+      "source_bytes": 15745826,
+      "omissions": [],
+      "restore_command": "python3 scripts/ingest_zip.py ../quarantine_proj/archives/arconaut-science-workbenches-2026-09-30/k-dense-byok/k-dense-byok-ef60be84a27b-public-reference.zip quarantine/k-dense-byok --root k-dense-byok",
+      "restore_verification": "Complete bundle restored through current importer into absent isolated temporary destination; directly compared exact regular-file set, every byte, and executable bits. Temporary restoration removed.",
+      "upstream_archive": {
+        "revision": "ef60be84a27bd2096851ab307514ac3de734214f",
+        "archive_root": "k-dense-byok-ef60be84a27bd2096851ab307514ac3de734214f",
+        "destination": "quarantine/k-dense-byok",
+        "archive": "../quarantine_proj/archives/arconaut-science-workbenches-2026-09-30/k-dense-byok/k-dense-byok-ef60be84a27b-upstream.zip",
+        "sha256": "d971e1e9764cb0224bc1fd871e9250d0dc1ee5c82412fe8e92fb047ab6c7a63f",
+        "archive_bytes": 9934547,
+        "retained_files": 766,
+        "retained_bytes": 15745826,
+        "omissions": [],
+        "import_verification": "Exact retained regular-file set, every byte, and executable bit compared directly with the intact codeload ZIP."
+      },
+      "provenance": {
+        "revision": "ef60be84a27bd2096851ab307514ac3de734214f",
+        "records": [
+          {
+            "slug": "upstream-source",
+            "url": "https://codeload.github.com/K-Dense-AI/k-dense-byok/zip/ef60be84a27bd2096851ab307514ac3de734214f",
+            "retrieved_at": "2026-10-01T03:16:23.149202+00:00",
+            "final_url": "https://codeload.github.com/K-Dense-AI/k-dense-byok/zip/ef60be84a27bd2096851ab307514ac3de734214f",
+            "status": 200,
+            "headers": [
+              [
+                "Access-Control-Allow-Origin",
+                "https://render.githubusercontent.com"
+              ],
+              [
+                "content-disposition",
+                "attachment; filename=k-dense-byok-ef60be84a27bd2096851ab307514ac3de734214f.zip"
+              ],
+              [
+                "Content-Security-Policy",
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+              ],
+              [
+                "Content-Type",
+                "application/zip"
+              ],
+              [
+                "cross-origin-resource-policy",
+                "cross-origin"
+              ],
+              [
+                "ETag",
+                "\"2652ef9da28b8b3443c78d9006b09d4695c282e2c5d6c7a11bc125a129777393\""
+              ],
+              [
+                "Strict-Transport-Security",
+                "max-age=31536000"
+              ],
+              [
+                "Vary",
+                "Authorization,Accept-Encoding"
+              ],
+              [
+                "X-Content-Type-Options",
+                "nosniff"
+              ],
+              [
+                "X-Frame-Options",
+                "deny"
+              ],
+              [
+                "X-XSS-Protection",
+                "1; mode=block"
+              ],
+              [
+                "Date",
+                "Thu, 01 Oct 2026 03:16:24 GMT"
+              ],
+              [
+                "Transfer-Encoding",
+                "chunked"
+              ],
+              [
+                "X-GitHub-Request-Id",
+                "C95A:5BE83:1B5446:2B9BC0:6ABDD088"
+              ],
+              [
+                "x-github-edge-region",
+                "iad"
+              ],
+              [
+                "connection",
+                "close"
+              ]
+            ],
+            "sha256": "d971e1e9764cb0224bc1fd871e9250d0dc1ee5c82412fe8e92fb047ab6c7a63f",
+            "bytes": 9934547,
+            "archive": "quarantine_proj/archives/arconaut-science-workbenches-2026-09-30/k-dense-byok/k-dense-byok-ef60be84a27b-upstream.zip"
+          },
+          {
+            "slug": "official-repository-page",
+            "url": "https://github.com/K-Dense-AI/k-dense-byok",
+            "retrieved_at": "2026-10-01T03:16:27.183738+00:00",
+            "final_url": "https://github.com/K-Dense-AI/k-dense-byok",
+            "status": 200,
+            "headers": [
+              [
+                "Date",
+                "Thu, 01 Oct 2026 03:16:27 GMT"
+              ],
+              [
+                "Content-Type",
+                "text/html; charset=utf-8"
+              ],
+              [
+                "Vary",
+                "X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, X-GitHub-Client-Version, Sec-Fetch-Site,Accept-Encoding, Accept, X-Requested-With"
+              ],
+              [
+                "ETag",
+                "W/\"e66485194c26fd57fc00eeef4bec9410\""
+              ],
+              [
+                "Cache-Control",
+                "max-age=0, private, must-revalidate"
+              ],
+              [
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubdomains; preload"
+              ],
+              [
+                "X-Frame-Options",
+                "deny"
+              ],
+              [
+                "X-Content-Type-Options",
+                "nosniff"
+              ],
+              [
+                "X-XSS-Protection",
+                "0"
+              ],
+              [
+                "Referrer-Policy",
+                "no-referrer-when-downgrade"
+              ],
+              [
+                "Content-Security-Policy",
+                "default-src 'none'; base-uri 'self'; child-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/; connect-src 'self' uploads.github.com www.githubstatus.com collector.github.com raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com github.githubassets.com objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net productionresultssa1.blob.core.windows.net productionresultssa2.blob.core.windows.net productionresultssa3.blob.core.windows.net productionresultssa4.blob.core.windows.net productionresultssa5.blob.core.windows.net productionresultssa6.blob.core.windows.net productionresultssa7.blob.core.windows.net productionresultssa8.blob.core.windows.net productionresultssa9.blob.core.windows.net productionresultssa10.blob.core.windows.net productionresultssa11.blob.core.windows.net productionresultssa12.blob.core.windows.net productionresultssa13.blob.core.windows.net productionresultssa14.blob.core.windows.net productionresultssa15.blob.core.windows.net productionresultssa16.blob.core.windows.net productionresultssa17.blob.core.windows.net productionresultssa18.blob.core.windows.net productionresultssa19.blob.core.windows.net github-production-repository-image-32fea6.s3.amazonaws.com github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com wss://production-copilot-host.webpubsub.azure.com api.github.com/cmc_internal/api/; font-src github.githubassets.com; form-action 'self' github.com gist.github.com copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors 'none'; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src 'self' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com secured-user-images.githubusercontent.com user-images.githubusercontent.com private-user-images.githubusercontent.com opengraph.githubassets.com repository-images.githubusercontent.com marketplace-screenshots.githubusercontent.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/ github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com spotlights-feed.github.com explore-feed.github.com *.googleusercontent.com objects-origin.githubusercontent.com *.githubusercontent.com; manifest-src 'self'; media-src github.com user-images.githubusercontent.com secured-user-images.githubusercontent.com private-user-images.githubusercontent.com github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com; script-src github.githubassets.com 'sha256-tSjmyPUky1KbRZ0fw9VUil3wFEbeM82rtbJDygGJAXw='; style-src 'unsafe-inline' github.githubassets.com; upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/"
+              ],
+              [
+                "Server",
+                "github.com"
+              ],
+              [
+                "Accept-Ranges",
+                "bytes"
+              ],
+              [
+                "Set-Cookie",
+                "_gh_sess=z13LC%2BoFuXW6qyrofnfjU1wQHZyWjcwp28AtAhnWyjDKaal%2FKVF3gYu18o9CNHng9hImE1MAzHT69QenYA2Twj28lK32dWNTUHNgGtgVPQyj8IVu2bUbD2xrGU%2F%2FOwCkDRHC0Mq8ZZflHGBVUeDO1YtYqEYA6ZqvvzNJjWatD0caXSiaVx9SOwY8tJiN6OcKAD8uoGijk6De2Izx6azoCO%2FKEqKtR%2Fi5dtkYA%2BJCB9%2BKQYsAKnmDPd0SmOnduDGf2tEzAYvjYDeDg5b7iSU4Tw%3D%3D--Iv2Di7RaqKKlJkAO--XNfbVP7xxcbR1vMtdJekqA%3D%3D; path=/; HttpOnly; secure; SameSite=Lax"
+              ],
+              [
+                "Set-Cookie",
+                "_octo=GH1.1.545951744.1790824587; expires=Fri, 01 Oct 2027 03:16:27 GMT; domain=.github.com; path=/; secure; SameSite=Lax"
+              ],
+              [
+                "Set-Cookie",
+                "logged_in=no; expires=Fri, 01 Oct 2027 03:16:27 GMT; domain=.github.com; path=/; HttpOnly; secure; SameSite=Lax"
+              ],
+              [
+                "X-GitHub-Request-Id",
+                "C978:1B3E81:14A3C9C:1B3EE6D:6ABDD08B"
+              ],
+              [
+                "x-github-edge-region",
+                "iad"
+              ],
+              [
+                "connection",
+                "close"
+              ],
+              [
+                "Transfer-Encoding",
+                "chunked"
+              ]
+            ],
+            "sha256": "84d7242b806ec2a2ee82edea8bd9354ecd570aa3a300316cb8734fefea56585c",
+            "bytes": 386841,
+            "path": "reference-acquisition/raw/official-repository-page.html"
+          },
+          {
+            "slug": "official-source-link-readme",
+            "url": "https://raw.githubusercontent.com/K-Dense-AI/scientific-agent-skills/main/README.md",
+            "retrieved_at": "2026-10-01T03:16:27.788678+00:00",
+            "final_url": "https://raw.githubusercontent.com/K-Dense-AI/scientific-agent-skills/main/README.md",
+            "status": 200,
+            "headers": [
+              [
+                "Connection",
+                "close"
+              ],
+              [
+                "Content-Length",
+                "82168"
+              ],
+              [
+                "Cache-Control",
+                "max-age=300"
+              ],
+              [
+                "Content-Security-Policy",
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+              ],
+              [
+                "Content-Type",
+                "text/plain; charset=utf-8"
+              ],
+              [
+                "ETag",
+                "\"38cd2a901e96edf0792f6cf527c7786fff71989e89043a6665219ebcec3036e5\""
+              ],
+              [
+                "Strict-Transport-Security",
+                "max-age=31536000"
+              ],
+              [
+                "X-Content-Type-Options",
+                "nosniff"
+              ],
+              [
+                "X-Frame-Options",
+                "deny"
+              ],
+              [
+                "X-XSS-Protection",
+                "1; mode=block"
+              ],
+              [
+                "X-GitHub-Request-Id",
+                "833A:3E78A5:2BC51E:3CC985:6ABDD08B"
+              ],
+              [
+                "x-github-edge-region",
+                "iad"
+              ],
+              [
+                "Accept-Ranges",
+                "bytes"
+              ],
+              [
+                "Date",
+                "Thu, 01 Oct 2026 03:16:27 GMT"
+              ],
+              [
+                "Via",
+                "1.1 varnish"
+              ],
+              [
+                "X-Served-By",
+                "cache-iad-kiad7000047-IAD"
+              ],
+              [
+                "X-Cache",
+                "MISS"
+              ],
+              [
+                "X-Cache-Hits",
+                "0"
+              ],
+              [
+                "X-Timer",
+                "S1790824588.873792,VS0,VE16"
+              ],
+              [
+                "Vary",
+                "Authorization,Accept-Encoding"
+              ],
+              [
+                "Access-Control-Allow-Origin",
+                "*"
+              ],
+              [
+                "Cross-Origin-Resource-Policy",
+                "cross-origin"
+              ],
+              [
+                "X-Fastly-Request-ID",
+                "d1be2cd022c2d445974a76f0a3c5087758c8e1f6"
+              ],
+              [
+                "Expires",
+                "Thu, 01 Oct 2026 03:21:27 GMT"
+              ],
+              [
+                "Source-Age",
+                "0"
+              ]
+            ],
+            "sha256": "2d65254212d4292e61559e7958d2236f45e05801c4b14bafc69dfc604bf59a1a",
+            "bytes": 82168,
+            "path": "reference-acquisition/raw/scientific-agent-skills-source-link.md"
+          },
+          {
+            "slug": "official-release-list",
+            "url": "https://api.github.com/repos/K-Dense-AI/k-dense-byok/releases?per_page=5",
+            "retrieved_at": "2026-10-01T03:16:27.918437+00:00",
+            "final_url": "https://api.github.com/repos/K-Dense-AI/k-dense-byok/releases?per_page=5",
+            "status": 200,
+            "headers": [
+              [
+                "Date",
+                "Thu, 01 Oct 2026 03:16:28 GMT"
+              ],
+              [
+                "Content-Type",
+                "application/json; charset=utf-8"
+              ],
+              [
+                "Cache-Control",
+                "public, max-age=60, s-maxage=60"
+              ],
+              [
+                "Vary",
+                "Accept,Accept-Encoding, Accept, X-Requested-With"
+              ],
+              [
+                "ETag",
+                "W/\"277e97bdbd04d41d5ac8e623203473e4e485ea2dbbca277842c190d4d6608e91\""
+              ],
+              [
+                "X-GitHub-Media-Type",
+                "github.v3; format=json"
+              ],
+              [
+                "Link",
+                "<https://api.github.com/repositories/1186701238/releases?per_page=5&page=2>; rel=\"next\", <https://api.github.com/repositories/1186701238/releases?per_page=5&page=16>; rel=\"last\""
+              ],
+              [
+                "x-github-api-version-selected",
+                "2022-11-28"
+              ],
+              [
+                "Access-Control-Expose-Headers",
+                "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning"
+              ],
+              [
+                "Access-Control-Allow-Origin",
+                "*"
+              ],
+              [
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubdomains; preload"
+              ],
+              [
+                "X-Frame-Options",
+                "deny"
+              ],
+              [
+                "X-Content-Type-Options",
+                "nosniff"
+              ],
+              [
+                "X-XSS-Protection",
+                "0"
+              ],
+              [
+                "Referrer-Policy",
+                "origin-when-cross-origin, strict-origin-when-cross-origin"
+              ],
+              [
+                "Content-Security-Policy",
+                "default-src 'none'"
+              ],
+              [
+                "Server",
+                "github.com"
+              ],
+              [
+                "Accept-Ranges",
+                "bytes"
+              ],
+              [
+                "X-RateLimit-Limit",
+                "60"
+              ],
+              [
+                "X-RateLimit-Remaining",
+                "59"
+              ],
+              [
+                "X-RateLimit-Used",
+                "1"
+              ],
+              [
+                "X-RateLimit-Resource",
+                "core"
+              ],
+              [
+                "X-RateLimit-Reset",
+                "1790828188"
+              ],
+              [
+                "Content-Length",
+                "10596"
+              ],
+              [
+                "X-GitHub-Request-Id",
+                "C97A:37935D:2816786:840E352:6ABDD08B"
+              ],
+              [
+                "x-github-edge-region",
+                "iad"
+              ],
+              [
+                "connection",
+                "close"
+              ]
+            ],
+            "sha256": "277e97bdbd04d41d5ac8e623203473e4e485ea2dbbca277842c190d4d6608e91",
+            "bytes": 10596,
+            "path": "reference-acquisition/raw/release-list.json"
+          },
+          {
+            "slug": "official-compbiobench-article",
+            "url": "https://www.k-dense.ai/blog/compbiobench-three-runs",
+            "retrieved_at": "2026-10-01T03:16:28.183574+00:00",
+            "final_url": "https://www.k-dense.ai/blog/compbiobench-three-runs",
+            "status": 200,
+            "headers": [
+              [
+                "Accept-Ranges",
+                "bytes"
+              ],
+              [
+                "Access-Control-Allow-Origin",
+                "*"
+              ],
+              [
+                "Age",
+                "17007"
+              ],
+              [
+                "Cache-Control",
+                "public, max-age=0, must-revalidate"
+              ],
+              [
+                "Content-Disposition",
+                "inline"
+              ],
+              [
+                "Content-Length",
+                "199085"
+              ],
+              [
+                "Content-Type",
+                "text/html; charset=utf-8"
+              ],
+              [
+                "Date",
+                "Thu, 01 Oct 2026 03:16:28 GMT"
+              ],
+              [
+                "Etag",
+                "\"e14ceb4dff67921accd7e24fce10035d\""
+              ],
+              [
+                "Permissions-Policy",
+                "camera=(), microphone=(), geolocation=()"
+              ],
+              [
+                "Referrer-Policy",
+                "strict-origin-when-cross-origin"
+              ],
+              [
+                "Server",
+                "Vercel"
+              ],
+              [
+                "Strict-Transport-Security",
+                "max-age=63072000"
+              ],
+              [
+                "Vary",
+                "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+              ],
+              [
+                "X-Content-Type-Options",
+                "nosniff"
+              ],
+              [
+                "X-Dns-Prefetch-Control",
+                "on"
+              ],
+              [
+                "X-Frame-Options",
+                "SAMEORIGIN"
+              ],
+              [
+                "X-Matched-Path",
+                "/blog/compbiobench-three-runs"
+              ],
+              [
+                "X-Nextjs-Prerender",
+                "1"
+              ],
+              [
+                "X-Nextjs-Stale-Time",
+                "300"
+              ],
+              [
+                "X-Vercel-Cache",
+                "HIT"
+              ],
+              [
+                "X-Vercel-Id",
+                "iad1::k25x8-1790824588292-6a401b5f4b68"
+              ],
+              [
+                "Connection",
+                "close"
+              ]
+            ],
+            "sha256": "859c83138f52f7ab36647dc661f1dc24970c56e3868976b4d1e1350a818c77c8",
+            "bytes": 199085,
+            "path": "reference-acquisition/raw/compbiobench-three-runs.html"
+          }
+        ],
+        "upstream": {
+          "revision": "ef60be84a27bd2096851ab307514ac3de734214f",
+          "archive_root": "k-dense-byok-ef60be84a27bd2096851ab307514ac3de734214f",
+          "destination": "quarantine/k-dense-byok",
+          "archive": "quarantine_proj/archives/arconaut-science-workbenches-2026-09-30/k-dense-byok/k-dense-byok-ef60be84a27b-upstream.zip",
+          "sha256": "d971e1e9764cb0224bc1fd871e9250d0dc1ee5c82412fe8e92fb047ab6c7a63f",
+          "archive_bytes": 9934547,
+          "retained_files": 766,
+          "retained_bytes": 15745826,
+          "omissions": [],
+          "import_verification": "Exact retained regular-file set, every byte, and executable bit compared directly with the intact codeload ZIP."
+        },
+        "product": "K-Dense BYOK",
+        "source_repository": "https://github.com/K-Dense-AI/k-dense-byok",
+        "license_observed": "MIT",
+        "source_documentation_markdown_files": 27,
+        "source_workflow_catalog_items": 326,
+        "latest_release_tags_inspected": [
+          "v0.14.2",
+          "v0.14.1",
+          "v0.14.0",
+          "v0.13.0",
+          "v0.12.0"
+        ],
+        "binary_assets_in_those_releases": 0,
+        "execution": "No acquired script, example, launcher, installer, test, or application was executed. Nothing was installed, authenticated, or paid for.",
+        "scope": "Complete pinned product source/docs/templates plus exact primary discovery README, official repository page, latest-five release metadata, and one directly linked vendor article. No commercial product survey or dependency closure acquisition.",
+        "captured_at": "2026-10-01T03:20:01.224048+00:00"
+      }
+    }
+  ],
+  "gaps": [],
+  "limits": [
+    "No runtime installed or executed; advertised behavior and tests not validated.",
+    "Runtime package dependencies were not downloaded; complete product source, repository documentation and templates were acquired.",
+    "No standalone binary assets appeared in the latest five inspected releases.",
+    "Linked tutorial videos were recorded as upstream links in source README, not downloaded.",
+    "K-Dense hosted commercial products and their internals were outside this bounded task."
+  ]
+}

@@ -1,0 +1,211 @@
+[
+  {
+    "kind": "paper",
+    "name": "dgm",
+    "url": "https://arxiv.org/pdf/2505.22954",
+    "path": "papers/frumentarii-2026-10-06/empirical/dgm.pdf",
+    "sha256": "13ff4abe0c7ad4a7dd3b4876d19a8bf940e39e70dabbf06065aa774a6c3457de",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2505.22954 --output papers/frumentarii-2026-10-06/empirical/dgm.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "shinka",
+    "url": "https://arxiv.org/pdf/2509.19349",
+    "path": "papers/frumentarii-2026-10-06/empirical/shinka.pdf",
+    "sha256": "ee287343c53240126e16a444d5ade2cd0ad0f290a400e78b97a040b93d965087",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2509.19349 --output papers/frumentarii-2026-10-06/empirical/shinka.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "hgm",
+    "url": "https://arxiv.org/pdf/2510.21614",
+    "path": "papers/frumentarii-2026-10-06/empirical/hgm.pdf",
+    "sha256": "06cbf326c605e59777d3f8550e01d41e6b49f78bf0d850f2d173c9f06f6cc254",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2510.21614 --output papers/frumentarii-2026-10-06/empirical/hgm.pdf"
+    ]
+  },
+  {
+    "kind": "source",
+    "repo": "google-deepmind/funsearch",
+    "pin": "cc53f274237d7ab05c19df939edbc1f9616a7c19",
+    "url": "https://codeload.github.com/google-deepmind/funsearch/zip/cc53f274237d7ab05c19df939edbc1f9616a7c19",
+    "archive": "quarantine/evo-exp-archives/funsearch-cc53f274237d.zip",
+    "extracted": "quarantine/evo-exp-funsearch",
+    "sha256": "d3ed169e115372c493bad20bcdfde1a011015d64b3e57ea107c50e7b35466721",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/google-deepmind/funsearch/zip/cc53f274237d7ab05c19df939edbc1f9616a7c19 --output quarantine/evo-exp-archives/funsearch-cc53f274237d.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/funsearch-cc53f274237d.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-funsearch'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "source",
+    "repo": "metauto-ai/HGM",
+    "pin": "013872d95da978483f5b540e531db063d23890da",
+    "url": "https://codeload.github.com/metauto-ai/HGM/zip/013872d95da978483f5b540e531db063d23890da",
+    "archive": "quarantine/evo-exp-archives/hgm-013872d95da9.zip",
+    "extracted": "quarantine/evo-exp-hgm",
+    "sha256": "c3e4fff8d6debf572333d73bbe102ddb1585a38ad1ae0b8e11ce096844fbdbe7",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/metauto-ai/HGM/zip/013872d95da978483f5b540e531db063d23890da --output quarantine/evo-exp-archives/hgm-013872d95da9.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/hgm-013872d95da9.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-hgm'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "paper",
+    "name": "red-queen",
+    "url": "https://arxiv.org/pdf/2606.26294",
+    "path": "papers/frumentarii-2026-10-06/empirical/red-queen.pdf",
+    "sha256": "82a2e260eb119d983542489100db195398128976fa20c97838e11d25b80b84f0",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2606.26294 --output papers/frumentarii-2026-10-06/empirical/red-queen.pdf"
+    ]
+  },
+  {
+    "kind": "source",
+    "repo": "jennyzzt/dgm",
+    "pin": "a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2",
+    "url": "https://codeload.github.com/jennyzzt/dgm/zip/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2",
+    "archive": "quarantine/evo-exp-archives/dgm-a565fd2d1dca.zip",
+    "extracted": "quarantine/evo-exp-dgm",
+    "sha256": "7250f31b719f2db510d631bcf1913b4ff349a1015b2d08789d35f36c200dc2da",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/jennyzzt/dgm/zip/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2 --output quarantine/evo-exp-archives/dgm-a565fd2d1dca.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/dgm-a565fd2d1dca.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-dgm'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "paper",
+    "name": "alphaevolve",
+    "url": "https://arxiv.org/pdf/2506.13131",
+    "path": "papers/frumentarii-2026-10-06/empirical/alphaevolve.pdf",
+    "sha256": "f092c8cbd65da89951ee6496374da9a54963f9035758c25ac6e4625f506df9ad",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2506.13131 --output papers/frumentarii-2026-10-06/empirical/alphaevolve.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "metr",
+    "url": "https://metr.org/Early_2025_AI_Experienced_OS_Devs_Study-paper.pdf",
+    "path": "papers/frumentarii-2026-10-06/empirical/metr.pdf",
+    "sha256": "b6d4a8e7d8aeed20cc9a4545e485fdc5496b5cc48470338d2d7662b1953e5765",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://metr.org/Early_2025_AI_Experienced_OS_Devs_Study-paper.pdf --output papers/frumentarii-2026-10-06/empirical/metr.pdf"
+    ]
+  },
+  {
+    "kind": "source",
+    "repo": "SakanaAI/ShinkaEvolve",
+    "pin": "8adc053a2ce4511ad2ac310e004c530a73fb974a",
+    "url": "https://codeload.github.com/SakanaAI/ShinkaEvolve/zip/8adc053a2ce4511ad2ac310e004c530a73fb974a",
+    "archive": "quarantine/evo-exp-archives/shinkaevolve-8adc053a2ce4.zip",
+    "extracted": "quarantine/evo-exp-shinkaevolve",
+    "sha256": "a2119abe7b834aa8b22f2cd39e70c9654f72043f55db0fc1540494898264ee20",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/SakanaAI/ShinkaEvolve/zip/8adc053a2ce4511ad2ac310e004c530a73fb974a --output quarantine/evo-exp-archives/shinkaevolve-8adc053a2ce4.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/shinkaevolve-8adc053a2ce4.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-shinkaevolve'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "paper",
+    "name": "funsearch",
+    "url": "https://storage.googleapis.com/deepmind-media/DeepMind.com/Blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/Mathematical-discoveries-from-program-search-with-large-language-models.pdf",
+    "path": "papers/frumentarii-2026-10-06/empirical/funsearch.pdf",
+    "sha256": "bfb903bf99a6ad6633e2f12869ddd9fb2abcb8babfa83783b6aaa41f62b91fd0",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://storage.googleapis.com/deepmind-media/DeepMind.com/Blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/Mathematical-discoveries-from-program-search-with-large-language-models.pdf --output papers/frumentarii-2026-10-06/empirical/funsearch.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "rethinking",
+    "url": "https://arxiv.org/pdf/2607.12227v4",
+    "path": "papers/frumentarii-2026-10-06/empirical/rethinking.pdf",
+    "sha256": "a65805f7a4cc6a522055a3f696b72a787b3deb504d7d855f60b54afc5b696fc7",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2607.12227v4 --output papers/frumentarii-2026-10-06/empirical/rethinking.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "modularrsi",
+    "url": "https://arxiv.org/pdf/2609.14857v1",
+    "path": "papers/frumentarii-2026-10-06/empirical/modularrsi.pdf",
+    "sha256": "18fd356a4cdbff96768ee5a06cac422883f1adb1fcea184bd8cc148e565b1118",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2609.14857v1 --output papers/frumentarii-2026-10-06/empirical/modularrsi.pdf"
+    ]
+  },
+  {
+    "kind": "paper",
+    "name": "tthe",
+    "url": "https://arxiv.org/pdf/2607.08124v1",
+    "path": "papers/frumentarii-2026-10-06/empirical/tthe.pdf",
+    "sha256": "88fe9b4897555a233a052d6bd2b63952fc1d60be349a2cc60e616077e3e9f48b",
+    "restore_from_repository_cwd": [
+      "mkdir -p papers/frumentarii-2026-10-06/empirical",
+      "curl --fail --location https://arxiv.org/pdf/2607.08124v1 --output papers/frumentarii-2026-10-06/empirical/tthe.pdf"
+    ]
+  },
+  {
+    "kind": "source",
+    "repo": "rethinking-harness-evolution/code",
+    "pin": "62df2b9624ff32ca61b8accce7fb4a0fd8cbc8a8",
+    "url": "https://codeload.github.com/rethinking-harness-evolution/code/zip/62df2b9624ff32ca61b8accce7fb4a0fd8cbc8a8",
+    "archive": "quarantine/evo-exp-archives/code-62df2b9624ff.zip",
+    "extracted": "quarantine/evo-exp-code",
+    "sha256": "7010bb2faa02d5ed258b3320048c2bdf8ba583ac5a7d8616bbeaf6a7b272e8dd",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/rethinking-harness-evolution/code/zip/62df2b9624ff32ca61b8accce7fb4a0fd8cbc8a8 --output quarantine/evo-exp-archives/code-62df2b9624ff.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/code-62df2b9624ff.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-code'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "source",
+    "repo": "IQuestLab/ModularRSI",
+    "pin": "b5c72c36b0d08ff93f00ee202a8fbdebe849dfb9",
+    "url": "https://codeload.github.com/IQuestLab/ModularRSI/zip/b5c72c36b0d08ff93f00ee202a8fbdebe849dfb9",
+    "archive": "quarantine/evo-exp-archives/modularrsi-b5c72c36b0d0.zip",
+    "extracted": "quarantine/evo-exp-modularrsi",
+    "sha256": "b33fb0674e42b6fe3ddf0c4d447032d5d9f2d944dce46fcbab7b4015b1972a26",
+    "restore_from_repository_cwd": [
+      "mkdir -p quarantine/evo-exp-archives",
+      "curl --fail --location https://codeload.github.com/IQuestLab/ModularRSI/zip/b5c72c36b0d08ff93f00ee202a8fbdebe849dfb9 --output quarantine/evo-exp-archives/modularrsi-b5c72c36b0d0.zip",
+      "python3 -c 'import pathlib,zipfile; z=zipfile.ZipFile('\"'\"'quarantine/evo-exp-archives/modularrsi-b5c72c36b0d0.zip'\"'\"'); d=pathlib.Path('\"'\"'quarantine/evo-exp-modularrsi'\"'\"'); d.mkdir(parents=True,exist_ok=True)\nfor f in z.infolist():\n p=pathlib.PurePosixPath(f.filename).parts[1:]\n if not p or any(x in {'\"'\"'.git'\"'\"','\"'\"'.DS_Store'\"'\"','\"'\"'__MACOSX'\"'\"','\"'\"'Thumbs.db'\"'\"'} for x in p): continue\n t=d.joinpath(*p)\n if f.is_dir(): t.mkdir(parents=True,exist_ok=True)\n else: t.parent.mkdir(parents=True,exist_ok=True); t.write_bytes(z.read(f))\n'"
+    ],
+    "restoration_note": "Run from arconaut repository cwd into absent or empty extracted destination. Restores pinned archive intact, skips archive root and all nested Git/filesystem detritus; never executes reference code."
+  },
+  {
+    "kind": "existing-source",
+    "repo": "karpathy/autoresearch",
+    "pin": "228791fb499afffb54b46200aca536f79142f117",
+    "extracted": "quarantine/autoresearch",
+    "archive": "../quarantine_proj/archives/arconaut-frumentarii-2026-09-30/autoresearch-228791fb499a.zip",
+    "note": "Reuse existing manifested acquisition; no duplicate source download. Actually reread program.md and evaluation/training functions in this campaign.",
+    "restoration_manifest": "QUARANTINE.md shared 2026-09-30 frumentarii acquisition table; existing archive in quarantine_proj/archives/arconaut-frumentarii-2026-09-30."
+  }
+]

@@ -1,0 +1,304 @@
+{
+  "id": "aviary",
+  "kind": "agent environment/action/evaluation framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Async environment steps, generated typed function tools, thread offload for sync actions and optional HTTP environment service.",
+    "service_boundary": "Environment/tool supplier consumed by agent; supplied environments own task state, external services own remote execution."
+  },
+  "summary": "Typed action IDs, batch ordering, safe/unsafe concurrency and timing/error observations are useful execution primitives.",
+  "inspection": {
+    "files": [
+      "quarantine/aviary/src/aviary/tools/base.py",
+      "quarantine/aviary/src/aviary/env.py",
+      "quarantine/aviary/src/aviary/env_client.py",
+      "quarantine/aviary/tests/test_tools.py",
+      "quarantine/aviary/tests/test_envs.py"
+    ],
+    "scope": "Read exports, tool schema/serialization, exec dispatch/locks/timeouts/results, HTTP client and concurrency/timeout tests.",
+    "limits": "Not every domain environment/tool selector inspected; timeout/cancellation does not validate termination of arbitrary sync thread work."
+  },
+  "actions": [
+    {
+      "name": "Tool.from_function",
+      "surface": "tool-definition API",
+      "input": "Python function, signature/docstring and concurrency_safe flag",
+      "output": "Model-facing typed schema plus native callback",
+      "lifecycle": "Callback live in environment; serialization omits implementation.",
+      "authority": "Registered environment function authority",
+      "evidence": [
+        "tool"
+      ]
+    },
+    {
+      "name": "Environment.exec_tool_calls",
+      "surface": "action dispatch API",
+      "input": "Ordered ToolRequestMessage, timeout/concurrency/error policy",
+      "output": "Call-ID-paired responses, typed/text/JSON content and time info",
+      "lifecycle": "Gather safe actions; local batch lock, sync thread offload.",
+      "authority": "Environment authority",
+      "evidence": [
+        "exec",
+        "response"
+      ]
+    },
+    {
+      "name": "EnvironmentClient.reset / step",
+      "surface": "remote API",
+      "input": "Task state/action and HTTP auth/timeout options",
+      "output": "Observations/tools or reward/done/truncated response",
+      "lifecycle": "Remote task service request; failures may be placeholder observations by opt-in.",
+      "authority": "Client/service authority",
+      "evidence": [
+        "client"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python function callbacks are typed tool implementations; model emits structured calls, not arbitrary persistent executable programs.",
+      "evidence": [
+        "tool"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Domain environment state can persist, but a general retained executable language namespace was not established in inspected generic dispatch/client paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Environment reset/step and supplied Python functions compose action domains; client/agent policy supplied separately.",
+      "evidence": [
+        "exec",
+        "client"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "One exec batch gathers safe actions and serializes unsafe actions via local reader/writer lock; does not prove cross-batch global exclusion.",
+      "evidence": [
+        "exec",
+        "response"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Coroutine wait timeout may cancel await, but synchronous function runs through to_thread; no promise the worker or external program is terminated.",
+      "evidence": [
+        "exec"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tool results/state frames capture structured observations and optional subset state; not all original message/provider/process bytes.",
+      "evidence": [
+        "response",
+        "frame"
+      ]
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "role",
+      "detail": "audit_query: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Environment can register Python tools/functions, but serialized Tool removes callable; live code activation/client replacement requires application machinery.",
+      "evidence": [
+        "tool"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Serializable frames/tool schemas do not preserve callable implementation or active thread work across process replacement.",
+      "evidence": [
+        "tool",
+        "frame"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "HTTP environment client reset/step consumes optional authenticated task service; transport reconnect/work identity is caller/service-specific.",
+      "evidence": [
+        "client"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies agent environment/action/evaluation framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Registered Python tools inherit environment authority; safe/unsafe declaration and exception handling are caller policy, no generic model approval gate.",
+      "evidence": [
+        "tool",
+        "exec"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actual mixed-concurrency counter test attacks overlap/exclusion; timeouts test raising TimeoutError, not termination of sync work.",
+      "evidence": [
+        "test",
+        "exec"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Call response records monotonic start/end and preserves input call order; no persisted restart clock.",
+      "evidence": [
+        "response"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "tool",
+      "path": "quarantine/aviary/src/aviary/tools/base.py",
+      "start": 342,
+      "end": 389,
+      "claim": "Typed tool metadata plus callable; concurrency_safe defaults true, callable excluded from ordinary serialized state."
+    },
+    {
+      "id": "args",
+      "path": "quarantine/aviary/src/aviary/tools/base.py",
+      "start": 54,
+      "end": 82,
+      "claim": "Malformed JSON tool arguments become invalid tool name with empty arguments rather than trusted executable input."
+    },
+    {
+      "id": "exec",
+      "path": "quarantine/aviary/src/aviary/env.py",
+      "start": 199,
+      "end": 284,
+      "claim": "Each batch creates reader-writer lock, invokes async function or sync function in thread, and optionally times out/catches errors."
+    },
+    {
+      "id": "response",
+      "path": "quarantine/aviary/src/aviary/env.py",
+      "start": 286,
+      "end": 355,
+      "claim": "Typed/JSON/text results paired to call ID with monotonic start/end; concurrent gather then input-order responses."
+    },
+    {
+      "id": "client",
+      "path": "quarantine/aviary/src/aviary/env_client.py",
+      "start": 42,
+      "end": 113,
+      "claim": "HTTP reset/step client forwards optional API key and timeout; caller can turn HTTP errors into placeholder observations."
+    },
+    {
+      "id": "frame",
+      "path": "quarantine/aviary/src/aviary/env.py",
+      "start": 52,
+      "end": 78,
+      "claim": "Frame contains serializable full/subset state and metadata, optionally deepcopied; not guaranteed original IO corpus."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/aviary/tests/test_tools.py",
+      "start": 1109,
+      "end": 1157,
+      "claim": "Counter-based batch test asserts unsafe action count 1 and some safe action overlap."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/aviary/tests/test_tools.py",
+      "focus": "Safe/unsafe execution overlap within one batch.",
+      "oracle": "Unsafe result counter exactly 1 and at least one safe count >1; only one batch and cooperating sleep functions.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/aviary/tests/test_envs.py",
+      "focus": "Per-tool await timeout.",
+      "oracle": "pytest.raises TimeoutError for SlowEnv actions; does not observe whether sync worker keeps changing external state afterward.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Action schema, call/result pairing and lifecycle timing are explicit.",
+    "Per-action concurrency safety declarations are stronger than blanket parallel JSON dispatch."
+  ],
+  "limits": [
+    "Unsafe lock scope is one batch; concurrent calls into one environment need an owning policy.",
+    "Serialization excludes executable callable, and timeout is not universal work termination."
+  ],
+  "arconaut_questions": [
+    "Which actions are concurrent-safe across whole workflow/turn, not merely one batch?",
+    "Can every timeout/interruption report whether its external effect is still running rather than just returning an error?"
+  ]
+}

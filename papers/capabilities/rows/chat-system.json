@@ -1,0 +1,528 @@
+{
+  "id": "chat-system",
+  "kind": "supporting Rust multi-protocol chat transport library",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Tokio async clients/listeners/callbacks; caller supplies agent runtime; manager serial awaits.",
+    "service_boundary": "Consumes external chat protocols or hosts listeners; owns transport connections/helper buffers, not models/shared computation fabric."
+  },
+  "summary": "Chat System supplies protocol-neutral messaging and listener callbacks plus group/stream helper primitives. Important exposed contracts have silent no-ops and IRC lifecycle/TLS limits.",
+  "inspection": {
+    "files": [
+      "quarantine/chat-system/README.md",
+      "quarantine/chat-system/src/config.rs",
+      "quarantine/chat-system/src/messenger.rs",
+      "quarantine/chat-system/src/message.rs",
+      "quarantine/chat-system/src/messengers/irc.rs",
+      "quarantine/chat-system/src/servers/irc.rs",
+      "quarantine/chat-system/src/server.rs",
+      "quarantine/chat-system/src/group_chat.rs",
+      "quarantine/chat-system/src/streaming.rs",
+      "quarantine/chat-system/tests/irc_server.rs",
+      "quarantine/chat-system/tests/manager.rs",
+      "quarantine/chat-system/src/messengers/slack.rs",
+      "quarantine/chat-system/Cargo.toml"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "GenericMessenger::new / initialize / disconnect",
+      "surface": "Rust API",
+      "input": "tagged MessengerConfig protocol/backend settings",
+      "output": "initialized boxed backend or error",
+      "lifecycle": "initialize builds connection; disconnect backend-specific",
+      "authority": "caller supplies transport credentials/config; no model actor built in",
+      "evidence": [
+        "e2",
+        "e3",
+        "e10"
+      ]
+    },
+    {
+      "name": "Messenger::send_message / send_message_with_options / receive_messages",
+      "surface": "Rust API",
+      "input": "recipient/content or reply/thread/silent/media options",
+      "output": "message-ID string or Vec<Message>/error",
+      "lifecycle": "protocol await/poll; default options can be discarded; IRC IDs not receipt",
+      "authority": "caller or composed agent program; remote platform rules",
+      "evidence": [
+        "e4",
+        "e6",
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "Messenger::set_typing / set_status / set_text_status / add_reaction / remove_reaction / get_profile_picture / set_profile_picture",
+      "surface": "Rust API",
+      "input": "channel/bool, presence/text, message/channel/emoji, user/URL",
+      "output": "Result<()> or optional profile URL",
+      "lifecycle": "optional trait defaults silently succeed/None; not universal remote effect",
+      "authority": "caller account; unsupported operations not indicated by success",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "Messenger::search_messages / edit_message / delete_message / pin_message / unpin_message / get_channel_members",
+      "surface": "Rust API",
+      "input": "SearchQuery filters or message/channel/content",
+      "output": "Vec<Message>, Result<()>, member Vec",
+      "lifecycle": "default empty/no-op; platform-specific support must be inspected separately",
+      "authority": "caller account; current API does not negotiate support",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "MessengerManager::initialize_all / disconnect_all / receive_all / broadcast / get",
+      "surface": "Rust API",
+      "input": "configured messenger list, recipient/content or name",
+      "output": "aggregated messages, per-backend results, optional handle",
+      "lifecycle": "serial awaits; receive errors swallowed to tracing; not concurrent fan-out",
+      "authority": "program owns backend list; backend credentials differ",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "Server::add_listener / ChatServer::run / shutdown",
+      "surface": "Rust service API",
+      "input": "listeners and async Message\u2192optional-reply callback",
+      "output": "listener-bound service and callbacks",
+      "lifecycle": "accept tasks concurrent; shutdown alive barrier excludes active connection children",
+      "authority": "caller owns listen address/callback authority; no model request engine",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "GroupChatConfig::is_group_allowed / should_respond / session_key / strip_prefix",
+      "surface": "Rust supporting API",
+      "input": "group/user/name/text; activation/isolation config",
+      "output": "boolean routing choice, stable key, stripped text",
+      "lifecycle": "pure helpers; caller must enforce and persist context",
+      "authority": "not automatically wired policy/context governor",
+      "evidence": [
+        "e16"
+      ]
+    },
+    {
+      "name": "StreamBuffer::push / finish / should_flush / flush",
+      "surface": "Rust supporting API",
+      "input": "text and edit/chunk/buffer config",
+      "output": "SendNew|EditExisting text plan",
+      "lifecycle": "monotonic local flush interval; no native provider/transport call",
+      "authority": "caller performs sends/edits and tracks remote ID",
+      "evidence": [
+        "e17"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Not a coding filesystem agent; inspected transports and message helpers do not grant workspace tools.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No process lifecycle agent in traced IRC/manager/server paths; optional subprocess backends untraced.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Model-authored native tool program runtime outside messaging-library role.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Language interpreter/kernel outside role.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "General model-accessible standing query DB outside transport role; platform storage not inferred.",
+      "evidence": []
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No model/provider selection or inference; supports chat transports, not model collaboration by itself.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No model context compactor in inspected messaging/helper paths.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No model history restoration operation in traced transport/helpers.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No harness rebuild/context transfer protocol in transport library.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No agent autoresearch/governed self-modification loop in transport library.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No state-capturing agent complaint/bead/DB mechanism in inspected paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Rust async message callbacks and transport APIs compose custom workflows; no owned workflow scheduler/model loop.",
+      "evidence": [
+        "e5",
+        "e13"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "IRC/platform clients are support transport, not multi-model room agent. Built-in IRC listener invokes per-connection callback and replies only there; no shared peer fan-out/member state.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e11"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Listener accepts multiple clients concurrently; manager broadcast/receive loops await serially. Active connection tasks outlive listener shutdown.",
+      "evidence": [
+        "e5",
+        "e12",
+        "e15"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Disconnect/listener shutdown supplied, but no model cancellation; shutdown does not drain connection callbacks.",
+      "evidence": [
+        "e10",
+        "e12",
+        "e15"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller chooses arbitrary async MessageHandler and pure group routing helpers; no predefined model turns to redefine.",
+      "evidence": [
+        "e13",
+        "e16"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Normalized transport messages with timestamps and optional edits; no full original/raw persistence in inspected IRC/core paths. Error swallowing and synthetic IDs limit study provenance.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e8",
+        "e11"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "SearchQuery optional trait returns empty by default; neither unsupported signal nor audit archive. Remote search implementation not traced.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tagged config runtime selects backend at initialization, not watched reload; listeners added before run. No deferred affected-work boundary.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e14"
+      ]
+    },
+    "remote_services": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Unified clients consume external platforms; IRC TLS intent currently remains plain TCP, unlike optional TLS-server feature.",
+      "evidence": [
+        "e1",
+        "e8",
+        "e23",
+        "e24"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Transport credentials/network callback ownership; group policy helpers require caller enforcement. IRC listener accepts PRIVMSG before completed registration and has no traced auth/room authority.",
+      "evidence": [
+        "e11",
+        "e16",
+        "e23"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real localhost callback tests and Console-manager/pure group/stream assertions read only. Tests abort server and do not challenge shutdown child lifetime or TLS-client encryption.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20",
+        "e21",
+        "e22"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stream uses Instant flush timing; normalized timestamps/IRC millisecond synthetic IDs do not establish durable seq/causal peer ordering or dedup.",
+      "evidence": [
+        "e6",
+        "e8",
+        "e17"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/chat-system/README.md",
+      "start": 1,
+      "end": 17,
+      "claim": "Multi-protocol Rust chat library claim, not model engine."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/chat-system/src/config.rs",
+      "start": 251,
+      "end": 266,
+      "claim": "Runtime tagged config builds selected protocol backend, IRC TLS flag forwarded."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/chat-system/src/config.rs",
+      "start": 434,
+      "end": 509,
+      "claim": "GenericMessenger builds/initializes backend then forwards operations; uninitialized calls error."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/chat-system/src/messenger.rs",
+      "start": 57,
+      "end": 184,
+      "claim": "Unified lifecycle/send/receive and optional presence/reaction/profile/search/edit/delete/pin/membership operations; defaults silently no-op/empty."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/chat-system/src/messenger.rs",
+      "start": 209,
+      "end": 255,
+      "claim": "Manager awaits backends serially for initialization/send/receive; receives warn-and-swallow individual errors, broadcast returns per-backend results."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/chat-system/src/message.rs",
+      "start": 40,
+      "end": 94,
+      "claim": "Normalized message sender/channel/ID/time/thread/edit/media fields and SendOptions; not canonical causal event log."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/chat-system/src/messengers/irc.rs",
+      "start": 112,
+      "end": 134,
+      "claim": "IRC send_raw returns Ok when no connection; per-reader/writer async mutex and timeout read."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/chat-system/src/messengers/irc.rs",
+      "start": 238,
+      "end": 306,
+      "claim": "IRC TLS flag does not encrypt: stores Plain split TCP. Welcome wait timeout/EOF still proceeds joins and connected=true. Send ID derived recipient/content not server acknowledgment."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/chat-system/src/messengers/irc.rs",
+      "start": 309,
+      "end": 346,
+      "claim": "IRC receive polls until 100ms idle and parses wire fields; receive depends on caller pumping PING too."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/chat-system/src/messengers/irc.rs",
+      "start": 429,
+      "end": 434,
+      "claim": "Disconnect ignores QUIT failure then drops connection."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/chat-system/src/servers/irc.rs",
+      "start": 97,
+      "end": 207,
+      "claim": "Per-client nick/USER registration and callback/reply processing; no shared peer routing/channel membership state; handler error silently omitted and PRIVMSG not gated on registered."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/chat-system/src/servers/irc.rs",
+      "start": 220,
+      "end": 274,
+      "claim": "Listener spawns accept and per-connection tasks; shutdown only stops accept. Child connection tasks do not clone alive or receive shutdown."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/chat-system/src/server.rs",
+      "start": 23,
+      "end": 49,
+      "claim": "Generic Rust async MessageHandler receives Message and returns optional reply."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/chat-system/src/server.rs",
+      "start": 160,
+      "end": 175,
+      "claim": "Listeners added before run; no hot attach contract."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/chat-system/src/server.rs",
+      "start": 189,
+      "end": 218,
+      "claim": "Server starts listeners and waits alive channel closure; shutdown signals listeners but does not await children/request quiescence."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/chat-system/src/group_chat.rs",
+      "start": 106,
+      "end": 176,
+      "claim": "Group eligibility, substring mention/prefix activation and isolation session-key helpers; exported support functions rather than automatic context owner."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/chat-system/src/streaming.rs",
+      "start": 112,
+      "end": 205,
+      "claim": "StreamBuffer accumulates text and yields send/edit actions; chunked flush clears pending, edit-in-place full accumulated projection; caller must perform transport effects."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/chat-system/src/streaming.rs",
+      "start": 288,
+      "end": 328,
+      "claim": "Pure streaming tests check action variants and chunk content/cleared length; no server edit acknowledgment."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/chat-system/tests/irc_server.rs",
+      "start": 41,
+      "end": 76,
+      "claim": "Real localhost listener/client source test asserts callback exact received text; sleeps and aborts server task, not graceful shutdown oracle."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/chat-system/tests/irc_server.rs",
+      "start": 110,
+      "end": 123,
+      "claim": "Two listener test sorts callback messages and asserts both arrived; no peer broadcast or child lifetime assertion."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/chat-system/tests/manager.rs",
+      "start": 108,
+      "end": 134,
+      "claim": "In-memory Console backend tests check receive count and broadcast result count/Ok, not content delivery or remote APIs."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/chat-system/src/group_chat.rs",
+      "start": 195,
+      "end": 261,
+      "claim": "Pure mention/prefix/allow group predicate assertions, not model-context isolation persistence."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/chat-system/src/messengers/slack.rs",
+      "start": 12,
+      "end": 80,
+      "claim": "Representative authenticated external backend stores token, client, per-channel in-memory cursor and channel watch configuration."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/chat-system/Cargo.toml",
+      "start": 27,
+      "end": 60,
+      "claim": "Tokio Rust library; optional TLS server and platform dependencies distinct from plain IRC client flag."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/chat-system/tests/irc_server.rs",
+      "focus": "Local wire\u2192callback delivery",
+      "oracle": "Real localhost socket tests exact text/both listener messages; fixed sleeps and abort teardown leave graceful child shutdown untested.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/chat-system/tests/manager.rs",
+      "focus": "Manager forwarding",
+      "oracle": "Console queue count and broadcast result count/Ok; weak delivery-content oracle and no remote backend.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/chat-system/src/streaming.rs",
+      "focus": "Flush strategy",
+      "oracle": "Pure action variants/chunk text and cleared length; no actual remote edit effect.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/chat-system/src/group_chat.rs",
+      "focus": "Group predicate helpers",
+      "oracle": "Pure substring mention/prefix/allow-list decisions; no owned context store/isolation oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Protocol-neutral callback and normalized message surface can support independently owned peer fabric.",
+    "Group routing keys and stream strategies are small separable composition primitives."
+  ],
+  "limits": [
+    "IRC client TLS flag uses plain TCP; readiness can succeed after welcome timeout/EOF.",
+    "Built-in IRC listener is not a peer relay and shutdown omits active connection tasks.",
+    "Optional APIs silently succeed/empty when unsupported; manager swallows receive errors."
+  ],
+  "arconaut_questions": [
+    "Should unsupported operations and transport receipt semantics be explicit sum types?",
+    "What room router, membership/authentication, durable causal audit and child quiescence would an owned fabric need?"
+  ]
+}

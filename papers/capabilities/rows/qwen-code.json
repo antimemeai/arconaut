@@ -1,0 +1,948 @@
+{
+  "id": "qwen-code",
+  "kind": "coding agent and programmable local workflow/team runtime",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node multi-host LlmClient and shared tool scheduler; fresh separate QuickJS host for exec; node:vm workflow orchestration and local AgentHeadless workers; shell processes and managed/legacy session writers.",
+    "service_boundary": "Consumes providers, MCP and optional wrapped execution environments; owns local code-mode/workflow compute, teams/mailboxes/background registries and chosen session authority. Consumer/store abstractions exist but do not establish an independent shared kernel fabric."
+  },
+  "summary": "Independently evolved Qwen Code snapshot has actual code/workflow programs, model messaging and team routing, projected context and optional commit-fenced managed state. Its freshness, mailbox retention, best-effort reload and declared-domain boundaries prevent treating these as full audit or executable refit.",
+  "inspection": {
+    "files": [
+      "quarantine/qwen-code/packages/cli/src/nonInteractiveCli.ts",
+      "quarantine/qwen-code/packages/core/src/core/client.ts",
+      "quarantine/qwen-code/packages/core/src/core/llm-chat.ts",
+      "quarantine/qwen-code/packages/core/src/core/openaiContentGenerator/pipeline.ts",
+      "quarantine/qwen-code/packages/core/src/core/coreToolScheduler.ts",
+      "quarantine/qwen-code/packages/core/src/tools/tool-names.ts",
+      "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "quarantine/qwen-code/packages/core/src/tools/read-file.ts",
+      "quarantine/qwen-code/packages/core/src/tools/write-file.ts",
+      "quarantine/qwen-code/packages/core/src/tools/shell.ts",
+      "quarantine/qwen-code/packages/core/src/tools/exec.ts",
+      "quarantine/qwen-code/packages/core/src/code-mode/host-client.ts",
+      "quarantine/qwen-code/packages/core/src/code-mode/host.ts",
+      "quarantine/qwen-code/packages/core/src/tools/code-mode.ts",
+      "quarantine/qwen-code/packages/core/src/tools/workflow/workflow.ts",
+      "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-runner.ts",
+      "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-orchestrator.ts",
+      "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-sandbox.ts",
+      "quarantine/qwen-code/packages/core/src/tools/send-message.ts",
+      "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.ts",
+      "quarantine/qwen-code/packages/core/src/agents/team/mailbox.ts",
+      "quarantine/qwen-code/packages/core/src/tools/agent/agent.ts",
+      "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.ts",
+      "quarantine/qwen-code/packages/core/src/services/chatRecordingService.ts",
+      "quarantine/qwen-code/packages/core/src/skills/skill-manager.ts",
+      "quarantine/qwen-code/packages/core/src/services/sessionService.ts",
+      "quarantine/qwen-code/packages/core/src/code-mode/code-mode.test.ts",
+      "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.test.ts",
+      "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.model-routing.test.ts",
+      "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-journal-restart.test.ts"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "read_file / write_file / edit",
+      "surface": "model tools",
+      "input": "file_path/range/pages/content or edit fields",
+      "output": "content/media,diff/error",
+      "lifecycle": "read cache tracks actual residency; write checks prior read/runtime version/abort; edit name/catalog only",
+      "authority": "model scheduler policy/runtime filesystem context",
+      "evidence": [
+        "e10",
+        "e14",
+        "e15",
+        "e16"
+      ]
+    },
+    {
+      "name": "run_shell_command",
+      "surface": "model tool",
+      "input": "command,is_background,timeout",
+      "output": "foreground results or task ID/PID/output file",
+      "lifecycle": "owned process registration; background settlement awaits output flush; orphan registration requests abort",
+      "authority": "model under scheduler execution policy; task_stop catalog available",
+      "evidence": [
+        "e8",
+        "e9",
+        "e12",
+        "e17"
+      ]
+    },
+    {
+      "name": "exec",
+      "surface": "mode-gated model program",
+      "input": "JavaScript using tools/text/media helpers",
+      "output": "bounded values/text/media + nested results",
+      "lifecycle": "separate fresh QuickJS host each call; framed dispatch/CPU/memory/wall limits; cancels child/nested work",
+      "authority": "model via audited runtime only; no direct host I/O/import",
+      "evidence": [
+        "e11",
+        "e18",
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    {
+      "name": "tool_search / tool_call",
+      "surface": "model discovery/bridge tools",
+      "input": "deferred name/search/arguments",
+      "output": "schemas/result through registry",
+      "lifecycle": "lazy registration; bridge must dispatch via scheduler, not direct run",
+      "authority": "model declared tools and policy",
+      "evidence": [
+        "e12"
+      ]
+    },
+    {
+      "name": "workflow",
+      "surface": "enabled model program/operator saved workflow",
+      "input": "exactly script/scriptPath/name,args,resumeFromRunId,run_in_background",
+      "output": "runId/scriptPath/journalPath; phase/results/error",
+      "lifecycle": "bounded real AgentHeadless dispatch through node:vm orchestration; journal replay longest unchanged prefix; background only TUI/completion channel",
+      "authority": "model configurable workflows; saved scope/name-only gates; description requires operator requested orchestration",
+      "evidence": [
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e26",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    {
+      "name": "agent",
+      "surface": "model delegation tool",
+      "input": "configured agent prompt/model/background options",
+      "output": "registered agent ID,lineage/output + result/notification",
+      "lifecycle": "background registry records abort/controller and continuation reason; selected-model teammate route separately tested",
+      "authority": "model/configured child/tool policy; production workflow denies selected backchannels",
+      "evidence": [
+        "e12",
+        "e27",
+        "e38",
+        "e53"
+      ]
+    },
+    {
+      "name": "send_message",
+      "surface": "model messaging tool",
+      "input": "task_id or to,message,summary",
+      "output": "queued/resumed/continued/peer sent or error; no inline answer",
+      "lifecycle": "running task at tool-round boundary; completed resident continuation vs cold revival; peer recipients can hold messages",
+      "authority": "default ask; peer text explicitly carries no sender user authority",
+      "evidence": [
+        "e12",
+        "e30",
+        "e31",
+        "e32",
+        "e33"
+      ]
+    },
+    {
+      "name": "team_create / team_delete / team_plan_approval",
+      "surface": "experimental model control catalog",
+      "input": "team identity/lifecycle/plan fields",
+      "output": "team configuration and controls",
+      "lifecycle": "enabled registry only; detailed create/delete internals not traced; actual delivery/route below",
+      "authority": "config flag; leader-only shutdown omitted from child registry",
+      "evidence": [
+        "e13",
+        "e53"
+      ]
+    },
+    {
+      "name": "TeamManager.sendMessage / mailbox.consumeUnread",
+      "surface": "team runtime primitive",
+      "input": "recipient,text,sender,summary",
+      "output": "queued/provenance envelope or mailbox batch",
+      "lifecycle": "bounded peer queues drain idle; leader durable mailbox marks-read; five-minute read retention",
+      "authority": "teammate identity scope; explicit shutdown response reservation",
+      "evidence": [
+        "e34",
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    {
+      "name": "LocalManagedSessionAuthority.open / commit",
+      "surface": "programmable state authority",
+      "input": "journal/lease,expected proof,command ID/digest/sequence,declared event/actors",
+      "output": "committed receipt/events or conflict/uncommitted-tail refusal",
+      "lifecycle": "serialized transaction marker before application, failed append poisons writer; cold proof checks",
+      "authority": "declared actors/session fences under configured managed-mode binding",
+      "evidence": [
+        "e39",
+        "e40",
+        "e41",
+        "e42"
+      ]
+    },
+    {
+      "name": "recorder close / sealForHandoff",
+      "surface": "owned persistence lifecycle",
+      "input": "flush/activation stop/lease proof",
+      "output": "sealed writer position or integrity failure",
+      "lifecycle": "pins committed prefix; does not prove active provider/shell pause nor compiled core exchange",
+      "authority": "harness writer owner, successor must match proof",
+      "evidence": [
+        "e40",
+        "e44"
+      ]
+    },
+    {
+      "name": "tryCompressChat / compression snapshot / compress-fast substrate",
+      "surface": "context mechanism",
+      "input": "history,instructions,signal; fast path named in client",
+      "output": "new projection/completed IDs and cache invalidation",
+      "lifecycle": "automatic/manual compaction append snapshot and preserve transcript; exact summarizer internals not fully traced",
+      "authority": "harness/operator; no native original-context repair action established",
+      "evidence": [
+        "e45",
+        "e46",
+        "e47"
+      ]
+    },
+    {
+      "name": "SkillManager filesystem refresh / listeners",
+      "surface": "hot definition mechanism",
+      "input": "changed skill files/activation",
+      "output": "registry and tool validation refresh",
+      "lifecycle": "150ms debounce; registry mutates before listeners, 30s cap may leave slow listener finishing later",
+      "authority": "host skill manager/model edits authorized files through ordinary tools",
+      "evidence": [
+        "e48",
+        "e49"
+      ]
+    },
+    {
+      "name": "SessionService.searchSessionContent",
+      "surface": "programmable query API",
+      "input": "query,maxFiles,maxResults,signal",
+      "output": "text match snippets",
+      "lifecycle": "bounded scan with cancellation/yield; transcript-domain query",
+      "authority": "host/session consumers, not a full effect audit query",
+      "evidence": [
+        "e50"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native read/write runtime paths support media/ranges, residency-aware caching and prior-read/version checks; native edit catalog separately scoped.",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Foreground/background owned shell registry gives stable task/PID/output file; orphan register aborts and terminal status waits for output flush. Shell stop operation is cataloged but internals untraced.",
+      "evidence": [
+        "e12",
+        "e17"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Fresh code-mode QuickJS programs compose registered tool calls through audited scheduler; direct file/process tool paths and node:vm workflow programs are distinct.",
+      "evidence": [
+        "e14",
+        "e16",
+        "e18",
+        "e19",
+        "e20",
+        "e23"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Code-mode creates new QuickJS runtime/context for each call and fresh-global test confirms no namespace continuity. Workflow VM can retain variables only for its run; no shared resident language kernel established.",
+      "evidence": [
+        "e20",
+        "e28",
+        "e51"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Declared managed-session journal/authority and queryable session transcripts are standing state primitives, not model general SQL or independent shared computation fabric.",
+      "evidence": [
+        "e39",
+        "e40",
+        "e41",
+        "e50"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Enabled native workflow executes model-authored/saved JavaScript with agent/parallel/pipeline/nested composition, stable run/journal IDs and bounded real production dispatch. Code-mode separately composes ordinary tools.",
+      "evidence": [
+        "e18",
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e26",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Request model overrides and definition-driven child/team generator routes are wired. Mock route test checks separate provider view; no live quality guarantee inferred.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e6",
+        "e38",
+        "e53"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model send_message routes running/paused/resident background tasks, teams and same-machine peer adapter. Team recipient queues drain idle with provenance/backpressure; peer transport internals untraced and receiver may hold messages.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e32",
+        "e33",
+        "e34",
+        "e35",
+        "e36"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Shared safe-kind predicate batches reads/read-only shells/agents and serializes unsafe calls/skill activation; workflow dispatch adds bounded concurrency and separate agent attempts.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e26",
+        "e27"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Steer callback preserves input on abort and combines pending steer with Stop continuation; provider child signals, code host termination, task messages and background controller identities traced. Full all-program quiescence not established.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e7",
+        "e19",
+        "e33",
+        "e38"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Message types, Stop-hook forced continuation/model override/steer callbacks plus code/workflow programs expose meaningful turn composition. Fixed host send loop remains; no arbitrary model-owned scheduler replacement established.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e18",
+        "e23"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Auto/manual compression appends projection snapshot with tool/prompt identities, swaps active history and clears stale file-read/execution cache; fast rule-based client path exists but internals not covered here.",
+      "evidence": [
+        "e45",
+        "e46",
+        "e47"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Original transcript vs appended compressed snapshot and explicit cache invalidation enable recomposition; re-read restores file contents rather than returning stale unchanged. No dedicated native model historical-context repair protocol traced.",
+      "evidence": [
+        "e14",
+        "e45",
+        "e46",
+        "e47",
+        "e50"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Managed declared events have sequence/digest/commit proof and raw conversation projections append rather than overwrite. Non-strict unsupported records can drop, write failure disables ordinary writes, mailboxes expire read messages; full provider/OS-effect capture not established.",
+      "evidence": [
+        "e37",
+        "e39",
+        "e41",
+        "e42",
+        "e43",
+        "e46"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Managed readEvents/commit receipt cold reopen and bounded session-content search are actual query primitives; event domains and materialized transcript are narrower than all-effect audit.",
+      "evidence": [
+        "e40",
+        "e41",
+        "e42",
+        "e50",
+        "e52"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Saved workflow scripts load per call; skill watcher debounces and awaits best-effort derived refresh. Registry mutates before listeners and timeout can release a still-running listener; no affected-workflow versioned activation contract established.",
+      "evidence": [
+        "e22",
+        "e48",
+        "e49"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Managed recorder seals writer proof and cold successor validates it; workflow journal resumes unchanged-prefix agent results and background cold revival uses transcript. No compiled executable outpost/refit or owned-standing pause barrier traced.",
+      "evidence": [
+        "e22",
+        "e26",
+        "e32",
+        "e40",
+        "e44",
+        "e54",
+        "e55"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes configured content generators/compatible remote provider stream and environment-wrapped tools; managed authority can use abstract journal handle. Inspected code-mode/workflow/shell compute is locally harness owned.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e19",
+        "e27",
+        "e39",
+        "e40"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model-authored/saved workflows plus measured dispatch token budgets and ordinary editing can compose experiments. No dedicated model-governed self-change acceptance/refit loop proven by inspected paths or README self-iteration claim.",
+      "evidence": [
+        "e16",
+        "e22",
+        "e25",
+        "e26",
+        "e48"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No nonfatal native agent-state grievance filing into independent database established in inspected tools/recording/workflow/team paths; report_findings catalog name is not treated as complaint.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scheduler safety classification, declared managed actors/fences, prior-read/version checks, experimental leader-only registration and send_message default ask are explicit scopes. Peer text cannot inherit sender operator authority.",
+      "evidence": [
+        "e8",
+        "e13",
+        "e15",
+        "e16",
+        "e30",
+        "e31",
+        "e41"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read tests cover fresh guest globals/cancel, filesystem-backed commit/reopen/idempotence, mock provider route and SIGKILL journal replacement. Strong persistence oracle scopes do not prove real provider/OS exactly-once or complete context semantics; not run.",
+      "evidence": [
+        "e51",
+        "e52",
+        "e53",
+        "e54",
+        "e55"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Declared managed events commit ordered sequence/digest prefix with actor fences; background exit timestamp captured before flush while status waits; mailbox timestamp/priority delivery separate clocks. No external effect global order inferred.",
+      "evidence": [
+        "e17",
+        "e34",
+        "e36",
+        "e41",
+        "e42"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/qwen-code/packages/cli/src/nonInteractiveCli.ts",
+      "start": 2524,
+      "end": 2544,
+      "claim": "CLI provider send includes message type/model override and optional goal permit under shared abort signal."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/qwen-code/packages/cli/src/nonInteractiveCli.ts",
+      "start": 2645,
+      "end": 2676,
+      "claim": "CLI actual shared tool batch returns response parts/termination and updates next-turn model override."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/qwen-code/packages/core/src/core/client.ts",
+      "start": 3410,
+      "end": 3436,
+      "claim": "LlmClient differentiates user/retry/cron/notification/teammate/goal interaction starts and captures agent output."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/qwen-code/packages/core/src/core/client.ts",
+      "start": 4278,
+      "end": 4315,
+      "claim": "Steer callback is consumed at boundaries under turn budget and abort guard; aborted accepted input can restore."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/qwen-code/packages/core/src/core/client.ts",
+      "start": 5270,
+      "end": 5295,
+      "claim": "Blocking Stop continuation consumes pending steer and recursively requests bounded Hook turn with same model override."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/qwen-code/packages/core/src/core/llm-chat.ts",
+      "start": 5179,
+      "end": 5199,
+      "claim": "Actual provider call uses current/override content generator with model/history/generation config and retry auth attribution."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/qwen-code/packages/core/src/core/openaiContentGenerator/pipeline.ts",
+      "start": 470,
+      "end": 510,
+      "claim": "OpenAI-compatible stream uses child AbortController and actual SDK request; HTTP response metadata inspected before converted stream."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/qwen-code/packages/core/src/core/coreToolScheduler.ts",
+      "start": 1490,
+      "end": 1525,
+      "claim": "Shared concurrency predicate excludes skill activation, admits agents, and admits shell only when conservatively read-only."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/qwen-code/packages/core/src/core/coreToolScheduler.ts",
+      "start": 5039,
+      "end": 5079,
+      "claim": "Scheduler gates all calls ready and executes consecutive safe groups or sequential unsafe operations."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/qwen-code/packages/core/src/tools/tool-names.ts",
+      "start": 20,
+      "end": 73,
+      "claim": "Native catalog includes exec, file/shell, agents/messages/teams, tasks, workflows, memory and goals; names alone do not prove every implementation."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "start": 12176,
+      "end": 12181,
+      "claim": "Exec is dynamically registered only in CodeModeOnly tool mode."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "start": 12348,
+      "end": 12376,
+      "claim": "Actual registry wires tool_call/search, agent/list/task_stop and send_message."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "start": 12638,
+      "end": 12661,
+      "claim": "Experimental team flag registers team_create/delete/plan approval; leader-only shutdown is excluded from child registries."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/qwen-code/packages/core/src/tools/read-file.ts",
+      "start": 133,
+      "end": 230,
+      "claim": "Read has resident-history-aware file cache, excludes nested code-mode cache fast path and calls cancellable media/text processor."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/qwen-code/packages/core/src/tools/write-file.ts",
+      "start": 299,
+      "end": 358,
+      "claim": "Write captures runtime version, checks shared-memory secrets and enforces prior-read before existing-content read."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/qwen-code/packages/core/src/tools/write-file.ts",
+      "start": 516,
+      "end": 556,
+      "claim": "Final version decision can reject TOCTOU, creates directories after check and passes version/abort to actual runtime write."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/qwen-code/packages/core/src/tools/shell.ts",
+      "start": 4241,
+      "end": 4326,
+      "claim": "Background shell registers stable ID/PID/output file, aborts on orphan registration, and marks terminal status only after output stream flush."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/qwen-code/packages/core/src/tools/exec.ts",
+      "start": 44,
+      "end": 113,
+      "claim": "Exec requires audited runtime and uses scheduler dispatch for nested calls; terminal-goal metadata gates further work."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/qwen-code/packages/core/src/code-mode/host-client.ts",
+      "start": 125,
+      "end": 179,
+      "claim": "Code-mode spawns separate host with framed messages; tracks nested controllers and terminates child/nested work on abort or wall timeout."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/qwen-code/packages/core/src/code-mode/host.ts",
+      "start": 198,
+      "end": 226,
+      "claim": "Each request constructs QuickJS runtime/context with memory/stack/CPU budget; not a resident kernel."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/qwen-code/packages/core/src/tools/code-mode.ts",
+      "start": 222,
+      "end": 247,
+      "claim": "Model-facing code-mode contract describes nested tool functions/helpers and fresh isolated runtime without direct filesystem/network/imports."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/qwen-code/packages/core/src/tools/workflow/workflow.ts",
+      "start": 112,
+      "end": 191,
+      "claim": "Workflow accepts inline/path/name,args,resume run ID/background; saved script loaded per call; globals compose agents/phases/parallel/pipeline/nesting."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/qwen-code/packages/core/src/tools/workflow/workflow.ts",
+      "start": 535,
+      "end": 629,
+      "claim": "Actual WorkflowRunner admission returns stable runId/script/journal handle for background or awaits completion for foreground."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "start": 12685,
+      "end": 12688,
+      "claim": "Workflow tool actual registration is gated on workflows enabled."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-runner.ts",
+      "start": 519,
+      "end": 540,
+      "claim": "Runner selects production dispatch unless test injection; uses same controller and token budget with approval event bridge."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-runner.ts",
+      "start": 751,
+      "end": 795,
+      "claim": "Run handle links bounded dispatch scheduler, controller,budget,registry and orchestration with journal/resumeReplay."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-orchestrator.ts",
+      "start": 805,
+      "end": 837,
+      "claim": "Production dispatch actually creates AgentHeadless with bounded turns/time and denied message/plan control backchannels."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-sandbox.ts",
+      "start": 1200,
+      "end": 1244,
+      "claim": "Workflow runs node:vm context; globals constructed in guest realm, random/time disabled for replay determinism."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/qwen-code/packages/core/src/tools/workflow/workflow.ts",
+      "start": 1884,
+      "end": 1899,
+      "claim": "Workflow resume ID validates; background requires interactive TUI and completion channel."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/qwen-code/packages/core/src/tools/send-message.ts",
+      "start": 88,
+      "end": 99,
+      "claim": "send_message is a privileged instruction sink with default ask, not inherited sender authority."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/qwen-code/packages/core/src/tools/send-message.ts",
+      "start": 117,
+      "end": 201,
+      "claim": "Peer route calls same-machine peer transport, handles ambiguity/errors and marks received text as cross-session without sender user authority; transport internals untraced."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/qwen-code/packages/core/src/tools/send-message.ts",
+      "start": 272,
+      "end": 338,
+      "claim": "Paused task can resume and completed resident task continues before transcript cold-revive fallback; restored sessions do not retain resident runtime."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/qwen-code/packages/core/src/tools/send-message.ts",
+      "start": 351,
+      "end": 375,
+      "claim": "Running background messages queue at next tool-round boundary, with completion notification rather than inline reply."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.ts",
+      "start": 784,
+      "end": 848,
+      "claim": "Teammate-to-leader actual mailbox write/timestamp and shutdown-response reservation; accepted approved shutdown can abort sender."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.ts",
+      "start": 855,
+      "end": 895,
+      "claim": "Team peer messages queue with bounded backpressure and immediately flush only when recipient idle."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.ts",
+      "start": 2096,
+      "end": 2147,
+      "claim": "Delivery prioritizes queue and wraps provenance then enqueues within teammate AsyncLocalStorage identity."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/mailbox.ts",
+      "start": 198,
+      "end": 259,
+      "claim": "Inbox uses lock+atomic rewrite and marks reads; read messages older than five minutes compact out, unread stay."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/qwen-code/packages/core/src/tools/agent/agent.ts",
+      "start": 3522,
+      "end": 3546,
+      "claim": "Background agent registry records model/lineage/output/abort identity and continuation-block reason."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/qwen-code/packages/core/src/config/config.ts",
+      "start": 5005,
+      "end": 5029,
+      "claim": "When managed mode chosen, config opens authority and binds recorder managed sink before activation under asserted writer lease."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.ts",
+      "start": 441,
+      "end": 481,
+      "claim": "Cold open validates committed sequence/digest handoff proof and refuses uncommitted tail without exclusive repair."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.ts",
+      "start": 1740,
+      "end": 1789,
+      "claim": "Commit checks expected sequence, same-command content digest/idempotent receipt and session/actor fence."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.ts",
+      "start": 1880,
+      "end": 1934,
+      "claim": "Declared events and commit marker append as transaction before in-memory application; append failure poisons further writer and does not imply external effects atomically committed."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/qwen-code/packages/core/src/services/chatRecordingService.ts",
+      "start": 1565,
+      "end": 1665,
+      "claim": "Managed/legacy record writes serialize; unsupported managed records can be dropped on non-strict path; write failure degrades recorder and later ordinary writes become no-ops."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/qwen-code/packages/core/src/services/chatRecordingService.ts",
+      "start": 2057,
+      "end": 2117,
+      "claim": "Recorder close flushes and seals managed writer with commit proof after stopAdvancing; failed nonmanaged handoff retains lock; not executable compile/outpost."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/qwen-code/packages/core/src/core/llm-chat.ts",
+      "start": 2707,
+      "end": 2759,
+      "claim": "Compression records snapshot/completed tool IDs then changes history, clears file-read cache and invalidates execution cache after successful compaction."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/qwen-code/packages/core/src/services/chatRecordingService.ts",
+      "start": 2849,
+      "end": 2871,
+      "claim": "Compression appends distinct system record preserving projection/prompt IDs rather than rewriting transcript originals."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/qwen-code/packages/core/src/core/client.ts",
+      "start": 5670,
+      "end": 5718,
+      "claim": "Manual compression carries completed IDs/start context and forces full IDE context; clears stale read placeholders."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/qwen-code/packages/core/src/skills/skill-manager.ts",
+      "start": 182,
+      "end": 208,
+      "claim": "Skill activation mutates registry before parallel change listeners; hung listeners capped at 30s and can finish later\u2014best effort activation consistency."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/qwen-code/packages/core/src/skills/skill-manager.ts",
+      "start": 1299,
+      "end": 1329,
+      "claim": "Filesystem skill watcher debounces refresh 150ms and updates watchers from refreshed cache."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/qwen-code/packages/core/src/services/sessionService.ts",
+      "start": 2427,
+      "end": 2462,
+      "claim": "Session content search has bounded file/result defaults, whitespace/case folding and cancellation/yield scanning."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/qwen-code/packages/core/src/code-mode/code-mode.test.ts",
+      "start": 895,
+      "end": 919,
+      "claim": "Real code-mode host test checks fresh globals and mock nested unawaited cancellation; not persistent state."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.test.ts",
+      "start": 214,
+      "end": 288,
+      "claim": "Filesystem fixture test checks input/wake transaction, cold reopen and command-id replay receipts; not model/provider/OS effect exact-once."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.model-routing.test.ts",
+      "start": 218,
+      "end": 244,
+      "claim": "Mocked generator/core tests validate teammate dedicated provider route/runtimeView vs leader."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-journal-restart.test.ts",
+      "start": 28,
+      "end": 44,
+      "claim": "Restart test prepares fake journal records and child writer to target kill before/after rename."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-journal-restart.test.ts",
+      "start": 67,
+      "end": 103,
+      "claim": "SIGKILL and reload oracle checks retained prefix/result/start sets across atomic rename, not real provider side effects."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/qwen-code/packages/core/src/code-mode/code-mode.test.ts",
+      "focus": "Fresh guest globals and unfinished nested call cancellation",
+      "oracle": "Uses actual host runner with mocked nested function; confirms no persisted global and abort event, not OS/provider termination convergence.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/qwen-code/packages/core/src/managed-runtime/managed-session-authority.test.ts",
+      "focus": "Durable input/wake transaction, cold reopen and idempotent command replay",
+      "oracle": "Filesystem fixture asserts declared records/receipt counts before and after reopen; no external provider/process effect atomicity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/qwen-code/packages/core/src/agents/team/TeamManager.model-routing.test.ts",
+      "focus": "Dedicated teammate model/provider runtime view",
+      "oracle": "Mocks content generator/core; asserts selected route and separation from leader, not live provider collaboration quality.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/qwen-code/packages/core/src/agents/runtime/workflow-journal-restart.test.ts",
+      "focus": "Kill around atomic journal rewrite",
+      "oracle": "SIGKILL child before/after rename, load retained fake prefix/result/start records; attacks torn persistence, not uncertainty of real tool effects.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Two distinct model programming surfaces: audited ordinary-tool QuickJS programs and agent-oriented saved/resumable workflows.",
+    "Actual live session/team messaging with explicit handles, provenance, receiver authority and bounded delivery rules.",
+    "Managed journal explicitly fences actor/sequence/content and distinguishes committed prefix from torn tail; integration is actual optional config binding.",
+    "Compaction cache invalidation understands that an unchanged-file placeholder is invalid once its original context is no longer resident.",
+    "Background shell status reflects flushed output rather than announcing terminal state while disk bytes remain pending."
+  ],
+  "limits": [
+    "Breadth is large; this study traces representative reachable mechanics, not every media/tool/goal/thread/host implementation. Managed mode and experimental teams are explicitly conditional.",
+    "Code-mode is fresh per call, workflow globals per run; neither proves standing shared language kernel.",
+    "Team peer messages wait for idle, task messages wait tool boundary, same-machine peer adapter may hold text; mailbox read records expire after five minutes.",
+    "Managed commits cover declared records, not all transport/OS effects; non-strict dropped records and degraded writer are material completeness limits.",
+    "Writer proof handoff and workflow prefix replay are supporting continuity; no quiescent compilation/outpost with owned standing pause traced.",
+    "Skill registry mutates before best-effort listener refresh; timeout can leave partially refreshed consumers."
+  ],
+  "arconaut_questions": [
+    "Treat model programs, workflows and participant state as scoped consumers while deciding which primitives belong to fabric rather than Arconaut ownership.",
+    "Can preserved original history plus residency markers make model-initiated context repair reproducible and auditable?",
+    "Which declared event domains and uncertain effects must join the immutable audit rather than remaining sidecars, expiry mailboxes or best-effort records?",
+    "Build Arconaut quiescence/refit proof above\u2014not equivalent to\u2014writer-seal commit proof and longest-prefix workflow replay.",
+    "Keep operator-governed authority distinct from peer claims while making sustained multi-model messaging and model orchestration normal work."
+  ]
+}

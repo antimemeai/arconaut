@@ -1,0 +1,193 @@
+{
+  "id": "letta",
+  "kind": "public project landing index",
+  "runtime": {
+    "languages": [
+      "Markdown"
+    ],
+    "execution": "No executable runtime in this pinned directory.",
+    "service_boundary": "Redirects current harness/app/server/channels to letta-code and labels archive branch retired V1."
+  },
+  "summary": "Public source-boundary index, not a duplicate agent implementation.",
+  "inspection": {
+    "files": [
+      "quarantine/letta/README.md"
+    ],
+    "scope": "complete README and file inventory",
+    "limits": "Only landing/public policy files; product implementation belongs to separately pinned letta-code or historical V1."
+  },
+  "actions": [
+    {
+      "name": "letta / letta server (documented entrypoints)",
+      "surface": "official README operator commands",
+      "input": "install separately published npm package, optional server mode",
+      "output": "interactive TUI or App Server in letta-code; no callable program in this directory",
+      "lifecycle": "documentation only; not run/installed",
+      "authority": "operator command; actual authority is separate source boundary",
+      "evidence": [
+        "e1"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this landing-index role. README announces stateful agents and links separately available current products; it supplies no contract or implementation for this axis. Executable capabilities belong to the separate letta-code or retired V1 source rows.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this landing-index role. README announces stateful agents and links separately available current products; it supplies no contract or implementation for this axis. Executable capabilities belong to the separate letta-code or retired V1 source rows.",
+      "evidence": []
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this landing-index role. README announces stateful agents and links separately available current products; it supplies no contract or implementation for this axis. Executable capabilities belong to the separate letta-code or retired V1 source rows.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this landing-index role. README announces stateful agents and links separately available current products; it supplies no contract or implementation for this axis. Executable capabilities belong to the separate letta-code or retired V1 source rows.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Official desktop/web/channels/Cloud/SDK references documented; acquire/execute none from landing.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this landing-index role. README announces stateful agents and links separately available current products; it supplies no contract or implementation for this axis. Executable capabilities belong to the separate letta-code or retired V1 source rows.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "evaluation": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "time_order": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this public project landing index role: the reference supplies Public source-boundary index, not a duplicate agent implementation. rather than an agent execution engine.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/letta/README.md",
+      "start": 1,
+      "end": 39,
+      "claim": "Official landing points current executable harness/TUI/App Server/channels to letta-code and docs; archive explicitly retired V1."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Officially makes current versus retired source distinction explicit."
+  ],
+  "limits": [
+    "No executable source, test suite or internal mechanism available in this pinned landing."
+  ],
+  "arconaut_questions": [
+    "Keep names/versions separate so historical memory server behavior is not attributed to current harness."
+  ]
+}

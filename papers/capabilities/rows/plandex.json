@@ -1,0 +1,1011 @@
+{
+  "id": "plandex",
+  "kind": "coding agent with remote plan service",
+  "runtime": {
+    "languages": [
+      "Go",
+      "Python (owned LiteLLM proxy service)"
+    ],
+    "execution": "Go CLI/TUI consumes Go HTTP plan server; Go goroutines stream planner/summary/per-file build requests; client applies staged changes and launches local shell process groups. Server starts LiteLLM proxy.",
+    "service_boundary": "Client owns local file application/command process; server owns plan jobs, Git plan repositories/active stream state and its proxy, consumes PostgreSQL/model endpoints. It is a plan service consumer/owner split, not arbitrary shared kernel fabric."
+  },
+  "summary": "Remote staged-plan coding agent with model role pipeline, context maps/loading, cumulative file changes, operator-selectable automation and failure-driven local execution/retry.",
+  "inspection": {
+    "files": [
+      "quarantine/plandex/app/server/main.go",
+      "quarantine/plandex/app/cli/cmd/tell.go",
+      "quarantine/plandex/app/cli/plan_exec/tell.go",
+      "quarantine/plandex/app/server/handlers/plans_exec.go",
+      "quarantine/plandex/app/server/model/plan/tell_exec.go",
+      "quarantine/plandex/app/server/model/plan/activate.go",
+      "quarantine/plandex/app/server/model/client.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_main.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_processor.go",
+      "quarantine/plandex/app/server/types/reply.go",
+      "quarantine/plandex/app/server/model/plan/build_exec.go",
+      "quarantine/plandex/app/server/model/plan/build_whole_file.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_finish.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_status.go",
+      "quarantine/plandex/app/server/model/plan/tell_context.go",
+      "quarantine/plandex/app/cli/lib/context_auto_load.go",
+      "quarantine/plandex/app/cli/stream_tui/update.go",
+      "quarantine/plandex/app/cli/lib/apply.go",
+      "quarantine/plandex/app/cli/lib/apply_proc.go",
+      "quarantine/plandex/app/cli/plan_exec/apply_exec.go",
+      "quarantine/plandex/app/server/model/plan/tell_summary.go",
+      "quarantine/plandex/app/server/db/summary_helpers.go",
+      "quarantine/plandex/app/server/db/convo_helpers.go",
+      "quarantine/plandex/app/server/handlers/plans_versions.go",
+      "quarantine/plandex/app/server/db/git.go",
+      "quarantine/plandex/app/cli/cmd/rewind.go",
+      "quarantine/plandex/app/server/model/plan/stop.go",
+      "quarantine/plandex/app/server/model/plan/tell_load.go",
+      "quarantine/plandex/app/cli/cmd/plan_exec_helpers.go",
+      "quarantine/plandex/app/server/handlers/plan_config.go",
+      "quarantine/plandex/app/server/hooks/hooks.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_usage.go",
+      "quarantine/plandex/app/cli/main.go",
+      "quarantine/plandex/app/server/setup/setup.go",
+      "quarantine/plandex/app/cli/api/clients.go",
+      "quarantine/plandex/app/server/db/db.go",
+      "quarantine/plandex/app/shared/plan_config.go",
+      "quarantine/plandex/app/server/notify/errors.go",
+      "quarantine/plandex/app/cli/cmd/connect.go",
+      "quarantine/plandex/app/cli/cmd/continue.go",
+      "quarantine/plandex/app/server/routes/routes.go",
+      "quarantine/plandex/app/server/model/plan/tell_stream_processor_test.go",
+      "quarantine/plandex/app/server/syntax/unique_replacement_test.go",
+      "quarantine/plandex/app/server/model/parse/subtasks_test.go",
+      "quarantine/plandex/app/cli/cmd/set_config.go",
+      "quarantine/plandex/app/shared/ai_models_packs.go",
+      "quarantine/plandex/README.md",
+      "quarantine/plandex/app/server/model/plan/build_structured_edits.go",
+      "quarantine/plandex/app/server/model/plan/tell_stage.go",
+      "quarantine/plandex/app/server/model/plan/state.go",
+      "quarantine/plandex/app/cli/cmd/load.go",
+      "quarantine/plandex/app/cli/cmd/root.go",
+      "quarantine/plandex/app/cli/lib/active_stream.go",
+      "quarantine/plandex/app/cli/cmd/log.go",
+      "quarantine/plandex/app/server/model/litellm.go"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "tell / POST /plans/{planId}/{branch}/tell",
+      "surface": "operator command / authenticated API",
+      "input": "Prompt or piped/file text; branch, context/build/auto-continue/exec flags, session ID",
+      "output": "Streaming reply/build/load events, model-stream ID, staged plan state or errors",
+      "lifecycle": "Launches server job; --bg returns while server continues; same plan/branch active stream rejected",
+      "authority": "Operator/program auth and plan authorization; model participates through response protocol",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "PlandexBlock / ### Move Files / ### Remove Files / ### Reset Changes",
+      "surface": "model response protocol",
+      "input": "File path/lang/content; source/destination or paths; end tags",
+      "output": "Operation records and per-path pending builds/staged file results",
+      "lifecycle": "Parsed from streamed text; queues build work while planning may continue",
+      "authority": "Model emits operations; server dispatch enabled outside chat-only and according to build mode; local apply separate",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13",
+        "e14",
+        "e16",
+        "e17"
+      ]
+    },
+    {
+      "name": "### Files \u2192 AutoLoadContextFiles / POST .../auto_load_context",
+      "surface": "model response / client service API",
+      "input": "Backtick file paths restricted to submitted project map; client uploads selected file bodies",
+      "output": "Context records, skip/size messages and acknowledgement for server wait",
+      "lifecycle": "UI performs local reads; server waits 30 seconds then continues/errors",
+      "authority": "Model selects within available paths; authenticated client has filesystem access and bounds",
+      "evidence": [
+        "e20",
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e55"
+      ]
+    },
+    {
+      "name": "build / PATCH /plans/{planId}/{branch}/build",
+      "surface": "operator API / planner dispatch",
+      "input": "Pending proposed operations grouped by path",
+      "output": "PlanFileResult staged content/removal and build events/IDs",
+      "lifecycle": "Go workers concurrent across paths; per-path queue and flags",
+      "authority": "Server model roles generate/apply structured proposal; no workspace execution implied by build",
+      "evidence": [
+        "e15",
+        "e16",
+        "e17",
+        "e18",
+        "e54"
+      ]
+    },
+    {
+      "name": "apply / PATCH /plans/{planId}/{branch}/apply",
+      "surface": "operator command / local client + server API",
+      "input": "Current staged changes, confirmation/commit/exec/debug options",
+      "output": "Local file changes, optional project commit, server applied state, rollback record",
+      "lifecycle": "Tentatively writes files, then command execution; success commits server applied state",
+      "authority": "Operator manual or selected full-auto flags; proposed model content interpreted by client",
+      "evidence": [
+        "e26",
+        "e27",
+        "e59",
+        "e54"
+      ]
+    },
+    {
+      "name": "_apply.sh / execApplyScript",
+      "surface": "model-produced script / client execution",
+      "input": "Shell script or explicit command; inherited cwd/env/stdin",
+      "output": "Live merged output, exit code, success/failure; no durable process handle",
+      "lifecycle": "Local process group; forwarded signal then 2-second kill escalation; temp script removed",
+      "authority": "AutoExec or operator confirmation; ordinary OS authority; generated set/trap/shebang lines rewritten",
+      "evidence": [
+        "e27",
+        "e28",
+        "e29",
+        "e30"
+      ]
+    },
+    {
+      "name": "GetOnApplyExecFail / debug retry",
+      "surface": "operator workflow / client program",
+      "input": "Exit status/output, rollback plan, attempt bound",
+      "output": "New failure prompt, planner changes and next application attempt",
+      "lifecycle": "Rollback tracked file changes then TellPlan/apply; configured attempt limit may prompt user for extension",
+      "authority": "Operator chooses autonomy; model fixes project task through ordinary plan loop, not harness refit protocol",
+      "evidence": [
+        "e31",
+        "e50"
+      ]
+    },
+    {
+      "name": "continue",
+      "surface": "operator command",
+      "input": "Current plan/branch and refreshed config-derived flags",
+      "output": "New streamed planner iteration on persisted plan state",
+      "lifecycle": "New request with IsUserContinue; active stream exclusion applies",
+      "authority": "Authenticated operator; no serialized suspended provider request",
+      "evidence": [
+        "e53",
+        "e6"
+      ]
+    },
+    {
+      "name": "connect / PATCH .../connect / ps",
+      "surface": "operator command / authenticated API",
+      "input": "Plan/branch or active stream selection",
+      "output": "Existing server stream rendered in new client",
+      "lifecycle": "Attach to still-running server; not a new provider peer",
+      "authority": "Authorized operator; server work outlives detached client",
+      "evidence": [
+        "e52",
+        "e48",
+        "e55"
+      ]
+    },
+    {
+      "name": "stop / DELETE .../stop",
+      "surface": "operator command / authenticated API",
+      "input": "Active plan/branch",
+      "output": "Abort event, stopped partial message when persistence succeeds",
+      "lifecycle": "Routes to owning host; cancellation deferred even if partial-store operation fails",
+      "authority": "Authenticated plan authority; stop cancels plan and summary, local command needs separate OS signal",
+      "evidence": [
+        "e39",
+        "e40",
+        "e29"
+      ]
+    },
+    {
+      "name": "convo / log / GET .../convo / GET .../logs",
+      "surface": "operator query / authenticated API",
+      "input": "Plan/branch; client conversation or Git history selection",
+      "output": "Original stored conversation JSON or Git log/SHA list",
+      "lifecycle": "Read repository operation; corrupt message read errors; log retention/history scope differs",
+      "authority": "Authenticated operator; no full-event model query language traced",
+      "evidence": [
+        "e35",
+        "e36",
+        "e54"
+      ]
+    },
+    {
+      "name": "rewind / PATCH .../rewind",
+      "surface": "operator command / authenticated API",
+      "input": "Target SHA; optional local project reversion choice",
+      "output": "Reset plan repository and token metadata, optional local restored files",
+      "lifecycle": "Git hard-reset state rollback; further local restoration can fail independently",
+      "authority": "Authenticated operator; not model projection repair preserving immutable event history",
+      "evidence": [
+        "e36",
+        "e37",
+        "e38"
+      ]
+    },
+    {
+      "name": "set-config / set-auto / PUT /plans/{planId}/config",
+      "surface": "operator command / authenticated API",
+      "input": "PlanConfig fields or autonomy preset",
+      "output": "Stored config; command cache updated by client paths",
+      "lifecycle": "Config write immediate; CLI captures flags at command boundary; server reloads role settings each iteration",
+      "authority": "Operator/config API; no model editable workflow language or deferred affected-work fence exposed",
+      "evidence": [
+        "e42",
+        "e43",
+        "e50",
+        "e60",
+        "e41"
+      ]
+    },
+    {
+      "name": "RegisterHook / ExecHook",
+      "surface": "server embedding API",
+      "input": "Hook name and Go function; structured plan/auth/request/build payloads",
+      "output": "HookResult or ApiError",
+      "lifecycle": "Synchronous registration/execution; some dispatchers call asynchronously",
+      "authority": "Server program/deployment code; not normal model-discovered user script",
+      "evidence": [
+        "e44",
+        "e45"
+      ]
+    },
+    {
+      "name": "RegisterNotifyErrFn / NotifyErr",
+      "surface": "server embedding primitive",
+      "input": "Severity and arbitrary monitoring data",
+      "output": "Optional callback side effect",
+      "lifecycle": "No registered callback means no-op; callback panics caught",
+      "authority": "Host/server integration; no state-rich model bead contract",
+      "evidence": [
+        "e51"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model text proposes file/move/remove/reset operations; server stages results, client loads files and later applies local writes with rollback metadata. Application is not a transactional filesystem sandbox.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e16",
+        "e23",
+        "e26",
+        "e59"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Client runs generated _apply.sh with inherited OS authority/process group, merged output and signal escalation. Server also owns a LiteLLM proxy. No persistent shell job handle traced.",
+      "evidence": [
+        "e1",
+        "e28",
+        "e29",
+        "e30"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model-produced _apply.sh composes OS commands and is executed by local client; streamed file operations/builds produce code edits rather than model-authored programs composing harness tools. No general tool-code interpreter traced.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e31"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Inspected planner/build loop and local _apply.sh execution establish fresh command processes; persistent evaluable kernel/session variables are not established.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Server consumes PostgreSQL for plan/config/summary metadata with timeouts; no model-accessible standing SQL/data-workspace action was traced.",
+      "evidence": [
+        "e49",
+        "e34"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fixed context\u2192planning\u2192implementation/build/apply/debug workflow with model-produced task/operation text and tunable automation. Server Go hooks permit embedding; no ordinary model-editable orchestration program/discovery was traced.",
+      "evidence": [
+        "e7",
+        "e14",
+        "e21",
+        "e31",
+        "e44",
+        "e50"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Architect/planner/coder/builder/summary roles resolve actual model requests and role packs; per-file builders and background summary can overlap. This is pipeline role division, not peer room.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e18",
+        "e19",
+        "e61"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Remote plan streams permit operator reconnection and multiple model roles. Same plan/branch rejects concurrent active streams; inspected paths expose no live model peer mailbox/room.",
+      "evidence": [
+        "e6",
+        "e52",
+        "e61"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Server Go planner jobs, background summaries, per-file build queues and independent plans/branches overlap; process-local active registry plus DB host metadata coordinate streams. Ordering/race invariants not runtime-validated.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e15",
+        "e19"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Stop delivers abort then partial-save attempt and cancellation; CLI commands can restart/continue against saved state. Local shell signal handling is separate from remote plan stop. No busy-turn prompt injection traced.",
+      "evidence": [
+        "e39",
+        "e40",
+        "e53",
+        "e29"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model creates/removes task/operation text and configured AutoContinue governs a compiled stage machine. Go hooks can gate requests; no general model-authorized redefinition of turn program exposed.",
+      "evidence": [
+        "e7",
+        "e21",
+        "e44",
+        "e50"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Summary rows separate from original per-message JSON; budget selects fitting summary prefix then later original messages. Timestamp-based projection and ID fallback are actual mechanisms, not loss validation.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e34",
+        "e35"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Original conversations and Git plan rewind/reload support operator reconstruction; model can request additional mapped file context. No model-issued summary repair/restoration with original-event attribution protocol traced; rewind resets plan history head.",
+      "evidence": [
+        "e23",
+        "e33",
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Original conversation/state files and Git commits are retained separately from summary projection, but debug logs rotate, request dump is commented out, optional request-completion hooks may be absent/fail, shell captures scanner text only. Not comprehensive immutable audit.",
+      "evidence": [
+        "e35",
+        "e8",
+        "e44",
+        "e45",
+        "e46",
+        "e29",
+        "e37"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Authenticated conversation and Git history/SHA APIs permit useful plan study; internal SQL summary query exists. No unified query over provider wire/process/UI/config/original event stream traced.",
+      "evidence": [
+        "e34",
+        "e35",
+        "e36",
+        "e54"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator config updates persist immediately; CLI resolves automation flags at command start while server role/org settings reload each planner iteration. No coherent fence after all affected workflows or apply-now operation established.",
+      "evidence": [
+        "e41",
+        "e42",
+        "e43"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Detached client can reconnect to a living server; new continue request reconstructs plan state. Server shutdown waits bounded time before HTTP shutdown/proxy cleanup. No executable-context outpost handoff or enforced request/program quiescence before refit.",
+      "evidence": [
+        "e47",
+        "e52",
+        "e53",
+        "e1"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "CLI consumes authenticated cloud/self-host Go plan service and SSE streams; server consumes model HTTP services/DB and starts its own LiteLLM proxy. This server governs plan jobs rather than treating all computation as external shared fabric.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e9",
+        "e48",
+        "e49"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Bounded automated failure\u2192rollback\u2192model fix\u2192apply cycle can improve arbitrary project work; no model-governed harness autoresearch criterion/experiment selection/recompile continuity protocol traced.",
+      "evidence": [
+        "e31",
+        "e50",
+        "e47"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "RegisterNotifyErrFn provides host-injected error monitoring; absent callback no-ops. No model-invocable grievance filing that captures agent state/database bead semantics traced.",
+      "evidence": [
+        "e51"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Server APIs authenticate and authorize plans; autonomy presets can bypass routine apply/command confirmation. Local command inherits environment/stdin and OS authority; model is constrained by compiled response protocol and operator-supplied execution flags.",
+      "evidence": [
+        "e4",
+        "e27",
+        "e28",
+        "e39",
+        "e50"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read fixture oracles for exact operation rendering/state, task extraction and unique replacement. Stream processor test omits shouldStop assertion; none of these establishes provider/process cancellation, plan concurrency, summary fidelity or refit conformance. Not run.",
+      "evidence": [
+        "e56",
+        "e57",
+        "e58"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Creation timestamps order conversations/summaries; stream/build/plan IDs identify work. Actual first-token/inactivity, file-load and command signal/shutdown deadlines differ. No unified causal event order/audit time semantics established.",
+      "evidence": [
+        "e6",
+        "e10",
+        "e20",
+        "e29",
+        "e34",
+        "e35",
+        "e47"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/plandex/app/server/main.go",
+      "start": 14,
+      "end": 36,
+      "claim": "Go HTTP server starts/owns a LiteLLM proxy, registers proxy shutdown, initializes DB and serves routes."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/plandex/app/cli/cmd/tell.go",
+      "start": 41,
+      "end": 99,
+      "claim": "CLI resolves project/auth and config-derived flags, calls TellPlan, optionally applies local changes after it returns."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/plandex/app/cli/plan_exec/tell.go",
+      "start": 127,
+      "end": 151,
+      "claim": "CLI submits prompt, project path set, execution/context/build/continuation flags and session ID to remote TellPlan."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/plandex/app/server/handlers/plans_exec.go",
+      "start": 23,
+      "end": 118,
+      "claim": "Authenticated authorized TellPlan handler decodes request, initializes provider clients, launches modelPlan.Tell and optionally connects response stream."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/plandex/app/server/model/plan/tell_exec.go",
+      "start": 32,
+      "end": 70,
+      "claim": "Tell activates plan and launches an asynchronous Go planner iteration; return means launched, not completed."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/plandex/app/server/model/plan/activate.go",
+      "start": 27,
+      "end": 79,
+      "claim": "Activation rejects existing in-memory or DB model streams for plan/branch and records host and model-stream identity."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/plandex/app/server/model/plan/tell_exec.go",
+      "start": 177,
+      "end": 203,
+      "claim": "Context/planning/implementation stages select architect/planner/coder role configurations."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/plandex/app/server/model/plan/tell_exec.go",
+      "start": 494,
+      "end": 581,
+      "claim": "Request selects fallback, builds streamed messages/config/stop token, retains original request in RAM, starts provider call and listener; request-file dump is commented out."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/plandex/app/server/model/client.go",
+      "start": 323,
+      "end": 391,
+      "claim": "Provider request JSON posts to configured chat-completions URL with context, auth and SSE stream reader; actual HTTP request dispatch is wired."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_main.go",
+      "start": 59,
+      "end": 150,
+      "claim": "Separate goroutine receives blocking stream chunks while main listener handles context cancellation and first-token/inactivity timeout; retry allowed before any content."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_processor.go",
+      "start": 58,
+      "end": 155,
+      "claim": "Chunks feed ReplyParser, optionally use visible reasoning, guard an existing-but-unloaded file, append rendered reply, stream it and dispatch new operations."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/plandex/app/server/types/reply.go",
+      "start": 193,
+      "end": 270,
+      "claim": "Parser recognizes file-labelled/XML PlandexBlock and move/remove/reset section headers; completed code block becomes file operation."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/plandex/app/server/types/reply.go",
+      "start": 295,
+      "end": 330,
+      "claim": "Remove/reset paths become deduplicated pending operations; parser exposes file/operation state and tokens."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_processor.go",
+      "start": 540,
+      "end": 590,
+      "claim": "New operations queue build work in auto build mode with reply/path/content/move/remove/reset fields and append active operation list."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/plandex/app/server/model/plan/build_exec.go",
+      "start": 86,
+      "end": 138,
+      "claim": "Go build queues are grouped by path with IsBuildingByPath flags; different paths launch asynchronous builds while same-path work is queued."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/plandex/app/server/model/plan/build_exec.go",
+      "start": 247,
+      "end": 310,
+      "claim": "Move queues separate remove/create builds; removal returns a staged PlanFileResult rather than mutating operator workspace."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/plandex/app/server/model/plan/build_exec.go",
+      "start": 359,
+      "end": 397,
+      "claim": "New files yield staged content result; existing files dispatch structured edit strategy."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/plandex/app/server/model/plan/build_whole_file.go",
+      "start": 25,
+      "end": 110,
+      "claim": "Whole-file fallback prepares source/proposal prompt, selects builder role and invokes model.ModelRequest with plan/build/message identities."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_finish.go",
+      "start": 98,
+      "end": 147,
+      "claim": "Finished reply is stored before launching background summary model call using separately cancellable SummaryCtx."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_finish.go",
+      "start": 160,
+      "end": 223,
+      "claim": "File load requests stream to client, wait up to 30 seconds for client acknowledgement, then continuation launches a new planner iteration."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_status.go",
+      "start": 150,
+      "end": 224,
+      "claim": "Planning stage follows context/task flags and AutoContinue; implementation checks task completion and 200-iteration cap. That cap is not applied to planning branch."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/plandex/app/server/model/plan/tell_context.go",
+      "start": 383,
+      "end": 441,
+      "claim": "Model selects backtick-enclosed file paths from declared ProjectPaths during planning; ### Files counts explicit selection."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/plandex/app/cli/lib/context_auto_load.go",
+      "start": 17,
+      "end": 151,
+      "claim": "Client loads selected files with file/count/total-size limits, encodes images/normalizes text, and calls AutoLoadContext even for empty selection to release waiting server."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/plandex/app/cli/stream_tui/update.go",
+      "start": 499,
+      "end": 533,
+      "claim": "TUI response dispatcher starts loadContextCmd for server load request and quits on error/finish/abort."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/plandex/app/cli/stream_tui/update.go",
+      "start": 743,
+      "end": 763,
+      "claim": "loadContextCmd calls real AutoLoadContextFiles with its own background-derived cancellation context; completion is UI message."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/plandex/app/cli/lib/apply.go",
+      "start": 193,
+      "end": 250,
+      "claim": "Local tentative ApplyFiles precedes execution; success then marks server plan applied and optionally commits operator project."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/plandex/app/cli/lib/apply.go",
+      "start": 254,
+      "end": 298,
+      "claim": "_apply.sh or explicit command content is shown and executed only after user confirmation or AutoExec."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/plandex/app/cli/lib/apply.go",
+      "start": 352,
+      "end": 425,
+      "claim": "Generated script gets fixed shell error header, removes user shebang/set/trap lines, writes local executable script and starts shell with inherited environment/stdin and merged stdout/stderr."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/plandex/app/cli/lib/apply.go",
+      "start": 438,
+      "end": 568,
+      "claim": "Signal handler forwards signals to group then SIGKILL after 2 seconds; waits command, collects scanner text, asks success after interrupt and feeds exit/output into failure continuation."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/plandex/app/cli/lib/apply_proc.go",
+      "start": 8,
+      "end": 15,
+      "claim": "Local command uses process group and negative PID signal targeting."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/plandex/app/cli/plan_exec/apply_exec.go",
+      "start": 26,
+      "end": 164,
+      "claim": "AutoDebug compares attempt bound, otherwise offers operator choices; retry rolls back tracked file changes, sends failure status/output to TellPlan and reapplies recursively."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/plandex/app/server/model/plan/tell_summary.go",
+      "start": 60,
+      "end": 138,
+      "claim": "Conversation budget selects stored summary that fits limits; timestamp lookup has message-ID fallback, and missing usable summary can error."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/plandex/app/server/model/plan/tell_summary.go",
+      "start": 144,
+      "end": 230,
+      "claim": "Request projection retains stored conversation separately: summary replaces prefix for provider request, later messages selected by timestamp; no summary deletion of originals here."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/plandex/app/server/db/summary_helpers.go",
+      "start": 10,
+      "end": 43,
+      "claim": "Summaries are separate PostgreSQL rows filtered by latest conversation message ID and ordered by created_at."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/plandex/app/server/db/convo_helpers.go",
+      "start": 22,
+      "end": 131,
+      "claim": "Original conversation messages are per-ID JSON files; retrieval fails on unreadable/corrupt files, sorts by creation time; store writes file and DB token metadata."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/plandex/app/server/handlers/plans_versions.go",
+      "start": 16,
+      "end": 183,
+      "claim": "Authenticated APIs expose Git history/SHA list and plan rewind; rewind resets repository and synchronizes token metadata."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/plandex/app/server/db/git.go",
+      "start": 460,
+      "end": 466,
+      "claim": "Plan rewind calls git reset --hard to requested SHA; it is ordinary Git state rollback, not immutable original event retention."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/plandex/app/cli/cmd/rewind.go",
+      "start": 393,
+      "end": 418,
+      "claim": "After server rewind, client can optionally apply analyzed project changes to local workspace, separately confirmed."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/plandex/app/server/handlers/plans_exec.go",
+      "start": 258,
+      "end": 331,
+      "claim": "Stop routes to active host, authenticates/authorizes, sends aborted message, attempts partial-reply persistence and defers cancel even if DB operation fails."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/plandex/app/server/model/plan/stop.go",
+      "start": 10,
+      "end": 49,
+      "claim": "Stop cancels summary and active plan; stopped partial assistant message is saved through StoreConvoMessage."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/plandex/app/server/model/plan/tell_load.go",
+      "start": 20,
+      "end": 92,
+      "claim": "Every planner iteration reloads settings and org-user configuration under repository operation; request flags remain supplied request state."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/plandex/app/cli/cmd/plan_exec_helpers.go",
+      "start": 158,
+      "end": 207,
+      "claim": "Operator execution flags derive from plan config at CLI command start unless explicitly supplied."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/plandex/app/server/handlers/plan_config.go",
+      "start": 56,
+      "end": 89,
+      "claim": "Authorized config update writes config immediately; handler does not enqueue activation fence or cancel an active plan."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/plandex/app/server/hooks/hooks.go",
+      "start": 170,
+      "end": 183,
+      "claim": "Server program may register in-process hook function; no-hook execution succeeds with empty result. This is compiled embedding API, not discovered model script interface."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_usage.go",
+      "start": 32,
+      "end": 73,
+      "claim": "Optional completion hook receives request/result and model/plan/message IDs asynchronously; hook error only logged."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/plandex/app/cli/main.go",
+      "start": 47,
+      "end": 58,
+      "claim": "Client debug logger rotates at 10 MB with 3 backups and 28-day age; debug log is not unlimited audit retention."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/plandex/app/server/setup/setup.go",
+      "start": 119,
+      "end": 184,
+      "claim": "Shutdown waits up to 60 seconds for active plans before HTTP shutdown and registered hooks; request admission is not closed before wait in this path."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/plandex/app/cli/api/clients.go",
+      "start": 23,
+      "end": 54,
+      "claim": "Client consumes cloud/default or authenticated self-host server with auth/version headers."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/plandex/app/server/db/db.go",
+      "start": 24,
+      "end": 63,
+      "claim": "Server consumes configured PostgreSQL DB with timeout settings and connection pool; it is internal plan storage rather than model standing SQL interface."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/plandex/app/shared/plan_config.go",
+      "start": 128,
+      "end": 145,
+      "claim": "Full-auto preset enables continuation/build/context/apply/commit/exec/debug and five auto debug attempts."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/plandex/app/server/notify/errors.go",
+      "start": 18,
+      "end": 33,
+      "claim": "Server embedding may register monitoring callback; unregistered NotifyErr is no-op. No exposed model complaint action/state bead traced."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/plandex/app/cli/cmd/connect.go",
+      "start": 30,
+      "end": 55,
+      "claim": "CLI reconnects chosen plan/branch to existing server stream and starts terminal UI."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/plandex/app/cli/cmd/continue.go",
+      "start": 36,
+      "end": 63,
+      "claim": "Continue launches a new TellPlan request with IsUserContinue rather than resuming a serialized in-flight stack."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/plandex/app/server/routes/routes.go",
+      "start": 131,
+      "end": 163,
+      "claim": "Native APIs expose current state, apply, rejection, diffs, context CRUD/body, conversation, rewind, logs, branches, settings, status and tell/build."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/plandex/app/server/routes/routes.go",
+      "start": 173,
+      "end": 202,
+      "claim": "Native API routing exposes model packs/config/active-stream connection/stop/missing-file/auto-context acknowledgement."
+    },
+    {
+      "id": "e56",
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_processor_test.go",
+      "start": 453,
+      "end": 511,
+      "claim": "Table tests compare buffer/render/parser-state fields but do not assert got.shouldStop despite stop cases; isolated parser tests not provider/process lifecycle."
+    },
+    {
+      "id": "e57",
+      "path": "quarantine/plandex/app/server/syntax/unique_replacement_test.go",
+      "start": 7,
+      "end": 84,
+      "claim": "Replacement fixtures check exact unique/no/ambiguous-match return strings."
+    },
+    {
+      "id": "e58",
+      "path": "quarantine/plandex/app/server/model/parse/subtasks_test.go",
+      "start": 106,
+      "end": 125,
+      "claim": "Task parser asserts length and exact title/description/uses-files values against fixtures."
+    },
+    {
+      "id": "e59",
+      "path": "quarantine/plandex/app/cli/lib/apply.go",
+      "start": 622,
+      "end": 690,
+      "claim": "ApplyFiles gathers rollback content/mode before local writes, excludes _apply.sh, writes multiple files via Go goroutines."
+    },
+    {
+      "id": "e60",
+      "path": "quarantine/plandex/app/cli/cmd/set_config.go",
+      "start": 19,
+      "end": 95,
+      "claim": "Operator set-config/set-auto commands retrieve, mutate and submit plan configuration."
+    },
+    {
+      "id": "e61",
+      "path": "quarantine/plandex/app/shared/ai_models_packs.go",
+      "start": 133,
+      "end": 151,
+      "claim": "Default role pack assigns architect/planner/coder, summary, builder, namer/commit/status roles across model configurations."
+    },
+    {
+      "id": "e62",
+      "path": "quarantine/plandex/app/server/model/litellm.go",
+      "start": 106,
+      "end": 135,
+      "claim": "Server starts Python uvicorn litellm_proxy subprocess with stdout/stderr forwarding; confirms supporting runtime role and ownership."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/plandex/app/server/model/plan/tell_stream_processor_test.go",
+      "focus": "Partial tag/stop-prefix rendering and parser state transitions",
+      "oracle": "Table expected stream/content/buffer/state comparisons; shouldStop is present in fixtures but not compared. Pure helper tests, not a provider/command lifecycle oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/plandex/app/server/syntax/unique_replacement_test.go",
+      "focus": "Unique and ambiguous approximate replacement",
+      "oracle": "Exact expected matched string or empty rejection for fixed fixtures, no generative/file lifecycle evidence.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/plandex/app/server/model/parse/subtasks_test.go",
+      "focus": "Model task-text parsing",
+      "oracle": "Exact fixture count/title/description/file-list assertions; no planner semantic correctness.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Separates proposed edits from local application and traces failure-driven rollback/retry with explicit autonomy levels.",
+    "Persisted conversation originals plus separate summary projections and plan Git versions allow useful context/history study.",
+    "Go service/client separation exposes durable plan/branch/stream identity, client reconnect and concurrent per-file construction."
+  ],
+  "limits": [
+    "Fixed response-text protocol/stage machine is much narrower than general model-editable workflow/turn programs.",
+    "Stop preserves partial reply best effort and cancels; local command cancellation separate; no outpost/refit quiescence protocol.",
+    "Conversation/state/version retention and optional request hook are not a full immutable core audit.",
+    "Implementation continuation has 200 cap but inspected planning branch does not apply it.",
+    "Read parser tests omit shouldStop assertion; lifecycle/concurrency/summary loss remain unvalidated.",
+    "Go/native service architecture is study material and does not override operator language distrust or imply adoption."
+  ],
+  "arconaut_questions": [
+    "Can staged-plan changes be a programmable workflow option while preserving ordinary direct-tool modes and model control over programs?",
+    "Which work identity belongs to Arconaut client versus separately governed fabric, and what continues across client refit without pausing shared service?",
+    "How should original conversation/event storage support model repair of a selected summary projection without a destructive whole-plan rewind?",
+    "How should configuration versions bind to complete affected workflows when role settings refresh every iteration but command flags were captured earlier?",
+    "What direct cancellation/quiescence oracle detects remaining provider receivers, local process groups and background summaries before arcorefit?",
+    "Should failure diagnosis retain raw command bytes and uncertain effects rather than reconstruct only scanner text and rollback known file edits?"
+  ]
+}

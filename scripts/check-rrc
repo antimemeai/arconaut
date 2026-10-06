@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Development-only actual-process persistence/RRC qualification; no providers."""
+import os
+import json
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+binary = str(Path(sys.argv[1]).resolve())
+launcher = str(Path(sys.argv[2]).resolve())
+environment = dict(os.environ, ARCO_EXECUTABLE=binary)
+with tempfile.TemporaryDirectory(prefix="arco-rrc-") as tmp:
+    root = Path(tmp)
+    workflow = root / 'turn.lua'
+    workflow.write_text('''local items=arco.context().entries
+local last=items[#items].item.content
+local pid=arco.call("exec", {command='printf "%s" "$PPID"'}).output
+if last:find("Restart/resume note:",1,true) then
+  assert(last:find("CHECKS_PASSED_NEXT_VERIFY",1,true))
+  assert(#items==2 and items[1].item.content=="FIRST_PROMPT")
+  print("NEW_PID="..pid)
+  print("RRC_OK")
+else
+  print("OLD_PID="..pid)
+  arco.call("restart", {note="CHECKS_PASSED_NEXT_VERIFY"})
+  assert(arco.restarting())
+end
+''')
+    def run(args, text='/exit\n'):
+        result=subprocess.run(args,input=text,capture_output=True,text=True,timeout=20,env=environment)
+        assert result.returncode==0, (result.stdout,result.stderr)
+        return result.stdout
+    output=run([launcher,'--session',str(root/'session'),'--workflow',str(workflow),
+                '--model','fixture-model','--effort','low','--once','FIRST_PROMPT'])
+    assert 'RRC_OK' in output, output
+    old=re.search(r'OLD_PID=(\d+)',output); new=re.search(r'NEW_PID=(\d+)',output)
+    assert old and new and old[1]!=new[1], output
+    def state(output):
+        return next(json.loads(line[line.index('{'):]) for line in output.splitlines()
+                    if '"workflow_id"' in line)
+    first=state(run([binary,'--session',str(root/'session'),'--plain'], '/session\n/exit\n'))
+    assert first['model']=='fixture-model' and first['effort']=='low' and first['workflow']==str(workflow),first
+    second=state(run([binary,'--session',str(root/'session'),'--plain','--model','override'],
+                     '/effort nonsense\n/session\n/exit\n'))
+    assert second['model']=='override' and second['effort']=='low',second
+    for key in ('actor','conversation','workflow_id'): assert first[key]==second[key],(first,second)
+    third=state(run([binary,'--session',str(root/'session'),'--plain'],
+                    '/effort high\n/model changed\n/session\n/exit\n'))
+    fourth=state(run([binary,'--session',str(root/'session'),'--plain'], '/session\n/exit\n'))
+    assert third==fourth and fourth['model']=='changed' and fourth['effort']=='high'
+    escaped=run([binary,'--session',str(root/'session'),'--plain'],
+                r"/lua print('\u{0080}')"+'\n/exit\n')
+    assert r'\xc2\x80' in escaped and '\x80' not in escaped, escaped
+    # Consumed restart cannot inject or make a second provider/workflow turn.
+    output=run([binary,'--session',str(root/'session'),'--resume-once'])
+    assert 'RRC_OK' not in output, output
+    # A turn failure after requesting restart must stay in this executable.
+    output=run([binary,'--session',str(root/'failure'),'--plain'],
+               '/lua arco.call("restart",{note="do not restart"}); error("fixture")\n/session\n/exit\n')
+    assert 'context/audit retained' in output,output
+    run([binary,'--session',str(root/'failure'),'--resume-once'])
+    # Reopen before consumption must not inject. Resume injects once, even if
+    # context was injected before a crash and intent consumption follows later.
+    intent=subprocess.run([binary,'--session',str(root/'pending'),'--workflow',str(workflow),
+                           '--plain'],input='/restart CHECKS_PASSED_NEXT_VERIFY\n',
+                          capture_output=True,text=True,timeout=20,env=environment)
+    assert intent.returncode==75,intent.stderr
+    normal=run([binary,'--session',str(root/'pending'),'--plain'],'/context\n/exit\n')
+    assert 'Restart/resume note:' not in normal,normal
+print('Actual launcher replaces PID, preserves settings/identity/context, injects once, and does not restart failed turns')
+
+with tempfile.TemporaryDirectory(prefix='arco-discovery-') as tmp:
+    root = Path(tmp)
+    session = root / "live 'quoted' session"
+    workflow = root / 'idle.lua'
+    workflow.write_text('print("LOCAL_ONLY")')
+    live = subprocess.Popen([binary, '--session', str(session), '--plain',
+        '--model', 'discovery-model', '--workflow', str(workflow)], stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        import time
+        deadline = time.monotonic() + 5
+        while not (session / 'session-info.json').exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        assert (session / 'session-info.json').exists(), 'session discovery summary missing'
+        broken = root / 'broken'
+        broken.mkdir(); (broken / 'audit').write_bytes(b'not an audit')
+        (broken / 'session-info.json').write_text('not JSON')
+        originals = {p: p.read_bytes() for p in [session/'audit', session/'session-info.json', broken/'audit']}
+        result = subprocess.run([binary, '--list-sessions', str(root)], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0, result.stderr
+        entries = json.loads(result.stdout)['sessions']
+        assert [e['path'] for e in entries] == sorted([str(broken.resolve()), str(session.resolve())])
+        entry = next(e for e in entries if e['path'] == str(session.resolve()))
+        assert entry['configuration']['model'] == 'discovery-model', entry
+        assert entry['last_activity_unix_seconds'] > 0
+        import shlex
+        assert shlex.split(entry['resume_command']) == ['./scripts/arco', '--session', str(session.resolve())]
+        assert next(e for e in entries if e['path']==str(broken.resolve()))['metadata_status'] == 'damaged'
+        assert all(p.read_bytes()==raw for p,raw in originals.items()), 'listing changed session files'
+        (broken / 'session-info.json').unlink()
+        os.mkfifo(broken / 'session-info.json')
+        result = subprocess.run([binary, '--list-sessions', str(root)], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0 and next(e for e in json.loads(result.stdout)['sessions']
+            if e['path']==str(broken.resolve()))['metadata_status'] == 'damaged', 'nonregular metadata blocked discovery'
+        missing = root / 'absent'
+        result = subprocess.run([binary, '--list-sessions', str(missing)], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0 and not missing.exists() and json.loads(result.stdout)['sessions']==[]
+    finally:
+        if live.poll() is None:
+            live.communicate('/exit\n', timeout=5)
+print('Session discovery live-owner, config/activity, stable path, damage and read-only checks pass')

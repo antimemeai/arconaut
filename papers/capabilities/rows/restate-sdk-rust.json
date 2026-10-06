@@ -1,0 +1,392 @@
+{
+  "id": "restate-sdk-rust",
+  "kind": "durable workflow/service SDK",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Compiled Tokio service handlers and typed client/context futures around external protocol VM; optional tunneled endpoint transport.",
+    "service_boundary": "Consumes Restate server/durable state and external effect services; SDK hosts a service endpoint, not an agent/model loop or service governor."
+  },
+  "summary": "Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs",
+  "inspection": {
+    "files": [
+      "quarantine/restate-sdk-rust/src/endpoint/context.rs",
+      "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "quarantine/restate-sdk-rust/src/context/run.rs",
+      "quarantine/restate-sdk-rust/src/endpoint/futures/durable_future_impl.rs",
+      "quarantine/restate-sdk-rust/README.md",
+      "quarantine/restate-sdk-rust/tests/tunnel_handover.rs",
+      "quarantine/restate-sdk-rust/tests/ingress_client.rs"
+    ],
+    "scope": "context traits/retry rules, RunFuture state machine, durable error interception and real fake-server ingress/tunnel lifecycle tests",
+    "limits": "Shared-core/server settlement and full fleet recovery studied separately. No compiled reference or tests ran."
+  },
+  "actions": [
+    {
+      "name": "#[service]/#[object]/#[workflow] + #[handler]; Endpoint.bind",
+      "surface": "Typed compiled handler/discovery",
+      "input": "Annotated Rust methods/context/input/output",
+      "output": "Service endpoint and typed generated clients",
+      "lifecycle": "Compiled deployment; durable runtime separate; object serial/exclusive key contract",
+      "authority": "Developer/service process; no model modification/approval loop",
+      "evidence": [
+        "e4",
+        "e5",
+        "e8"
+      ]
+    },
+    {
+      "name": "ctx.run(closure).name(...).retry_policy(...).await",
+      "surface": "Programmable journaled action",
+      "input": "FnOnce async closure with serialized output and retry policy",
+      "output": "Recorded typed result/terminal failure",
+      "lifecycle": "VM ExecuteRun→closure→propose completion→await; immediate-await restriction; no external atomicity guarantee",
+      "authority": "Service caller code/credentials; context operations forbidden inside run",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "service_client/object_client/workflow_client request.call/send",
+      "surface": "Typed durable RPC/send",
+      "input": "Target method/payload/key; idempotency/scope/delay",
+      "output": "Durable result future or invocation/send identity",
+      "lifecycle": "Server records/schedules retries; virtual-object waits can deadlock cycles",
+      "authority": "Caller/server routing; server owns durable work",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "ctx.signal / invocation_handle(id).signal(name).resolve",
+      "surface": "Addressed durable one-shot communication",
+      "input": "Invocation ID/name and serialized value",
+      "output": "Durable future completion",
+      "lifecycle": "Survives host attempt via server; not a bidirectional peer room",
+      "authority": "Program/server access to target invocation",
+      "evidence": [
+        "e6"
+      ]
+    },
+    {
+      "name": "IngressClient.call/send and invocation_handle",
+      "surface": "External typed service API",
+      "input": "Ingress URI, request, idempotency key",
+      "output": "Decoded result plus invocation ID/follow-up handle",
+      "lifecycle": "Request transport is replaceable; server work identity distinct from local client",
+      "authority": "External program with ingress authority",
+      "evidence": [
+        "e8",
+        "e10"
+      ]
+    },
+    {
+      "name": "Tunnel drain/overlapping replacement and close",
+      "surface": "Endpoint transport lifecycle",
+      "input": "Cloud drain/control and connection sessions",
+      "output": "Replacement session and reaped old/new drivers",
+      "lifecycle": "Connection handover; not application executable rebuild or unresolved-effect settlement",
+      "authority": "Endpoint/Cloud transport owner",
+      "evidence": [
+        "e9"
+      ]
+    },
+    {
+      "name": "ctx.get/get_keys/set/clear/clear_all",
+      "surface": "Typed contextual state API",
+      "input": "Object/workflow key and serialized value",
+      "output": "Server-owned typed KV state/read futures",
+      "lifecycle": "Object state across invocations; workflow state per run; attempts rebuild locals",
+      "authority": "Context type constrains readable/writable scope; server owns storage",
+      "evidence": [
+        "e11"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Developer Rust closures compose arbitrary external computations and journal chosen result; no model code-action evaluator.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Typed server-owned object/workflow get/get_keys/set/clear state; workflow run is writer, other handlers read. No model SQL dispatcher or persistent Rust stack.",
+      "evidence": [
+        "e11"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Typed async durable programs and generated clients compose; run must be immediately awaited and cannot include context operations to preserve deterministic replay.",
+      "evidence": [
+        "e2",
+        "e4"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Invocation-addressed one-shot signal primitive can compose participant communication; no live model room.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Durable sends/calls and signal/select primitives compose, but virtual-object key seriality can deadlock cycles and run immediate-await bounds composition.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Run state handles VM cancellation; transport drain reaps sockets/tasks. Neither proves user external effect/remote request physically canceled.",
+      "evidence": [
+        "e1",
+        "e9"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Journal chosen serialized result and failure; does not capture every closure-internal/provider/OS IO or semantic original context.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Replay contract supports new service attempts and tunnel handover supports transport replacement; no agent context/executable rebuild continuity mechanism established.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e9"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Typed server client and replaceable ingress consume external durable service; no governor responsibility assumed.",
+      "evidence": [
+        "e4",
+        "e8",
+        "e10"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this durable workflow/service SDK role: the reference supplies Rust typed service/object/workflow, journaled closure, durable call/wait and ingress APIs rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Developer supplied closures execute under service process authority; SDK has no model approval/policy program.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Captured ingress requests and fake HTTP2 drain/close tests attack wire/lifetime faults; no arbitrary effect crash-settlement oracle inspected.",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stable invocation/key order and retry policy; docs explicitly warn actual attempts/duration may exceed limits due to closure/result settlement gap.",
+      "evidence": [
+        "e3",
+        "e5"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/restate-sdk-rust/src/endpoint/context.rs",
+      "start": 1016,
+      "end": 1118,
+      "claim": "Run future executes closure only on VM ExecuteRun, proposes serialized result then waits VM result; cancellation branch explicit."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "start": 898,
+      "end": 973,
+      "claim": "Journaled result contract, no nested context use in run, and immediate-await restriction to avoid replay nondeterminism."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/restate-sdk-rust/src/context/run.rs",
+      "start": 28,
+      "end": 115,
+      "claim": "Named run/retry options; actual attempts/duration may exceed configured because closure executes before server receives result."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "start": 413,
+      "end": 471,
+      "claim": "Typed service/object/workflow call keys, idempotency scope and server-owned journal/retry contract."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "start": 566,
+      "end": 608,
+      "claim": "Virtual-object serial ordering and explicit cyclic deadlock limits."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "start": 830,
+      "end": 867,
+      "claim": "Named signal targets invocation ID/name; one-shot durable promise, composable select."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/restate-sdk-rust/src/endpoint/futures/durable_future_impl.rs",
+      "start": 25,
+      "end": 59,
+      "claim": "VM/internal future error marks context failed and returns Pending for handler state interception."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/restate-sdk-rust/README.md",
+      "start": 58,
+      "end": 86,
+      "claim": "Typed ingress client call and returned invocation handle contract."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/restate-sdk-rust/tests/tunnel_handover.rs",
+      "start": 24,
+      "end": 111,
+      "claim": "Fake Cloud HTTP2 session verifies distinct IDs/drain protocol and owned socket/driver task completion."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/restate-sdk-rust/tests/ingress_client.rs",
+      "start": 38,
+      "end": 98,
+      "claim": "Capture fake transport records exact requests and queued responses; no live server dependency in this oracle."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/restate-sdk-rust/src/context/mod.rs",
+      "start": 1067,
+      "end": 1148,
+      "claim": "Typed get/get_keys/set/clear traits forward to context; only objects/workflows carry writable KV scope."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/restate-sdk-rust/tests/tunnel_handover.rs",
+      "focus": "HTTP2 overlap/drain/close transport lifetime",
+      "oracle": "Fake Cloud sessions require drain acceptance/distinct IDs and await owned driver completion within timeout; transport liveness, not harness rebuild.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/restate-sdk-rust/tests/ingress_client.rs",
+      "focus": "Typed ingress wire requests and retained responses",
+      "oracle": "Deterministic capture transport permits literal route/header/body/error oracles; server durability/external side effects remain separate.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit state machine separates closure execution, result proposal and replay wait.",
+    "Typed invocation identity and direct fake transport/drain lifecycle oracles."
+  ],
+  "limits": [
+    "External side effect and journal completion are not one atomic transaction.",
+    "Immediate-await restriction and serial object cycles limit composition; connection handover is not self-refit."
+  ],
+  "arconaut_questions": [
+    "How should replay compatibility and side-effect settlement be represented when replacing a compiled workflow program?",
+    "Can service/tunnel identity remain independent of a refitting consumer while all that consumer’s active work is accounted for?"
+  ]
+}

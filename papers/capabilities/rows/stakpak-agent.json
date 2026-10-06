@@ -1,0 +1,936 @@
+{
+  "id": "stakpak-agent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Rust Tokio CLI/client and separate server session actors; native provider SDK; MCP server TaskManager owns local/SSH/background child processes; autopilot scheduler/gateway.",
+    "service_boundary": "Consumes provider HTTP/MCP/SSH/API; owns checkpoints/session services, schedule DB, task manager and optional sandbox containers. Shared persistent sandbox server-owned, ephemeral session-owned."
+  },
+  "summary": "Stakpak is a DevOps-oriented native agent with interactive/async CLI, server run coordination, local/remote tracked process tasks, optional child agents, skills/docs and standing autopilot schedules.",
+  "inspection": {
+    "files": [
+      "quarantine/stakpak-agent/cli/src/main.rs",
+      "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_async.rs",
+      "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_interactive.rs",
+      "quarantine/stakpak-agent/libs/api/src/client/provider.rs",
+      "quarantine/stakpak-agent/libs/server/src/session_actor.rs",
+      "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "quarantine/stakpak-agent/libs/server/src/session_manager.rs",
+      "quarantine/stakpak-agent/libs/ai/src/providers/openai/provider.rs",
+      "quarantine/stakpak-agent/libs/mcp/server/src/lib.rs",
+      "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "quarantine/stakpak-agent/libs/mcp/server/src/subagent_tools.rs",
+      "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "quarantine/stakpak-agent/libs/mcp/server/src/remote_tools.rs",
+      "quarantine/stakpak-agent/libs/agent-core/src/budget_context.rs",
+      "quarantine/stakpak-agent/libs/agent-core/src/compaction.rs",
+      "quarantine/stakpak-agent/libs/server/src/checkpoint_store.rs",
+      "quarantine/stakpak-agent/libs/server/src/event_log.rs",
+      "quarantine/stakpak-agent/cli/src/commands/watch/commands/run.rs",
+      "quarantine/stakpak-agent/cli/src/commands/autopilot/mod.rs",
+      "quarantine/stakpak-agent/libs/gateway/src/router.rs",
+      "quarantine/stakpak-agent/libs/gateway/src/dispatcher.rs",
+      "quarantine/stakpak-agent/libs/mcp/server/src/integrations/slack.rs",
+      "quarantine/stakpak-agent/libs/shared/src/hooks/mod.rs",
+      "quarantine/stakpak-agent/libs/agent-core/tests/budget_context_reducer.rs"
+    ],
+    "scope": "Traced both distinct CLI AgentClient completion/tool continuation and server agent-core actor -> native provider -> MCP result -> checkpoint/event continuation; inspected task lifecycle, subagent resume, router, scheduler reload, request trimming and source oracles.",
+    "limits": "Source read only, reference not executed. References not executed. Warden network enforcement/secret substitution full implementation and other provider protocols not audited; no full security assurance inferred. Gateway dispatcher state read at ownership boundary, not complete channel transport conformance. Cancellation/no-progress risks are source inferences, not reproduced runtime faults."
+  },
+  "actions": [
+    {
+      "name": "view, str_replace, create, remove",
+      "surface": "model MCP tools",
+      "input": "local or SSH path; line range/grep/glob/tree; exact old/new; file text; recursive; optional SSH auth",
+      "output": "text/tree/search max300 lines; mutation/errors and selected backup paths",
+      "lifecycle": "awaited; tools route local or SSH connection",
+      "authority": "profile/tool approval and sandbox/host boundary; uses operator OS/SSH authority",
+      "evidence": [
+        "e20",
+        "e26",
+        "e27"
+      ]
+    },
+    {
+      "name": "run_command, run_remote_command",
+      "surface": "model MCP tools",
+      "input": "command,description,timeout; remote/password/private_key_path",
+      "output": "formatted exit/output or error",
+      "lifecycle": "awaited synchronous service execution with optional timeout",
+      "authority": "approval/profile policy; local host or SSH connection",
+      "evidence": [
+        "e21"
+      ]
+    },
+    {
+      "name": "run_command_task, run_remote_command_task",
+      "surface": "model MCP tools",
+      "input": "command,description,timeout and optional remote auth",
+      "output": "task_id,status,start_time",
+      "lifecycle": "returns background task after bounded start check; manager owns process/remote connection",
+      "authority": "same tool policy; global manager not session-isolated",
+      "evidence": [
+        "e21",
+        "e22",
+        "e32",
+        "e34",
+        "e35"
+      ]
+    },
+    {
+      "name": "get_all_tasks, get_task_details, wait_for_tasks, cancel_task",
+      "surface": "model MCP tools",
+      "input": "task_id or whitespace task_ids; wait timeout",
+      "output": "status/output/duration/pause info; wait error or cancel result",
+      "lifecycle": "inspection/wait/terminate; cancelled task removed; no persisted process identity across manager death",
+      "authority": "task ID possession plus tool access; no session guard traced",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e32",
+        "e33"
+      ]
+    },
+    {
+      "name": "dynamic_subagent_task, resume_subagent_task",
+      "surface": "model MCP tools (flag enabled)",
+      "input": "instructions/context/tools/model/max_steps/sandbox; task_id decisions or new input",
+      "output": "background child task identity; paused checkpoint details; resumed new CLI invocation",
+      "lifecycle": "asynchronous subprocess; inspect/wait/cancel by task tools; checkpoint resume after paused/completed status",
+      "authority": "parent chooses child model/tools and approval input; launches same executable, not refit",
+      "evidence": [
+        "e20",
+        "e30",
+        "e31"
+      ]
+    },
+    {
+      "name": "search_docs, load_skill",
+      "surface": "model MCP tools",
+      "input": "keywords/search criteria; skill URI",
+      "output": "up to five docs results; local skill body/path or remote rulebook text",
+      "lifecycle": "awaited service/file read; load_skill local path restricted to configured directories",
+      "authority": "profile tools plus optional API; not model-owned persistent evidence DB",
+      "evidence": [
+        "e36",
+        "e38"
+      ]
+    },
+    {
+      "name": "generate_password, view_web_page",
+      "surface": "model MCP tools",
+      "input": "length/no_symbols; HTTPS url",
+      "output": "generated password; converted webpage text or error",
+      "lifecycle": "awaited native utility/HTTP action",
+      "authority": "tools/profile; output password itself returned as text",
+      "evidence": [
+        "e28"
+      ]
+    },
+    {
+      "name": "ask_user",
+      "surface": "model tool / TUI interception",
+      "input": "question option structures",
+      "output": "interactive answer in TUI; INTERACTIVE_REQUIRED at actual server handler",
+      "lifecycle": "requires interactive path, cannot be assumed available to autopilot/headless",
+      "authority": "model asks, operator answers",
+      "evidence": [
+        "e29"
+      ]
+    },
+    {
+      "name": "slack_read_messages, slack_read_replies, slack_send_message",
+      "surface": "optional model MCP tools",
+      "input": "channel/thread/message request",
+      "output": "API content/error",
+      "lifecycle": "awaited external transport via configured AgentProvider",
+      "authority": "optional Slack family/profile and credentials; no inherent model peer routing",
+      "evidence": [
+        "e20",
+        "e48"
+      ]
+    },
+    {
+      "name": "run_agent; AgentCommand Steering, FollowUp, SwitchModel, Cancel, ResolveTool(s)",
+      "surface": "programmable API / server operator API",
+      "input": "session/run identity; prompt, model or tool call decision",
+      "output": "typed run/turn/action events and messages/metadata",
+      "lifecycle": "steer between provider/tool phases, skip pending calls with result placeholders; follow-up after finish; no immediate cancellation during inference/approval wait",
+      "authority": "host/session API; stale run ID rejected",
+      "evidence": [
+        "e7",
+        "e10",
+        "e12",
+        "e13",
+        "e14",
+        "e15",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "CLI -a pause/resume checkpoints; interactive session/model/profile switching",
+      "surface": "operator commands",
+      "input": "prompt/session/checkpoint plus decisions/input, chosen profile/model",
+      "output": "pause manifest/outcome or continued chat",
+      "lifecycle": "CLI distinct pipeline; interactive stream cancellation select; profile outer loop restarts session services",
+      "authority": "operator; ordinary model/API config settings",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e55"
+      ]
+    },
+    {
+      "name": "autopilot schedule add/remove/enable/disable; cron/check scripts",
+      "surface": "operator / ordinary shell-program surface",
+      "input": "name,cron,prompt/check,profile,max_turns,sandbox,notification route",
+      "output": "scheduled run/session/checkpoint status in DB",
+      "lifecycle": "long-lived scheduler reconciles changed config; skip prior running schedule; errors can bypass singleton check",
+      "authority": "operator can configure; model can use shell as composition, no native workflow code interpreter",
+      "evidence": [
+        "e43",
+        "e44",
+        "e45"
+      ]
+    },
+    {
+      "name": "SSE event replay; latest/checkpoint messages API",
+      "surface": "operator / programmable client API",
+      "input": "session and event cursor or saved checkpoint identity",
+      "output": "typed event envelopes, replay or gap requiring snapshot refresh; saved messages",
+      "lifecycle": "bounded in-memory replay; latest envelope rename-replaced",
+      "authority": "server API; no permanent complete event audit",
+      "evidence": [
+        "e8",
+        "e9",
+        "e41",
+        "e42",
+        "e51"
+      ]
+    },
+    {
+      "name": "AgentHook / HookContext lifecycle",
+      "surface": "supplied host primitives",
+      "input": "compiled async callback around inference/tool/request and state",
+      "output": "error/Continue/Skip/Abort; mutable CLI inference context; server hook snapshots",
+      "lifecycle": "host-selected hooks; server AgentHook message slice is immutable",
+      "authority": "program author; no runtime model-owned turn replacement",
+      "evidence": [
+        "e6",
+        "e49"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native local/SSH view/grep/tree/str_replace/create/remove; bounded views and backup machinery. External tools selected by router/profile.",
+      "evidence": [
+        "e20",
+        "e26",
+        "e27"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Sync/background local+SSH command tasks with IDs/status/output/wait/cancel, null stdin/process groups; manager owns/terminates work.",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e32",
+        "e33",
+        "e34",
+        "e35"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell tasks can run ordinary programs, subprocess subagents and check scripts; no persistent general-purpose kernel/code-action interpreter traced.",
+      "evidence": [
+        "e21",
+        "e30",
+        "e44"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Not established in CLI/server loops or native MCP catalog; standing shell task is not a programmable interpreter namespace.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session/checkpoint/scheduler DB state internal; README memory claim does not establish model standing DB and search_memory tool is commented out.",
+      "evidence": [
+        "e37",
+        "e41",
+        "e44"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cron/check/prompt/profile workflows, background coordination and subprocess child checkpoint resume; hook primitives host compiled. No model-native program orchestration interpreter.",
+      "evidence": [
+        "e24",
+        "e30",
+        "e31",
+        "e43",
+        "e44",
+        "e45",
+        "e49"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Different per-profile/server models and explicit child model resolution; server SwitchModel applies later request boundary.",
+      "evidence": [
+        "e10",
+        "e15",
+        "e30",
+        "e55"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Child task/resume plus optional Slack read/send and gateway conversations can compose interaction; no model peer room/identity/broadcast/receipt protocol established.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e46",
+        "e47",
+        "e48"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent session actors, background process/subagent tasks and scheduled runs; one active run per session with stale-ID guards.",
+      "evidence": [
+        "e7",
+        "e16",
+        "e17",
+        "e21",
+        "e22",
+        "e30",
+        "e44"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Server steering skips unstarted calls with paired placeholders; follow-up after finish; MCP calls cancel-select. Inference/retry sleep/approval recv do not promptly observe flipped cancellation token. Interactive CLI has separate stream cancel select.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e11",
+        "e13",
+        "e14",
+        "e15",
+        "e17",
+        "e18"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled lifecycle hooks and configurable profiles/tool approval/turn count; request/action/continuation structure stays compiled. CLI mutable context hook broader than immutable server hook.",
+      "evidence": [
+        "e6",
+        "e9",
+        "e49"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Budget reducer trims request copies with stable metadata boundary and pairing cleanup; server overflow compactor is passthrough and repeats unchanged context with decremented turn count (source-inferred no-progress risk).",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11",
+        "e39",
+        "e40",
+        "e54"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Original message vectors remain in checkpoint while request reducer trims copies; CLI resumes selected saved checkpoint. No model selective history-repair action or untrim override traced.",
+      "evidence": [
+        "e3",
+        "e8",
+        "e9",
+        "e31",
+        "e39",
+        "e41"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Latest snapshots and bounded in-memory event ring; core text/reasoning deltas synthesized after full generate, nontext tool output omitted. Raw provider request/delta/everything journal not established.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e18",
+        "e41",
+        "e42"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cursor replay with explicit gap and snapshot/messages API plus scheduler histories/checkpoints; incomplete original audit and ring lost on server death.",
+      "evidence": [
+        "e41",
+        "e42",
+        "e45",
+        "e51"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scheduler config mtime/DB signal reconciliation preserves old state on parse/load error, rejects DB-path changes; CLI model changes/profile restart. No universal settled workflow activation transaction.",
+      "evidence": [
+        "e43",
+        "e45",
+        "e53",
+        "e55"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Versioned latest checkpoint and child pause/resume persist context; server/manager work ownership and kill-on-drop require composition for refit. No outpost/quiescence executable handoff traced.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e31",
+        "e35",
+        "e41",
+        "e55"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider HTTP/MCP/SSH/docs/rulebook/optional Slack gateway services; session host may share persistent sandbox at server scope.",
+      "evidence": [
+        "e8",
+        "e18",
+        "e19",
+        "e21",
+        "e22",
+        "e36",
+        "e38",
+        "e46",
+        "e48"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "File/program/skill editing is available; measured model-governed harness change/rebuild/evaluation loop not established in inspected paths.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "RunError and external notifications exist; model grievance with state capture and external complaint record not established.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "ToolApprovalPolicy per profile/server; allowlist/autopilot controls, run-ID validation and optional shared/ephemeral sandbox. Full Warden/secret security guarantee not audited in this study.",
+      "evidence": [
+        "e9",
+        "e16",
+        "e17",
+        "e20",
+        "e30",
+        "e38"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read concurrency guard, budget sanitation, ring gap and schedule reload tests. Drop child-kill named test lacks post-drop process liveness oracle.",
+      "evidence": [
+        "e50",
+        "e51",
+        "e52",
+        "e53",
+        "e54"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "UUID run/task IDs, request/turn counts, wall times, cron/durations and replay cursor; per-session counter allocated before ring lock is not a global durable causal order.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e32",
+        "e42",
+        "e43"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/stakpak-agent/cli/src/main.rs",
+      "start": 263,
+      "end": 277,
+      "claim": "Tokio native CLI entry."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_async.rs",
+      "start": 487,
+      "end": 544,
+      "claim": "Async CLI model request through AgentClient, accumulate usage and append assistant."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_async.rs",
+      "start": 602,
+      "end": 725,
+      "claim": "CLI pending-approval pause manifest/checkpoint and sequential MCP execution with hour timeout."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_interactive.rs",
+      "start": 1398,
+      "end": 1456,
+      "claim": "Interactive CLI streams AgentClient reply and races stream processing against cancellation; calls cancel_stream."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/stakpak-agent/libs/api/src/client/provider.rs",
+      "start": 178,
+      "end": 224,
+      "claim": "AgentClient hooks before/after request and creates saved session/checkpoint around completion."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/stakpak-agent/libs/api/src/client/provider.rs",
+      "start": 830,
+      "end": 914,
+      "claim": "Mutable CLI inference hook prepares input, local stakai chat/chat_stream dispatch and output hook."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_actor.rs",
+      "start": 43,
+      "end": 80,
+      "claim": "Server creates command queue/cancellation handle and owned session task; marks finished afterward."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_actor.rs",
+      "start": 94,
+      "end": 166,
+      "claim": "Session loads latest checkpoint; persistent sandbox shared at server scope or owned ephemeral container; host tools fallback explicit."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_actor.rs",
+      "start": 207,
+      "end": 328,
+      "claim": "Server baseline/periodic/terminal checkpoints; actual run_agent wiring uses PassthroughCompactionEngine and BudgetAwareContextReducer."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 66,
+      "end": 201,
+      "claim": "Core drains steering/model switches at boundary, request-copy context reduction and awaited inference; context overflow invokes compactor."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 201,
+      "end": 236,
+      "claim": "Overflow compacts, subtracts turn count and restarts; retries sleep without cancellation select."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 254,
+      "end": 389,
+      "claim": "Full inference result emits text/reasoning pseudo-deltas then assistant and proposed tool events; these are not raw provider stream chunks."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 420,
+      "end": 470,
+      "claim": "Follow-up queue runs after no-tool completion; terminal messages/metadata returned."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 490,
+      "end": 659,
+      "claim": "Sequential approval/action cycle keeps call pairing, appends cancelled/skipped placeholders and drains steering between actions."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/agent.rs",
+      "start": 659,
+      "end": 707,
+      "claim": "Approval wait blocks on command_rx.recv, with no cancellation-token select; commands include Steering, FollowUp, SwitchModel, Cancel."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_manager.rs",
+      "start": 48,
+      "end": 110,
+      "claim": "Atomic one-active-run per session with Starting reservation and stale-start handling."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_manager.rs",
+      "start": 146,
+      "end": 224,
+      "claim": "Commands/cancel validated by session/run ID; cancel_run only flips token."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_actor.rs",
+      "start": 600,
+      "end": 697,
+      "claim": "MCP metadata carries session/run/call IDs; tool request races token with response and sends cancellation notification; nontext output omitted."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/stakpak-agent/libs/ai/src/providers/openai/provider.rs",
+      "start": 489,
+      "end": 535,
+      "claim": "Native provider posts converted request for Responses or Chat Completions and parses response."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/lib.rs",
+      "start": 225,
+      "end": 278,
+      "claim": "Local/remote/combined router assembly; subagent and Slack tool families conditionally enabled."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 307,
+      "end": 414,
+      "claim": "Synchronous local/SSH commands and local background task delegation into TaskManager."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 436,
+      "end": 477,
+      "claim": "SSH background command creates remote connection and starts tracked task."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 492,
+      "end": 518,
+      "claim": "Task list displays manager-global tasks and paused-task progress."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 606,
+      "end": 688,
+      "claim": "cancel_task and wait_for_tasks operate task IDs with terminal statuses and optional timeout."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 703,
+      "end": 788,
+      "claim": "get_task_details returns status/output/paused details for task ID."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 827,
+      "end": 967,
+      "claim": "Filesystem view/search/tree and exact string replace/create route local or SSH path; view capped 300 lines."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 1121,
+      "end": 1152,
+      "claim": "remove routes recursive/local/remote operations."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 983,
+      "end": 1038,
+      "claim": "Password generation and HTTPS webpage fetch are actual tools."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/local_tools.rs",
+      "start": 3089,
+      "end": 3104,
+      "claim": "ask_user advertised but stub errors in server/headless; TUI intercept is required."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/subagent_tools.rs",
+      "start": 169,
+      "end": 270,
+      "claim": "Dynamic child tool resolves explicit/config/parent model and tools, launches CLI process as background task."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/subagent_tools.rs",
+      "start": 333,
+      "end": 430,
+      "claim": "Resume child reads paused/completed task checkpoint, builds a new CLI invocation and passes tool decisions or input."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "start": 278,
+      "end": 303,
+      "claim": "Task manager in-memory global HashMap and channels; no per-session task ownership field."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "start": 573,
+      "end": 594,
+      "claim": "Cancel removes task, sends cancel, kills local process group and aborts handle."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "start": 650,
+      "end": 681,
+      "claim": "Background subprocess uses null stdin/captured outputs and Unix own process group."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "start": 927,
+      "end": 940,
+      "claim": "Handle Drop signals shutdown that terminates owned tasks, not checkpoint-preserving pause."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/remote_tools.rs",
+      "start": 274,
+      "end": 311,
+      "claim": "search_docs routed to AgentProvider, cap five, sanitize text."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/remote_tools.rs",
+      "start": 319,
+      "end": 343,
+      "claim": "search_memory implementation is commented out, despite approval/README memory mentions."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/remote_tools.rs",
+      "start": 352,
+      "end": 406,
+      "claim": "load_skill reads configured-directory local file or remote rulebook."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/budget_context.rs",
+      "start": 133,
+      "end": 254,
+      "claim": "Budget reducer sanitizes pairing, trims assistant/tool text on request copy, persists monotonic trim boundary metadata; user/system preserved."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/stakpak-agent/libs/agent-core/src/compaction.rs",
+      "start": 24,
+      "end": 45,
+      "claim": "Passthrough compactor returns unchanged messages, equal whitespace-estimated counts and truncated false."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/stakpak-agent/libs/server/src/checkpoint_store.rs",
+      "start": 33,
+      "end": 109,
+      "claim": "Latest checkpoint atomically rename-replaced, with versioned message/metadata envelope."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/stakpak-agent/libs/server/src/event_log.rs",
+      "start": 35,
+      "end": 151,
+      "claim": "Server events kept bounded in-memory ring, per-session IDs/replay, explicit snapshot-required gap notices."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/stakpak-agent/cli/src/commands/watch/commands/run.rs",
+      "start": 435,
+      "end": 503,
+      "claim": "Hot schedule reload preserves current state on load errors, rejects DB-path change and reconciles future jobs."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/stakpak-agent/cli/src/commands/watch/commands/run.rs",
+      "start": 550,
+      "end": 583,
+      "claim": "Schedule singleton guard checks DB running state; DB check error proceeds anyway."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/stakpak-agent/cli/src/commands/autopilot/mod.rs",
+      "start": 2025,
+      "end": 2080,
+      "claim": "Operator schedule add/remove/enable/disable writes config and signals reload."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/stakpak-agent/libs/gateway/src/router.rs",
+      "start": 41,
+      "end": 86,
+      "claim": "DM/group/thread routing selects one conversation routing key; not independent model peer collaboration."
+    },
+    {
+      "id": "e47",
+      "path": "quarantine/stakpak-agent/libs/gateway/src/dispatcher.rs",
+      "start": 28,
+      "end": 49,
+      "claim": "Gateway active runs, pending input/approval and cursor maps are in-memory; crash recovery delegated to watch reconciler."
+    },
+    {
+      "id": "e48",
+      "path": "quarantine/stakpak-agent/libs/mcp/server/src/integrations/slack.rs",
+      "start": 82,
+      "end": 170,
+      "claim": "Optional native Slack read channel/thread and send actions through AgentProvider."
+    },
+    {
+      "id": "e49",
+      "path": "quarantine/stakpak-agent/libs/shared/src/hooks/mod.rs",
+      "start": 79,
+      "end": 122,
+      "claim": "CLI hook lifecycle and Continue/Skip/Abort policy points; mutable HookContext is host program surface."
+    },
+    {
+      "id": "e50",
+      "path": "quarantine/stakpak-agent/libs/server/src/session_manager.rs",
+      "start": 236,
+      "end": 275,
+      "claim": "Concurrent start test asserts exactly one success and one already-running conflict."
+    },
+    {
+      "id": "e51",
+      "path": "quarantine/stakpak-agent/libs/server/src/event_log.rs",
+      "start": 216,
+      "end": 273,
+      "claim": "Replay cursor and ring-overflow gap source oracles."
+    },
+    {
+      "id": "e52",
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "start": 1331,
+      "end": 1391,
+      "claim": "Drop test asserts manager exits; named child-kill test checks running before drop but has no post-drop liveness assertion."
+    },
+    {
+      "id": "e53",
+      "path": "quarantine/stakpak-agent/cli/src/commands/watch/commands/run.rs",
+      "start": 1849,
+      "end": 1885,
+      "claim": "Reload failure source oracle asserts false and unchanged registered schedule count."
+    },
+    {
+      "id": "e54",
+      "path": "quarantine/stakpak-agent/libs/agent-core/tests/budget_context_reducer.rs",
+      "start": 91,
+      "end": 137,
+      "claim": "Trimming oracle preserves user/system and expects some assistant/tool placeholder; no provider-token correctness proof."
+    },
+    {
+      "id": "e55",
+      "path": "quarantine/stakpak-agent/cli/src/commands/agent/run/mode_interactive.rs",
+      "start": 1170,
+      "end": 1218,
+      "claim": "Profile switch validates new config then sends shutdown/restarts outer session, not executable refit."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/stakpak-agent/libs/server/src/session_manager.rs",
+      "focus": "Double start / stale run",
+      "oracle": "Barrier two starts: exactly one success and one conflict; direct run-ID rejection tests. It does not prove cross-process coordination.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/stakpak-agent/libs/server/src/event_log.rs",
+      "focus": "Replay gap and cursor scope",
+      "oracle": "Sequential publications assert replay after cursor and ring-loss gap bounds; no restart durability or concurrent publisher ordering oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/stakpak-agent/libs/agent-core/tests/budget_context_reducer.rs",
+      "focus": "Request trimming/pair validity",
+      "oracle": "Checks user/system preserved and assistant/tool placeholders, pairing and trim boundary stability using estimator; not provider tokenizer correctness.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/stakpak-agent/libs/shared/src/task_manager.rs",
+      "focus": "Drop ownership / child kill claims",
+      "oracle": "Manager-exit flag checked; named child-kill test only asserts Running before drop then sleeps/cleans marker, no post-drop liveness assertion.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/stakpak-agent/cli/src/commands/watch/commands/run.rs",
+      "focus": "Failed reload retention",
+      "oracle": "Injected config-read failure returns false and keeps registered count; runtime token and schedule reconciliation tests separate.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Run IDs and atomic Starting reservation make per-session ownership/races explicit.",
+    "Concrete process task IDs, remote SSH handling and paused child checkpoints are useful lifecycle precedents.",
+    "Request-copy trimming separates presentation budget from stored original message vector.",
+    "Bounded replay reports missing events instead of silently promising completeness.",
+    "Schedule reload rejects incompatible storage changes and retains prior config on load error."
+  ],
+  "limits": [
+    "References not executed. Warden network enforcement/secret substitution full implementation and other provider protocols not audited; no full security assurance inferred. Gateway dispatcher state read at ownership boundary, not complete channel transport conformance. Cancellation/no-progress risks are source inferences, not reproduced runtime faults."
+  ],
+  "arconaut_questions": [
+    "Should cancellation wake every awaited phase and require acknowledged quiescence rather than setting a token?",
+    "How should compaction prove progress before retry and preserve retrievable original material?",
+    "Which process/task manager belongs in shared fabric, and which client identity/lease guards access?",
+    "How should schedule activation coordinate ongoing workflows and model-selected runtime changes?",
+    "What permanent raw audit and grievance capture must be added beyond replay ring/checkpoints?"
+  ]
+}

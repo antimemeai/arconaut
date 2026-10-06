@@ -1,0 +1,770 @@
+{
+  "id": "openagents-sdk",
+  "kind": "agent network/framework plus native-CLI workspace adapters",
+  "runtime": {
+    "languages": [
+      "Python",
+      "TypeScript (workspace UI, outside traced execution)"
+    ],
+    "execution": "asyncio SDK event network and bounded model/tool loop; separate per-channel native CLI subprocess adapters",
+    "service_boundary": "SDK owns network/mod/membership/project/cache fabric; individual workers/adapters consume it and native/provider services"
+  },
+  "summary": "Networked Python workers communicate through direct/channel events and configured tools; workspace adapters separately launch external coding CLIs. Several prototype/logging contracts are materially weaker than their names suggest.",
+  "inspection": {
+    "files": [
+      "quarantine/openagents-sdk/src/openagents/agents/collaborator_agent.py",
+      "quarantine/openagents-sdk/src/openagents/agents/worker_agent.py",
+      "quarantine/openagents-sdk/src/openagents/agents/runner.py",
+      "quarantine/openagents-sdk/src/openagents/agents/orchestrator.py",
+      "quarantine/openagents-sdk/src/openagents/lms/llm_logger.py",
+      "quarantine/openagents-sdk/src/openagents/lms/llm_log_reader.py",
+      "quarantine/openagents-sdk/src/openagents/sdk/event_gateway.py",
+      "quarantine/openagents-sdk/src/openagents/sdk/event_processor.py",
+      "quarantine/openagents-sdk/src/openagents/core/onm_events.py",
+      "quarantine/openagents-sdk/src/openagents/core/onm_pipeline.py",
+      "quarantine/openagents-sdk/src/openagents/sdk/network.py",
+      "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/adapter.py",
+      "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/mod.py",
+      "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/message_storage_helper.py",
+      "quarantine/openagents-sdk/src/openagents/mods/workspace/project/adapter.py",
+      "quarantine/openagents-sdk/src/openagents/mods/workspace/project/mod.py",
+      "quarantine/openagents-sdk/src/openagents/mods/core/shared_cache/adapter.py",
+      "quarantine/openagents-sdk/src/openagents/adapters/base.py",
+      "quarantine/openagents-sdk/src/openagents/adapters/claude.py",
+      "quarantine/openagents-sdk/src/openagents/adapters/llm_direct.py",
+      "quarantine/openagents-sdk/tests/workspace/test_worker_agent.py",
+      "quarantine/openagents-sdk/tests/mods/test_messaging_memory_management.py",
+      "quarantine/openagents-sdk/tests/test_onm_pipeline.py",
+      "quarantine/openagents-sdk/tests/lms/test_llm_logger.py",
+      "quarantine/openagents-sdk/README.md"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "WorkerAgent.react / @on",
+      "surface": "programmable API",
+      "input": "EventContext and event-pattern handler",
+      "output": "custom handler effects or AgentTrajectory",
+      "lifecycle": "matched handlers awaited before configured model trigger",
+      "authority": "Python author config; exposed tools determine model authority",
+      "evidence": [
+        "worker",
+        "trigger",
+        "run"
+      ]
+    },
+    {
+      "name": "AgentRunner.run_agent / run_llm / finish",
+      "surface": "programmable API / model tool",
+      "input": "context, instruction, iteration bound, selected tools; finish reason",
+      "output": "action trajectory, tool values/error strings, completion",
+      "lifecycle": "serial awaited tools and model calls until finish/direct answer/bound",
+      "authority": "configured model invokes installed tools without a per-call approval gate in this loop",
+      "evidence": [
+        "loop",
+        "dispatch"
+      ]
+    },
+    {
+      "name": "update_tools / configured Python tools / MCP",
+      "surface": "programmable API",
+      "input": "mod adapter tools, MCP config, module/function tool config",
+      "output": "current tool list; import failures logged/omitted",
+      "lifecycle": "snapshot refreshed explicitly; ongoing orchestration retains selected list",
+      "authority": "operator/Python author controls configured implementations",
+      "evidence": [
+        "tools",
+        "run"
+      ]
+    },
+    {
+      "name": "send_direct_message / send_channel_message / reply_channel_message",
+      "surface": "model tool / programmable API",
+      "input": "target_agent_id|channel, text, optional quote/mentioned_agent_id/reply_to_id",
+      "output": "EventResponse and message IDs; notifications with original ID",
+      "lifecycle": "network routing then in-memory recipient queue; not model-read receipt",
+      "authority": "connected agent; workspace/channel membership and secret boundary",
+      "evidence": [
+        "send",
+        "msg-tools",
+        "room",
+        "auth"
+      ]
+    },
+    {
+      "name": "retrieve_channel_messages / retrieve_direct_messages / list_channels",
+      "surface": "model tool / programmable API",
+      "input": "channel|peer, limit, offset, include_threads",
+      "output": "message/history dictionaries or empty timeout fallback",
+      "lifecycle": "awaited response; Worker history requests keyed by channel/peer",
+      "authority": "connected configured agent",
+      "evidence": [
+        "history",
+        "msg-tools"
+      ]
+    },
+    {
+      "name": "react_to_message / upload_file / get_agent_list",
+      "surface": "programmable API",
+      "input": "channel/message/reaction or local file path/filename",
+      "output": "EventResponse, file UUID or agent IDs",
+      "lifecycle": "awaited workspace calls; local/native file access depends on adapter",
+      "authority": "configured worker; not universal tool exposure",
+      "evidence": [
+        "send",
+        "history"
+      ]
+    },
+    {
+      "name": "start_project / stop_project / complete_project / get_project / send_project_message",
+      "surface": "model tool",
+      "input": "template ID, goal, collaborators; project ID/status/content",
+      "output": "project IDs/status/messages; template tools optionally final results",
+      "lifecycle": "creation response; optional polling until terminal status/time limit",
+      "authority": "model configured with project adapter; project permission checked on state operations",
+      "evidence": [
+        "project",
+        "projectwait",
+        "projectstate"
+      ]
+    },
+    {
+      "name": "set_project_global_state / get_project_global_state / create_cache",
+      "surface": "model tool / programmable API",
+      "input": "project/key/value or value/mime/allowed_agent_groups",
+      "output": "state values or cache ID/None",
+      "lifecycle": "remote mod state; cache correlated response wait ten seconds",
+      "authority": "authorized project member or configured shared-cache consumer",
+      "evidence": [
+        "projectstate",
+        "cache"
+      ]
+    },
+    {
+      "name": "schedule_task",
+      "surface": "programmable API",
+      "input": "delay seconds and zero-arg coroutine",
+      "output": "asyncio.Task",
+      "lifecycle": "resident delayed task; cancelled on teardown without await",
+      "authority": "Python worker author",
+      "evidence": [
+        "schedule",
+        "worker"
+      ]
+    },
+    {
+      "name": "AgentNetwork.process_event / subscribe / poll_events",
+      "surface": "network API",
+      "input": "Event source/destination/name/payload; subscriptions",
+      "output": "queued events and optimistic EventResponse",
+      "lifecycle": "in-memory fanout/dedup; poll drains before receiver processes",
+      "authority": "fabric owns transport/membership/secret verification; internal mods trusted",
+      "evidence": [
+        "gateway",
+        "delivery",
+        "auth"
+      ]
+    },
+    {
+      "name": "load_mod / unload_mod / restart",
+      "surface": "fabric API / system event",
+      "input": "Python mod path/config or new NetworkConfig",
+      "output": "success/error EventResponse or restart Boolean",
+      "lifecycle": "immediate shared mutation; restart shuts whole network; ID-only unload mismatch",
+      "authority": "network administrator/system-event surface; no turn-bound activation fence",
+      "evidence": [
+        "load",
+        "unload",
+        "restart",
+        "auth"
+      ]
+    },
+    {
+      "name": "Claude workspace adapter set_mode / stop",
+      "surface": "operator control",
+      "input": "plan|execute mode; stop action",
+      "output": "status; native CLI sessions/results",
+      "lifecycle": "mode changes next CLI command; stop terminates active groups and drops queues",
+      "authority": "workspace controller; execute passes native permission bypass",
+      "evidence": [
+        "control",
+        "claudeauth",
+        "stop",
+        "claudeturn",
+        "clauderesume"
+      ]
+    },
+    {
+      "name": "LLMCallLogger.log_call / LLMLogReader.get_logs",
+      "surface": "supporting API",
+      "input": "model/provider/messages/tools/response/latency; agent filters",
+      "output": "JSONL IDs and filtered records",
+      "lifecycle": "standalone append/rotation; main EventBased logger does not call it",
+      "authority": "Python consumer must wire it; logging failure does not prevent work",
+      "evidence": [
+        "filewrite",
+        "filelog",
+        "logread",
+        "log-noop"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "External Claude adapter exposes local Read/Write/Edit/Bash and uploads; SDK core instead supplies workspace/cache file APIs and configured custom tools. Direct text adapter has no tool loop.",
+      "evidence": [
+        "claudeauth",
+        "history",
+        "direct"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workspace Claude adapter owns external CLI process groups, streams output and has escalating stop; SDK model executor only awaits supplied tool implementations.",
+      "evidence": [
+        "claudeturn",
+        "stop",
+        "dispatch"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python event handlers and configured function tools can compose programs; traced model turn dispatches named JSON tools rather than model-authored general code cells.",
+      "evidence": [
+        "worker",
+        "tools",
+        "dispatch"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No model-addressable persistent Python execution kernel established in SDK orchestrator, messaging mods or workspace adapters inspected.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Remote project/global state and shared cache are supporting shared data services; no arbitrary standing SQL table/query API established in traced adapters.",
+      "evidence": [
+        "projectstate",
+        "cache"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Worker event triggers/custom handlers, Python coroutine scheduling, mod/MCP tools and generated project-template tools form exposed orchestration surfaces.",
+      "evidence": [
+        "worker",
+        "trigger",
+        "schedule",
+        "projectwait",
+        "tools"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Each configured AgentRunner resolves its own model/provider before orchestration; network peers may differ. Native workspace adapters separately use external CLIs.",
+      "evidence": [
+        "loop",
+        "run",
+        "claudeauth",
+        "providers"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "SDK agent direct/channel/group/broadcast messages and threaded replies carry shared-room notifications into event-triggered model reactions. Delivery receipts only prove routing/queue activity, sometimes even less.",
+      "evidence": [
+        "delivery",
+        "room",
+        "trigger",
+        "msg-tools"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workspace adapter serializes each channel and runs channels concurrently; SDK schedules resident tasks and multiple network participants. SDK tools within one turn are serial.",
+      "evidence": [
+        "adapterqueues",
+        "schedule",
+        "dispatch"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Workspace control can change mode and stop all current channel processes, losing queued messages; base shutdown gathers workers instead of cancelling them. No universal model/tool quiescence guarantee.",
+      "evidence": [
+        "control",
+        "stop",
+        "adapterqueues",
+        "worker"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python react override, templates/tool snapshots and mod pipeline are programmable building blocks. ONM staged guard/transform/observe pipeline is separate prototype, not this SDK loop.",
+      "evidence": [
+        "worker",
+        "loop",
+        "tools",
+        "pipeline",
+        "onm-separate",
+        "onm"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Claude adapter relays native compaction notices and infers compaction from quiet output; direct adapter simply drops oldest shared history. No managed cross-path compaction choices.",
+      "evidence": [
+        "claudeturn",
+        "clauderesume",
+        "direct"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "History retrieval, project state and native per-channel resume IDs can retrieve context; no repair/versioned projection operation preserving authoritative originals traced.",
+      "evidence": [
+        "history",
+        "projectstate",
+        "clauderesume"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Main SDK model logger is effectively no-op; message snapshots/archives overwrite, batch and expire. Separate JSONL logger can persist selected calls but neither guarantees complete original I/O retention.",
+      "evidence": [
+        "log-noop",
+        "retain",
+        "save",
+        "archive",
+        "filewrite",
+        "filelog"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Standalone LLMLogReader filters file-backed selected calls, and messaging history is queryable. They cannot query unrecorded main-loop calls or prove complete causal history.",
+      "evidence": [
+        "logread",
+        "history",
+        "log-noop"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tools refresh explicitly; live network mod load/unload and immediate adapter mode changes exist. No affected-turn/workflow activation fence; ID-only mod unload can leave instance reachable.",
+      "evidence": [
+        "tools",
+        "load",
+        "unload",
+        "control"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "External CLI session IDs resume channels; network restart shuts fabric and may continue after mod-load errors. No outpost transfer, request drain, reversible compile/refit or guaranteed child quiescence.",
+      "evidence": [
+        "clauderesume",
+        "restart",
+        "adapterqueues",
+        "worker"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agents consume authenticated event network and remote workspace/project/cache; SDK AgentNetwork is itself the fabric governor, distinct from Arconaut consumer role.",
+      "evidence": [
+        "auth",
+        "delivery",
+        "projectstate",
+        "cache"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Custom Python tools, module loading and external Bash/write permit editing/extensions; no model-governed experiment/recovery/adoption policy or executable continuity loop traced.",
+      "evidence": [
+        "tools",
+        "load",
+        "claudeauth"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No dedicated state-capturing model frustration/complaint record with separately tracked repair obligation established in studied SDK/adapters/project/messaging paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "SDK configured tools execute directly. External Claude execute mode bypasses approvals; plan restricts native/MCP set. Normal transport uses agent secrets but broad no-secret system-event exemption requires separate authorization review.",
+      "evidence": [
+        "dispatch",
+        "claudeauth",
+        "auth"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read tests cover mock worker message forwarding, actual temporary file logger/storage and separate ONM ordering. They do not validate durable logging of wired loop, live CLI termination or cross-channel direct-history isolation.",
+      "evidence": [
+        "log-noop",
+        "onm-separate",
+        "adapterqueues",
+        "direct"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Gateway overwrites timestamps with current seconds, dedup marks before processing and polling drains queues. Message IDs/future keys are not durable receiver acknowledgments or crash-safe causal ordering.",
+      "evidence": [
+        "gateway",
+        "delivery",
+        "history",
+        "adapterqueues"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "trigger",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/collaborator_agent.py",
+      "start": 11,
+      "end": 42,
+      "claim": "Configured event triggers or react-to-all invoke AgentRunner.run_agent; not every incoming event starts a model turn."
+    },
+    {
+      "id": "worker",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/worker_agent.py",
+      "start": 241,
+      "end": 338,
+      "claim": "Custom matched handlers run before collaborator reaction; handler exceptions log; teardown cancels scheduled tasks without awaiting their termination."
+    },
+    {
+      "id": "tools",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/runner.py",
+      "start": 113,
+      "end": 176,
+      "claim": "update_tools snapshots mod/MCP/configured Python tools; custom import failures degrade to an empty set and restore sys.path."
+    },
+    {
+      "id": "run",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/runner.py",
+      "start": 258,
+      "end": 293,
+      "claim": "run_agent passes selected mod/MCP/custom tools and current configuration/context into orchestrate_agent."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/orchestrator.py",
+      "start": 180,
+      "end": 256,
+      "claim": "Each orchestration builds templated system/user context; default maximum is ten iterations; awaits provider completion and attempted event-based logging."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/orchestrator.py",
+      "start": 322,
+      "end": 450,
+      "claim": "Model tools execute serially by name and parsed JSON arguments; finish ends chain, results/errors append to conversation, and model interaction failure ends trajectory."
+    },
+    {
+      "id": "log-noop",
+      "path": "quarantine/openagents-sdk/src/openagents/lms/llm_logger.py",
+      "start": 325,
+      "end": 391,
+      "claim": "Wired EventBasedLLMLogger constructs an entry then debug-logs and returns UUID only: no file write or network event occurs."
+    },
+    {
+      "id": "filelog",
+      "path": "quarantine/openagents-sdk/src/openagents/lms/llm_logger.py",
+      "start": 61,
+      "end": 89,
+      "claim": "Separate LLMCallLogger rotates at size threshold and deletes old files by configured retention; it is not the logger used in orchestrate_agent."
+    },
+    {
+      "id": "filewrite",
+      "path": "quarantine/openagents-sdk/src/openagents/lms/llm_logger.py",
+      "start": 159,
+      "end": 181,
+      "claim": "Standalone logger appends JSONL; errors are logged rather than propagated, with no fsync contract."
+    },
+    {
+      "id": "logread",
+      "path": "quarantine/openagents-sdk/src/openagents/lms/llm_log_reader.py",
+      "start": 51,
+      "end": 120,
+      "claim": "Standalone file reader supports model/since/error/search and pagination, skips malformed records; it cannot recover records never written by the main loop."
+    },
+    {
+      "id": "gateway",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/event_gateway.py",
+      "start": 117,
+      "end": 202,
+      "claim": "SDK timestamps are overwritten with current seconds; IDs enter dedup set before mod processing; first mod response intercepts, otherwise delivery reports success."
+    },
+    {
+      "id": "delivery",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/event_gateway.py",
+      "start": 203,
+      "end": 315,
+      "claim": "Channel/group/broadcast and direct routes enqueue subscribed recipients; missing recipient queue skips; polling drains in-memory queues without processing acknowledgments."
+    },
+    {
+      "id": "pipeline",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/event_processor.py",
+      "start": 49,
+      "end": 120,
+      "claim": "Live SDK uses ordered first-intercept mods, target-mod routing and shallow copied event; exceptions in ordinary pipeline log and continue."
+    },
+    {
+      "id": "onm-separate",
+      "path": "quarantine/openagents-sdk/src/openagents/core/onm_events.py",
+      "start": 1,
+      "end": 10,
+      "claim": "ONM envelope is explicitly separate from existing SDK Event; guard/transform/observer prototype is not the traced network path."
+    },
+    {
+      "id": "onm",
+      "path": "quarantine/openagents-sdk/src/openagents/core/onm_pipeline.py",
+      "start": 32,
+      "end": 103,
+      "claim": "Separate prototype sorts guard/transform/observer stages and exposes mutable mod registration; unit support does not establish agent availability."
+    },
+    {
+      "id": "load",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/network.py",
+      "start": 989,
+      "end": 1068,
+      "claim": "Runtime load_mod imports Python, binds/initializes then mutates mod registry and live processor dictionary; no turn/workflow fence or fresh-code reload."
+    },
+    {
+      "id": "unload",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/network.py",
+      "start": 1077,
+      "end": 1124,
+      "claim": "unload checks dynamic ID but retrieves instance by supplied path; ID-only call can unregister without finding/removing path-keyed running mod."
+    },
+    {
+      "id": "restart",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/network.py",
+      "start": 1200,
+      "end": 1256,
+      "claim": "Network restart owns network shutdown/config/module reset and continues even if module loading fails; not consumer-only executable refit."
+    },
+    {
+      "id": "auth",
+      "path": "quarantine/openagents-sdk/src/openagents/sdk/network.py",
+      "start": 867,
+      "end": 924,
+      "claim": "Transport authenticates normal events by agent secret, but no-secret system events except polling/unregister bypass this gate; internal mods bypass authentication."
+    },
+    {
+      "id": "send",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/worker_agent.py",
+      "start": 525,
+      "end": 620,
+      "claim": "Worker API sends direct/channel messages and replies/reactions via workspace connection, returning event responses."
+    },
+    {
+      "id": "history",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/worker_agent.py",
+      "start": 622,
+      "end": 732,
+      "claim": "History futures keyed only by channel/peer wait ten seconds; timeout/errors return empty-history shape, and concurrent same-channel requests can overwrite future."
+    },
+    {
+      "id": "schedule",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/worker_agent.py",
+      "start": 744,
+      "end": 758,
+      "claim": "schedule_task creates tracked asyncio sleep-then-coro task and returns Task handle, not persistent external scheduling."
+    },
+    {
+      "id": "msg-tools",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/adapter.py",
+      "start": 1268,
+      "end": 1429,
+      "claim": "Native tool schemas bind send_direct_message, send_channel_message, reply_channel_message, list_channels and retrieve history to adapter methods; threading limit and pagination are explicit."
+    },
+    {
+      "id": "room",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/mod.py",
+      "start": 1220,
+      "end": 1308,
+      "claim": "Unknown channel is created with all active agents; channel notifications carry original_event_id but per-recipient route errors are logged, not propagated as failed delivery."
+    },
+    {
+      "id": "retain",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/mod.py",
+      "start": 2176,
+      "end": 2215,
+      "claim": "Message history is mutable ID-keyed dictionary; cleanup/dumping run on insert and main snapshot saves every configured batch, independent of route success."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/message_storage_helper.py",
+      "start": 111,
+      "end": 164,
+      "claim": "Main message_history.json overwrites nonatomically; serialization/load/write errors log and may yield partial or empty history."
+    },
+    {
+      "id": "archive",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/messaging/message_storage_helper.py",
+      "start": 278,
+      "end": 357,
+      "claim": "Daily gzip archives merge IDs and overwrite; corrupt existing archive may be replaced after logged parse failure; archive errors log and retention deletes old data."
+    },
+    {
+      "id": "project",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/project/adapter.py",
+      "start": 43,
+      "end": 163,
+      "claim": "Tools expose list/start/stop/complete/get_project and project messaging with goal/template/collaborator IDs."
+    },
+    {
+      "id": "projectwait",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/project/adapter.py",
+      "start": 480,
+      "end": 561,
+      "claim": "Generic start returns creation response; generated template tools can wait by two-second polling for terminal project status with 300-second default limit."
+    },
+    {
+      "id": "projectstate",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/workspace/project/mod.py",
+      "start": 520,
+      "end": 564,
+      "claim": "Project state get/set checks project permission, then mutates state and returns prior/current values; not an exposed SQL database or persistent computation kernel."
+    },
+    {
+      "id": "cache",
+      "path": "quarantine/openagents-sdk/src/openagents/mods/core/shared_cache/adapter.py",
+      "start": 93,
+      "end": 160,
+      "claim": "Shared cache value/mime/group API sends event, waits up to ten seconds for correlated completion and returns cache ID or None."
+    },
+    {
+      "id": "adapterqueues",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/base.py",
+      "start": 178,
+      "end": 280,
+      "claim": "Adapter marks cursor/processed IDs before dispatch, serializes per-channel work in memory and runs separate channels concurrently; finally gathers active tasks rather than cancelling them."
+    },
+    {
+      "id": "control",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/base.py",
+      "start": 130,
+      "end": 154,
+      "claim": "Control set_mode immediately changes plan/execute; other actions delegate; cursor advances before action and exceptions are swallowed."
+    },
+    {
+      "id": "claudeauth",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/claude.py",
+      "start": 290,
+      "end": 389,
+      "claim": "Plan permits read-oriented tools with Claude plan mode; execute requests permission bypass plus Bash/write and workspace MCP; configuration is fixed for each launched CLI process."
+    },
+    {
+      "id": "stop",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/claude.py",
+      "start": 78,
+      "end": 162,
+      "claim": "Stop affects all running channel processes, escalates group termination, discards pending channel messages and posts status; it does not pause shared services."
+    },
+    {
+      "id": "claudeturn",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/claude.py",
+      "start": 474,
+      "end": 514,
+      "claim": "External Claude CLI launches per channel with stdout/stderr pipes and POSIX process group; fifteen-second quiet intervals are labeled compaction without proving actual compaction."
+    },
+    {
+      "id": "clauderesume",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/claude.py",
+      "start": 594,
+      "end": 675,
+      "claim": "Result session IDs persist channel resume map; system compaction notices surface; process wait followed by final text and temporary MCP cleanup, while most native outputs remain external CLI-owned."
+    },
+    {
+      "id": "direct",
+      "path": "quarantine/openagents-sdk/src/openagents/adapters/llm_direct.py",
+      "start": 117,
+      "end": 197,
+      "claim": "Direct adapter truncates shared conversation list and sends streaming chat-completion payload without tool schemas; same history is shared by concurrent channels."
+    },
+    {
+      "id": "providers",
+      "path": "quarantine/openagents-sdk/src/openagents/agents/orchestrator.py",
+      "start": 140,
+      "end": 177,
+      "claim": "Each orchestration resolves auto/environment or configured provider/model credentials and constructs its model provider."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/openagents-sdk/tests/workspace/test_worker_agent.py",
+      "focus": "Worker direct send and EventResponse forwarding",
+      "oracle": "MockWorkerAgent skips parent initialization and uses AsyncMock workspace send; asserts exact arguments/response fields, not real network delivery.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openagents-sdk/tests/mods/test_messaging_memory_management.py",
+      "focus": "Bounded in-memory messages and dump retention",
+      "oracle": "Temporary storage helper receives synthetic timestamps; count limit asserted; archive assertion conditional on directory existence, so not a fail-closed archival oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openagents-sdk/tests/test_onm_pipeline.py",
+      "focus": "Separate prototype rejection/transformation/stage order",
+      "oracle": "Synthetic guard/transform/observer implementations assert stage order and rejection; not the SDK gateway processor or network integration.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openagents-sdk/tests/lms/test_llm_logger.py",
+      "focus": "Standalone LLMCallLogger serialization",
+      "oracle": "Real temporary JSONL file existence and values are asserted; tested class differs from wired EventBasedLLMLogger, leaving no-op integration uncovered.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual event-triggered peer rooms with tool-backed messaging and project-state APIs.",
+    "Python handlers/mods and externally launched agents supply distinct extension levels.",
+    "Explicit plan/execute native tool set and process-group stop surface."
+  ],
+  "limits": [
+    "Wired model logger does not persist/send; standalone logger tests do not cover it.",
+    "ONM staged pipeline is future-envelope prototype; live SDK first-intercept mod processor has different semantics.",
+    "Adapter cursor advances before dispatch and direct adapter shares history across concurrent channels.",
+    "Network mutation/restart governs shared fabric and lacks turn fence/refit guarantees."
+  ],
+  "arconaut_questions": [
+    "What receipt distinguishes routed, queued, started, model-consumed and persisted messages?",
+    "How should shared provider-history isolation and audit integration be tested across concurrent channels?",
+    "Can model-configurable extension activation be fenced at affected turn/workflow boundaries while fabric remains independently managed?"
+  ]
+}

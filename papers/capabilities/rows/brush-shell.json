@@ -1,0 +1,309 @@
+{
+  "id": "brush-shell",
+  "kind": "embeddable native shell interpreter",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Async Rust shell core (Tokio in examples), OS process groups/jobs and mutable shell state.",
+    "service_boundary": "An application embeds a shell or invokes its executable; no provider or agent governor."
+  },
+  "summary": "Native shell composition, custom builtins and named jobs offer a strong OS integration reference, with explicit job-lifetime and timing limits.",
+  "inspection": {
+    "files": [
+      "quarantine/brush-shell/brush-core/examples/call-func.rs",
+      "quarantine/brush-shell/brush-core/examples/custom-builtin.rs",
+      "quarantine/brush-shell/brush-core/src/jobs.rs",
+      "quarantine/brush-shell/brush-core/src/history.rs",
+      "quarantine/brush-shell/brush-core/src/timing.rs",
+      "quarantine/brush-shell/brush-shell/tests/cases/compat/background_jobs.yaml"
+    ],
+    "scope": "Read embedding examples, job states/wait/signal/foreground paths, history representation, timing and background compatibility cases.",
+    "limits": "No full parser/Bash conformance audit; reference programs and test harness were not executed."
+  },
+  "actions": [
+    {
+      "name": "Shell::run_string / invoke_function",
+      "surface": "supplied primitive",
+      "input": "Shell source or named function, argv and FD execution parameters",
+      "output": "ExecutionResult/exit code, shell state and output streams",
+      "lifecycle": "Same embedded shell across calls.",
+      "authority": "Host application authority",
+      "evidence": [
+        "embed"
+      ]
+    },
+    {
+      "name": "Shell::builder().builtin",
+      "surface": "supplied primitive",
+      "input": "Native Command implementation and name",
+      "output": "Registered executable builtin with context/IO access",
+      "lifecycle": "Host construction; runtime uses registered implementation.",
+      "authority": "Embedding program; native change requires compilation",
+      "evidence": [
+        "builtin"
+      ]
+    },
+    {
+      "name": "Job::poll_done / wait / kill / move_to_foreground",
+      "surface": "supplied primitive",
+      "input": "Job identity, signal or scheduling request",
+      "output": "Completion/stopped result, process group effects or error",
+      "lifecycle": "Ongoing job lifecycle; no native rebuild continuity.",
+      "authority": "Shell/embedding application",
+      "evidence": [
+        "job",
+        "control"
+      ]
+    },
+    {
+      "name": "History::get_by_id / import",
+      "surface": "supplied primitive",
+      "input": "Item ID or line stream",
+      "output": "Mutable command-history entry",
+      "lifecycle": "Shell-local or persisted history import.",
+      "authority": "Embedding application",
+      "evidence": [
+        "history"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell redirections and ordinary commands can read/write filesystem; no model wrapper.",
+      "evidence": [
+        "embed"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Job/process-group handles and wait/poll/signal/foreground operations supply native process control.",
+      "evidence": [
+        "control"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable shell scripts/functions plus host-defined native builtins.",
+      "evidence": [
+        "embed"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Variables/functions/history remain in embedded Shell across run_string/invoke_function; OS child memory is separate.",
+      "evidence": [
+        "embed"
+      ]
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell pipelines/functions/jobs compose programs; native builtin extension API is available.",
+      "evidence": [
+        "builtin"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Background jobs have explicit local IDs, task lists and state; implicit waiting on shell exit is a known uncovered boundary.",
+      "evidence": [
+        "job",
+        "cases"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Signals, foreground ownership and job resumption are supplied primitives; no provider-turn interrupt.",
+      "evidence": [
+        "control"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mutable/imported command history may skip unreadable text and stores command entries, not complete original IO.",
+      "evidence": [
+        "history"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mutable command history can be queried by ID; does not retrieve all results or streams.",
+      "evidence": [
+        "history"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell functions can be redefined by scripts during shell life; native builtin executable replacement requires host machinery.",
+      "evidence": [
+        "embed"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Function redefinition is live, but no native host rebuild/handoff preserving jobs or provider identity was established in inspected embedding/job paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies embeddable native shell interpreter; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell scripts/custom builtins inherit embedding application authority; no per-model approvals.",
+      "evidence": [
+        "builtin"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Background cases use side effects after explicit wait; whole suite uses compatibility comparisons, but skipped exit-wait cases cannot prove lifecycle.",
+      "evidence": [
+        "cases"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Wall timing uses SystemTime and returns an error if clock goes backward; CPU accounting separate, no restart/paused-time semantics.",
+      "evidence": [
+        "time"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "embed",
+      "path": "quarantine/brush-shell/brush-core/examples/call-func.rs",
+      "start": 1,
+      "end": 71,
+      "claim": "A persistent shell defines/invokes a function and redirects file descriptors across calls."
+    },
+    {
+      "id": "builtin",
+      "path": "quarantine/brush-shell/brush-core/examples/custom-builtin.rs",
+      "start": 81,
+      "end": 143,
+      "claim": "Builtins execute against shell/context streams; builder registers native command implementation."
+    },
+    {
+      "id": "job",
+      "path": "quarantine/brush-shell/brush-core/src/jobs.rs",
+      "start": 213,
+      "end": 296,
+      "claim": "Jobs group tasks, process-group ID, command line, local ID and running/stopped/done state."
+    },
+    {
+      "id": "control",
+      "path": "quarantine/brush-shell/brush-core/src/jobs.rs",
+      "start": 343,
+      "end": 437,
+      "claim": "Poll/wait drain job tasks; background/foreground resume and kill act through process groups; background on nonstopped state is unimplemented."
+    },
+    {
+      "id": "history",
+      "path": "quarantine/brush-shell/brush-core/src/history.rs",
+      "start": 16,
+      "end": 99,
+      "claim": "History stores mutable command entries with IDs/timestamps and imports line-oriented command text; malformed UTF-8 may be skipped."
+    },
+    {
+      "id": "time",
+      "path": "quarantine/brush-shell/brush-core/src/timing.rs",
+      "start": 1,
+      "end": 60,
+      "claim": "Timing uses SystemTime for wall delta and self/child CPU time; backward wall-clock subtraction can error."
+    },
+    {
+      "id": "cases",
+      "path": "quarantine/brush-shell/brush-shell/tests/cases/compat/background_jobs.yaml",
+      "start": 1,
+      "end": 87,
+      "claim": "Implicit-exit-wait cases are skipped; explicit wait cases observe filesystem side effects."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/brush-shell/brush-shell/tests/cases/compat/background_jobs.yaml",
+      "focus": "Background side-effect visibility after wait and shell exit.",
+      "oracle": "Explicit wait runs test -f then echo exists, compared by compatibility runner; implicit exit waits are skipped issue #1079.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Native embedding exposes ordinary shell state, function calls and descriptor-level IO.",
+    "Explicit job IDs/process groups make ongoing operations inspectable."
+  ],
+  "limits": [
+    "Shell command history is not original audit.",
+    "Some background transition and implicit exit lifetime paths need targeted validation; wall timing is not monotonic."
+  ],
+  "arconaut_questions": [
+    "Can a model receive durable operation handles while using ordinary shell composition?",
+    "How is job identity transferred or deliberately released when the consuming harness refits?"
+  ]
+}

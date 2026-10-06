@@ -1,0 +1,535 @@
+{
+  "id": "open-interpreter",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "JavaScript (optional V8 code actions)"
+    ],
+    "execution": "Codex-derived Tokio session/turn/executor runtime with Rust-native harness-specific request/tool adapters; optional feature-gated V8 cell runtime and ACP/app-server clients.",
+    "service_boundary": "Owns local sessions, terminal tasks, adapters and scheduled cron state; consumes model/MCP/remote executor services; does not execute the original Python Open Interpreter runtime."
+  },
+  "summary": "Current Rust Open Interpreter distribution emulates provider-recommended harness surfaces on a Codex-derived core; distinct from the Python community lineage.",
+  "inspection": {
+    "files": [
+      "quarantine/open-interpreter/README.md",
+      "quarantine/open-interpreter/FORK_BRANDING.md",
+      "quarantine/open-interpreter/codex-rs/core/src/session/handlers.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/session/turn.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/harness/mod.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/harness/routing.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/harness/request.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/harness/kimi_code.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/kimi_code_cron.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/unified_exec/write_stdin.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/new_context_window.rs",
+      "quarantine/open-interpreter/codex-rs/core/src/session/step_activation.rs",
+      "quarantine/open-interpreter/codex-rs/code-mode-runtime/src/runtime/mod.rs",
+      "quarantine/open-interpreter/codex-rs/code-mode-runtime/src/runtime/globals.rs",
+      "quarantine/open-interpreter/codex-rs/rollout/src/policy.rs",
+      "quarantine/open-interpreter/codex-rs/rollout-trace/src/inference.rs",
+      "quarantine/open-interpreter/codex-rs/rollout-trace/src/payload.rs",
+      "quarantine/open-interpreter/codex-rs/tui/src/app/event_dispatch.rs",
+      "quarantine/open-interpreter/codex-rs/core/tests/suite/tool_harness.rs"
+    ],
+    "scope": "Fork identity; own submission/turn continuation and request transport routes; full alias dispatch catalog plus concrete shell/task/context/agent/cron actions; byte-identical inherited handler/audit files verified against inspected Codex; routing and shell oracle.",
+    "limits": "Source read only, reference not executed. No reference execution. Adapter names are harness emulation, not adoption/equivalence to upstream products. ReadSessionContext alias is explicitly unavailable; TaskStop emits Ctrl-C then announces success without proving process death. Optional V8 build availability is not distribution runtime validation."
+  },
+  "actions": [
+    {
+      "name": "exec_command; write_stdin; apply_patch",
+      "surface": "model tool",
+      "input": "Native command/session ID/patch/environment arguments",
+      "output": "Terminal output/exit/ongoing handle or patch results",
+      "lifecycle": "Native executor and cancellable task lifecycle inherited; direct schema depends on harness",
+      "authority": "Model with standing sandbox/approval profile",
+      "evidence": [
+        "e6",
+        "e7",
+        "e12"
+      ]
+    },
+    {
+      "name": "Bash; bash; Read/read; Write/write; Edit/edit; Glob/glob; Grep/grep; ReadMediaFile",
+      "surface": "model tool",
+      "input": "Harness-specific named command/path/content/offset/pattern schemas",
+      "output": "Adapter-shaped file/text/media/error results",
+      "lifecycle": "Awaited adapters; Bash background returns task ID/output path",
+      "authority": "Model with native underlying execution authority; emulated surface, not original upstream program",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "Agent; Task/task; TaskList; TaskOutput; TaskStop",
+      "surface": "model tool",
+      "input": "Description/prompt/model/role/background; task_id",
+      "output": "Child IDs/results; background process output; Ctrl-C acknowledgement",
+      "lifecycle": "Child spawn or task registry; stop acknowledgement does not prove death",
+      "authority": "Model; named native handler translations",
+      "evidence": [
+        "e6",
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "TodoRead/TodoWrite; checklist_add/list/update/write; EnterPlanMode; ExitPlanMode",
+      "surface": "model tool",
+      "input": "Typed todos/checklist; plan text",
+      "output": "Checklist/todo state or plan guidance",
+      "lifecycle": "In-memory/adapter state; plan methods return guidance text rather than enforcing read-only transition",
+      "authority": "Model; surface selected by harness",
+      "evidence": [
+        "e6",
+        "e10"
+      ]
+    },
+    {
+      "name": "ReadSessionContext",
+      "surface": "model tool",
+      "input": "sessionId/query/strategy/maxTokens",
+      "output": "Unavailable-for-provider-transport error",
+      "lifecycle": "No working dispatcher retrieval in inspected handler despite prompt builder/tests",
+      "authority": "Model advertised alias; limitation explicit",
+      "evidence": [
+        "e10"
+      ]
+    },
+    {
+      "name": "CronCreate; CronDelete; CronList",
+      "surface": "model tool",
+      "input": "cron expression,prompt,recurring; id",
+      "output": "Created/listed/deleted cron rows",
+      "lifecycle": "Session-owned standing scheduled prompt triggers",
+      "authority": "Model under Kimi Code surface",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "spawn_agent; send_message; followup_task; list_agents; wait_agent; interrupt_agent",
+      "surface": "model tool",
+      "input": "Native child/target/message/fork/model/time arguments",
+      "output": "Agent status/mail/results",
+      "lifecycle": "Independent child loops; message queue versus turn triggering distinct",
+      "authority": "Configured model delegation rules",
+      "evidence": [
+        "e9",
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "/harness; /model; interpreter acp/exec",
+      "surface": "operator command",
+      "input": "Named compiled harness/provider/model; prompt or ACP JSON-RPC",
+      "output": "Configuration/UI or protocol events",
+      "lifecycle": "Runtime config next-step activation; no user-code strategy compilation",
+      "authority": "Operator/program client",
+      "evidence": [
+        "e1",
+        "e4",
+        "e15",
+        "e20"
+      ]
+    },
+    {
+      "name": "functions.exec/wait (optional code mode)",
+      "surface": "model tool",
+      "input": "Raw JS; yield/cell ID/terminate",
+      "output": "Text/media or yielded cell results",
+      "lifecycle": "Feature-gated fresh V8 isolate with explicit serialized session storage",
+      "authority": "Nested enabled tool authority; no persistent Python namespace",
+      "evidence": [
+        "e16"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read/write/edit/glob/grep/media aliases dispatch native FS handlers; patch/native shell also available.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native exec/stdin and adapter background task IDs/output paths; TaskStop semantics are limited to Ctrl-C acknowledgement.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e12"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Optional feature-gated V8 code-mode runtime; ordinary shell strings and aliases are separate actions.",
+      "evidence": [
+        "e16"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional V8 uses fresh isolate per cell and explicit stored values; no original Python persistent namespace in this lineage.",
+      "evidence": [
+        "e1",
+        "e16"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Task/todo/checklist registries and durable cron rows are structured state primitives, not standing shared evidence database.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e11"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled request shaping/response adapters plus code-mode composition; names can switch, arbitrary model-authored turn workflow replacement not established.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e16",
+        "e20"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider wire routes/model switches and per-Agent model fields; emulated harness selector distinct from provider.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e20"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Inherited V2 queue-only addressed messages and trigger-turn follow-ups; own turn boundary accepts mailbox before continuation.",
+      "evidence": [
+        "e3",
+        "e13",
+        "e14"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Background terminal task IDs and native child sessions; model loop waits its own sampling/tool batch.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e9",
+        "e12"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Core submission interruption and boundary mailbox delivery exist; adapter TaskStop announces success on Ctrl-C write without confirming exit.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e8"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Selectable compiled harnesses alter request/tools/postprocessing; active next-step configuration, not arbitrary interpreted scheduling replacement.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e15",
+        "e20"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inherited turn pre-sampling compaction and context-window rollover; harness-specific summary prompts/formatting. Detailed per-harness replacement strategy not fully traced.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e18"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "ReadSessionContext alias explicitly errors; cleaned-transcript prompt helper does not make exposed repair implementation.",
+      "evidence": [
+        "e10"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Inherited rollout/optional trace captures selected payloads; raw inference stream deltas explicitly absent, adapter shaping further transforms tool outputs.",
+      "evidence": [
+        "e7",
+        "e17",
+        "e18"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Readable retained rollout and adapter task output files support program inspection; working model ReadSessionContext lookup absent.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e18"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Operator harness/model changes validated for next step; strategy implementations remain compiled Rust, no executable hot refit.",
+      "evidence": [
+        "e15",
+        "e20"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Inherited transcript/thread persistence exists; actual self-compile/outpost/quiescent executable handoff not established in inspected paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Wire routes consume compatible model APIs; inherited executor/MCP protocols and ACP clients provide service boundaries, not remote-governance plane.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e12"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Model file-editing and skill aliases are present; no dedicated executable experiment/evaluate/refit governance traced.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model state-capturing complaint action established in inspected compiled action catalog and session paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bash adapters translate escalation requests and underlying exec permissions; plan-mode aliases return instructions rather than enforced authority changes.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e12"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Routing tests assert supported/rejected wire-harness combinations; mock SSE shell test inspects exact second-request tool output. These do not establish vendor-harness behavioral equivalence.",
+      "evidence": [
+        "e4",
+        "e19"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Cron expression/prompt lifecycle, task IDs and core turn/call identities; not shared causal original ledger.",
+      "evidence": [
+        "e7",
+        "e11",
+        "e15"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/open-interpreter/README.md",
+      "start": 48,
+      "end": 105,
+      "claim": "Fork identifies harness emulation and ACP/exec compatibility; Rust lineage distinct from Python successor."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/session/handlers.rs",
+      "start": 413,
+      "end": 439,
+      "claim": "Submission loop accepts interruption independently of turn tasks."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/session/turn.rs",
+      "start": 537,
+      "end": 571,
+      "claim": "After sampling/tools it accepts mailbox input and continues for tool requests or pending steering."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/harness/routing.rs",
+      "start": 57,
+      "end": 155,
+      "claim": "Wire API/harness combination selects native/chat/messages transport or explicit unsupported error."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/harness/request.rs",
+      "start": 46,
+      "end": 137,
+      "claim": "Selected compiled strategy shapes prompts/request tools and response postprocessing."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "start": 151,
+      "end": 260,
+      "claim": "Native catalog and real alias dispatch for file/shell/agent/task/todo/plan/context operations."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "start": 553,
+      "end": 642,
+      "claim": "Bash maps command/background to native exec, stores task ID/output path and shapes output by harness."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "start": 1161,
+      "end": 1196,
+      "claim": "TaskStop writes Ctrl-C and reports successful stop without checking returned process death."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "start": 297,
+      "end": 343,
+      "claim": "Agent tool translates model/role/background request into native child spawn."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/harness_aliases.rs",
+      "start": 2566,
+      "end": 2610,
+      "claim": "Plan mode returns guidance strings; ReadSessionContext handler explicitly unavailable."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/kimi_code_cron.rs",
+      "start": 18,
+      "end": 92,
+      "claim": "CronCreate/Delete/List mutate session-owned scheduler through awaited handler."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/unified_exec/write_stdin.rs",
+      "start": 58,
+      "end": 122,
+      "claim": "Ongoing session-ID terminal IO with yield/output limits and permission errors; byte-identical inspected inherited implementation."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+      "start": 32,
+      "end": 52,
+      "claim": "Inherited V2 queue-only send handler."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+      "start": 32,
+      "end": 52,
+      "claim": "Inherited V2 trigger-turn follow-up handler."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/open-interpreter/codex-rs/core/src/session/step_activation.rs",
+      "start": 287,
+      "end": 336,
+      "claim": "Task/snapshot identity checked before atomic next-step configuration activation."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/open-interpreter/codex-rs/code-mode-runtime/src/runtime/mod.rs",
+      "start": 221,
+      "end": 264,
+      "claim": "Optional v8-runtime feature starts fresh isolate; state includes serialized stored values."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/open-interpreter/codex-rs/rollout-trace/src/inference.rs",
+      "start": 1,
+      "end": 96,
+      "claim": "Inherited optional request-attempt traces explicitly omit raw stream deltas."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/open-interpreter/codex-rs/rollout/src/policy.rs",
+      "start": 10,
+      "end": 65,
+      "claim": "Inherited retained transcript/checkpoint/tool-response persistence filters unknown items."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/open-interpreter/codex-rs/core/tests/suite/tool_harness.rs",
+      "start": 65,
+      "end": 136,
+      "claim": "Mock SSE tool-call then second request oracle checks actual shell output format and successful continuation."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/open-interpreter/codex-rs/tui/src/app/event_dispatch.rs",
+      "start": 2530,
+      "end": 2574,
+      "claim": "Operator harness/model selection stored in config and UI; entry point for changing compiled strategy."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/open-interpreter/codex-rs/core/src/harness/routing.rs",
+      "focus": "Wrong wire/harness routing",
+      "oracle": "Exact routing enum and unsupported messages-wire error assertions; cannot prove model performance or complete vendor parity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/open-interpreter/codex-rs/core/tests/suite/tool_harness.rs",
+      "focus": "Tool result continuation transport",
+      "oracle": "Mock SSE emits shell call; next captured provider request must carry exit0/output text; skipped without local networking and not run here.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Provider-specific ergonomics change tool schemas, request shaping and response interpretation on owned native core.",
+    "Portable ACP/exec interfaces coexist with harness adapters."
+  ],
+  "limits": [
+    "No reference execution. Adapter names are harness emulation, not adoption/equivalence to upstream products. ReadSessionContext alias is explicitly unavailable; TaskStop emits Ctrl-C then announces success without proving process death. Optional V8 build availability is not distribution runtime validation."
+  ],
+  "arconaut_questions": [
+    "How much turn-program variation should be genuinely model editable versus compiled named strategies?",
+    "Can our action success oracles distinguish acknowledgement from actual process death?",
+    "How should unavailable advertised context actions be caught before active model use?"
+  ]
+}

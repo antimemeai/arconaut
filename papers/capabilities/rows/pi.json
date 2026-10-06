@@ -1,0 +1,823 @@
+{
+  "id": "pi",
+  "kind": "interactive coding agent and separately exported agent runtimes",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript",
+      "QuickJS WebAssembly"
+    ],
+    "execution": "Ordinary CLI uses AgentSession over Agent/agent-loop in Node/Bun; codemode creates a fresh QuickJS worker sandbox per action. Separate exported durable/Pico3 harnesses are experimental and not transferred to baseline CLI claims.",
+    "service_boundary": "Owns local conversation tree, extension contexts and launched shell/stdio children; consumes provider runtimes, HTTP MCP services and injectable remote filesystem/process backends. Chord/durable runtime APIs exist separately."
+  },
+  "summary": "A small default coding tool set with unusually broad executable extension hooks, actual source-code tool composition, branch-local JSON state and provenance-preserving context projections; experimental durable runtime surfaces require distinct study.",
+  "inspection": {
+    "files": [
+      "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "quarantine/pi/packages/coding-agent/src/core/sdk.ts",
+      "quarantine/pi/packages/agent/src/agent-loop.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/index.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/bash.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/read.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/write.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/edit.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/grep.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/find.ts",
+      "quarantine/pi/packages/coding-agent/src/core/tools/ls.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/codemode/index.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/codemode/execute.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/codemode/tool.ts",
+      "quarantine/pi/packages/coding-agent/src/core/session-manager.ts",
+      "quarantine/pi/packages/coding-agent/src/core/extensions/runner.ts",
+      "quarantine/pi/packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "quarantine/pi/packages/coding-agent/src/core/nested-tool-calls.ts",
+      "quarantine/pi/packages/coding-agent/src/core/extensions/types.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/mcp/runtime.ts",
+      "quarantine/pi/packages/agent/src/harness/pico3/index.ts",
+      "quarantine/pi/packages/agent/src/harness/pico3/harness.ts",
+      "quarantine/pi/packages/coding-agent/test/session-context-edit.test.ts",
+      "quarantine/pi/packages/coding-agent/test/nested-tool-calls.test.ts",
+      "quarantine/pi/packages/coding-agent/test/experimental-plugin-reload.test.ts",
+      "quarantine/pi/README.md",
+      "quarantine/pi/packages/agent/docs/harness.md",
+      "quarantine/pi/packages/agent/examples/mcp-codemode/main.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/index.ts",
+      "quarantine/pi/packages/coding-agent/src/core/resource-loader.ts",
+      "quarantine/pi/packages/coding-agent/src/extensions/mcp/index.ts"
+    ],
+    "scope": "CLI SDK/session/loop/provider/tool boundaries, built-in code mode and nested calls, compaction/context edits/history access, reload/cancellation, MCP lifecycle and local test oracles read; experimental harness API/lifecycle and status documentation read separately.",
+    "limits": "No runtime/test execution. Durable operation state machine, Chord scheduler, full transport internals and all optional extensions not exhaustively traced. Do not apply experimental-harness documented recovery or plugin test behavior to the default CLI."
+  },
+  "actions": [
+    {
+      "name": "AgentSession.prompt / steer / followUp",
+      "surface": "operator/program API",
+      "input": "text/images, source and streamingBehavior",
+      "output": "persisted/queued input; events and eventual assistant/tool results",
+      "lifecycle": "steer is delivered after current tools; followUp after current run",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "entry",
+        "steer-abort",
+        "loop"
+      ]
+    },
+    {
+      "name": "read",
+      "surface": "model tool",
+      "input": "path, optional offset/limit",
+      "output": "bounded text or image content",
+      "lifecycle": "single cancellable read through injectable operations",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "read"
+      ]
+    },
+    {
+      "name": "write",
+      "surface": "model tool",
+      "input": "path, content",
+      "output": "write confirmation",
+      "lifecycle": "serialized file mutation holds lock through in-flight IO settlement",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "write"
+      ]
+    },
+    {
+      "name": "edit",
+      "surface": "model tool",
+      "input": "path, edits:[{oldText,newText}]",
+      "output": "diff/edit result",
+      "lifecycle": "unique nonoverlapping replacements against original content; file queue",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "edit"
+      ]
+    },
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "command, optional timeout seconds",
+      "output": "stream updates; structured output/truncated/full_output_path/exit_code/wall_time_seconds",
+      "lifecycle": "fresh spawn; awaits exit; abort/timeout invoke tree termination",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "bash",
+        "spawn"
+      ]
+    },
+    {
+      "name": "powershell",
+      "surface": "model tool",
+      "input": "command and shell-tool options",
+      "output": "registered shell operation; complete dispatch not inspected",
+      "lifecycle": "optional exported native tool, distinct from default bash",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "catalog"
+      ]
+    },
+    {
+      "name": "grep / find / ls",
+      "surface": "model tool",
+      "input": "grep regex/path/glob/case/literal/context/limit; find glob/path/limit; ls path/limit",
+      "output": "bounded search/file/directory results",
+      "lifecycle": "registered optional tools; ls execution and search schemas/abort excerpts inspected",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "catalog",
+        "search-schema",
+        "find",
+        "ls"
+      ]
+    },
+    {
+      "name": "codemode",
+      "surface": "model tool",
+      "input": "raw JavaScript source or {code}, optional source options deadline/output budget",
+      "output": "explicit text/image/return output, nested call metadata/errors; successful branch-local JSON store writes",
+      "lifecycle": "fresh sandbox per action; nested tools inherit pipeline; outstanding calls canceled on sandbox end; earlier side effects remain",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "codemode-load",
+        "codemode",
+        "codemode-contract",
+        "store"
+      ]
+    },
+    {
+      "name": "codemode tools.*, searchTools, describeTool, describeNamespace, models.*",
+      "surface": "model tool",
+      "input": "named nested arguments or catalog/classifier request",
+      "output": "structured content/text; model catalog/classifier response and usage",
+      "lifecycle": "tool discovery plus bounded concurrent classifier calls; IDs nest under source call",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "codemode",
+        "models"
+      ]
+    },
+    {
+      "name": "appendContextEdit / buildSessionProjection / getBranch / getEntries / getTree",
+      "surface": "extension/program API",
+      "input": "entry target, replacement/null or branch identity",
+      "output": "projection with source provenance; unchanged original entries/tree",
+      "lifecycle": "append edit lineage and project active branch; no destructive original rewrite",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "repair",
+        "projection",
+        "query",
+        "runner-query"
+      ]
+    },
+    {
+      "name": "compact / session_before_compact",
+      "surface": "operator/extension API",
+      "input": "instructions, history/preparation and optional replacement summary/firstKeptEntryId",
+      "output": "persisted managed summary and compaction events",
+      "lifecycle": "manual/automatic cancellable transform; extension may cancel/replace",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "compact",
+        "auto-compact"
+      ]
+    },
+    {
+      "name": "/reload / AgentSession.reload",
+      "surface": "operator/extension API",
+      "input": "reload options",
+      "output": "new extension contexts/resources; retained chat/session",
+      "lifecycle": "interactive command requires not streaming/compacting; old extension handles become stale",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "reload",
+        "reload-ui"
+      ]
+    },
+    {
+      "name": "registerTool / registerCommand / setActiveTools / setModel / registerProvider",
+      "surface": "extension API",
+      "input": "tool/command code, loadout, model/provider definition",
+      "output": "new declared tools/commands/provider hooks",
+      "lifecycle": "API includes immediate bound provider changes and next-request loadout refresh; generic extensions govern their own work",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "extensions-api",
+        "boundary"
+      ]
+    },
+    {
+      "name": "mcp__<server>__<tool> and MCP resource operations",
+      "surface": "model/program tools",
+      "input": "configured service names/schemas or resource URI",
+      "output": "MCP content/resources",
+      "lifecycle": "HTTP service or owned stdio connection; lazy reconnect and explicit reconnect",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "mcp",
+        "mcp-call",
+        "mcp-close"
+      ]
+    },
+    {
+      "name": "Pico3 Harness / ConversationHandle.send, fork, collapse, abort, waitForTask",
+      "surface": "experimental supplied runtime",
+      "input": "taskKinds, storage/models/tools; context plus addressed input/task ID",
+      "output": "durable input/task handles, conversation watch/query APIs",
+      "lifecycle": "separate experimental exported runtime; close delegates suspension",
+      "authority": "Model uses launcher OS authority; extension hooks may block or replace behavior.",
+      "evidence": [
+        "pico-scope",
+        "pico-api",
+        "pico-lifecycle"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default read/write/edit and optional search tools use injectable operation backends; local mutations serialize until in-flight IO settles.",
+      "evidence": [
+        "catalog",
+        "read",
+        "write",
+        "edit",
+        "ls"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "bash streams detached shell execution, has optional deadline and explicit abort/tree-kill requests, exit code/full-output metadata. Persistent public PTY/process handles were not established.",
+      "evidence": [
+        "bash",
+        "spawn"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Built-in, initially inactive codemode exposes model-authored JavaScript that composes actual tools through nested validation/hooks with structured results and explicit output filtering.",
+      "evidence": [
+        "codemode-load",
+        "codemode",
+        "codemode-contract"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Each codemode action creates/closes a fresh QuickJS sandbox. Successful JSON store writes persist on the branch, but functions/live interpreter state do not persist through that mechanism.",
+      "evidence": [
+        "codemode",
+        "store"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Branch-local store/load reconstructs structured JSON values from session custom entries and extensions have history APIs. It supplies key-value state, not a separately owned standing SQL/query service.",
+      "evidence": [
+        "store",
+        "codemode",
+        "query"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Codemode provides actual loops/chains/parallel calls; extension tools/commands and tool/turn/context hooks compose normal operation. No default general graph scheduler is inferred.",
+      "evidence": [
+        "codemode",
+        "boundary",
+        "nested",
+        "extensions-api"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Current model refreshes at next assistant request; extension model/provider mutation and script catalog/classifier calls are exposed. Classifier fan-out is distinct from independently working chat peers.",
+      "evidence": [
+        "boundary",
+        "models",
+        "extensions-api"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Inspected baseline prompt/queue/extension/code-mode paths address one session and nested tool calls. No arbitrary addressed messages between independently running chat participants were established; experimental multiple conversations alone are insufficient.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agent tool batches and codemode Promise composition run independent calls concurrently while sequential tools serialize; nested calls have meaningful parent IDs. This does not establish a standing multi-agent room.",
+      "evidence": [
+        "dispatch",
+        "codemode",
+        "nested-test"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Steering waits for current assistant tools and follow-up waits for run completion. abort cancels agent/summary/retry work and waits idle; shell cancellation invokes termination.",
+      "evidence": [
+        "steer-abort",
+        "abort",
+        "spawn"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual finishTurn/prepareNextTurn/prepareRequest decisions can change continuation, model, tools and context; CLI wires extension turn-end continuation and post-run before-settle continuation. Scope is these boundaries, not arbitrary replacement of active stack frames.",
+      "evidence": [
+        "loop",
+        "boundary"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Manual/auto compaction is managed and cancellable, with extension replacement, retained entry ID and persisted metadata; active projection selects summary/tail from immutable branch entries.",
+      "evidence": [
+        "compact",
+        "auto-compact",
+        "projection"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Append-only branch-local context edits can omit/restore content while retaining original entry IDs/content. Extensions can retrieve originals/tree and project lineage, but a dedicated model repair workflow is composed rather than a default native tool.",
+      "evidence": [
+        "repair",
+        "projection",
+        "query",
+        "runner-query",
+        "context-test"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Append-only message/context-edit lineage and provider hooks are useful. Nested records deliberately omit/drop/clip data under budgets, script nested results do not all reach model transcript, and exact forced prompt rendering is not recorded; full original audit is not established.",
+      "evidence": [
+        "query",
+        "audit-limits",
+        "forced-prompt",
+        "codemode-contract",
+        "sdk"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Extensions receive sessionManager and can fetch branch/all-entry/tree/source projection; models may compose access through extension tools. Inspected scope is session history, not an established complete provider/program audit query corpus.",
+      "evidence": [
+        "query",
+        "runner-query",
+        "projection"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Reload rebuilds resource/provider/extension runtime with stale-context invalidation while preserving session. CLI refuses reload during streaming or compaction; tool/model refresh is next-request. Programmatic reload does not itself show the same guard or Arconaut's affected-workflow deferred activation.",
+      "evidence": [
+        "reload",
+        "reload-ui",
+        "boundary"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Resource reload preserves conversation and invalidates old extension handles, but it does not replace the harness executable. Separate experimental suspend/close APIs do not establish a CLI outpost compile-and-reinhabit protocol or survival of live OS effects.",
+      "evidence": [
+        "reload",
+        "reload-ui",
+        "pico-scope",
+        "pico-lifecycle"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "MCP consumes HTTP services or launches configured stdio servers; lazy getClient/explicit reconnect and resource/tool APIs are wired. Filesystem/bash operations can be supplied by remote backends; shared service governance is not inferred.",
+      "evidence": [
+        "mcp",
+        "mcp-call",
+        "mcp-close",
+        "read",
+        "bash"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Model code actions and reloadable extensions allow substantial alteration, but the inspected paths do not establish a dedicated model-governed candidate evaluation/promotion/autoresearch loop.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Inspected native tools, extensions and session lifecycle do not establish a default model complaint operation that captures state and tracks follow-up. Custom extension composition remains possible.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local tools directly operate with launcher authority; before-tool hooks can block/terminate and nested calls use the same pipeline. README documents no built-in restrictive permission system; extensions can add policy.",
+      "evidence": [
+        "write",
+        "spawn",
+        "validate",
+        "nested",
+        "authority-doc"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Read tests attack projection/original separation, nested ID/usage/concurrency and explicit record truncation, plus separate experimental facet cutover. Fake tools/in-memory sessions/stub lane limit integration claims; tests not run.",
+      "evidence": [
+        "context-test",
+        "nested-test",
+        "reload-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Append-only entries carry parent IDs/wall timestamps; nested durations use performance.now, shell seconds deadlines and script hard deadlines. Restart/paused-time guarantees for default CLI were not established.",
+      "evidence": [
+        "query",
+        "audit-limits",
+        "bash",
+        "codemode"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "entry",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 1895,
+      "end": 1952,
+      "claim": "prompt intercepts extension commands/input and queues steer/followUp during a run."
+    },
+    {
+      "id": "sdk",
+      "path": "quarantine/pi/packages/coding-agent/src/core/sdk.ts",
+      "start": 387,
+      "end": 453,
+      "claim": "CLI/SDK creates ordinary Agent and AgentSession with provider stream, context and provider event hooks."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/pi/packages/agent/src/agent-loop.ts",
+      "start": 175,
+      "end": 292,
+      "claim": "Loop applies prepareNextTurn/prepareRequest, steering, tool-call settlement and finishTurn continuation decisions; truncated tool-call arguments are failed."
+    },
+    {
+      "id": "provider",
+      "path": "quarantine/pi/packages/agent/src/agent-loop.ts",
+      "start": 388,
+      "end": 407,
+      "claim": "Context is transformed/converted and current model stream called with key and AbortSignal."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/pi/packages/agent/src/agent-loop.ts",
+      "start": 508,
+      "end": 654,
+      "claim": "Tool batches choose sequential or parallel execution; parallel outcomes materialize in assistant source order."
+    },
+    {
+      "id": "validate",
+      "path": "quarantine/pi/packages/agent/src/agent-loop.ts",
+      "start": 710,
+      "end": 766,
+      "claim": "Tool arguments are validated, beforeToolCall can block/terminate, and abort is checked before effects."
+    },
+    {
+      "id": "boundary",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 852,
+      "end": 909,
+      "claim": "Extension turn-end continuation and next-request context/tool/model refresh are wired to Agent callbacks."
+    },
+    {
+      "id": "nested",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 618,
+      "end": 667,
+      "claim": "Nested/direct tool call and result interception uses the current extension runner and parent call identity."
+    },
+    {
+      "id": "catalog",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/index.ts",
+      "start": 95,
+      "end": 201,
+      "claim": "Eight native tool names are exported; default coding tools are read/bash/edit/write."
+    },
+    {
+      "id": "bash",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/bash.ts",
+      "start": 27,
+      "end": 65,
+      "claim": "bash accepts command and optional seconds timeout; structured results include capped combined output, full path, exit code and wall time."
+    },
+    {
+      "id": "spawn",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/bash.ts",
+      "start": 115,
+      "end": 166,
+      "claim": "Local shell spawns detached where available, streams stdout/stderr and invokes process-tree kill on abort/deadline."
+    },
+    {
+      "id": "read",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/read.ts",
+      "start": 15,
+      "end": 47,
+      "claim": "read has path/offset/limit and injectable filesystem operations backed by local reads."
+    },
+    {
+      "id": "write",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/write.ts",
+      "start": 44,
+      "end": 85,
+      "claim": "write resolves path, serializes file mutation and retains the queue until in-flight IO settles even after abort."
+    },
+    {
+      "id": "edit",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/edit.ts",
+      "start": 145,
+      "end": 198,
+      "claim": "edit validates path/edits and applies unique disjoint replacements to original content inside the mutation queue."
+    },
+    {
+      "id": "search-schema",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/grep.ts",
+      "start": 21,
+      "end": 33,
+      "claim": "grep takes pattern, path, glob, ignoreCase, literal, context and limit."
+    },
+    {
+      "id": "find",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/find.ts",
+      "start": 26,
+      "end": 35,
+      "claim": "find takes pattern/path/limit; registered execution has abort/child stop handling."
+    },
+    {
+      "id": "ls",
+      "path": "quarantine/pi/packages/coding-agent/src/core/tools/ls.ts",
+      "start": 65,
+      "end": 115,
+      "claim": "ls resolves a directory, reads entries and sorts/formats a bounded result."
+    },
+    {
+      "id": "codemode-load",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/codemode/index.ts",
+      "start": 1,
+      "end": 43,
+      "claim": "Built-in codemode registers inactive; explicit activation or MCP integration exposes it."
+    },
+    {
+      "id": "codemode",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/codemode/execute.ts",
+      "start": 224,
+      "end": 319,
+      "claim": "A fresh bounded QuickJS sandbox routes nested calls through ctx.executeTool, closes after execution, persists successful store writes and returns clipped script output/errors."
+    },
+    {
+      "id": "codemode-contract",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/codemode/tool.ts",
+      "start": 85,
+      "end": 157,
+      "claim": "codemode takes source code and documents tools/discovery/output/JSON store helpers, no direct Node/FS/network/timers and script deadline options."
+    },
+    {
+      "id": "store",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/codemode/execute.ts",
+      "start": 116,
+      "end": 126,
+      "claim": "JSON store is reconstructed from custom entries on the selected branch."
+    },
+    {
+      "id": "models",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/codemode/execute.ts",
+      "start": 417,
+      "end": 472,
+      "claim": "Script model catalog and classifier calls are wired, with four-call concurrency limiting and attributed usage."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 2704,
+      "end": 2808,
+      "claim": "Manual compaction can be canceled/replaced by extension, persists summary/firstKeptEntryId and refreshes active projection."
+    },
+    {
+      "id": "auto-compact",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 3037,
+      "end": 3132,
+      "claim": "Automatic compaction uses the same replaceable summary path, checks abort and emits managed events."
+    },
+    {
+      "id": "projection",
+      "path": "quarantine/pi/packages/coding-agent/src/core/session-manager.ts",
+      "start": 480,
+      "end": 570,
+      "claim": "Active context selects compaction/retained entries and overlays latest context edits while exposing sourceEntry provenance."
+    },
+    {
+      "id": "repair",
+      "path": "quarantine/pi/packages/coding-agent/src/core/session-manager.ts",
+      "start": 1359,
+      "end": 1385,
+      "claim": "appendContextEdit validates branch-local targets and replacement shape without rewriting original message content."
+    },
+    {
+      "id": "query",
+      "path": "quarantine/pi/packages/coding-agent/src/core/session-manager.ts",
+      "start": 1464,
+      "end": 1564,
+      "claim": "Branch/tree/all-entry retrieval is separate from compaction-aware context projection; append-only entry history remains accessible."
+    },
+    {
+      "id": "runner-query",
+      "path": "quarantine/pi/packages/coding-agent/src/core/extensions/runner.ts",
+      "start": 889,
+      "end": 892,
+      "claim": "Extensions receive the sessionManager with stale-runner checks."
+    },
+    {
+      "id": "steer-abort",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 2100,
+      "end": 2176,
+      "claim": "Steering is queued until after current assistant tools; follow-up waits until tool/steering work finishes."
+    },
+    {
+      "id": "abort",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 2361,
+      "end": 2377,
+      "claim": "abort cancels retry, compaction, branch summary and agent execution then waits for idle."
+    },
+    {
+      "id": "reload",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 3587,
+      "end": 3623,
+      "claim": "Reload shuts down/invalidate old extension contexts, reloads resources/providers/settings and builds a new extension runtime while keeping session state."
+    },
+    {
+      "id": "reload-ui",
+      "path": "quarantine/pi/packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "start": 6230,
+      "end": 6285,
+      "claim": "Interactive /reload refuses streaming/compaction, then rebuilds chat and keybindings around session reload."
+    },
+    {
+      "id": "audit-limits",
+      "path": "quarantine/pi/packages/coding-agent/src/core/nested-tool-calls.ts",
+      "start": 21,
+      "end": 99,
+      "claim": "Nested-call records omit arguments beyond byte budgets, drop calls past 256, clip errors and mark incompleteness; durations use performance.now."
+    },
+    {
+      "id": "forced-prompt",
+      "path": "quarantine/pi/packages/coding-agent/src/core/agent-session.ts",
+      "start": 1685,
+      "end": 1734,
+      "claim": "Forced provider head prompt is projected without recording that exact rendering in the transcript."
+    },
+    {
+      "id": "extensions-api",
+      "path": "quarantine/pi/packages/coding-agent/src/core/extensions/types.ts",
+      "start": 1618,
+      "end": 1762,
+      "claim": "Extension contract declares tool/command registration, messages, appendEntry, exec, active tools, model choice and immediate post-bind provider registration."
+    },
+    {
+      "id": "mcp",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/mcp/runtime.ts",
+      "start": 97,
+      "end": 120,
+      "claim": "Configured MCP URL selects HTTP transport; command selects a stdio transport with cwd/env."
+    },
+    {
+      "id": "mcp-call",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/mcp/runtime.ts",
+      "start": 249,
+      "end": 264,
+      "claim": "MCP getClient lazily reconnects and tool/resource calls consume service APIs."
+    },
+    {
+      "id": "mcp-close",
+      "path": "quarantine/pi/packages/coding-agent/src/extensions/mcp/runtime.ts",
+      "start": 314,
+      "end": 349,
+      "claim": "Explicit reconnect drops old client and obtains a new one."
+    },
+    {
+      "id": "pico-scope",
+      "path": "quarantine/pi/packages/agent/src/harness/pico3/index.ts",
+      "start": 1,
+      "end": 39,
+      "claim": "Pico3 is explicitly an experimental separate subpath, not the ordinary package-root CLI Agent loop."
+    },
+    {
+      "id": "pico-api",
+      "path": "quarantine/pi/packages/agent/src/harness/pico3/harness.ts",
+      "start": 58,
+      "end": 109,
+      "claim": "Experimental harness exposes task kinds, conversations, commit/fork/collapse/reset/abort/watches and input handles."
+    },
+    {
+      "id": "pico-lifecycle",
+      "path": "quarantine/pi/packages/agent/src/harness/pico3/harness.ts",
+      "start": 588,
+      "end": 630,
+      "claim": "Experimental harness exposes task marking/waiting and close via suspend; these do not establish CLI executable replacement."
+    },
+    {
+      "id": "context-test",
+      "path": "quarantine/pi/packages/coding-agent/test/session-context-edit.test.ts",
+      "start": 36,
+      "end": 103,
+      "claim": "Tests assert projection omission/restoration and original content retention with in-memory sessions."
+    },
+    {
+      "id": "nested-test",
+      "path": "quarantine/pi/packages/coding-agent/test/nested-tool-calls.test.ts",
+      "start": 164,
+      "end": 231,
+      "claim": "Tests assert sequential/parallel concurrency and explicit argument/call/error recording caps using fake tools."
+    },
+    {
+      "id": "reload-test",
+      "path": "quarantine/pi/packages/coding-agent/test/experimental-plugin-reload.test.ts",
+      "start": 7,
+      "end": 93,
+      "claim": "Experimental plugin test asserts new facet activation/old disposal using a stub lane, not default CLI continuity."
+    },
+    {
+      "id": "authority-doc",
+      "path": "quarantine/pi/README.md",
+      "start": 42,
+      "end": 51,
+      "claim": "Official repository README states no built-in filesystem/process/network/credential permission system and inheritance of launcher authority."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/pi/packages/coding-agent/test/session-context-edit.test.ts",
+      "focus": "Original/projection separation and branch-local content repair.",
+      "oracle": "In-memory assertions preserve original message while latest edit omits/restores projected content; no provider summary-faithfulness oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/pi/packages/coding-agent/test/nested-tool-calls.test.ts",
+      "focus": "Nested identity, usage, concurrency and explicit audit clipping.",
+      "oracle": "Fake tools assert sequential=1 versus parallel=3 and recorder caps/incompleteness; live services and durable crashes not tested in read cases.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/pi/packages/coding-agent/test/experimental-plugin-reload.test.ts",
+      "focus": "Experimental facet activation/disposal.",
+      "oracle": "Stub lane/loader records generations; proves that cutover contract locally, not baseline CLI executable continuity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Executable code actions compose tools through the ordinary pipeline instead of bypassing hooks.",
+    "Original entry and current context projection are explicit separate concepts with append-only repair lineage.",
+    "Next-turn/settled boundaries expose continuation decisions and model/tool refresh.",
+    "Reload marks prior extension contexts stale, making invalid authority reuse explicit."
+  ],
+  "limits": [
+    "Fresh code-mode sandbox persists JSON values only; it is not a live persistent kernel.",
+    "Normalized bounded nested-call records are not exhaustive original audit.",
+    "Default CLI and exported experimental durable/Pico3 runtimes must be kept distinct.",
+    "Interactive reload guards response/compaction but does not establish executable refit or model-governed experiment promotion."
+  ],
+  "arconaut_questions": [
+    "Can Arconaut retain Pi's executable nested-tool ergonomics with an external shared kernel rather than owning interpreter lifetime?",
+    "Which context edit/compaction lineage should be model-addressable as normal agency, and how do we retain every original beside the projection?",
+    "Should explicit stale-context generations also fence extension/service authority across a quiescent refit?",
+    "What scope of pending workflows must delay a configuration change beyond a next-provider-request boundary?"
+  ]
+}

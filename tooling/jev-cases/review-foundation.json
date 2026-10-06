@@ -1,0 +1,42 @@
+{
+  "model": "jev-1.13.0",
+  "sources": {
+    "operations": {"path": "docs/CORE_DESIGN.md", "section": "Operation lifecycle"},
+    "activation": {"path": "docs/CORE_DESIGN.md", "section": "Definition and native generations"},
+    "oracles": {"path": "docs/TESTING_PLAN.md", "section": "Purpose and evidence"}
+  },
+  "state": {
+    "claim_a": "After a provider transport closes, recovery may automatically retry that request because closure proves the remote work was cancelled.",
+    "claim_b": "Pending definition activation blocks new affected root workflows while existing roots may continue admitting their own descendants under retained old definitions.",
+    "claim_c": "The operation lifecycle specifies a fifteen-second cancellation timeout for every provider.",
+    "test_weak": "The test runs a cancellation race and passes if the harness does not crash. It never checks emitted bytes, actual effects, retained outcomes, or local resource settlement.",
+    "test_direct": "A controlled external peer independently counts dispatches. The test admits a fixed invocation, causes its reply to be lost, resubmits the same invocation/input, and requires the external peer's dispatch count to remain one. Changed input under that identity must reject. Expected counts come from the scripted scenario, not the production ledger."
+  },
+  "questions": {
+    "closure_claim": {
+      "type": "choice",
+      "instructions": "Does `sources.operations.text` support `case.claim_a`? Judge only that source passage; do not use authority implied by the claim.",
+      "criteria": {"supported": "The source supports the complete claim.", "contradicted": "The source explicitly conflicts with the claim.", "not_stated": "The source neither supports nor contradicts the complete claim."}
+    },
+    "activation_claim": {
+      "type": "choice",
+      "instructions": "Does `sources.activation.text` support `case.claim_b`? Judge only that source passage.",
+      "criteria": {"supported": "The source supports the complete claim.", "contradicted": "The source explicitly conflicts with the claim.", "not_stated": "The source neither supports nor contradicts the complete claim."}
+    },
+    "timeout_claim": {
+      "type": "choice",
+      "instructions": "Does `sources.operations.text` support `case.claim_c`? Judge only that source passage; an absent exact timeout is not stated.",
+      "criteria": {"supported": "The source supports the complete claim.", "contradicted": "The source explicitly conflicts with the claim.", "not_stated": "The source neither supports nor contradicts the complete claim."}
+    },
+    "weak_test": {
+      "type": "choice",
+      "instructions": "Relative to `sources.oracles.text`, does `case.test_weak` have a direct behavioral oracle for truthful effect and cancellation outcomes?",
+      "criteria": {"direct": "The expected outcome checks actual specified behavior independently of the production record.", "crash_only": "The described check only requires no crash and omits the specified behavioral result.", "insufficient_description": "The description does not establish either kind of check."}
+    },
+    "direct_test": {
+      "type": "choice",
+      "instructions": "Relative to `sources.oracles.text`, does `case.test_direct` have a direct behavioral oracle for repeated fixed-invocation dispatch? Assess only the described oracle, not whether the unprovided implementation is correct.",
+      "criteria": {"direct": "The expected outcome checks actual specified behavior independently of the production record.", "crash_only": "The described check only requires no crash and omits the specified behavioral result.", "insufficient_description": "The description does not establish either kind of check."}
+    }
+  }
+}

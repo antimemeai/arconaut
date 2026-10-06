@@ -1,0 +1,326 @@
+{
+  "id": "computational-review-template",
+  "kind": "research workflow skill/template and static evidence viewer",
+  "runtime": {
+    "languages": [
+      "Markdown",
+      "JavaScript",
+      "Python notebook examples"
+    ],
+    "execution": "Host coordinator loads role skills; MyST transforms files into a widget. No provider/agent scheduler source.",
+    "service_boundary": "Consumes host delegation, artifact/version, execution, literature APIs and MyST; does not own the host engine."
+  },
+  "summary": "a staged actor/critic/validator protocol, evidence schemas and static viewer",
+  "inspection": {
+    "files": [
+      "quarantine/computational-review-template/skills/comprev-orchestrator-v29.md",
+      "quarantine/computational-review-template/evidence/README.md",
+      "quarantine/computational-review-template/plugins/evidence-explorer-plugin.mjs",
+      "quarantine/computational-review-template/content/evidence-explorer-widget.mjs",
+      "quarantine/computational-review-template/skills/comprev-evidence-validator.md"
+    ],
+    "scope": "orchestrator v29 role/continuation/gate protocols, evidence validator specification and evidence-explorer loader/view",
+    "limits": "Host enforcement, provider loop, original app database and runtime tests are unavailable."
+  },
+  "actions": [
+    {
+      "name": "generate_plan(plan_content=...) / update_step_status",
+      "surface": "Documented host coordinator calls",
+      "input": "Validated scope plan entries and step state",
+      "output": "External plan/step status",
+      "lifecycle": "Prescribed external memory across compaction; host owns lifetime and approval",
+      "authority": "Coordinator; initial approval and exceptional signoff are authored requirements",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "delegate_to(agent=..., task=...) / send_message",
+      "surface": "Documented host delegation/message API",
+      "input": "Role, skills, explicit artifact/version inputs and complete task string",
+      "output": "Child findings, gate JSON, artifact/version handles",
+      "lifecycle": "New independent-validator and bounded-continuation frames; actors receive fixes",
+      "authority": "Host API; prompt-defined separation, no enforcement source",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "section_NN_evidence_package.json",
+      "surface": "Produced evidence artifact contract",
+      "input": "Findings/source sentences/DOIs/access labels; conflicts, figures, gaps",
+      "output": "Per-section packages consumed by static viewer",
+      "lifecycle": "Files can survive context; optional aggregate does not drive viewer",
+      "authority": "Reviewer/curator authors; build file scope",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "Evidence Explorer directive + filters",
+      "surface": "Implemented static build transform and UI",
+      "input": "Evidence directory/height; query/section/tier",
+      "output": "Loaded records; filtered first200 findings",
+      "lifecycle": "Rebuilt from files; no live DB service; fixed section range",
+      "authority": "Build filesystem access and public browser",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "gate_evidence_compliance.json",
+      "surface": "Authored validator result schema",
+      "input": "Evidence records, DOI metadata and scoped parameters",
+      "output": "Checks/counts/failures and aggregate gate",
+      "lifecycle": "Saved gate and bounded fix loops; prescribed downstream block on fail",
+      "authority": "Separate validator frame; exceptions via signoff",
+      "evidence": [
+        "e7",
+        "e3"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Structured evidence files/browser filtering are supporting data primitives, not host standing DB/SQL service.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Expressive21-phase prompt workflow and role routing; source does not implement host scheduler or enforce barriers.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Host delegate_to/send_message used for roles/fix loops; delivery/visibility/implementation outside template.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "concurrent_work": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Specialist/continuation delegation prescribed with artifact handles; scheduling belongs to host.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Plan/ledger re-read, fresh continuation frames and same-cell task construction address compaction losses; no general originals/repair API.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Verbatim task, gates and canonical VIDs provide selective provenance; no complete provider/program/transformation capture.",
+      "evidence": [
+        "e1",
+        "e3"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Viewer queries evidence claims, not original activity; onlysection02–13, missing files skipped.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this research workflow skill/template and static evidence viewer role: the reference supplies a staged actor/critic/validator protocol, evidence schemas and static viewer rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Model roles do artifact work; protocol requires initial plan approval and failed-gate signoff; no engine enforcement traced.",
+      "evidence": [
+        "e1",
+        "e3"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Authored mechanical checks and separate judgment frames. Fulltext source-not-in-abstract is not body-substring verification; metadata/size/count proxies do not establish entailment.",
+      "evidence": [
+        "e7",
+        "e2"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Certified version IDs replace chronologically latest content to prevent publication races; not core clock.",
+      "evidence": [
+        "e3"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/computational-review-template/skills/comprev-orchestrator-v29.md",
+      "start": 6,
+      "end": 48,
+      "claim": "Role separation and prompt/plan materialization are authored host-operation instructions, not an implemented scheduler."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/computational-review-template/skills/comprev-orchestrator-v29.md",
+      "start": 289,
+      "end": 342,
+      "claim": "Fresh validator/continuation frames, findings budgets and compaction task-construction workaround are prescribed."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/computational-review-template/skills/comprev-orchestrator-v29.md",
+      "start": 348,
+      "end": 407,
+      "claim": "Canonical artifact VIDs, save-after-write race and fail/signoff transitions are authored workflow contracts."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/computational-review-template/evidence/README.md",
+      "start": 1,
+      "end": 72,
+      "claim": "Evidence schema and per-section files; optional combined database is not read by the viewer."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/computational-review-template/plugins/evidence-explorer-plugin.mjs",
+      "start": 130,
+      "end": 215,
+      "claim": "Build loader hardcodes sections02–13, skips unreadable/missing files and serializes findings/conflicts into widget."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/computational-review-template/content/evidence-explorer-widget.mjs",
+      "start": 202,
+      "end": 219,
+      "claim": "Browser filters loaded findings by claim/DOI/system/key, section and tier; renders first200 matches."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/computational-review-template/skills/comprev-evidence-validator.md",
+      "start": 12,
+      "end": 95,
+      "claim": "Authored mechanical DOI/source/size/count/schema proxies and pass/fail artifact; semantic correctness remains separate."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/computational-review-template/skills/comprev-evidence-validator.md",
+      "focus": "Authored check specification; not executable suite",
+      "oracle": "DOI/source/schema/count checks bound metadata faults; heuristics can reject valid body/abstract overlap and do not prove entailment. Not executed.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit role/input/output contracts, bounded continuation and canonical content maps.",
+    "Source sentences/access scope retained with normalized claims."
+  ],
+  "limits": [
+    "Barriers/transitions are authored instructions, not demonstrated access controls.",
+    "Viewer fixedsection02–13 skips missing files; claim counts do not establish truth."
+  ],
+  "arconaut_questions": [
+    "Can role frames and certified maps become executable host programs with real enforcement?",
+    "How should evidence schemas join original audit while preserving source and uncertainty?"
+  ]
+}

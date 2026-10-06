@@ -1,0 +1,881 @@
+{
+  "id": "forge-workflow",
+  "kind": "Rust agent-host and coding-task control plane",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "TypeScript (web UI)"
+    ],
+    "execution": "Tokio native host consumes separate pinned agent-runtime engine; owns SQLite task/chat workers, external CLI executors/daemon paths, scoped OS processes and web/MCP/REST surfaces.",
+    "service_boundary": "Forge is governor of local tasks/worktrees/leases/domain state and runtime sessions; consumes providers/external CLIs. Shared independently governed computation is not the core ownership model."
+  },
+  "summary": "Rust local control plane with genuine persistent native chats, scoped actions, workflow task governance and source-preserving chat context graph; internal engine, task-context and audit/refit boundaries remain distinct.",
+  "inspection": {
+    "files": [
+      "quarantine/forge-workflow/README.md",
+      "quarantine/forge-workflow/Cargo.toml",
+      "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "quarantine/forge-workflow/crates/services/src/native_tools.rs",
+      "quarantine/forge-workflow/crates/services/src/agent_chat_service.rs",
+      "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "quarantine/forge-workflow/crates/services/src/embedded_task_executor.rs",
+      "quarantine/forge-workflow/crates/services/src/task_dispatcher.rs",
+      "quarantine/forge-workflow/crates/services/src/workflow/engine/mod.rs",
+      "quarantine/forge-workflow/crates/services/src/workflow/registry.rs",
+      "quarantine/forge-workflow/crates/services/src/workflow/actions/dispatch.rs",
+      "quarantine/forge-workflow/crates/agent-host/src/lcm.rs",
+      "quarantine/forge-workflow/crates/db/src/sqlite/lcm.rs",
+      "quarantine/forge-workflow/crates/services/src/turn_log_sink.rs",
+      "quarantine/forge-workflow/crates/executors/src/log_writer.rs",
+      "quarantine/forge-workflow/crates/executors/src/log_reader.rs",
+      "quarantine/forge-workflow/crates/mcp-server/src/tools/mod.rs",
+      "quarantine/forge-workflow/crates/mcp-server/src/tools/handlers.rs",
+      "quarantine/forge-workflow/crates/services/src/shutdown.rs",
+      "quarantine/forge-workflow/crates/executors/src/shell.rs",
+      "quarantine/forge-workflow/crates/agent-host/tests/lcm_store.rs",
+      "quarantine/forge-workflow/crates/services/src/workflow/engine/tests.rs",
+      "quarantine/forge-workflow/docs/execution-logs.md",
+      "quarantine/forge-workflow/crates/agent-host/src/lib.rs",
+      "quarantine/forge-workflow/crates/agent-host/tests/revised_authority.rs"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "AgentSessionBackend.run_turn",
+      "surface": "native runtime API",
+      "input": "host session/scope/workspace, provider profile, input/history/system prompt, cancellation",
+      "output": "AgentTurnOutput text/usage/context manifest/pending interaction or typed error",
+      "lifecycle": "awaits runtime event completion and persistence; actual model/tool engine delegated to agent-runtime",
+      "authority": "persisted host-issued scope/identity/workspace, protected credential source",
+      "evidence": [
+        "scope",
+        "runtime",
+        "drive",
+        "output"
+      ]
+    },
+    {
+      "name": "forge_task_read / forge_task_list / forge_task_write",
+      "surface": "native model tools",
+      "input": "scoped path/glob or path/content",
+      "output": "bounded contents/list/truncation or written:true",
+      "lifecycle": "synchronous filesystem effects inside awaited tool invocation",
+      "authority": "task-role scoped FsRead/FsWrite; task planner read only",
+      "evidence": [
+        "tools",
+        "read",
+        "write"
+      ]
+    },
+    {
+      "name": "forge_task_command / forge_task_validate",
+      "surface": "native model process tools",
+      "input": "allowlisted program,args; validation role-selected tool",
+      "output": "exit status, capped stdout/stderr, optional observation ID",
+      "lifecycle": "owned ephemeral process group/timeout; descendants killed on return/drop, no long-running service handle",
+      "authority": "worker/reviewer/verification scope; cleared env except PATH",
+      "evidence": [
+        "tools",
+        "command",
+        "bounded",
+        "killgroup"
+      ]
+    },
+    {
+      "name": "forge_scope_read / forge_scope_propose / forge_main_orchestration_read|propose / forge_project_orchestration_read|propose",
+      "surface": "native model domain tools",
+      "input": "operation/arguments or payload,dedupe_key,correlation_id",
+      "output": "structured code/safe message/retry/permitted recovery, mutations or approval-required envelope",
+      "lifecycle": "awaited host command; task.adaptive yields persistent task identities",
+      "authority": "captured host identity/scope; allowed operation catalog/policy/version guards",
+      "evidence": [
+        "propose",
+        "nativeadapt",
+        "structured"
+      ]
+    },
+    {
+      "name": "task.adaptive",
+      "surface": "operation through native scoped proposal",
+      "input": "split/sequence/replace, source_task_id, expected_task_version/board_revision,rationale",
+      "output": "updated/created task IDs and structured outcome",
+      "lifecycle": "durable policy/version checked TaskService command",
+      "authority": "model has bounded planning agency for bound project, no actor/scope overrides",
+      "evidence": [
+        "nativeadapt"
+      ]
+    },
+    {
+      "name": "forge_create_task / forge_create_sub_tasks / forge_add_task_dependency / forge_reorder_sub_tasks / forge_transition_task / forge_cancel_task",
+      "surface": "MCP tools",
+      "input": "project/title/description/parent/dependency IDs; task/status/version",
+      "output": "task/result JSON or service error",
+      "lifecycle": "persisted task lifecycle, ready work picked up by dispatcher; root isolated vs serial children",
+      "authority": "MCP admitted context; transition actor recorded system:Mcp, not actual model identity",
+      "evidence": [
+        "mcp",
+        "create",
+        "mcpactor",
+        "scan"
+      ]
+    },
+    {
+      "name": "WorkflowEngine.transition / move_task / workflow hook registry",
+      "surface": "programmable control-plane API",
+      "input": "task/version/target/state graph/hooks/config/actor/authority",
+      "output": "transition/guard/cascade results and task mutation",
+      "lifecycle": "sequential hooks; dispatch gates and current workflow/version conflict detection",
+      "authority": "host workflow definitions and actor permissions; closed compiled action registry",
+      "evidence": [
+        "workflow",
+        "guards",
+        "hooks",
+        "registry"
+      ]
+    },
+    {
+      "name": "forge_send_agent_chat_message / cancel_turn / retry_turn",
+      "surface": "MCP/user/service APIs",
+      "input": "chat/content/dedupe; job/version/idempotency",
+      "output": "durable message/turn job/status with correlation/source",
+      "lifecycle": "queued leased job, bounded retry/cooldown, up to32 active; logical cancellation precedes backend termination",
+      "authority": "authorized chat account, frozen admission profile for automatic retries; explicit retry re-admits current authority",
+      "evidence": [
+        "mcp",
+        "send",
+        "canceljob",
+        "retry",
+        "workers",
+        "frozen"
+      ]
+    },
+    {
+      "name": "forge_create_agent_handoff",
+      "surface": "MCP/user/service API",
+      "input": "Main source chat,target project,bounded content/source revisions/dedupe",
+      "output": "provenance-linked handoff and target chat turn identity",
+      "lifecycle": "durable target admission; designated Main\u2192Project path",
+      "authority": "current owner/Main binding and target project scope",
+      "evidence": [
+        "mcp",
+        "handoff"
+      ]
+    },
+    {
+      "name": "cancel / steer",
+      "surface": "active native session API",
+      "input": "runtime_session_id; steering text",
+      "output": "interrupt/steer request result or missing session",
+      "lifecycle": "queues runtime interrupt/input; public call itself does not await full cessation",
+      "authority": "configured active backend/session; CLI chat reports steer false",
+      "evidence": [
+        "control",
+        "drive",
+        "drop",
+        "cli"
+      ]
+    },
+    {
+      "name": "SqliteLcmStore.append / commit_leaf / commit_condensation / expand / truncate_from",
+      "surface": "supplied context store API",
+      "input": "authorized view,operation ID/fingerprint/revision,range/node/cursor/limit",
+      "output": "revision/summary graph or original entries/child nodes; bounded errors",
+      "lifecycle": "SQLite immediate/CAS commits retain summary sources; explicit unprotected-tail truncation can delete entries",
+      "authority": "issued timeline view/secret classification; engine-facing store, no proven native model repair tool from this wrapper",
+      "evidence": [
+        "lcmappend",
+        "leaf",
+        "condense",
+        "expand",
+        "truncate"
+      ]
+    },
+    {
+      "name": "forge_memory_search / forge_memory_get",
+      "surface": "MCP retrieval tools",
+      "input": "project/query/layer/token_budget/limit/cursor or item ID",
+      "output": "retrieved_context plus pagination",
+      "lifecycle": "SQL-backed layered context query through service",
+      "authority": "admitted project MCP scope; retrieved content is contextual data",
+      "evidence": [
+        "mcp",
+        "memory"
+      ]
+    },
+    {
+      "name": "LogReader.read / GET execution logs",
+      "surface": "query API",
+      "input": "execution log path/from_sequence/limit",
+      "output": "selected JSONL entries/has_more/next_sequence",
+      "lifecycle": "per-log pagination, malformed entries skipped; cap limits retained evidence",
+      "authority": "control-plane/UI client; no complete original audit claim",
+      "evidence": [
+        "query",
+        "logwriter",
+        "logsink"
+      ]
+    },
+    {
+      "name": "GracefulShutdown.shutdown",
+      "surface": "operator/system lifecycle API",
+      "input": "shutdown signal/service instance",
+      "output": "admission stopped, task recovery events/auto-resume records",
+      "lifecycle": "executor cancellation then recovery; error logging/default suppression permits incomplete cessation",
+      "authority": "Forge control plane owns workers/worktrees/leases; not consumer-only shared service governance",
+      "evidence": [
+        "shutdown",
+        "shellcancel",
+        "workers"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native model scoped read/list/write and Task workspaces are wired; paths/caps/roles constrain access. Inner external agents differ.",
+      "evidence": [
+        "tools",
+        "read",
+        "write"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native commands are bounded ephemeral process groups with15-minute deadline and cleared env; background descendants deliberately killed. Shell adapter has execution identities/cancel but return is not full reaping barrier.",
+      "evidence": [
+        "command",
+        "bounded",
+        "killgroup",
+        "shellcancel"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can write source and call allowlisted program with args, enabling scripts/programs; no dedicated unrestricted executable composition/kernel action traced.",
+      "evidence": [
+        "write",
+        "command"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No persistent shared computational kernel established in native tool composition, task executors, LCM or chat workers.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Forge owns SQLite domain/context/memory state and exposes layered search; this is application storage, not general independently governed standing DB access.",
+      "evidence": [
+        "leaf",
+        "memory"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "State graph JSON, role config, sequential guards/hooks and cascades control task execution; actions resolved from closed compiled host registry. Model task.adaptive changes plan topology under policy.",
+      "evidence": [
+        "workflow",
+        "hooks",
+        "registry",
+        "nativeadapt"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Separate native/provider/CLI profiles and role/chat/execution instances actually run independently selected models, not just one provider selector.",
+      "evidence": [
+        "provider",
+        "chatnative",
+        "tasknative",
+        "cli",
+        "workers"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent Main/Project chats and explicit provenance-linked Main\u2192Project handoffs plus task outcomes supply cooperation; not general IRC peer room. CLI chat does not expose steer/persistent native checkpoint/LCM.",
+      "evidence": [
+        "send",
+        "handoff",
+        "workers",
+        "cli"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Up to32 leased chat jobs in JoinSet, role capacity checks and separate task execution identities; active native generation prohibits simultaneous turns in one runtime session.",
+      "evidence": [
+        "workers",
+        "dispatch",
+        "drive"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native active-session steering/interrupt is real. Backend run cancellation can await shutdown, but public cancel/job cancellation and shell cancel do not return proof of all provider/process cessation.",
+      "evidence": [
+        "control",
+        "drive",
+        "canceljob",
+        "shellcancel",
+        "drop"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host RuntimeBuilder composes per-turn tool catalog/system prompt/model/compaction/security/broker; model domain operations alter task plans, not inner compiled model-loop program.",
+      "evidence": [
+        "runtime",
+        "scope",
+        "nativeadapt"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Chat LCM is wired with SQLite original/summary graph and deterministic excerpts; Task uses structural compaction without LCM and reviewers/inquiries are self-contained. Dependency owns coordinator algorithm.",
+      "evidence": [
+        "runtime",
+        "contextmode",
+        "leaf",
+        "excerpt"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authorized paginated expansion returns retained original leaf entries/child nodes with source cursor validation. Native model-facing rehydration/repair commands are in engine dependency/untraced; task structural history differs.",
+      "evidence": [
+        "expand",
+        "leaf",
+        "contextmode"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "LCM leaves retain source entries but explicit tail truncation can delete unprotected history. Visible logs omit/redact raw tool data, silently ignore callback write errors and stop after10MiB; not core everything audit.",
+      "evidence": [
+        "leaf",
+        "truncate",
+        "logsink",
+        "logwriter"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-execution sequence pagination, domain/chat IDs and memory/context queries exist; malformed lines skipped and capped semantic logs are not unified immutable original audit.",
+      "evidence": [
+        "query",
+        "send",
+        "memory",
+        "logwriter"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Frozen chat admission protects automatic retry config; explicit retry re-admits new profile. Dispatcher loads current project workflow and transitions can reject stale authority. No general defer-until-affected-work-completes hot activation.",
+      "evidence": [
+        "frozen",
+        "retry",
+        "scan",
+        "guards"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No executable rebuild/outpost/reinhabitation protocol established in inspected runtime, persistent sessions, graceful shutdown and recovery; persistent task/session retry alone is not refit.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "External CLI/daemon executors and provider HTTP are consumed, but Forge owns local control plane, worktrees, leases, task governance and context DB; external fabric consumer boundary differs from Arconaut.",
+      "evidence": [
+        "role",
+        "cli",
+        "tasknative",
+        "shutdown"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model adaptive split/sequence/replace and file/command work support development under scoped policy. No model-governed experiment/activation/rollback/autodroit runtime traced.",
+      "evidence": [
+        "nativeadapt",
+        "write",
+        "command"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No everywhere model complaint capturing complete agent state into external issue table established in inspected task worklog/domain/action/sink paths; task errors/outcomes are narrower.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Host binds identity/scope/workspace and role permissions, allowlists commands, controls structured mutations/approval and rejects model authority overrides. MCP transition attributes system:Mcp due to absent agent execution identity.",
+      "evidence": [
+        "scope",
+        "tools",
+        "command",
+        "propose",
+        "structured",
+        "mcpactor"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Source-read tests attack real SQLite source expansion/CAS and real Unix process-group liveness, plus deterministic retry-input and stale workflow mutation invariants; not executed here.",
+      "evidence": [
+        "leaf",
+        "expand",
+        "bounded",
+        "guards"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "DB chat sequence/job leases/version/source/causation and LCM revisions provide ordering; JSONL per-writer sequence/UTC time capped/skippable and not universal durable causal audit.",
+      "evidence": [
+        "send",
+        "workers",
+        "lease",
+        "lcmappend",
+        "logwriter",
+        "query"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "role",
+      "path": "quarantine/forge-workflow/README.md",
+      "start": 16,
+      "end": 46,
+      "claim": "Forge describes a local control plane for persistent assistants, isolated coding tasks, serial shared-worktree children and CI/review delivery gates."
+    },
+    {
+      "id": "transitionstatus",
+      "path": "quarantine/forge-workflow/README.md",
+      "start": 131,
+      "end": 140,
+      "claim": "README explicitly marks Main/Project Agent Chat replacement model as being implemented; broad feature claims require wiring checks."
+    },
+    {
+      "id": "dependency",
+      "path": "quarantine/forge-workflow/Cargo.toml",
+      "start": 1,
+      "end": 35,
+      "claim": "Rust workspace includes agent-host, executors/services; native engine is separate pinned git agent-runtime dependency ca6c17e, not inline source."
+    },
+    {
+      "id": "provider",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 152,
+      "end": 217,
+      "claim": "Native provider construction resolves protected credential source and selects concrete runtime provider implementation; dependency owns request encoding/inner loop."
+    },
+    {
+      "id": "scope",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 420,
+      "end": 501,
+      "claim": "run_turn verifies persisted scope/workspace binding and composes scoped tools; result observer retains per-call structured summaries."
+    },
+    {
+      "id": "runtime",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 503,
+      "end": 596,
+      "claim": "RuntimeBuilder installs model limits/provider/workspace/broker, persistent stores and scope-specific LCM/structural compaction, system prompt and reasoning, then starts session."
+    },
+    {
+      "id": "drive",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 601,
+      "end": 706,
+      "claim": "Active generation prevents concurrent turn per runtime session; send starts turn, events forward selected deltas/tools, cancellation branch awaits shutdown, completion/persistence precedes registry finish."
+    },
+    {
+      "id": "output",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 715,
+      "end": 831,
+      "claim": "Return reconstructs latest assistant text, context-manifest link and per-attempt usage; failures/cancel retain usage reports but do not return successful output."
+    },
+    {
+      "id": "control",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 835,
+      "end": 860,
+      "claim": "cancel merely requests interrupt_current_turn and steer calls steer_current_turn on active session; methods do not await caller-independent quiescence."
+    },
+    {
+      "id": "drop",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 63,
+      "end": 111,
+      "claim": "Dropping active backend future requests session cancel and spawns shutdown/registry cleanup; cleanup is asynchronous, not drop-time quiescence."
+    },
+    {
+      "id": "contextmode",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "start": 296,
+      "end": 387,
+      "claim": "Chat uses LCM/persistent session; Task worker/planner use persistent structurally compacted history without LCM; reviewer/inquiry limits differ. Retry-aware input avoids duplicate unanswered input."
+    },
+    {
+      "id": "tools",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 439,
+      "end": 484,
+      "claim": "Task role and allowed permissions determine actual read/list/write/command/validate/web tools; planner lacks writes/processes."
+    },
+    {
+      "id": "read",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 1952,
+      "end": 2030,
+      "claim": "forge_task_read prepare/invoke revalidate scoped path and return at most128KiB lossy UTF8 with truncation flag."
+    },
+    {
+      "id": "write",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 2120,
+      "end": 2180,
+      "claim": "forge_task_write scopes path, caps content1MiB and writes after second path check."
+    },
+    {
+      "id": "command",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 2220,
+      "end": 2321,
+      "claim": "forge_task_command accepts allowlisted program/args; prepare requests ProcessSpawn, invocation returns exit/output and optional persisted command-observation ID."
+    },
+    {
+      "id": "bounded",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 2400,
+      "end": 2512,
+      "claim": "Command runs with cleared env except PATH,15-minute timeout, capped drained stdout/stderr and own process group killed on completion/drop; child wait/status drives completion."
+    },
+    {
+      "id": "killgroup",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 2534,
+      "end": 2567,
+      "claim": "Unix ProcessGroupGuard drop sends SIGKILL ignoring error; mechanism kills group but does not synchronously reap every descendant."
+    },
+    {
+      "id": "propose",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "start": 1870,
+      "end": 1944,
+      "claim": "Scoped proposal checks allowed operation, dedupe/correlation and rejects model authority overrides; invoke passes captured identity/scope/session to host provider."
+    },
+    {
+      "id": "nativeadapt",
+      "path": "quarantine/forge-workflow/crates/services/src/native_tools.rs",
+      "start": 3019,
+      "end": 3089,
+      "claim": "task.adaptive is wired to policy-checked TaskService split/sequence/replace with expected task/board versions and rationale, server-derived actor and idempotency."
+    },
+    {
+      "id": "structured",
+      "path": "quarantine/forge-workflow/crates/services/src/native_tools.rs",
+      "start": 4109,
+      "end": 4203,
+      "claim": "Forge provider returns structured success/failure/approval requirements; payload validation gives correct-input retry instructions."
+    },
+    {
+      "id": "send",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_service.rs",
+      "start": 429,
+      "end": 527,
+      "claim": "Chat send guards content and admits durable message+turn job with source/correlation; server resolves responder/profile/policy and allocates message sequence."
+    },
+    {
+      "id": "canceljob",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_service.rs",
+      "start": 530,
+      "end": 580,
+      "claim": "Chat cancellation uses expected job version and idempotency in DB transaction; not direct provider cancellation in this method."
+    },
+    {
+      "id": "retry",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_service.rs",
+      "start": 583,
+      "end": 594,
+      "claim": "Explicit terminal retry keeps trigger message but re-resolves new authority; differs from automatic retries preserving frozen admission."
+    },
+    {
+      "id": "handoff",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_service.rs",
+      "start": 973,
+      "end": 1052,
+      "claim": "Main\u2192Project handoff validates current bindings/target, guards bounded content and captures source revisions/causation for admitted target turn."
+    },
+    {
+      "id": "workers",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 3530,
+      "end": 3605,
+      "claim": "Chat worker claims DB jobs into JoinSet up to32 active, cancellation on shutdown joins all tasks; claim uses immediate transaction and provider cooldown gating."
+    },
+    {
+      "id": "frozen",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 3926,
+      "end": 3976,
+      "claim": "Automatic retry uses same frozen responder/profile/policy and validates authority/provider availability before durable usage admission."
+    },
+    {
+      "id": "lease",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 4488,
+      "end": 4517,
+      "claim": "Owner heartbeat renews leased job/version; zero-row/error cancels turn."
+    },
+    {
+      "id": "chatnative",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 2815,
+      "end": 2892,
+      "claim": "Main and Project chat native turns resolve separate profile/model/session/credential and scratch/verification workspace, command allowlist then backend.run_turn."
+    },
+    {
+      "id": "cli",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 602,
+      "end": 694,
+      "claim": "CLI chat backend reports no native persistent checkpoints/LCM/steer; creates per-job sandbox, runs adapter and invokes cancel on token cancellation."
+    },
+    {
+      "id": "tasknative",
+      "path": "quarantine/forge-workflow/crates/services/src/embedded_task_executor.rs",
+      "start": 391,
+      "end": 463,
+      "claim": "Task execution validates provider-call admission, applies project command allowlist and issues host-scoped native turn using frozen execution provider/model config."
+    },
+    {
+      "id": "scan",
+      "path": "quarantine/forge-workflow/crates/services/src/task_dispatcher.rs",
+      "start": 101,
+      "end": 131,
+      "claim": "Dispatcher skips paused projects, resolves current workflow and recovers in-flight work before starting ready tasks."
+    },
+    {
+      "id": "workflow",
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/engine/mod.rs",
+      "start": 992,
+      "end": 1034,
+      "claim": "Workflow definitions deserialize JSON with default fallback; root and child/actor distinctions resolve different workflow programs."
+    },
+    {
+      "id": "guards",
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/engine/mod.rs",
+      "start": 1098,
+      "end": 1212,
+      "claim": "Transitions enforce declared edges/system actors, user override rules and optional expected project workflow/version, then load merged state config."
+    },
+    {
+      "id": "hooks",
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/engine/mod.rs",
+      "start": 1337,
+      "end": 1407,
+      "claim": "Before-exit hook actions actually execute sequentially, refresh task state and block transition on configured guard failure."
+    },
+    {
+      "id": "registry",
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/registry.rs",
+      "start": 18,
+      "end": 96,
+      "claim": "Workflow actions are closed host registry including run_ci_steps/run_merge/dispatch_role_agent/dependency_gate/retry/cleanup cascades; unknown action errors."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/actions/dispatch.rs",
+      "start": 305,
+      "end": 355,
+      "claim": "Role dispatch checks agent pause/capacity and current reviewer/workflow authority before admission; inner launch continuation beyond excerpt not independently audited."
+    },
+    {
+      "id": "lcmappend",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/lcm.rs",
+      "start": 813,
+      "end": 903,
+      "claim": "LCM append authorizes view, validates timeline/fingerprint/idempotency and current revision/tail sequence before DB commit."
+    },
+    {
+      "id": "leaf",
+      "path": "quarantine/forge-workflow/crates/db/src/sqlite/lcm.rs",
+      "start": 395,
+      "end": 491,
+      "claim": "LCM leaf commit immediate transaction checks CAS, exact original entry sequence and overlap, inserts summary node/operation without deleting original entries."
+    },
+    {
+      "id": "expand",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/lcm.rs",
+      "start": 742,
+      "end": 807,
+      "claim": "LCM expansion authorizes view, bounds page size and verifies node/source fingerprint cursor, returning original leaf entries or child nodes."
+    },
+    {
+      "id": "condense",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/lcm.rs",
+      "start": 1053,
+      "end": 1121,
+      "claim": "Condensation validates active child IDs/order/source fingerprint/classification, refuses secret sources and checks revision metadata."
+    },
+    {
+      "id": "truncate",
+      "path": "quarantine/forge-workflow/crates/db/src/sqlite/lcm.rs",
+      "start": 348,
+      "end": 393,
+      "claim": "LCM truncation refuses ranges intersecting any summary node but deletes unprotected tail entries; store is not universally immutable originals."
+    },
+    {
+      "id": "excerpt",
+      "path": "quarantine/forge-workflow/crates/agent-host/src/lcm.rs",
+      "start": 280,
+      "end": 310,
+      "claim": "Wired deterministic summary model reduces text to bounded per-message excerpts; not semantic model summarization or repair of lost task structural history."
+    },
+    {
+      "id": "logsink",
+      "path": "quarantine/forge-workflow/crates/services/src/turn_log_sink.rs",
+      "start": 123,
+      "end": 175,
+      "claim": "Turn sink records selected readable deltas and credential-masked tool previews/summaries; write errors ignored at event callbacks."
+    },
+    {
+      "id": "logwriter",
+      "path": "quarantine/forge-workflow/crates/executors/src/log_writer.rs",
+      "start": 51,
+      "end": 118,
+      "claim": "JSONL per-writer sequence, flush but no fsync, output cap then truncation/no further entries; existing-file sequence resumes but byte count resets at construction."
+    },
+    {
+      "id": "query",
+      "path": "quarantine/forge-workflow/crates/executors/src/log_reader.rs",
+      "start": 13,
+      "end": 57,
+      "claim": "Log reader paginates from sequence, skips malformed lines and advances cursor from last retained record."
+    },
+    {
+      "id": "mcp",
+      "path": "quarantine/forge-workflow/crates/mcp-server/src/tools/mod.rs",
+      "start": 13,
+      "end": 90,
+      "claim": "Exposed MCP dispatch includes tasks/dependencies/memory/agents/projects/chat/handoff APIs with representative handlers traced."
+    },
+    {
+      "id": "create",
+      "path": "quarantine/forge-workflow/crates/mcp-server/src/tools/handlers.rs",
+      "start": 56,
+      "end": 137,
+      "claim": "forge_create_task validates project/title/parent and calls create_task_with_dependencies, returning task API data after service mutation."
+    },
+    {
+      "id": "memory",
+      "path": "quarantine/forge-workflow/crates/mcp-server/src/tools/handlers.rs",
+      "start": 447,
+      "end": 512,
+      "claim": "forge_memory_search enforces admitted project context and returns layered retrieved context/cursor, not general DB kernel."
+    },
+    {
+      "id": "mcpactor",
+      "path": "quarantine/forge-workflow/crates/mcp-server/src/tools/handlers.rs",
+      "start": 583,
+      "end": 668,
+      "claim": "MCP cancellation/queries/updates/transitions call service/DB; transition explicitly attributes caller as system:Mcp because agent execution identity is unavailable."
+    },
+    {
+      "id": "shutdown",
+      "path": "quarantine/forge-workflow/crates/services/src/shutdown.rs",
+      "start": 45,
+      "end": 113,
+      "claim": "Graceful shutdown stops admission, cancels active executors then records recovery/auto-resume; cancellation errors warn and recovery write failure defaults away."
+    },
+    {
+      "id": "shellcancel",
+      "path": "quarantine/forge-workflow/crates/executors/src/shell.rs",
+      "start": 155,
+      "end": 204,
+      "claim": "Shell adapter sends TERM/grace and KILL group, starts direct child kill if needed then returns without final await/reaping barrier."
+    },
+    {
+      "id": "expired",
+      "path": "quarantine/forge-workflow/crates/services/src/agent_chat_turn_worker.rs",
+      "start": 3680,
+      "end": 3719,
+      "claim": "Lease expiry records prior started/pending provider invocation as unreplayable coverage gap; not replay of the prior provider result."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/forge-workflow/crates/agent-host/tests/lcm_store.rs",
+      "focus": "LCM authorization/idempotency/source expansion/reopen adapter",
+      "oracle": "In-memory SQLite migration+real store append/leaf assert revision/replay/content/expansion count and foreign-view rejection. Reopened adapter shares same in-memory DB, not OS crash/disk durability; stale runtime revision string hardcoded.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forge-workflow/crates/services/src/workflow/engine/tests.rs",
+      "focus": "Stale project workflow authority at transition boundary",
+      "oracle": "Real SQLite fixture changes project workflow before transition; expects VersionConflict and unchanged task/status/version, no transition log or running execution. Does not test all changed-running-work activation semantics.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forge-workflow/crates/agent-host/src/typed_tools.rs",
+      "focus": "Bounded command descendant termination on normal exit/timeout/dropped future",
+      "oracle": "Unix shell spawns background child and oracle probes PID existence with kill(signal None), asserts capped command exit/error and eventual child gone; real OS process invariant for that group, not provider/network quiescence.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/forge-workflow/crates/agent-host/src/native.rs",
+      "focus": "Retry after unanswered model tool round and answered duplicate input",
+      "oracle": "Artificial Message arrays assert continuation substituted only for unanswered matching user input; no external-effect replay guarantee.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Host-issued scope/tool composition and version checks separate model proposal input from identity authority.",
+    "Chat LCM preserves original entries behind summary nodes and validates paged expansion sources.",
+    "Real process-group liveness and stale SQLite workflow tests attack direct fault classes."
+  ],
+  "limits": [
+    "Native model request encoding/inner tool iteration/LCM coordinator live in separate git dependency, not independently traced here.",
+    "Task structural context compaction is distinct from chat LCM; CLI chat capabilities narrower.",
+    "Turn callback log failures ignored; previews/redaction/caps and explicit LCM truncation preclude full original audit.",
+    "MCP mutation attribution can be system identity rather than invoking model; cancellation request and cessation differ."
+  ],
+  "arconaut_questions": [
+    "Can original-source expansion become a first-class model repair operation across all task/chat modes?",
+    "Which immutable original ledger should survive capped/redacted displays and tail truncation?",
+    "How can a consumer harness use this orchestration fabric without inheriting its worktree/service governance?",
+    "What version/defer boundary preserves model agency while preventing changed programs from activating mid-work?"
+  ]
+}

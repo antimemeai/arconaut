@@ -1,0 +1,115 @@
+{
+  "acquired": "2026-10-06",
+  "scope": "read-only study; no implementation execution, dependency adoption or authentication",
+  "sources": [
+    {
+      "name": "ice",
+      "repo": "https://github.com/opencolin/ice",
+      "pin": "5beb4bcf9230fd80bc4e68060d79fc90fa9b5f74",
+      "url": "https://codeload.github.com/opencolin/ice/zip/5beb4bcf9230fd80bc4e68060d79fc90fa9b5f74",
+      "archive": "arconaut/quarantine/arco-ext-teams-archives/ice-5beb4bcf9230.zip",
+      "sha256": "f0d01d31973b114dbe593be915a517f31e5bcff321067faf940a3392332aab62",
+      "extracted": "arconaut/quarantine/arco-ext-teams-ice",
+      "restore": "Download https://codeload.github.com/opencolin/ice/zip/5beb4bcf9230fd80bc4e68060d79fc90fa9b5f74 to arconaut/quarantine/arco-ext-teams-archives/ice-5beb4bcf9230.zip; unzip and move single root to arconaut/quarantine/arco-ext-teams-ice; strip .git/.DS_Store/__MACOSX/__pycache__, retain archive unchanged."
+    },
+    {
+      "name": "commonly",
+      "repo": "https://github.com/Team-Commonly/commonly",
+      "pin": "5bd4f1af4a6adaf4e9c2aeee2a23b21ba50e701f",
+      "url": "https://codeload.github.com/Team-Commonly/commonly/zip/5bd4f1af4a6adaf4e9c2aeee2a23b21ba50e701f",
+      "archive": "arconaut/quarantine/arco-ext-teams-archives/commonly-5bd4f1af4a6a.zip",
+      "sha256": "3810f5c9123ec785c0f6d5074c30469350e15f5238f0874905319b8a644669c1",
+      "extracted": "arconaut/quarantine/arco-ext-teams-commonly",
+      "restore": "Download https://codeload.github.com/Team-Commonly/commonly/zip/5bd4f1af4a6adaf4e9c2aeee2a23b21ba50e701f to arconaut/quarantine/arco-ext-teams-archives/commonly-5bd4f1af4a6a.zip; unzip and move single root to arconaut/quarantine/arco-ext-teams-commonly; strip .git/.DS_Store/__MACOSX/__pycache__, retain archive unchanged."
+    },
+    {
+      "name": "agent-room",
+      "repo": "https://github.com/agent-room-alkl/agent-room",
+      "pin": "080b13d2bf927a1ee3e66981dece0d2eee698d37",
+      "url": "https://codeload.github.com/agent-room-alkl/agent-room/zip/080b13d2bf927a1ee3e66981dece0d2eee698d37",
+      "archive": "arconaut/quarantine/arco-ext-teams-archives/agent-room-080b13d2bf92.zip",
+      "sha256": "aa6113c37d4b7584ce955ed88c69e0c8fad7fb361c4b339447078d85b4ab2f13",
+      "extracted": "arconaut/quarantine/arco-ext-teams-agent-room",
+      "restore": "Download https://codeload.github.com/agent-room-alkl/agent-room/zip/080b13d2bf927a1ee3e66981dece0d2eee698d37 to arconaut/quarantine/arco-ext-teams-archives/agent-room-080b13d2bf92.zip; unzip and move single root to arconaut/quarantine/arco-ext-teams-agent-room; strip .git/.DS_Store/__MACOSX/__pycache__, retain archive unchanged."
+    },
+    {
+      "name": "claude-public",
+      "repo": "https://github.com/anthropics/claude-code",
+      "pin": "8e60c4cac989c0e0cc6d2c49407a5c67f5a4a8e6",
+      "url": "https://codeload.github.com/anthropics/claude-code/zip/8e60c4cac989c0e0cc6d2c49407a5c67f5a4a8e6",
+      "archive": "arconaut/quarantine/arco-ext-teams-archives/claude-public-8e60c4cac989.zip",
+      "sha256": "996d99db4caad3dcd187e7a85d99e9cec20104ecbd651197ce3c247a08f9510f",
+      "extracted": "arconaut/quarantine/arco-ext-teams-claude-public",
+      "restore": "Download https://codeload.github.com/anthropics/claude-code/zip/8e60c4cac989c0e0cc6d2c49407a5c67f5a4a8e6 to arconaut/quarantine/arco-ext-teams-archives/claude-public-8e60c4cac989.zip; unzip and move single root to arconaut/quarantine/arco-ext-teams-claude-public; strip .git/.DS_Store/__MACOSX/__pycache__, retain archive unchanged."
+    }
+  ],
+  "official_docs": [
+    {
+      "requested": "https://code.claude.com/docs/en/agent-teams.md",
+      "final": "https://code.claude.com/docs/en/agent-teams.md",
+      "file": "agent-teams.md",
+      "sha256": "a2ed185b716d2550240752d988bfd1875cb2cad3f803be3a795f14054f3c0549",
+      "bytes": 40197
+    },
+    {
+      "requested": "https://code.claude.com/docs/en/sub-agents.md",
+      "final": "https://code.claude.com/docs/en/sub-agents.md",
+      "file": "sub-agents.md",
+      "sha256": "2a447df088c10f4edef2c565da63bdbb850d889423dd90322977ab4c8a6a4b75",
+      "bytes": 107435
+    },
+    {
+      "requested": "https://code.claude.com/docs/en/cross-session-messaging.md",
+      "final": "https://code.claude.com/docs/en/cross-session-messaging.md",
+      "file": "cross-session-messaging.md",
+      "sha256": "acb3fe186690f15df260d149e1caf0c6c459061de3740db5f9b2c6fe89fbc4c6",
+      "bytes": 34715
+    },
+    {
+      "requested": "https://code.claude.com/docs/en/remote-control.md",
+      "final": "https://code.claude.com/docs/en/remote-control.md",
+      "file": "remote-control.md",
+      "sha256": "1a75c97f8e18af0e49b9a77a438e01ac2b838267bedc7ecbd9c467ce7a574eca",
+      "bytes": 55132
+    }
+  ],
+  "study": {
+    "report": "report.md",
+    "evidence": "Source and test inspection only; no reference execution or dependency adoption. Official docs are documentation evidence, not inspected proprietary CLI internals.",
+    "reused_corpus": [
+      "arconaut/papers/capabilities/studies/collaboration-orchestration.md"
+    ],
+    "reviewed_source": {
+      "ice": [
+        "apps/server/src/room-doc.ts",
+        "apps/server/src/realtime.ts",
+        "apps/server/src/convergence/convergence.ts",
+        "apps/server/src/convergence/lock.ts",
+        "apps/server/src/convergence/convergence.test.ts",
+        "apps/server/src/agent/host.ts",
+        "apps/server/src/agent/host.test.ts"
+      ],
+      "commonly": [
+        "backend/controllers/messageController.ts",
+        "backend/services/agentMentionService.ts",
+        "backend/services/agentEventService.ts",
+        "backend/routes/agentsRuntime.ts",
+        "cli/src/lib/adapters/codex.js",
+        "backend/__tests__/unit/services/agentMentionService.threadingIsNotAddressing.test.js",
+        "backend/__tests__/service/two-driver-memory-cross-check.test.js"
+      ],
+      "agent-room": [
+        "packages/room-persistence/src/types.ts",
+        "packages/room-persistence/src/postgres.ts",
+        "packages/room-persistence/test/postgres.integration.test.ts",
+        "packages/shared/src/presence.ts",
+        "packages/shared/src/presence.test.ts",
+        "packages/upstash-client/test/messages.test.ts",
+        "api/_mcpTools.ts"
+      ],
+      "claude-public": [
+        "CHANGELOG.md"
+      ]
+    }
+  }
+}

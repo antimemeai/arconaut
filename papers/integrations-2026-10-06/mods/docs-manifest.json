@@ -1,0 +1,82 @@
+[
+  {
+    "name": "overview",
+    "url": "https://code.claude.com/docs/en/plugins/mods/overview.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/overview",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "events",
+    "url": "https://code.claude.com/docs/en/plugins/mods/events.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/events",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "interface",
+    "url": "https://code.claude.com/docs/en/plugins/mods/interface.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/interface",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "api",
+    "url": "https://code.claude.com/docs/en/plugins/mods/api.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/api",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "reference",
+    "url": "https://code.claude.com/docs/en/plugins/mods/reference.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/reference",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "test",
+    "url": "https://code.claude.com/docs/en/plugins/mods/test.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/test",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "create",
+    "url": "https://code.claude.com/docs/en/plugins/mods/create.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/create",
+    "browser_status": "read-current-official-page",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  },
+  {
+    "name": "troubleshoot",
+    "url": "https://code.claude.com/docs/en/plugins/mods/troubleshoot.md",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden",
+    "raw_download_status": "failed",
+    "browser_url": "https://code.claude.com/docs/en/plugins/mods/troubleshoot",
+    "browser_status": "not-needed-in-bounded-study",
+    "capture": "official-docs-browser-capture.json; lifecycle-browser-capture.txt"
+  }
+]

@@ -1,0 +1,261 @@
+#include "arconaut/tools.hpp"
+#include "native_process.hpp"
+#include <charconv>
+#include <fstream>
+#include <sys/stat.h>
+
+namespace arconaut {
+std::string read_file(const std::filesystem::path &path, std::size_t limit) {
+  std::ifstream file{path, std::ios::binary};
+  if (!file)
+    throw Error{ErrorCode::io, errno};
+  std::string out;
+  char buffer[8192];
+  while (file.read(buffer, sizeof(buffer)) || file.gcount() != 0) {
+    const auto n = static_cast<std::size_t>(file.gcount());
+    if (n > limit - out.size())
+      throw Error{ErrorCode::capacity};
+    out.append(buffer, n);
+  }
+  if (!file.eof())
+    throw Error{ErrorCode::io};
+  return out;
+}
+void write_file(const std::filesystem::path &requested, std::string_view bytes) {
+  std::error_code error;
+  const bool exists = std::filesystem::exists(requested, error);
+  if (error)
+    throw Error{ErrorCode::io, error.value()};
+  const auto path = exists ? std::filesystem::canonical(requested)
+                           : std::filesystem::absolute(requested);
+  auto template_name = path.string() + ".arco-XXXXXX";
+  std::vector<char> name(template_name.begin(), template_name.end());
+  name.push_back('\0');
+  const int fd = ::mkstemp(name.data());
+  if (fd < 0)
+    throw Error{ErrorCode::io, errno};
+  bool closed = false;
+  try {
+    struct stat prior{};
+    if (exists && ::stat(path.c_str(), &prior) != 0)
+      throw Error{ErrorCode::io, errno};
+    if (::fchmod(fd, exists ? prior.st_mode & 0777 : 0644) != 0)
+      throw Error{ErrorCode::io, errno};
+    auto remaining = bytes;
+    while (!remaining.empty()) {
+      auto count = ::write(fd, remaining.data(), remaining.size());
+      if (count < 0) {
+        if (errno == EINTR)
+          continue;
+        throw Error{ErrorCode::io, errno};
+      }
+      if (count == 0)
+        throw Error{ErrorCode::io};
+      remaining.remove_prefix(static_cast<std::size_t>(count));
+    }
+    if (::fsync(fd) != 0)
+      throw Error{ErrorCode::io, errno};
+    const int rc = ::close(fd);
+    closed = true;
+    if (rc != 0)
+      throw Error{ErrorCode::io, errno};
+    if (::rename(name.data(), path.c_str()) != 0)
+      throw Error{ErrorCode::io, errno};
+  } catch (...) {
+    if (!closed)
+      (void)::close(fd);
+    (void)::unlink(name.data());
+    throw;
+  }
+}
+void LocalTools::capture(std::string label, std::string raw) {
+  if (observer_)
+    observer_(label, raw);
+  captured_.push_back({std::move(label), std::move(raw)});
+}
+namespace {
+Json display_bytes(const std::string &raw) {
+  if (dump_json(Json{raw}).has_value())
+    return Json{raw};
+  constexpr char hex[] = "0123456789abcdef";
+  std::string encoded;
+  for (const char ch : raw) {
+    const auto c = static_cast<unsigned char>(ch);
+    encoded += hex[c >> 4U];
+    encoded += hex[c & 15U];
+  }
+  return Json::object({{"encoding", Json{"hex"}}, {"bytes", Json{std::move(encoded)}}});
+}
+std::size_t range_index(const Json &args, std::string_view key, std::size_t fallback) {
+  const auto *value = args.find(key);
+  if (!value)
+    return fallback;
+  if (!std::holds_alternative<JsonNumber>(value->value()))
+    throw Error{ErrorCode::invalid_range};
+  const auto &text = value->number().text;
+  std::size_t index = 0;
+  const auto parsed = std::from_chars(text.data(), text.data() + text.size(), index);
+  if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size())
+    throw Error{ErrorCode::invalid_range};
+  return index;
+}
+std::string file_presentation(const std::string &raw, const Json &args) {
+  const bool bytes = args.find("byte_start") || args.find("byte_end");
+  const bool lines = args.find("line_start") || args.find("line_end");
+  if (bytes && lines)
+    throw Error{ErrorCode::invalid_range};
+  if (bytes) {
+    const auto start = range_index(args, "byte_start", 0);
+    // An omitted end means EOF even when start is beyond it.
+    const auto end = range_index(args, "byte_end", std::max(start, raw.size()));
+    if (end < start)
+      throw Error{ErrorCode::invalid_range};
+    const auto first = std::min(start, raw.size());
+    return raw.substr(first, std::min(end, raw.size()) - first);
+  }
+  if (lines) {
+    const auto start = range_index(args, "line_start", 1);
+    const auto end = range_index(args, "line_end", SIZE_MAX);
+    if (start == 0 || end < start)
+      throw Error{ErrorCode::invalid_range};
+    std::size_t first = raw.size(), last = raw.size(), line = 1, pos = 0;
+    while (pos < raw.size()) {
+      if (line == start)
+        first = pos;
+      const auto lf = raw.find('\n', pos);
+      pos = lf == std::string::npos ? raw.size() : lf + 1;
+      if (line == end) {
+        last = pos;
+        break;
+      }
+      ++line;
+    }
+    return raw.substr(first, last - first);
+  }
+  return raw;
+}
+} // namespace
+Json process_output_presentation(const std::string &raw, const Json &args) {
+  const auto shown = file_presentation(raw, args);
+  return Json::object(
+      {{"output", display_bytes(shown)},
+       {"output_bytes", Json{JsonNumber{std::to_string(raw.size())}}},
+       {"returned_bytes", Json{JsonNumber{std::to_string(shown.size())}}},
+       {"omitted_bytes", Json{JsonNumber{std::to_string(raw.size() - shown.size())}}}});
+}
+Json LocalTools::run(std::string_view name, const Json &args) {
+  captured_.clear();
+  if (name == "read_file") {
+    auto raw = read_file(string_field(args, "path"));
+    capture("file.read", raw);
+    auto shown = display_bytes(file_presentation(raw, args));
+    return Json::object({{"content", std::move(shown)}});
+  }
+  if (name == "write_file" || name == "edit_file") {
+    const auto &path = string_field(args, "path");
+    std::string next;
+    if (name == "edit_file") {
+      const auto &old = string_field(args, "old");
+      const auto &replacement = string_field(args, "new");
+      if (old.empty())
+        throw Error{ErrorCode::invalid_range};
+      next = read_file(path);
+      capture("file.before", next);
+      const auto pos = next.find(old);
+      if (pos == std::string::npos || next.find(old, pos + 1) != std::string::npos)
+        throw Error{ErrorCode::conflict};
+      next.replace(pos, old.size(), replacement);
+    } else {
+      next = string_field(args, "content");
+      std::error_code error;
+      if (std::filesystem::exists(path, error))
+        capture("file.before", read_file(path));
+      if (error)
+        throw Error{ErrorCode::io, error.value()};
+    }
+    capture("file.proposed", next);
+    write_file(path, next);
+    return Json::object({{"written", Json{true}}, {"path", Json{path}}});
+  }
+  if (name == "exec") {
+    const auto budget = range_index(args, "output_max_bytes", SIZE_MAX);
+    int seconds = 120;
+    if (const auto *n = args.find("timeout_seconds")) {
+      if (!std::holds_alternative<JsonNumber>(n->value()))
+        throw Error{ErrorCode::invalid_range};
+      const auto &s = n->number().text;
+      auto r = std::from_chars(s.data(), s.data() + s.size(), seconds);
+      if (r.ec != std::errc{} || r.ptr != s.data() + s.size() || seconds < 1 ||
+          seconds > 3600)
+        throw Error{ErrorCode::invalid_range};
+    }
+    detail::Child child;
+    child.cancelled = cancelled;
+    child.output_observer = [this](std::string_view chunk) {
+      if (observer_)
+        observer_("process.output", chunk);
+    };
+    std::vector<std::string> argv;
+    if (const auto *array = args.find("argv")) {
+      if (!std::holds_alternative<Json::Array>(array->value()))
+        throw Error{ErrorCode::invalid_range};
+      for (const auto &value : array->array()) {
+        if (!std::holds_alternative<std::string>(value.value()) ||
+            value.string().find('\0') != std::string::npos)
+          throw Error{ErrorCode::invalid_range};
+        argv.push_back(value.string());
+      }
+    }
+    if (argv.empty()) {
+      const auto &command = string_field(args, "command");
+      if (command.find('\0') != std::string::npos)
+        throw Error{ErrorCode::invalid_range};
+      argv = {"/bin/sh", "-c", command};
+    }
+    child.start(std::move(argv), {}, true);
+    child.close_input();
+    std::string output;
+    int status = 0;
+    try {
+      output = child.collect(detail::Clock::now() + std::chrono::seconds{seconds},
+                             16 * 1024 * 1024, &status);
+    } catch (...) {
+      captured_.push_back({"process.partial", child.take_partial()});
+      throw;
+    }
+    auto shown = display_bytes(output.substr(0, budget));
+    const auto total = output.size();
+    captured_.push_back({"process.combined", std::move(output)});
+    auto result =
+        Json::object({{"output", std::move(shown)},
+                      {"exit_code", Json{JsonNumber{std::to_string(status)}}}});
+    if (args.find("output_max_bytes")) {
+      result.object().emplace_back("output_bytes",
+                                   Json{JsonNumber{std::to_string(total)}});
+      result.object().emplace_back(
+          "omitted_bytes",
+          Json{JsonNumber{std::to_string(total - std::min(total, budget))}});
+    }
+    return result;
+  }
+  throw Error{ErrorCode::unsupported};
+}
+Json tool_definitions() {
+  return unwrap(parse_json(R"([
+{"type":"function","name":"read_file","description":"Read a local file; full original bytes retained. Optional byte_start/byte_end are zero-based half-open; line_start/line_end are one-based inclusive (LF retained, no phantom trailing line). Do not mix. Missing end means EOF, beyond EOF clips/returns empty.","parameters":{"type":"object","properties":{"path":{"type":"string"},"byte_start":{"type":"integer","minimum":0},"byte_end":{"type":"integer","minimum":0},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1}},"required":["path"]}},
+{"type":"function","name":"write_file","description":"Write a complete local file. No command approval is required.","parameters":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}},
+{"type":"function","name":"edit_file","description":"Replace exactly one occurrence; refuses missing or ambiguous old text.","parameters":{"type":"object","properties":{"path":{"type":"string"},"old":{"type":"string"},"new":{"type":"string"}},"required":["path","old","new"]}},
+{"type":"function","name":"exec","description":"Execute a shell command or nonempty argv on the host. Nonempty argv takes precedence; empty argv uses command. Captures combined stdout/stderr and exit code. timeout_seconds defaults to 120. A deadline returns timed_out=true and effect_outcome=unknown after local child-group cleanup, with output_ref for partial output; inspect it and choose a distinct retry or another approach. Operator cancellation stops the turn. Optional output_max_bytes bounds raw prefix bytes shown to model; full original chunks remain audited. output_ref can retrieve omitted output using read_process_output.","parameters":{"type":"object","properties":{"command":{"type":"string"},"argv":{"type":"array","items":{"type":"string"}},"timeout_seconds":{"type":"integer"},"output_max_bytes":{"type":"integer","minimum":0}}}},
+{"type":"function","name":"read_process_output","description":"Read retained combined process output without rerunning effects. output_ref from exec identifies audited attempt. Optional byte_start/byte_end zero-based half-open, beyond EOF clips; missing end means EOF. Binary slices return hex.","parameters":{"type":"object","properties":{"output_ref":{"type":"string"},"byte_start":{"type":"integer","minimum":0},"byte_end":{"type":"integer","minimum":0}},"required":["output_ref"]}},
+{"type":"function","name":"context_stats","description":"Report context entry counts and serialized JSON byte sizes, last request bytes and actual provider usage in this process (null if unavailable). No token estimates.","parameters":{"type":"object","properties":{}}},
+{"type":"function","name":"context_view","description":"Inspect current editable context, base revision and stable entry IDs.","parameters":{"type":"object","properties":{}}},
+{"type":"function","name":"context_edit","description":"Publish candidate {base,entries:[{id,item}]} with CAS. Reorder, replace or remove entries. Retained originals are immutable. Keep active tool call/result pairs in context.","parameters":{"type":"object","properties":{"candidate":{"type":"object"}},"required":["candidate"]}},
+{"type":"function","name":"context_manage","description":"Explicit managed summarize/select/archive/restore. Proposal: optional base (omitted explicitly binds invocation snapshot; supplied is strict CAS), mode, ids (complete tool groups), reason, source; summarize also summary {role:assistant or developer,content}. Preserves all live user/system/developer instructions. Stages until successful workflow completion; appended current tool exchange is retained. One pending; failed/interrupted workflows cancel. Structural acceptance does not certify accuracy.","parameters":{"type":"object","properties":{"proposal":{"type":"object"}},"required":["proposal"]}},
+{"type":"function","name":"context_inspect","description":"Bounded recoverable original/history/index serialized JSON inspection. query: kind originals|history|index, optional entry (original ID), revision (strict per-kind snapshot guard; stale returns conflict, restart pagination), offset byte index, limit 1..65536 (default 4096). Returns hex-json-utf8 bytes, total_bytes, next, revision (bind subsequent pages) and context_revision. No token estimates.","parameters":{"type":"object","properties":{"query":{"type":"object"}},"required":["query"]}},
+{"type":"function","name":"context_originals","description":"Retrieve retained original context entries, including entries removed from presentation.","parameters":{"type":"object","properties":{}}},
+{"type":"function","name":"context_restore","description":"Restore an original context entry by stable entry ID.","parameters":{"type":"object","properties":{"entry":{"type":"string"}},"required":["entry"]}},
+{"type":"function","name":"restart","description":"Request restart/resume/continue after the current tool batch and turn complete. Build the release executable first. Include changes, checks, and next steps in the note. Failed or interrupted turns do not restart.","parameters":{"type":"object","properties":{"note":{"type":"string"}},"required":["note"]}},
+{"type":"function","name":"lua","description":"Run a Lua transformation or experiment in the current workflow. arco.context(), arco.stats(), arco.edit(candidate), arco.originals(), arco.restore(id), arco.append(items), arco.json.encode/decode, arco.call(name,args) are available. Return a JSON-encodable result. Governing workflow file changes activate next turn.","parameters":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}}
+])"));
+}
+} // namespace arconaut

@@ -1,0 +1,592 @@
+{
+  "id": "sweep",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python",
+      "TypeScript documentation/client material"
+    ],
+    "execution": "Historical GitHub webhook/CLI Python threaded pipeline; synchronous model SDK streaming; independent process pool reviews",
+    "service_boundary": "Owns clone/staged file state and worker threads; consumes GitHub/provider/Mongo services. Current JetBrains product pointed to by README is not audited by this historical code."
+  },
+  "summary": "Issue/comment-to-plan-to-edit-to-commit/PR automation with focused XML edit tools, baseline validation and seeded review voting.",
+  "inspection": {
+    "files": [
+      "quarantine/sweep/README.md",
+      "quarantine/sweep/sweepai/api.py",
+      "quarantine/sweep/sweepai/cli.py",
+      "quarantine/sweep/sweepai/handlers/on_ticket.py",
+      "quarantine/sweep/sweepai/handlers/on_ticket.py",
+      "quarantine/sweep/sweepai/handlers/create_pr.py",
+      "quarantine/sweep/sweepai/agents/modify.py",
+      "quarantine/sweep/sweepai/utils/streamable_functions.py",
+      "quarantine/sweep/sweepai/agents/modify.py",
+      "quarantine/sweep/sweepai/agents/modify.py",
+      "quarantine/sweep/sweepai/agents/modify.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/core/chat.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "quarantine/sweep/sweepai/core/chat.py",
+      "quarantine/sweep/sweepai/core/chat.py",
+      "quarantine/sweep/sweepai/core/chat.py",
+      "quarantine/sweep/sweepai/utils/code_validators.py",
+      "quarantine/sweep/sweepai/utils/chat_logger.py",
+      "quarantine/sweep/sweepai/core/review_utils.py",
+      "quarantine/sweep/sweepai/utils/safe_pqueue.py",
+      "quarantine/sweep/sweepai/utils/search_and_replace_test.py"
+    ],
+    "scope": "CLI/API event worker scheduling, planning-to-edit-to-PR pipeline, edit parser/dispatch/results/continuation, provider calls, context reset, Mongo logging and validation/matching oracle.",
+    "limits": "Source read only, reference not executed. Current JetBrains product implementation unavailable here; full retrieval/index pipeline, all review/rerank executors and extension/IDE frontend not exhaustively studied. No runtime tests executed."
+  },
+  "actions": [
+    {
+      "name": "make_change",
+      "surface": "model XML action",
+      "input": "file_name/original_code/new_code/replace_all",
+      "output": "updated staged file contents/diff, warning or retry",
+      "lifecycle": "serial edit, parse/lint versus baseline then stage",
+      "authority": "Model edits planned files through host parser.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "create_file",
+      "surface": "model XML action",
+      "input": "file_name/new_code",
+      "output": "staged new file/error",
+      "lifecycle": "serial; existing directory/existence checks",
+      "authority": "Model in cloned repository file staging.",
+      "evidence": [
+        "e15",
+        "e18"
+      ]
+    },
+    {
+      "name": "submit_task / submit_result",
+      "surface": "model XML action",
+      "input": "submission justification text",
+      "output": "next task SUCCESS or DONE",
+      "lifecycle": "marks pending task complete even when initial no-change check failed",
+      "authority": "Model; host also synthesizes submission.",
+      "evidence": [
+        "e14",
+        "e11"
+      ]
+    },
+    {
+      "name": "no_tool_call",
+      "surface": "host recovery action",
+      "input": "unparsed/no tool output",
+      "output": "format instructions",
+      "lifecycle": "continues bounded edit loop",
+      "authority": "Host recovery; no external work.",
+      "evidence": [
+        "e18",
+        "e12"
+      ]
+    },
+    {
+      "name": "modify(...) / modify.stream(...)",
+      "surface": "programmable API",
+      "input": "FileChangeRequests, clone, context and prior staged files",
+      "output": "final file map or intermediate code suggestion stream",
+      "lifecycle": "bounded generator; final return consumed by StreamableFunction",
+      "authority": "Program authors; loop/prompts construction-time.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "sweep run / sweep watch / GitHub issue webhook",
+      "surface": "operator/service commands",
+      "input": "issue URL/repo events and GitHub credentials",
+      "output": "tracking ID, progress comments, branch/commit/PR",
+      "lifecycle": "thread per issue; replacement injects SystemExit without join/quiescence; watch untraced beyond command existence",
+      "authority": "Operator configured installation delegates repo writes.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "PR comments / review webhook",
+      "surface": "operator/service actions",
+      "input": "comment or changed PR",
+      "output": "queued edit follow-up/review comments",
+      "lifecycle": "per-PR comments queued; review replaces prior worker; five seeded review processes",
+      "authority": "Authorized GitHub event; no agent-to-agent messaging.",
+      "evidence": [
+        "e2",
+        "e24",
+        "e25"
+      ]
+    },
+    {
+      "name": "check_syntax / get_check_results",
+      "surface": "supporting validation APIs",
+      "input": "path and candidate code",
+      "output": "parse/linter result relative to baseline",
+      "lifecycle": "host parser and npx subprocess deadlines",
+      "authority": "Host code; not exposed general process/kernel tool.",
+      "evidence": [
+        "e17",
+        "e22"
+      ]
+    },
+    {
+      "name": "ChatLogger.add_chat",
+      "surface": "supporting persistence API",
+      "input": "normalized messages/model/output/meta",
+      "output": "optional Mongo documents with index/expiration",
+      "lifecycle": "background writer thread per call; no ack/fail transaction, TTL expiry",
+      "authority": "Host logger consumes external DB, not model table query.",
+      "evidence": [
+        "e23",
+        "e10"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model make_change/create_file stage code; host clone/rename/commit/PR writes.",
+      "evidence": [
+        "e7",
+        "e15",
+        "e16",
+        "e4",
+        "e5"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host linter subprocesses, API worker threads, review multiprocessing pool; no general model Bash action in traced edit set.",
+      "evidence": [
+        "e22",
+        "e2",
+        "e24",
+        "e18"
+      ]
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model text edits with parse/lint feedback; no generic model code execution in traced dispatch.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e22"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No persistent code kernel/native process namespace in API/edit/provider/linter paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "ChatLogger consumes Mongo for optional normalized chats/tickets, but model has no table/database actions.",
+      "evidence": [
+        "e23"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python callable streamable plan/edit/validate/publish stages; fixed host pipeline, not model-programmable general orchestration.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Edit retry escalation uses configured faster/slower model; no simultaneous peer roles demonstrated by provider selection.",
+      "evidence": [
+        "e11",
+        "e19",
+        "e20"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Seeded independent review samples voted after join and GitHub human comments; no running model peer bus.",
+      "evidence": [
+        "e24",
+        "e2"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent issue/review threads, logging threads and five review processes; comment sequencing per PR queue.",
+      "evidence": [
+        "e2",
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "New issue/review injects SystemExit to old Python thread; no join/provider/process-quiescence handshake. Comments queued.",
+      "evidence": [
+        "e2",
+        "e20",
+        "e24"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Replaceable Python generator stages/prompts can be programmed by host; model native edit tools do not install a new live turn.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "After changed completed task both model and detailed logger histories replaced with system/current code state; no managed choice/retention transaction.",
+      "evidence": [
+        "e10"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Current files/plan re-rendered, prior detail lost from both histories and optional expiring logs; no model original-message repair API traced.",
+      "evidence": [
+        "e10",
+        "e23"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional Mongo normalized chat logging is detached, expiring and may omit earlier detail after reset; synthetic assistant calls and stop truncation mean not original provider audit.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e19",
+        "e20",
+        "e23"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mongo records and external progress IDs aid operator study; no native model audit query.",
+      "evidence": [
+        "e23",
+        "e2"
+      ]
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No after-turn/workflow activation or hot prompt/program reload transaction in inspected captured pipeline.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Webhook/CLI reruns new pipeline; no paused owned work/outpost/recompile/reinhabitation in inspected paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes GitHub repository APIs, OpenAI/Anthropic/Bedrock providers and optional Mongo.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e19",
+        "e20",
+        "e23"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Automatic code-edit/lint repair and multi-sample review are search primitives for target repo, not governed harness self-improvement.",
+      "evidence": [
+        "e17",
+        "e11",
+        "e24"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tracking IDs/errors and PostHog host events exist; no model complaint with captured agent state/bead custody.",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Configured GitHub delegation automatically commits/creates regular PR; edit tool directory/existence checks, no individual command gate in this path.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e15"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Inspected matching test has concrete deterministic oracles; linter syntax checks are not behavioral correctness and skipped tasks still complete.",
+      "evidence": [
+        "e26",
+        "e17",
+        "e18",
+        "e14"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tracking IDs/queue sequence and Mongo index structure events; detached shared-index logging and destructive context prevent complete causal ordering.",
+      "evidence": [
+        "e2",
+        "e23",
+        "e25",
+        "e10"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/sweep/README.md",
+      "start": 1,
+      "end": 5,
+      "claim": "Pinned repo directs current product to JetBrains; inspectable source is earlier GitHub automation, not proof of new product mechanics."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/sweep/sweepai/api.py",
+      "start": 106,
+      "end": 229,
+      "claim": "Ticket/review workers per repo key and Python async SystemExit injection; comments queued per PR without restart."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/sweep/sweepai/cli.py",
+      "start": 325,
+      "end": 357,
+      "claim": "CLI run(issue_url) loads configured GitHub request and invokes on_ticket."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/sweep/sweepai/handlers/on_ticket.py",
+      "start": 519,
+      "end": 579,
+      "claim": "Planner streams FileChangeRequests; branch creation, modify, summary and commit pipeline."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/sweep/sweepai/handlers/on_ticket.py",
+      "start": 620,
+      "end": 668,
+      "claim": "Changes summarized and normal draft=False GitHub PR created."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/sweep/sweepai/handlers/create_pr.py",
+      "start": 39,
+      "end": 127,
+      "claim": "Modify pipeline consumes streamable return; updates in-memory file statuses and analytics."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/sweep/sweepai/agents/modify.py",
+      "start": 63,
+      "end": 82,
+      "claim": "Modify is streamable generator, captures configured prompt and renames local cloned files."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/sweep/sweepai/utils/streamable_functions.py",
+      "start": 7,
+      "end": 30,
+      "claim": "Same generator callable exposes intermediate stream or consumes final return."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/sweep/sweepai/agents/modify.py",
+      "start": 94,
+      "end": 163,
+      "claim": "Edit loop initial plan state, synthetic precompiled assistant calls, bounded 15*task iteration."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/sweep/sweepai/agents/modify.py",
+      "start": 173,
+      "end": 215,
+      "claim": "Task progress replaces both model and detailed logger history with system/current state; DONE logs diffs."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/sweep/sweepai/agents/modify.py",
+      "start": 236,
+      "end": 286,
+      "claim": "Auto submit compiled tasks, MODEL\u2192SLOW_MODEL escalation and repeated-output skip."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 625,
+      "end": 640,
+      "claim": "Parses XML calls, picks first recognized tool; parser later enumerates by tool order rather than occurrence."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/sweep/sweepai/core/chat.py",
+      "start": 178,
+      "end": 194,
+      "claim": "XML parser groups matches per known tool name; no native provider tool schema in edit path."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 897,
+      "end": 920,
+      "claim": "submit_task marks next pending task completed; no-change failure calculation overwritten by SUCCESS except all-done sentinel."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 922,
+      "end": 959,
+      "claim": "create_file records text into file dict after directory/existence checks."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 980,
+      "end": 1025,
+      "claim": "make_change operates latest code from clone/file dict; original/new code and replace_all."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 1124,
+      "end": 1163,
+      "claim": "Replacement and parser/linter comparison, baseline-relative failing-parse detection."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/sweep/sweepai/agents/modify_utils.py",
+      "start": 1182,
+      "end": 1229,
+      "claim": "Repeated error marks task complete/SKIPPED and may return DONE; only make_change/create_file/submit/no-tool dispatch."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/sweep/sweepai/core/chat.py",
+      "start": 397,
+      "end": 436,
+      "claim": "Synchronous OpenAI streaming SDK call with textual chunks and stop sequence truncation."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/sweep/sweepai/core/chat.py",
+      "start": 433,
+      "end": 474,
+      "claim": "Anthropic/Bedrock stream normalizes messages and accumulates text; no request cancellation contract here."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/sweep/sweepai/core/chat.py",
+      "start": 663,
+      "end": 711,
+      "claim": "Continuation extends long textual replies until stop sequence/maxcalls; edits previous assistant content."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/sweep/sweepai/utils/code_validators.py",
+      "start": 499,
+      "end": 547,
+      "claim": "Syntax/linter validation; host npx subprocess shell with 5/30s timeout, no native model shell."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/sweep/sweepai/utils/chat_logger.py",
+      "start": 40,
+      "end": 82,
+      "claim": "Optional consumed Mongo chat store, TTL, detached logging threads and shared index increment."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/sweep/sweepai/core/review_utils.py",
+      "start": 1016,
+      "end": 1090,
+      "claim": "Five seeded reviewer processes or sequential samples; joins process pool before collecting/voting; not live peer bus."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/sweep/sweepai/utils/safe_pqueue.py",
+      "start": 5,
+      "end": 32,
+      "claim": "Per-PR queue priority invalidation, lock, silent put exceptions."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/sweep/sweepai/utils/search_and_replace_test.py",
+      "start": 15,
+      "end": 61,
+      "claim": "Whitespace, exact, ambiguous first-match and no-match assertions for matching primitive."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/sweep/sweepai/utils/search_and_replace_test.py",
+      "focus": "Matching placement and whitespace",
+      "oracle": "Exact expected scores/first-occurrence/no-match and whitespace positives/negative; primitive only, not edit completion/process quiescence.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Same streamable generator supports final return and incremental program consumption.",
+    "Baseline-relative parser/linter feedback and concrete staged diffs.",
+    "Public repository writes expressed as complete issue-to-PR workflow."
+  ],
+  "limits": [
+    "Current JetBrains product implementation unavailable here; full retrieval/index pipeline, all review/rerank executors and extension/IDE frontend not exhaustively studied. No runtime tests executed."
+  ],
+  "arconaut_questions": [
+    "Can task completion distinguish skipped, validated and behaviorally successful work?",
+    "Can human steering replace async thread-exception injection with owned resource cancellation and observations?",
+    "Can actual model responses be captured before synthetic assistant calls and code-state compaction?"
+  ]
+}

@@ -1,0 +1,300 @@
+{
+  "id": "guile-fibers",
+  "kind": "Scheme concurrency scheduler",
+  "runtime": {
+    "languages": [
+      "Scheme",
+      "C"
+    ],
+    "execution": "Delimited-continuation fibers over configurable OS-thread schedulers; IO polling, timers and optional preemption.",
+    "service_boundary": "Runs inside a Guile application; does not own shared kernels, providers or an agent fabric."
+  },
+  "summary": "Composable choice/wrap operations and synchronous channels offer expressive concurrency; cancellation in this snapshot has a source-level coverage concern.",
+  "inspection": {
+    "files": [
+      "quarantine/guile-fibers/fibers.scm",
+      "quarantine/guile-fibers/fibers/operations.scm",
+      "quarantine/guile-fibers/fibers/timers.scm",
+      "quarantine/guile-fibers/fibers.texi",
+      "quarantine/guile-fibers/tests/channels.scm",
+      "quarantine/guile-fibers/tests/preemption.scm",
+      "quarantine/guile-fibers/tests/cancel-timer.scm"
+    ],
+    "scope": "Read run/spawn/cleanup, operation choice/suspension/cancellation, timers, concurrency design and channel/preemption/cancel-timer tests.",
+    "limits": "No execution or full Guile/foreign-IO audit; distributed participants, persistent checkpoint and harness refit are outside role."
+  },
+  "actions": [
+    {
+      "name": "run-fibers / spawn-fiber",
+      "surface": "supplied primitive",
+      "input": "Initial thunk, parallelism, preemption hz, drain flag; child closure",
+      "output": "Initial return values; scheduled fibers",
+      "lifecycle": "Default completion ends scheduler; drain waits for pending work.",
+      "authority": "Enclosing Guile program",
+      "evidence": [
+        "run",
+        "spawn"
+      ]
+    },
+    {
+      "name": "choice-operation / wrap-operation / perform-operation",
+      "surface": "supplied primitive",
+      "input": "First-class operations and result continuation",
+      "output": "One selected result or suspension until ready",
+      "lifecycle": "Suspended fiber or blocking foreign thread; losing cancellation has noted defect.",
+      "authority": "Application programs",
+      "evidence": [
+        "ops",
+        "cancel"
+      ]
+    },
+    {
+      "name": "timer-operation / sleep-operation",
+      "surface": "supplied primitive",
+      "input": "Internal-time expiry or duration seconds",
+      "output": "Operation completing with no values",
+      "lifecycle": "Cancelable wheel entry when callback reached.",
+      "authority": "Application programs",
+      "evidence": [
+        "timer"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Scheme closures can compose operations and execute arbitrary application logic, with model interface supplied separately.",
+      "evidence": [
+        "spawn"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "In-process closures/dynamic state survive across fiber scheduling; no process-restart serialization is supplied.",
+      "evidence": [
+        "spawn"
+      ]
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Choice and wrap are first-class composable operations rather than a fixed graph DSL.",
+      "evidence": [
+        "ops"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "In-process channels and operation composition supply communication primitives, not independent model participants.",
+      "evidence": [
+        "ops"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Parallel schedulers, fibers and work suspension; drain behavior determines whether background work outlives initial thunk.",
+      "evidence": [
+        "run"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Preemption and losing-operation cancellation are provided, but cancel-other-operations never advances beyond index zero in this snapshot; no general agent turn-cancel protocol.",
+      "evidence": [
+        "run",
+        "cancel",
+        "timer"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "na",
+      "basis": "role",
+      "detail": "original_audit: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "role",
+      "detail": "audit_query: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Guile code is hosted dynamically, but executable definition activation and active-fiber migration were not established in inspected scheduler/operation paths.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Captured in-process continuations are not evidence of transfer across rebuilt runtime/processes; no such handoff established.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies Scheme concurrency scheduler; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Runs with the enclosing Guile program authority; model approvals and service governance are not defined.",
+      "evidence": [
+        "design"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Channel result and preemption tests have explicit expected values; cancel-timer heap test covers only a timer in the first choice position.",
+      "evidence": [
+        "cancel",
+        "timer"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Timers use Guile internal real time and scheduler ticks; no persisted deadline/paused-time semantics.",
+      "evidence": [
+        "timer"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "run",
+      "path": "quarantine/guile-fibers/fibers.scm",
+      "start": 75,
+      "end": 163,
+      "claim": "Schedulers support configurable parallelism/preemption; default returns when initial thunk finishes, while drain waits for pending work; auxiliary threads stop during unwind."
+    },
+    {
+      "id": "spawn",
+      "path": "quarantine/guile-fibers/fibers.scm",
+      "start": 164,
+      "end": 190,
+      "claim": "Fibers start next scheduler turn, capture dynamic state and may select parallel scheduler."
+    },
+    {
+      "id": "ops",
+      "path": "quarantine/guile-fibers/fibers/operations.scm",
+      "start": 100,
+      "end": 193,
+      "claim": "Choice flattens alternatives; wrap transforms results; suspend resumes captured continuation."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/guile-fibers/fibers/operations.scm",
+      "start": 140,
+      "end": 150,
+      "claim": "Named loop visits index zero without recursive advance; later losing alternatives are not traversed in this pinned source."
+    },
+    {
+      "id": "timer",
+      "path": "quarantine/guile-fibers/fibers/timers.scm",
+      "start": 45,
+      "end": 90,
+      "claim": "Timer uses internal elapsed time and cancellation removes wheel entry when its callback is invoked."
+    },
+    {
+      "id": "design",
+      "path": "quarantine/guile-fibers/fibers.texi",
+      "start": 309,
+      "end": 341,
+      "claim": "Blocking IO suspends fibers; foreign threads may block; fibers are in-process delimited continuations."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/guile-fibers/tests/channels.scm",
+      "focus": "Channel communication/recursive concurrent RPC results.",
+      "oracle": "Explicit equal-value assertions including rpc-fib 24 = 75025; termination-only pingpong is weaker.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/guile-fibers/tests/preemption.scm",
+      "focus": "Busy fibers progressing without cooperative IO yields.",
+      "oracle": "Two fibers alternate atomic counter parity; expected result 100. Test success is not bounded production cancellation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/guile-fibers/tests/cancel-timer.scm",
+      "focus": "Losing timer continuation accumulation.",
+      "oracle": "After 200000 choices with timer first, heap must grow no more than 2x; placement does not cover later losing alternatives, allocator behavior affects oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "First-class operations compose communication, continuations and deadlines.",
+    "Explicit initial-thunk versus drain lifecycle informs honest ongoing-work boundaries."
+  ],
+  "limits": [
+    "No durable restart/continuation transfer or agent policy provided.",
+    "Source concern: cancellation loop only checks index zero; position-specific test can miss later alternatives."
+  ],
+  "arconaut_questions": [
+    "Can ordinary programs combine cancellation, IO and result routing without callback boilerplate?",
+    "A three-way choice test must assert every losing cancellation callback fires exactly once for each winner position."
+  ]
+}

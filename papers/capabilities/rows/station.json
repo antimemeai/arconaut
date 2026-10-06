@@ -1,0 +1,837 @@
+{
+  "id": "station",
+  "kind": "scientific multi-agent environment",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Python threaded tick orchestrator, concurrent stateful provider connectors, serial action commits/fast-lane writers, owned CLI coder/auditor sessions and fresh Python experiment subprocesses.",
+    "service_boundary": "Owns ecosystem scheduling, agent YAML/history, shared research storage/index and coder/evaluation processes. This is a research control plane, not merely a consumer of independently governed shared kernels."
+  },
+  "summary": "Room/action scientific ecosystem: heterogeneous researcher agents exchange capsules/mail, delegate experiments to coder workers, receive task scores and independent report audits.",
+  "inspection": {
+    "files": [
+      "quarantine/station/station/action_parser.py",
+      "quarantine/station/station/station.py",
+      "quarantine/station/station/base_room.py",
+      "quarantine/station/station/sync/parallel_runner.py",
+      "quarantine/station/station/station_runner.py",
+      "quarantine/station/station/rooms/mail.py",
+      "quarantine/station/station/agent.py",
+      "quarantine/station/station/llm_connectors/base.py",
+      "quarantine/station/station/llm_connectors/openai.py",
+      "quarantine/station/station/file_io_utils.py",
+      "quarantine/station/station/sync/parallel_state.py",
+      "quarantine/station/station/sync/fast_lane_service.py",
+      "quarantine/station/station/eval_research/submission_service.py",
+      "quarantine/station/station/rooms/research_center.py",
+      "quarantine/station/station/workers/job_manager.py",
+      "quarantine/station/station/eval_research/executor_sandbox.py",
+      "quarantine/station/station/eval_research/coder_manager.py",
+      "quarantine/station/station/eval_research/submit_audit_cli.py",
+      "quarantine/station/station/rooms/misc.py",
+      "quarantine/station/station/rooms/admin.py",
+      "quarantine/station/README.md",
+      "quarantine/station/station/capsule_index.py",
+      "quarantine/station/station/eval_research/base_evaluator.py",
+      "quarantine/station/tests/test_cross_agent_notification_atomic.py",
+      "quarantine/station/tests/test_context_compaction.py",
+      "quarantine/station/tests/test_parallel_research_sync.py",
+      "quarantine/station/tests/test_cli_job_manager.py",
+      "quarantine/station/tests/test_research_audit.py",
+      "quarantine/station/tests/test_lazy_connector_and_mail.py"
+    ],
+    "scope": "provider/staged tick, parser/room dispatch, mail concurrent-state merge, context anchors, persistent index/history scope, coder/process lifecycle, experimental verdict/repair, configuration refresh and selected fault-class tests",
+    "limits": "Full domain evaluator correctness, all providers, room/action catalogs, multistart/lineage/controller internals, web authorization and whole-system crash atomicity remain uninspected."
+  },
+  "actions": [
+    {
+      "name": "/execute_action{command args} / submit_response",
+      "surface": "researcher model textual action protocol",
+      "input": "Native room command/args plus dictionary YAML block; multiple actions capped, navigation and role constraints.",
+      "output": "Ordered action result strings, room state/notifications and optional first multistep internal handler.",
+      "lifecycle": "Parsed after provider response; ordinary actions committed in turn order; fast-lane experiment submission can occur earlier.",
+      "authority": "Active agent identity, room/guest/maturity/cooldown/supervisor constraints; no unrestricted general shell tool.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e7"
+      ]
+    },
+    {
+      "name": "Mail create / reply",
+      "surface": "researcher model room action",
+      "input": "YAML title/content/recipient list, capsule/message numeric ID for reply.",
+      "output": "Persistent mail capsule/message ID plus full-content pending recipient notification.",
+      "lifecycle": "Recipients must be mature recursive agents; atomic notification append survives concurrent turn; recipient read IDs marked on notification delivery, not explicit ack.",
+      "authority": "Room participant/role checks; next observation incorporates mail, no active provider injection.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "Research Center read_task / submit",
+      "surface": "researcher model room action",
+      "input": "Read task; YAML title/tags/abstract/instruction with artifact references.",
+      "output": "Queued evaluation ID, status/notification or limit/validation denial.",
+      "lifecycle": "Coder delegates experiment execution; fast-lane provisional run/op identity, timeout may still leave queued request proceeding.",
+      "authority": "Recursive researcher after task read, holiday/cooldown/author active limit; supervisors forbidden.",
+      "evidence": [
+        "e26",
+        "e27",
+        "e28"
+      ]
+    },
+    {
+      "name": "Research Center storage info / list / read",
+      "surface": "researcher model room action",
+      "input": "Storage path and page, native read or storage read/list.",
+      "output": "Paged path/list/text in next System Messages.",
+      "lifecycle": "Persistent shared/lineage storage; read cooldown where configured, write/delete refused here.",
+      "authority": "Researcher read-only; separately launched coder has code/data writes.",
+      "evidence": [
+        "e29"
+      ]
+    },
+    {
+      "name": "CliJobManager launch / poll / stop",
+      "surface": "runtime supplied worker API",
+      "input": "Evaluation/job spec, backend command/model/env/workspace/storage/network options, resume token.",
+      "output": "Active process session ID/PID/transcript/stderr/report paths and exit/retry state.",
+      "lifecycle": "Start new OS session. Abort waits/escalates direct child; stop merely signals then closes/clears, so caller must not assume settled descendants.",
+      "authority": "Station governs its coder/auditor workers and storage; no shared-service lease established.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e35"
+      ]
+    },
+    {
+      "name": "execute_submission_in_python_sandbox",
+      "surface": "owned evaluation runtime primitive",
+      "input": "Task code/result wrapper, tmp storage, CPU/GPU IDs, timeout/memory settings.",
+      "output": "Structured success/result/log/stdout/stderr or timeout/memory/error.",
+      "lifecycle": "Fresh Python subprocess for each experiment, group kill/child wait on timeout; not a persistent shared kernel.",
+      "authority": "Full ordinary Python OS behavior within configured limits; sandbox name does not establish namespace/security isolation.",
+      "evidence": [
+        "e32",
+        "e33",
+        "e34"
+      ]
+    },
+    {
+      "name": "submit_audit.sh <evaluation_id> pass|fail / submit_audit",
+      "surface": "auditor model CLI artifact API",
+      "input": "Existing nonempty audit report and literal pass/fail.",
+      "output": "Verdict artifact/status; manager finalizes report or requests bounded repair.",
+      "lifecycle": "Temporary-file replace, later invocation can replace verdict; failing critique resumes previous coder where supported, otherwise fresh worker; exhausted repair partial.",
+      "authority": "Separate scientific auditor role instructed not to alter experiment or make new official submission; trust is model judgement plus task oracle.",
+      "evidence": [
+        "e35",
+        "e36",
+        "e37"
+      ]
+    },
+    {
+      "name": "maybe_run_context_compaction_after_turn / sync_state",
+      "surface": "runtime maintenance/provider API",
+      "input": "Agent token threshold, full model-generated summary, protected context and tick anchor; disk pruning/system role changes.",
+      "output": "Persisted pending/anchored summary and reloaded effective provider history/token estimate.",
+      "lifecycle": "After-turn maintenance generates summary; next observation includes summary/protected items; originals ordinarily retained until separate recovery/retention mutation.",
+      "authority": "Orchestrator-managed context; model supplies summary, no general model-controlled arbitrary turn program.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "_get_current_connector_for_agent",
+      "surface": "runtime provider dispatch API",
+      "input": "Agent provider/model/system settings and current runtime API config generation.",
+      "output": "Existing current-generation connector or reinitialized factory instance.",
+      "lifecycle": "Refresh before new requests; already-running requests are not repointed; failed creation can return older connector. General constants require restart.",
+      "authority": "Operator/server configuration; model provider choice independent per external researcher.",
+      "evidence": [
+        "e9",
+        "e42"
+      ]
+    },
+    {
+      "name": "suggest / request_human",
+      "surface": "researcher model room action",
+      "input": "Suggestion content, or assistance title/content.",
+      "output": "Suggestion YAML append or human request ID with awaiting-intervention flag.",
+      "lifecycle": "Suggest does not itself demand repair; request_human pauses participation. Persistence helper may hide failure; no automatic full-state capture/database bead.",
+      "authority": "Recursive room participation/administrative request; operator resolves assistance separately.",
+      "evidence": [
+        "e39",
+        "e40",
+        "e23"
+      ]
+    },
+    {
+      "name": "request_manual_pause",
+      "surface": "operator orchestration API",
+      "input": "No args; current running/paused state.",
+      "output": "Pending control event/message.",
+      "lifecycle": "Requests boundary pause, not cancellation/settlement of existing requests/jobs.",
+      "authority": "Operator control plane.",
+      "evidence": [
+        "e41"
+      ]
+    },
+    {
+      "name": "load_yaml_lines_tick_window",
+      "surface": "dashboard/service program API",
+      "input": "Dialogue YAML log path, earliest/recent and tick limit.",
+      "output": "Chronological decoded entry list plus window metadata.",
+      "lifecycle": "Queries retained records; malformed/read errors may return partial and original deleted/expired records unavailable.",
+      "authority": "Host/dashboard file access, not unrestricted model SQL.",
+      "evidence": [
+        "e38"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Researcher native storage actions read/list only; coder/evaluator processes write persistent code/data with separate authority. Room capsules, indices and histories are host-owned files.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e32"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Owns coder/auditor CLI OS sessions and fresh Python experiment groups. Timeout/abort can wait/escalate; stop_active_cli_jobs signals and clears without settlement, a material refit distinction.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e33",
+        "e34"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-authored instructions delegate actual coding experiments to CLI worker and fresh Python executor, returning evaluation/report IDs. This is not a direct resident Python kernel tool.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e30",
+        "e32",
+        "e33"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No shared persistent computation kernel established in inspected worker/evaluation paths; experiments use fresh temporary Python subprocesses and coder provider histories are not kernel state.",
+      "evidence": [
+        "e30",
+        "e32",
+        "e33"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent agent/capsule/evaluation state and supplied SQLite capsule metadata index support shared ecosystem data; native researcher reads are domain room/capsule operations, not generic SQL DB access.",
+      "evidence": [
+        "e43",
+        "e44"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Action chains, navigation, supplied InternalActionHandler init/step, concurrent tick phase and model-programmed experiment instructions compose workflows. Core room/tick programs remain developer-owned.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e4",
+        "e5",
+        "e27"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent per-agent provider/model factory, stateful history and concurrent turn requests support heterogeneous researchers; delegated coder/auditor are additional roles.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e9",
+        "e35"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mature recursive peers exchange mail content/capsule IDs and pending notifications; latest-state merge preserves arrivals during another model generation. It is queued context, not provider-stream interruption.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Concurrent provider generation, serial ordinary action commit and single-writer provisional fast lanes; worker timeout does not cancel request, tick rollback can delete uncommitted history and restart tick.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Pending mail/operator pause at agent boundary; request_human flags awaiting intervention. Existing provider calls are not canceled by pause and worker stop need not settle programs.",
+      "evidence": [
+        "e10",
+        "e31",
+        "e40",
+        "e41"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Maintainer extension interface supplies multistep init/step room handlers and provider state rebuild on disk prompt/pruning changes; no model API replacing arbitrary core turn dispatcher during ordinary operation.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e20"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "After-turn summary is persisted as pending tick event; next observation injects full summary/protected messages and anchors provider effective history. Unknown token recount flagged stale; compaction call itself recorded.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Saved unfiltered history, mutable pruning/anchor metadata and sync_state allow rebuilding effective chat; protected notifications survive compaction. Separate recovery intentionally deletes uncommitted originals, limiting reconstruction.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19",
+        "e20",
+        "e25"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Decoded provider text/thinking/history/metadata and tick snapshots retained; raw API sanitizer drops fields/clips, empty turns omitted and append failure swallowed. Recovery deletes uncommitted same-tick history, snapshots expire. Not every original provider byte/effect.",
+      "evidence": [
+        "e6",
+        "e8",
+        "e21",
+        "e22",
+        "e23",
+        "e24",
+        "e25"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Dashboard/service tick-window queries and native domain capsule/evaluation references inspect retained histories; partial parse/read returns possible and deleted/expired originals unrecoverable.",
+      "evidence": [
+        "e24",
+        "e25",
+        "e38"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "New requests refresh runtime provider/API generation; disk prompt/pruning/anchor differences rebuild effective chat. General constant_config requires restart; failed chat reinit logs but may proceed stale. No global turn/workflow change barrier.",
+      "evidence": [
+        "e9",
+        "e20",
+        "e42"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Inspected code reconstructs provider history and guards interrupted ticks/workers, but no compile/refit/outpost handoff or executable harness reinhabitation with all owned activity quiesced is established.",
+      "evidence": [
+        "e20",
+        "e25",
+        "e31"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider requests consume remote models through per-agent factory; CLI coders/auditors may receive network access. Shared experiment infrastructure is generally governed by Station, not external fabric consumers.",
+      "evidence": [
+        "e9",
+        "e30",
+        "e35"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Scientific experiment code/report repair and suggestion filing are implemented; model-governed experimental improvement/activation of Station harness itself not established in inspected paths.",
+      "evidence": [
+        "e36",
+        "e39"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native suggest logs authored content/agent/tick without obligation; no automatic full agent-state capture/DB bead or follow-up priority. request_human is a different, participation-blocking assistance mechanism.",
+      "evidence": [
+        "e39",
+        "e40",
+        "e23"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Active identity/action cap/ascension filter, room role/maturity/holiday/task/cooldown limits; researcher storage read-only while code/evaluator workers have broader OS/network authority. Prompted auditor constraint is not OS fencing.",
+      "evidence": [
+        "e2",
+        "e10",
+        "e28",
+        "e29",
+        "e32",
+        "e35"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Research delegation supplies task score/result protocol plus separate auditor model checking code/official results/report, pass/fail/repair/partial. Numeric/domain truth depends on concrete task evaluator; critique tests verify state transitions, not scientific correctness.",
+      "evidence": [
+        "e32",
+        "e35",
+        "e36",
+        "e37",
+        "e45"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Explicit tick/turn order, concurrent requests then serial ordinary commits, provisional op IDs and pending/anchored compaction ticks; physical fast-lane/external effect order differs from display turn order.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e17",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/station/station/action_parser.py",
+      "start": 262,
+      "end": 333,
+      "claim": "Parser normalizes action chains, neutralizes YAML action strings/removes thought blocks, extracts native command/args and safe-loaded dictionary YAML or parsing error."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/station/station/station.py",
+      "start": 767,
+      "end": 857,
+      "claim": "submit_response logs original response then checks active identity; truncates to MAX_ACTIONS_PER_TURN and suppresses non-navigation actions on ascension turns."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/station/station/station.py",
+      "start": 1183,
+      "end": 1230,
+      "claim": "Current room dispatch calls native handle_action and collects action strings plus first internal handler; sequential location changes affect subsequent dispatch."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/station/station/base_room.py",
+      "start": 34,
+      "end": 81,
+      "claim": "RoomContext supplies shared managers; InternalActionHandler init/step provides optional multistep model continuation contract."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/station/station/sync/parallel_runner.py",
+      "start": 337,
+      "end": 449,
+      "claim": "Prepares saved observation/deep copy for each active agent; concurrent ThreadPool requests collected with as_completed, errors become explicit initial results."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/station/station/sync/parallel_runner.py",
+      "start": 490,
+      "end": 587,
+      "claim": "Staged send temporarily disables connector disk persistence, logs decoded prompt/thinking/result, captures token/API metadata and restores persist flag; errors pause orchestrator."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/station/station/sync/parallel_runner.py",
+      "start": 177,
+      "end": 235,
+      "claim": "Initial responses commit in prepared turn order after original staged history flush; provider completion order differs from normal action commit order."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/station/station/sync/parallel_runner.py",
+      "start": 840,
+      "end": 904,
+      "claim": "Staged user/model turns persist via provider append with metadata/signature fallbacks; connector may reload afterward. Persistence adapter errors can be hidden below this method."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/station/station/station_runner.py",
+      "start": 701,
+      "end": 760,
+      "claim": "Provider factory binds per-agent model/system role/settings; runtime API generation lock recreates connector for new requests, preserving disk state rather than replacing in-flight calls."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/station/station/rooms/mail.py",
+      "start": 192,
+      "end": 277,
+      "claim": "Mail notification/update under agent functional lock deduplicates pending/shown content, updates read IDs, validates mature recursive recipients; delivery is state mutation, not current provider interrupt."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/station/station/rooms/mail.py",
+      "start": 315,
+      "end": 402,
+      "claim": "Native create/reply validates permissions/YAML/recipients and stores capsule IDs; sender read state updated."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/station/station/rooms/mail.py",
+      "start": 497,
+      "end": 545,
+      "claim": "New mail notification includes content and recipient read-item IDs; notification delivery automatically marks IDs read, not explicit model acknowledgement."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/station/station/station.py",
+      "start": 1255,
+      "end": 1338,
+      "claim": "Final save merges newly arrived pending mail, protected items and compaction events against latest state instead of overwriting turn-start snapshot."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/station/station/agent.py",
+      "start": 432,
+      "end": 469,
+      "claim": "Agent functional updates use per-file flock with monotonic timeout; file presence is not lock ownership."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/station/station/agent.py",
+      "start": 587,
+      "end": 613,
+      "claim": "Functional update reloads latest active/inactive YAML inside lock, applies mutator and saves; errors print/false rather than a transaction over all station artifacts."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/station/station/station_runner.py",
+      "start": 867,
+      "end": 1010,
+      "claim": "After-turn compaction generates/persists full model summary, records error/pause, saves pending anchor and reloads session in finally; separate provider call, not unlogged replacement."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/station/station/agent.py",
+      "start": 324,
+      "end": 402,
+      "claim": "Compaction events preserve summary/tick with pending versus anchored status and latest-anchor lookup; event is updated keyed by tick."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/station/station/station.py",
+      "start": 1394,
+      "end": 1486,
+      "claim": "Same-tick pending observation reused; next observation injects complete summary/protected messages and marks compaction anchor under atomic snapshot update."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/station/station/llm_connectors/base.py",
+      "start": 252,
+      "end": 283,
+      "claim": "Effective history filters entries before context start tick while underlying saved history remains separate; malformed/missing-tick entries excluded."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/station/station/llm_connectors/base.py",
+      "start": 832,
+      "end": 925,
+      "claim": "Before observation/send, disk pruning/system prompt/context anchor change rebuilds provider chat and attempts token recount; stale budgets flagged when unavailable, reinit exception logged and caller may proceed stale."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/station/station/llm_connectors/openai.py",
+      "start": 373,
+      "end": 410,
+      "claim": "OpenAI history appends decoded text/thinking/token and prepared metadata; empty pair omitted and append exceptions printed rather than propagated."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/station/station/llm_connectors/base.py",
+      "start": 529,
+      "end": 585,
+      "claim": "API raw_return sanitizer drops generated text/content/arguments/delta/reasoning and clips long remaining strings; raw provider originals not universal."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/station/station/file_io_utils.py",
+      "start": 521,
+      "end": 575,
+      "claim": "Append YAML flushes/fsync but catches and prints exceptions; callers can proceed as if durable recording succeeded."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/station/station/sync/parallel_state.py",
+      "start": 182,
+      "end": 235,
+      "claim": "Completed tick snapshot directories expire by retention window (default10ticks); current recovery marker removed on completion."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/station/station/sync/parallel_state.py",
+      "start": 257,
+      "end": 345,
+      "claim": "Incomplete tick recovery is not full replay journal: rollback provisional research/surveys, reset index, rewrite history deleting entire tick for history-flushed/action-uncommitted agents."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/station/station/sync/fast_lane_service.py",
+      "start": 25,
+      "end": 103,
+      "claim": "Single writer owns queued copied request; caller timeout returns while queued/active request remains and worker eventually sets done. Stop joins bounded and drains queued work."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/station/station/eval_research/submission_service.py",
+      "start": 110,
+      "end": 187,
+      "claim": "Validated experiment instruction creates provisional evaluation keyed run/op ID and per-author active limit, wakes evaluator and returns evaluation ID/notification."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/station/station/rooms/research_center.py",
+      "start": 960,
+      "end": 1057,
+      "claim": "Research read_task and submit require recursive role, task read, nonholiday/non-supervisor/cooldown limits and title/tags/abstract/instruction; creates evaluation rather than executing researcher shell."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/station/station/rooms/research_center.py",
+      "start": 1175,
+      "end": 1247,
+      "claim": "Research storage info/list/read returns paged pending notifications; write/delete explicitly rejected for researcher agents. Coder workers have separate storage authority."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/station/station/workers/job_manager.py",
+      "start": 249,
+      "end": 302,
+      "claim": "Coder/auditor backend prepares actual command and launches subprocess with transcript/stderr files, OS environment and new session; owned process/handle tracked."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/station/station/workers/job_manager.py",
+      "start": 432,
+      "end": 472,
+      "claim": "Abort checks direct child and waits/escalates group signals; stop_active_cli_jobs signals, invokes hook, closes handles and clears map without waiting for settlement."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/station/station/eval_research/executor_sandbox.py",
+      "start": 245,
+      "end": 305,
+      "claim": "Experiment sandbox command is plain Python wrapper optionally taskset, fresh tmp storage lifetime; not a resident kernel or namespace security boundary."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/station/station/eval_research/executor_sandbox.py",
+      "start": 533,
+      "end": 595,
+      "claim": "Fresh Python experiment subprocess owns new session and optional RLIMIT_AS/CPU affinity; network/OS containment not inferred from sandbox name."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/station/station/eval_research/executor_sandbox.py",
+      "start": 620,
+      "end": 675,
+      "claim": "Timeout kills process group and waits child, joins output readers with bounds; clipped stderr and execution errors are structured outcomes, not arbitrary effect settlement."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/station/station/eval_research/coder_manager.py",
+      "start": 135,
+      "end": 219,
+      "claim": "Independent auditor prompt judges instruction/code/official result/report, accepts honestly qualified budget limits and writes pass/fail report; backend CLI launch may have separately configured network access."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/station/station/eval_research/coder_manager.py",
+      "start": 1318,
+      "end": 1421,
+      "claim": "Pass finalizes report; nonfinal fail persists round report and resumes coder thread or queues fresh repair with one official attempt minimum; exhaustion partial, infrastructure blocks and pauses."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/station/station/eval_research/submit_audit_cli.py",
+      "start": 11,
+      "end": 30,
+      "claim": "Verdict helper validates pass/fail and nonempty report, writes temporary verdict then replace; not immutable after later invocation or fsync guarantee."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/station/station/file_io_utils.py",
+      "start": 304,
+      "end": 360,
+      "claim": "Dashboard/program query reads earliest/recent tick window and chronological entries; missing/malformed reads print warnings and may return partial records."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/station/station/rooms/misc.py",
+      "start": 146,
+      "end": 183,
+      "claim": "Model suggest records tick/name/authored suggestion YAML, not DB/full state; helper catches errors so success message can exceed persistence certainty."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/station/station/rooms/admin.py",
+      "start": 268,
+      "end": 345,
+      "claim": "request_human records authored title/content/request ID, model/agent/tick/time and flags awaiting intervention; it is blocking assistance request, not optional rageshake."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/station/station/station_runner.py",
+      "start": 1422,
+      "end": 1438,
+      "claim": "Manual pause requests after current agent turn/before next; does not directly cancel already-running provider requests or jobs."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/station/README.md",
+      "start": 195,
+      "end": 209,
+      "claim": "General constant_config configuration requires Station restart; runtime provider-generation refresh is a separate narrower mechanism."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/station/station/capsule_index.py",
+      "start": 107,
+      "end": 151,
+      "claim": "Parameterized visible/type/tag capsule metadata listing uses persistent SQLite with optional limit and count; service owns index, model sees room contract."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/station/station/capsule_index.py",
+      "start": 235,
+      "end": 254,
+      "claim": "SQLite capsule index connection configures busy timeout, foreign keys, WAL/NORMAL when setup; source YAML and index distinct."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/station/station/eval_research/base_evaluator.py",
+      "start": 227,
+      "end": 258,
+      "claim": "Task evaluator wrapper calls concrete evaluate_submission and formats returned success/score/details/optional sort key; validity remains task-owned oracle."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/station/tests/test_cross_agent_notification_atomic.py",
+      "focus": "Concurrent notification at shared broadcast update.",
+      "oracle": "Read1–168: test manager injects a background notification at load/update boundary, then asserts both preexisting evaluator message and new public capsule message remain. Deterministic lost-update oracle; no live parallel provider validation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/station/tests/test_context_compaction.py",
+      "focus": "Persisted maintenance history and concurrent protected/anchor merge.",
+      "oracle": "Read27–81,200–264: fake connector sees persist=True and reloaded, exact summary saved; fixed lists assert concurrent/turn items and anchor replacement. Good wiring/merge assertions, not actual provider compression or original-byte retention.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/station/tests/test_parallel_research_sync.py",
+      "focus": "Provisional recovery and deliberately removed uncommitted originals.",
+      "oracle": "Read473–530,595–625: tombstone status/notification suppression, new ID3 and committed record preserved; exact agent histories[6] versus[6,7,7] establish real deletion of uncommitted turns. This recovery oracle explicitly contradicts universal append-original audit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/station/tests/test_cli_job_manager.py",
+      "focus": "Stop versus awaited abort lifecycle.",
+      "oracle": "Read261–303: mocked abort asserts TERM→KILL plus two waits; stop asserts signal→requeue→close→close and empty map, with no wait. Tests confirm bookkeeping order, not OS descendant settlement.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/station/tests/test_research_audit.py",
+      "focus": "Verdict artifact input/state and repair exhaustion.",
+      "oracle": "Read31–123: missing report fails, existing pass remains on invalid verdict, temp artifact absent after replace; pass completes, fail queues repair then partial and final report. Prompts inspected by substring assertions; no independent scientific truth oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/station/tests/test_lazy_connector_and_mail.py",
+      "focus": "Lazy provider dispatch and role-scoped mail directory.",
+      "oracle": "Read1–225: constructor raising verifies no eager initialization, first use creates once, stale directory identity raises and guest excluded; fake providers do not test live connection continuity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Concrete per-agent heterogeneous providers plus queued peer collaboration with lost-update merge.",
+    "Compaction events distinguish pending summary from actual anchored effective context and preserve protected task data.",
+    "Researcher/coder/auditor authority and task score versus critique are explicit separate roles.",
+    "Provisional evaluation tombstones retain IDs and suppress stale notifications.",
+    "Core Python with ordinary subprocess/thread semantics; source openly shows its owned control-plane boundaries."
+  ],
+  "limits": [
+    "No resident/shared computation kernel established; Station owns its research process/service ecosystem.",
+    "No complete original audit: API projections, swallowed append failures, deleted uncommitted history and expiring snapshots.",
+    "Fast-lane timeout returns without canceling queued/active side effect; recovery is rollback/retry, not universal effect settlement.",
+    "Stopping coder workers signals/closes/forgets without waiting; abort has a stronger separate path.",
+    "Scientific repair is not model-governed harness autodroit; suggestion lacks automatic state bundle/database."
+  ],
+  "arconaut_questions": [
+    "Can context retry/rollback change effective history without ever deleting provider originals from the core audit?",
+    "How should a fast-lane caller report unknown outcome and later resolve the same operation ID rather than exposing timeout as nonexecution?",
+    "What actor owns a shared evaluation/kernel service: Arconaut consumer or independently governed fabric?",
+    "Can model-governed experimental harness changes use task-derived oracles plus independent critique without conflating model agreement with scientific truth?",
+    "How should an always-available nonblocking complaint capture state and remain separate from blocking human intervention?"
+  ]
+}

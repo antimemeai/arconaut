@@ -1,0 +1,352 @@
+{
+  "recorded_at": "2026-10-01T08:27:39.461608+00:00",
+  "input": "papers/2026-10-01-edg-compiler-sources.json",
+  "references": [
+    {
+      "name": "edg-compiler",
+      "repository": "https://github.com/edgcpp/compiler",
+      "revision": "89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "destination": "quarantine/edg-compiler",
+      "download_url": "https://codeload.github.com/edgcpp/compiler/zip/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-edg-compiler-2026-10-01/edg-compiler-89e67e07c7f6.zip",
+      "archive_bytes": 244854866,
+      "sha256": "66df655bf9a518932787e265d04b680f3180bd7ee36cc2da15528352029e0947",
+      "archive_root": "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "retained_files": 111049,
+      "retained_bytes": 3549149165,
+      "status": "acquired",
+      "ingestion_override": {
+        "reason": "Prefix ._ matches legitimate compiler identifier-derived expectation filenames; safe build/test symlinks are functional source data",
+        "restored": [
+          {
+            "path": "bases/cmake-native/macos-arm/clang/include",
+            "kind": "confined symlink",
+            "target": "../../../../include_c++/",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/cmake-native/macos-x86_64/clang/include",
+            "kind": "confined symlink",
+            "target": "../../../../include_c++/",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/docker/dev-env/clang/include",
+            "kind": "confined symlink",
+            "target": "../../../../include_c++/",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/docker/dev-env/clang/lib_linux_x86_64/predefined_macros.txt",
+            "kind": "confined symlink",
+            "target": "../lib/predefined_macros.txt",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/docker/dev-env/gcc-i686/include",
+            "kind": "confined symlink",
+            "target": "../../../../include_c++/",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/docker/dev-env/gcc/include",
+            "kind": "confined symlink",
+            "target": "../../../../include_c++/",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "bases/docker/dev-env/gcc/lib_linux_x86_64/predefined_macros.txt",
+            "kind": "confined symlink",
+            "target": "../lib/predefined_macros.txt",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "dev_tools/services/acknowledg/server/edgacknowledg",
+            "kind": "confined symlink",
+            "target": "../../../pylibs/edgacknowledg",
+            "role": "build/development/test header link"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-dependency.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-dependency2.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-newline.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma-physloc.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Preprocessor/embed___has_embed/embed___has_embed.c",
+            "kind": "confined symlink",
+            "target": "Local_file.c",
+            "role": "test-driver temporary source link; edgtest checkout creates Local_file.c"
+          },
+          {
+            "path": "tests/tests/imported/clang/c/Sema/.__try.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/._Alignas.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/edg_x86_32.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma1.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma2.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma3.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma4.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma5.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma6.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/._Pragma7.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/embed-6/embed-6.c",
+            "kind": "confined symlink",
+            "target": "Local_file.c",
+            "role": "test-driver temporary source link; edgtest checkout creates Local_file.c"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/embed-7/embed-7.c",
+            "kind": "confined symlink",
+            "target": "Local_file.c",
+            "role": "test-driver temporary source link; edgtest checkout creates Local_file.c"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/cpp/trad/.__STDC__.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/edg_x86_32_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/edg_x86_64_cp.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/cpp/cpp/._Pragma1.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/imported/gnu/cpp/cpp0x/.__func__.rto/default.1.1.txt",
+            "kind": "legitimate compiler expectation fixture"
+          },
+          {
+            "path": "tests/tests/reflections/.includes/exp_meta/experimental/meta.stdh",
+            "kind": "confined symlink",
+            "target": "../../../../../../include_c++/experimental/meta.stdh",
+            "role": "build/development/test header link"
+          }
+        ],
+        "remaining_exclusions": [],
+        "regular_files_after_restoration": 111049,
+        "symlinks_after_restoration": 12,
+        "regular_bytes_after_restoration": 3549149165,
+        "direct_restoration_comparison": "Restored regular file bytes/executable bits and every symlink target directly compared with archive; all link destinations stay within reference root. Three Local_file.c targets are intentionally generated during test checkout, confirmed in edgtest code."
+      },
+      "omitted_entries_before_override": [
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/cmake-native/macos-arm/clang/include",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/cmake-native/macos-x86_64/clang/include",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/docker/dev-env/clang/include",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/docker/dev-env/clang/lib_linux_x86_64/predefined_macros.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/docker/dev-env/gcc-i686/include",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/docker/dev-env/gcc/include",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/bases/docker/dev-env/gcc/lib_linux_x86_64/predefined_macros.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/dev_tools/services/acknowledg/server/edgacknowledg",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-dependency.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-dependency2.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-location.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-newline.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma-physloc.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/._Pragma.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Preprocessor/embed___has_embed/embed___has_embed.c",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/c/Sema/.__try.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/Preprocessor/._Pragma-in-macro-arg.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/._Alignas.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/edg_x86_32.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__null.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/clang/cpp/SemaCXX/.__try.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma1.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma2.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma3.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma4.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma5.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma6.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/._Pragma7.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/embed-6/embed-6.c",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/embed-7/embed-7.c",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/cpp/trad/.__STDC__.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-1.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-2.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-3.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/edg_x86_32_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/c/gomp/._Atomic-5.rto/edg_x86_64_cp.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/cpp/cpp/._Pragma1.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/imported/gnu/cpp/cpp0x/.__func__.rto/default.1.1.txt",
+        "compiler-89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/tests/tests/reflections/.includes/exp_meta/experimental/meta.stdh"
+      ],
+      "omitted_entries": [],
+      "initial_ingestion_comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "comparison": "Initial retained file set, bytes, executable bits compared directly to ZIP; remaining legitimate fixture bytes/executable bits and confined symlink target strings restored and compared to same intact archive",
+      "retained_symlinks": 12
+    }
+  ],
+  "path_base": "Arconaut project directory"
+}

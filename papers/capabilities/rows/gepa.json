@@ -1,0 +1,342 @@
+{
+  "id": "gepa",
+  "kind": "reflective program optimization framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "In-process candidate engine with adapters, selection/evaluation callbacks and saved state; alternate optimize-anything engine can supervise Claude Code subprocesses.",
+    "service_boundary": "Owns candidate selection/budget/checkpoint, consumes user evaluator and model/agent implementation."
+  },
+  "summary": "Named-component candidate evolution, reflective feedback and independent test scoring are useful autodroit mechanisms; selection authority and evaluator trust must stay explicit.",
+  "inspection": {
+    "files": [
+      "quarantine/gepa/src/gepa/core/adapter.py",
+      "quarantine/gepa/src/gepa/strategies/acceptance.py",
+      "quarantine/gepa/src/gepa/core/engine.py",
+      "quarantine/gepa/src/gepa/core/state.py",
+      "quarantine/gepa/src/gepa/oa/budget.py",
+      "quarantine/gepa/src/gepa/oa/engines/autoresearch.py",
+      "quarantine/gepa/src/gepa/optimize_anything.py",
+      "quarantine/gepa/tests/test_acceptance_criterion.py",
+      "quarantine/gepa/tests/test_parallel_proposals.py"
+    ],
+    "scope": "Read adapter/evaluation protocol, acceptance criteria, actual batch selection/dedup/rejection path, main checkpoint loop, state save, held-out scoring and autoresearch subprocess watchdog.",
+    "limits": "Not all adapters/engine variants inspected; no model/evaluator invocation, benchmark reproduction or complete filesystem isolation audit."
+  },
+  "actions": [
+    {
+      "name": "GEPAAdapter.evaluate / make_reflective_dataset / propose_new_texts",
+      "surface": "programming API",
+      "input": "Named component candidate and dataset",
+      "output": "Scores/outputs/optional trajectories and proposed text components",
+      "lifecycle": "Caller-supplied evaluation and reflection lifecycle.",
+      "authority": "Adapter/model and evaluator authority",
+      "evidence": [
+        "adapter"
+      ]
+    },
+    {
+      "name": "GEPAEngine.run / selection_strategy.select",
+      "surface": "optimizer API",
+      "input": "Seed/validation data, strategy programs and stop callbacks",
+      "output": "Candidate pool/Pareto and rejection/acceptance events",
+      "lifecycle": "Checkpointed iterations; custom selection may permit exploration.",
+      "authority": "Caller/strategy controls optimizer",
+      "evidence": [
+        "selection",
+        "loop"
+      ]
+    },
+    {
+      "name": "optimize_anything",
+      "surface": "optimization API",
+      "input": "Seed, evaluator, objective, engine/budgets and held-out test set",
+      "output": "Best candidate/score, pool/metadata and independent test scores",
+      "lifecycle": "Engine-specific; held-out eval outside budget.",
+      "authority": "Caller evaluator and external-agent posture",
+      "evidence": [
+        "testsplit",
+        "budget",
+        "subprocess"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Framework writes candidate/checkpoint records and external-agent engine materializes workspace; not a universal model file-tool interface.",
+      "evidence": [
+        "save",
+        "subprocess"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Alternate autoresearch engine supervises actual Claude subprocess with session ID, budget and watchdog; inherited agent tool execution not claimed as GEPA implementation.",
+      "evidence": [
+        "subprocess"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Candidate text can be executable code through user adapter/evaluator; generic engine does not itself provide a persistent kernel.",
+      "evidence": [
+        "adapter"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "role",
+      "detail": "persistent_kernel: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Structured candidate state and eval ledger exist, but no independent standing query service for agent work was established in inspected engine/state/budget paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Adapters, proposer, acceptance and selection strategies are programmable runtime interfaces; custom selection may override acceptance.",
+      "evidence": [
+        "adapter",
+        "selection"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Proposer/evaluator models are separately supplied/configured; not an independent live collaboration bus.",
+      "evidence": [
+        "adapter",
+        "subprocess"
+      ]
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Batch proposal/evaluation interfaces support grouped work and an independent external process; concurrency scheduling is adapter/engine-specific.",
+      "evidence": [
+        "adapter",
+        "budget"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Subprocess watchdog can terminate wedged/budget-exhausted external agent; no general operator steering to busy candidate/model work in inspected paths.",
+      "evidence": [
+        "subprocess"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller can replace selection/proposal/evaluation programs; this is optimizer policy, not model hot-redefinition of its live conversation turn.",
+      "evidence": [
+        "selection"
+      ]
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional trajectories and candidate/log callbacks depend on adapter capture; score-only evaluations and caller-defined traces cannot guarantee all original IO.",
+      "evidence": [
+        "adapter",
+        "selection"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Candidate state, iteration records and callbacks are program accessible; not all original provider/OS IO.",
+      "evidence": [
+        "selection",
+        "save"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Strategies/adapters/candidates are caller-programmable, but adopted candidate is a future evaluation artifact, not after-turn hot replacement of current harness.",
+      "evidence": [
+        "selection",
+        "adapter"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Pickled candidate state excludes runtime hooks and external agent uses transcript session resume; no executable refit/context/ongoing-work transfer.",
+      "evidence": [
+        "save",
+        "subprocess"
+      ]
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable reflect/propose/evaluate/select loop can optimize prompts/programs/harness components through supplied adapters; no automatic safe activation in current harness.",
+      "evidence": [
+        "adapter",
+        "selection",
+        "loop"
+      ]
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies reflective program optimization framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Strategy owns selection, evaluator owns score semantics, engine owns budget/watchdog and supplied subprocess permission posture.",
+      "evidence": [
+        "selection",
+        "budget",
+        "subprocess"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Independent evaluator supplies scores, subsample selection then validation/test split; exceptions score zero, objective validity remains caller responsibility.",
+      "evidence": [
+        "adapter",
+        "testsplit"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Eval ledger has wall timestamps; external-agent watchdog uses monotonic elapsed time, without durable paused-time policy.",
+      "evidence": [
+        "budget",
+        "subprocess"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "adapter",
+      "path": "quarantine/gepa/src/gepa/core/adapter.py",
+      "start": 16,
+      "end": 120,
+      "claim": "Adapter supplies candidate execution, scores, optional trajectories and proposer component edits; evaluator outputs are opaque to engine."
+    },
+    {
+      "id": "accept",
+      "path": "quarantine/gepa/src/gepa/strategies/acceptance.py",
+      "start": 12,
+      "end": 66,
+      "claim": "Built-in acceptance compares summed subsample scores, with strict or lateral-move criterion."
+    },
+    {
+      "id": "selection",
+      "path": "quarantine/gepa/src/gepa/core/engine.py",
+      "start": 566,
+      "end": 646,
+      "claim": "Selection strategy is authority and may surface criterion-rejected proposals; selected input identities/dedup and truthful rejection callbacks enforced."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/gepa/src/gepa/core/engine.py",
+      "start": 964,
+      "end": 1007,
+      "claim": "Engine saves adapter/candidate state before iteration and stops according to callback policy."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/gepa/src/gepa/core/state.py",
+      "start": 405,
+      "end": 441,
+      "claim": "Checkpoint pickles state excluding runtime hooks, optionally clouds callable data; image/live process continuity not promised."
+    },
+    {
+      "id": "budget",
+      "path": "quarantine/gepa/src/gepa/oa/budget.py",
+      "start": 1,
+      "end": 87,
+      "claim": "Eval call ledger is thread-safe; proposer dollars have separate owner/cap, not same budget."
+    },
+    {
+      "id": "subprocess",
+      "path": "quarantine/gepa/src/gepa/oa/engines/autoresearch.py",
+      "start": 641,
+      "end": 690,
+      "claim": "Claude subprocess pins session/resume, remaining USD cap and watchdog on monotonic no-eval time; permissions depend on sandbox mode."
+    },
+    {
+      "id": "testsplit",
+      "path": "quarantine/gepa/src/gepa/optimize_anything.py",
+      "start": 402,
+      "end": 429,
+      "claim": "Held-out tests evaluated directly outside engine budget/server; exceptions map to zero scores."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/gepa/tests/test_acceptance_criterion.py",
+      "start": 44,
+      "end": 87,
+      "claim": "Known score vectors exercise strict/equal/worse/marginal acceptance."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/gepa/tests/test_acceptance_criterion.py",
+      "focus": "Comparison rule for scored proposals.",
+      "oracle": "Known vectors distinguish strict improvement, equality, regression and 0.0001 gain; tests do not validate the external evaluator or generalization.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gepa/tests/test_parallel_proposals.py",
+      "focus": "Batch sampling parent/minibatch relation.",
+      "oracle": "Mock selectors/samplers verify same-parent shape and differing minibatches; not actual parallel provider/task execution.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Selection, acceptance, evaluator, reflection and budgets have distinct programmable owners.",
+    "Unselected proposals receive explicit reasons; optional held-out scoring stays outside optimization input."
+  ],
+  "limits": [
+    "Custom selection can override acceptance; a strict criterion is not an inviolable gate by itself.",
+    "Optimizing score may exploit an invalid evaluator; saved candidate records are not original all-IO audit."
+  ],
+  "arconaut_questions": [
+    "Which experiment governance decisions belong to the model, and which independent machine invariants cannot be overridden?",
+    "How does self-improvement keep selected/rejected/failed candidates observable without conflating metrics with correctness?"
+  ]
+}

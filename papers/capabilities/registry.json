@@ -1,0 +1,1391 @@
+{
+  "scope": "104 external reference directories plus historical Arconaut; exact pinned corpus, not current internet-wide feature claims",
+  "capabilities": [
+    {
+      "id": "filesystem",
+      "meaning": "Read/search/edit/patch files exposed to a model or programmable client."
+    },
+    {
+      "id": "processes",
+      "meaning": "Execute OS programs; distinguish shell-only from PTY/streaming/ongoing handles and lifetime control."
+    },
+    {
+      "id": "code_actions",
+      "meaning": "Model-authored executable programs or code actions compose tools, not merely JSON calls to fixed tools."
+    },
+    {
+      "id": "persistent_kernel",
+      "meaning": "Interpreter/kernel state persists across actions; record owning process, lifetime, restart and serialization limits."
+    },
+    {
+      "id": "standing_database",
+      "meaning": "Model/program-accessible standing structured/queryable state; distinguish evidence DB/service from internal hidden storage or remembered text."
+    },
+    {
+      "id": "workflow_programming",
+      "meaning": "Executable/declarative workflows or strategy programs are exposed for composition/replacement; distinguish editable prompts."
+    },
+    {
+      "id": "multi_model",
+      "meaning": "Multiple providers/models, routing or switching; do not infer simultaneous collaboration from provider choice."
+    },
+    {
+      "id": "live_collaboration",
+      "meaning": "Addressed messages between independently working participants; inspect busy-target delivery, visibility and ownership."
+    },
+    {
+      "id": "concurrent_work",
+      "meaning": "Multiple active operations/children/participants or long-running work with meaningful handles/results."
+    },
+    {
+      "id": "steering_interrupt",
+      "meaning": "Input/steering during work and actual cancellation/interruption semantics, not UI acknowledgement alone."
+    },
+    {
+      "id": "turn_redefinition",
+      "meaning": "Turn/continuation/context scheduling program can change; inspect activation boundary and old work."
+    },
+    {
+      "id": "compaction",
+      "meaning": "Managed context transformation strategies, triggers, actual retained/discarded material and tool protocol pairing."
+    },
+    {
+      "id": "context_repair",
+      "meaning": "Retrieve originals/lineage to repair omitted or corrupted active context; transcript resume alone is not enough."
+    },
+    {
+      "id": "original_audit",
+      "meaning": "Retention of original captured provider/program/transformation IO and failures; distinguish transcript, summaries, clipped output and artifact provenance."
+    },
+    {
+      "id": "audit_query",
+      "meaning": "Agent/program-usable query/search/retrieval of the retained audit corpus with explicit scope."
+    },
+    {
+      "id": "hot_change",
+      "meaning": "Definition/config/plugin changes during operation; distinguish next call/turn/restart, active frames, and executable replacement."
+    },
+    {
+      "id": "rebuild_continuity",
+      "meaning": "Actual harness executable rebuild/replacement and re-inhabitation with context/identity/work retained; transcript resume is partial."
+    },
+    {
+      "id": "remote_services",
+      "meaning": "Direct remote execution/service APIs and reconnect/session semantics; describe consumer versus governor boundary."
+    },
+    {
+      "id": "self_improvement",
+      "meaning": "Dedicated executable policy/harness/experiment change-and-evaluate machinery; generic file editing alone does not establish autoresearch governance."
+    },
+    {
+      "id": "complaints",
+      "meaning": "Model-invokable complaints/bug reporting with captured state and follow-up; distinguish operator-only /bug or bare issue creation."
+    },
+    {
+      "id": "authority",
+      "meaning": "Standing execution/tool authority and model agency, approval defaults/overrides, program modification rights."
+    },
+    {
+      "id": "evaluation",
+      "meaning": "Evaluation/test/oracle mechanisms and real fault classes observed in source; test quantity is not correctness evidence."
+    },
+    {
+      "id": "time_order",
+      "meaning": "Wall/monotonic time, deadlines, causal/order identity or restart/paused-time semantics where exposed."
+    }
+  ],
+  "statuses": {
+    "implemented": "I: traced exposed implementation; not runtime-validated",
+    "documented": "D: documented contract/claim; implementation unavailable or not traced",
+    "limited": "L: relevant capability has a material documented/traced limitation; specify basis",
+    "mechanism": "S: supporting primitive requiring composition, not a turnkey agent feature",
+    "unknown": "?: not established in explicitly inspected paths; not a universal absence claim",
+    "na": "\u2014: outside this reference role; explain why"
+  },
+  "groups": {
+    "native-coding": [
+      "codex",
+      "prime-agent",
+      "pi-agent-rust",
+      "open-interpreter",
+      "OxideAgent",
+      "goose",
+      "crush",
+      "forge-adulari",
+      "forgecode",
+      "stakpak-agent",
+      "vtcode",
+      "kaagum"
+    ],
+    "interactive-clients": [
+      "opencode",
+      "pi",
+      "oh-my-pi",
+      "cline",
+      "roo-code",
+      "continue",
+      "gemini-cli",
+      "qwen-code",
+      "tabby",
+      "plandex"
+    ],
+    "python-coding": [
+      "mini-swe-agent",
+      "swe-agent",
+      "aider",
+      "gptme",
+      "open-interpreter-python",
+      "opendev",
+      "gpt-engineer",
+      "devika",
+      "sweep",
+      "trae-agent",
+      "open-swe",
+      "openhands",
+      "deepagents",
+      "kimi-cli",
+      "mistral-vibe"
+    ],
+    "persistent-agents": [
+      "agent-zero",
+      "hermes-agent",
+      "ironclaw",
+      "nanobot",
+      "nullclaw",
+      "openclaw",
+      "zeroclaw"
+    ],
+    "programmable-frameworks": [
+      "dagger",
+      "restate",
+      "windmill",
+      "restate-sdk-python",
+      "restate-sdk-rust",
+      "jido",
+      "jido-ai",
+      "letta-code",
+      "letta-v1-historical",
+      "letta",
+      "docker-agent",
+      "fast-agent",
+      "smolagents",
+      "rlm",
+      "auto-harness",
+      "bub"
+    ],
+    "collaboration": [
+      "gascity",
+      "gastown",
+      "claudex-pattern",
+      "chat-system",
+      "openagents-sdk",
+      "metagpt",
+      "agent-orchestrator-rust",
+      "agentchat",
+      "agentpool",
+      "forge-workflow",
+      "mcp-agent-mail",
+      "ntm",
+      "station"
+    ],
+    "scientific-workbenches": [
+      "claude-science",
+      "k-dense-byok",
+      "openai4s",
+      "finch",
+      "agent-laboratory",
+      "ai-scientist-v2",
+      "coscientist",
+      "robin",
+      "paper-qa",
+      "computational-review-template",
+      "computational-review-vip",
+      "scientific-agent-skills",
+      "bionemo-agent-toolkit",
+      "allen-openai-tools"
+    ],
+    "experiment-evaluation": [
+      "autoresearch",
+      "gepa",
+      "self-harness",
+      "aviary",
+      "ldp"
+    ],
+    "systems-primitives": [
+      "sbcl",
+      "sly",
+      "guile-fibers",
+      "ipykernel",
+      "s6",
+      "erlang-otp",
+      "spacetimedb",
+      "squirreling",
+      "brush-shell"
+    ],
+    "claude-public-materials": [
+      "claude-code-official-public",
+      "claude-code-official-distribution",
+      "claude-code-unofficial"
+    ],
+    "historical-arconaut": [
+      "arconaut"
+    ]
+  },
+  "references": [
+    {
+      "id": "OxideAgent",
+      "name": "OxideAgent",
+      "destination": "quarantine/OxideAgent",
+      "revision": "4ad71bdb1d8c90934b54df760b0c45834a9b87f9",
+      "version": null,
+      "source": "https://github.com/Juan-LukeKlopper/OxideAgent",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "agent-laboratory",
+      "name": "agent-laboratory",
+      "destination": "quarantine/agent-laboratory",
+      "revision": "d9017d90e329112d2a80b7712f37ee9094d2cd27",
+      "version": null,
+      "source": "https://github.com/SamuelSchmidgall/AgentLaboratory",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "agent-orchestrator-rust",
+      "name": "agent-orchestrator-rust",
+      "destination": "quarantine/agent-orchestrator-rust",
+      "revision": "c4098a7d14d58bfead858fd2c08feec43db10646",
+      "version": null,
+      "source": "https://github.com/c9r-io/orchestrator",
+      "category": "collaboration-control",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "agent-zero",
+      "name": "agent-zero",
+      "destination": "quarantine/agent-zero",
+      "revision": "e3051fb584b1a36be2b0a0c90606f1c2c2d356ec",
+      "version": null,
+      "source": "https://github.com/agent0ai/agent-zero",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "agentchat",
+      "name": "agentchat",
+      "destination": "quarantine/agentchat",
+      "revision": "f845e472a95fd33fc762fbc68fd5f671a5658b57",
+      "version": null,
+      "source": "https://github.com/tjamescouch/agentchat",
+      "category": "collaboration-service",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "agentpool",
+      "name": "agentpool",
+      "destination": "quarantine/agentpool",
+      "revision": "b6ddbea9cb66173c096942ac57397b636e0a2248",
+      "version": null,
+      "source": "https://github.com/phil65/agentpool",
+      "category": "collaboration-control",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "ai-scientist-v2",
+      "name": "ai-scientist-v2",
+      "destination": "quarantine/ai-scientist-v2",
+      "revision": "96bd51617cfdbb494a9fc283af00fe090edfae48",
+      "version": null,
+      "source": "https://github.com/SakanaAI/AI-Scientist-v2",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "aider",
+      "name": "aider",
+      "destination": "quarantine/aider",
+      "revision": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+      "version": null,
+      "source": "https://github.com/Aider-AI/aider",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "allen-openai-tools",
+      "name": "allen-openai-tools",
+      "destination": "quarantine/allen-openai-tools",
+      "revision": "161dbb40044110da30fe73f2e1404dc6268805d3",
+      "version": null,
+      "source": "https://github.com/AllenInstitute/openai_tools",
+      "category": "scientific-integration-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "arconaut",
+      "name": "arconaut (historical)",
+      "destination": "quarantine/arconaut",
+      "revision": "3bf2056565eff537b380f4fd649d725f36d1c493",
+      "version": null,
+      "source": "https://github.com/antimemeai/arconaut",
+      "category": "historical-implementation",
+      "catalog": "QUARANTINE.md",
+      "group": "historical-arconaut"
+    },
+    {
+      "id": "auto-harness",
+      "name": "auto-harness",
+      "destination": "quarantine/auto-harness",
+      "revision": "3561e468f9ca9f9bf282512e695bd32e4e90fef4",
+      "version": null,
+      "source": "https://github.com/aiming-lab/AutoHarness",
+      "category": "agent-runtime",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "autoresearch",
+      "name": "autoresearch",
+      "destination": "quarantine/autoresearch",
+      "revision": "228791fb499afffb54b46200aca536f79142f117",
+      "version": null,
+      "source": "https://github.com/karpathy/autoresearch",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "experiment-evaluation"
+    },
+    {
+      "id": "aviary",
+      "name": "aviary",
+      "destination": "quarantine/aviary",
+      "revision": "7167342915e656fba1d93af4a5f0549cb803cd76",
+      "version": null,
+      "source": "https://github.com/Future-House/aviary",
+      "category": "evaluation-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "experiment-evaluation"
+    },
+    {
+      "id": "bionemo-agent-toolkit",
+      "name": "bionemo-agent-toolkit",
+      "destination": "quarantine/bionemo-agent-toolkit",
+      "revision": "16a373c2070993b43d4ca6bbb9d794306bb767a5",
+      "version": null,
+      "source": "https://github.com/NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "category": "scientific-integration-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "brush-shell",
+      "name": "brush-shell",
+      "destination": "quarantine/brush-shell",
+      "revision": "f84ae8a74c43cad85824477d67ab3da5de972558",
+      "version": null,
+      "source": "https://github.com/reubeno/brush.git",
+      "category": "initial-reference",
+      "catalog": "papers/legacy-reference-catalog.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "bub",
+      "name": "bub",
+      "destination": "quarantine/bub",
+      "revision": "0fe2fd51ffd83d352361488caec366507a3826c5",
+      "version": null,
+      "source": "https://github.com/bubbuild/bub",
+      "category": "agent-runtime",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "chat-system",
+      "name": "chat-system",
+      "destination": "quarantine/chat-system",
+      "revision": "8fefcaea4f51ca5cd62e58a739f617ed0912522b",
+      "version": null,
+      "source": "https://github.com/rexlunae/chat-system",
+      "category": "supporting-chat-transport",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "claude-code-official-distribution",
+      "name": "claude-code-official-distribution",
+      "destination": "quarantine/claude-code-official-distribution",
+      "revision": null,
+      "version": "2.1.286",
+      "source": "https://code.claude.com/docs/en/setup",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-claude-code-distribution-acquisition.json",
+      "group": "claude-public-materials"
+    },
+    {
+      "id": "claude-code-official-public",
+      "name": "claude-code-official-public",
+      "destination": "quarantine/claude-code-official-public",
+      "revision": "525d3b35312636cf8c001ecb3df2be0324a48b43",
+      "version": null,
+      "source": "https://github.com/anthropics/claude-code",
+      "category": "official-agent-public-materials",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "claude-public-materials"
+    },
+    {
+      "id": "claude-code-unofficial",
+      "name": "claude-code-unofficial",
+      "destination": "quarantine/claude-code-unofficial",
+      "revision": "eec3692193a30bdedb9f31e033d93971aec73585",
+      "version": null,
+      "source": "https://github.com/codeaashu/claude-code",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "claude-public-materials"
+    },
+    {
+      "id": "claude-science",
+      "name": "claude-science",
+      "destination": "quarantine/claude-science",
+      "revision": null,
+      "version": "0.1.55",
+      "source": "https://claude.com/product/claude-science",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-science-workbench-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "claudex-pattern",
+      "name": "claudex-pattern",
+      "destination": "quarantine/claudex-pattern",
+      "revision": null,
+      "version": null,
+      "source": null,
+      "category": "agent-collaboration",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "cline",
+      "name": "cline",
+      "destination": "quarantine/cline",
+      "revision": "9fe17595de3b0c980d6c8291f7c42bf0b8cc94a3",
+      "version": null,
+      "source": "https://github.com/cline/cline",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "codex",
+      "name": "codex",
+      "destination": "quarantine/codex",
+      "revision": "08e2b58b07b8a423d6577b66fb7756e980b53dbf",
+      "version": null,
+      "source": "https://github.com/openai/codex",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "computational-review-template",
+      "name": "computational-review-template",
+      "destination": "quarantine/computational-review-template",
+      "revision": "7312d15c12443031d9806a0550a4e665bd45ca92",
+      "version": null,
+      "source": "https://github.com/AllenNeuralDynamics/ComputationalReviewTemplate",
+      "category": "scientific-workflow-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "computational-review-vip",
+      "name": "computational-review-vip",
+      "destination": "quarantine/computational-review-vip",
+      "revision": "a04f01d37994c6a14e4bc7ec1b3d0a869144e98d",
+      "version": null,
+      "source": "https://github.com/AllenNeuralDynamics/ComputationalReviewVIP",
+      "category": "scientific-workflow-artifact",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "continue",
+      "name": "continue",
+      "destination": "quarantine/continue",
+      "revision": "5522c6f44ca0ac3528b37244818fbfa39b5af470",
+      "version": null,
+      "source": "https://github.com/continuedev/continue",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "coscientist",
+      "name": "coscientist",
+      "destination": "quarantine/coscientist",
+      "revision": "417e82b85743f88719ba7cf8838220fcb872e2ae",
+      "version": null,
+      "source": "https://github.com/gomesgroup/coscientist",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "crush",
+      "name": "crush",
+      "destination": "quarantine/crush",
+      "revision": "76cc5c574e15072b15aaed0f4f843a5711fae0d9",
+      "version": null,
+      "source": "https://github.com/charmbracelet/crush",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "dagger",
+      "name": "dagger",
+      "destination": "quarantine/dagger",
+      "revision": "4129d95c0c43198d11e1b42791d3adbbdb505799",
+      "version": null,
+      "source": "https://github.com/dagger/dagger",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "deepagents",
+      "name": "deepagents",
+      "destination": "quarantine/deepagents",
+      "revision": "dd0e2f5366da3704585a372aa905734cafcec900",
+      "version": null,
+      "source": "https://github.com/langchain-ai/deepagents",
+      "category": "coding-agent-harness",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "devika",
+      "name": "devika",
+      "destination": "quarantine/devika",
+      "revision": "80bb343cbe4a4e5f5a0ba08d2524920139baceb6",
+      "version": null,
+      "source": "https://github.com/stitionai/devika",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "docker-agent",
+      "name": "docker-agent",
+      "destination": "quarantine/docker-agent",
+      "revision": "83fca5b2577d5548c59bde40d5d0b067d532a71a",
+      "version": null,
+      "source": "https://github.com/docker/docker-agent",
+      "category": "agent-runtime",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "erlang-otp",
+      "name": "erlang-otp",
+      "destination": "quarantine/erlang-otp",
+      "revision": "495ce0b626f24bc092196ffa46acc0f9f6ace625",
+      "version": null,
+      "source": "https://github.com/erlang/otp",
+      "category": "supporting-systems-runtime",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "fast-agent",
+      "name": "fast-agent",
+      "destination": "quarantine/fast-agent",
+      "revision": "5e3ad9a78d9ebb4d2208939051805a515a26b7c4",
+      "version": null,
+      "source": "https://github.com/evalstate/fast-agent",
+      "category": "agent-runtime",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "finch",
+      "name": "finch",
+      "destination": "quarantine/finch",
+      "revision": "aea66fdf2dd2be827727de50a73cae60dff59972",
+      "version": null,
+      "source": "https://github.com/Future-House/finch",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "forge-adulari",
+      "name": "forge-adulari",
+      "destination": "quarantine/forge-adulari",
+      "revision": "263b45d605486b303e4044eb1580c82a887d81b6",
+      "version": null,
+      "source": "https://github.com/Adulari/forge",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "forge-workflow",
+      "name": "forge-workflow",
+      "destination": "quarantine/forge-workflow",
+      "revision": "cf652b1aa1c50cf0e2fe6d69704323d1b821ed1c",
+      "version": null,
+      "source": "https://github.com/ForgeAILab/forge",
+      "category": "collaboration-control",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "forgecode",
+      "name": "forgecode",
+      "destination": "quarantine/forgecode",
+      "revision": "571a28902b9c562594c02fd089fc58bf8595108f",
+      "version": null,
+      "source": "https://github.com/tailcallhq/forgecode",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "gascity",
+      "name": "gascity",
+      "destination": "quarantine/gascity",
+      "revision": "0addde8a1e17a7b4c51c11b563c817a527dc4b3b",
+      "version": null,
+      "source": "https://github.com/gastownhall/gascity",
+      "category": "agent-collaboration",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "gastown",
+      "name": "gastown",
+      "destination": "quarantine/gastown",
+      "revision": "649b832b7672bc7a2dbef26f5983aba6198b819b",
+      "version": null,
+      "source": "https://github.com/gastownhall/gastown",
+      "category": "agent-collaboration",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "gemini-cli",
+      "name": "gemini-cli",
+      "destination": "quarantine/gemini-cli",
+      "revision": "c6bccb7ecbf6d8368d995455dd725ed34466faad",
+      "version": null,
+      "source": "https://github.com/google-gemini/gemini-cli",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "gepa",
+      "name": "gepa",
+      "destination": "quarantine/gepa",
+      "revision": "3f160c295000dd31db3d438c3d17553c23cc5f81",
+      "version": null,
+      "source": "https://github.com/gepa-ai/gepa",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "experiment-evaluation"
+    },
+    {
+      "id": "goose",
+      "name": "goose",
+      "destination": "quarantine/goose",
+      "revision": "bab8ff641039c9cd3331121cd84a5c6045f365ca",
+      "version": null,
+      "source": "https://github.com/aaif-goose/goose",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "gpt-engineer",
+      "name": "gpt-engineer",
+      "destination": "quarantine/gpt-engineer",
+      "revision": "a90fcd543eedcc0ff2c34561bc0785d2ba83c47e",
+      "version": null,
+      "source": "https://github.com/AntonOsika/gpt-engineer",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "gptme",
+      "name": "gptme",
+      "destination": "quarantine/gptme",
+      "revision": "1f8d73638a25253fd0e1824c3d0a72ec93007582",
+      "version": null,
+      "source": "https://github.com/gptme/gptme",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "guile-fibers",
+      "name": "guile-fibers",
+      "destination": "quarantine/guile-fibers",
+      "revision": "f08253bafc3026408185227f3d2e753a9493484e",
+      "version": null,
+      "source": "https://github.com/wingo/fibers",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "hermes-agent",
+      "name": "hermes-agent",
+      "destination": "quarantine/hermes-agent",
+      "revision": "cfdcea4f2226932adde690f6e53e0c8d259147ec",
+      "version": null,
+      "source": "https://github.com/NousResearch/hermes-agent",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "ipykernel",
+      "name": "ipykernel",
+      "destination": "quarantine/ipykernel",
+      "revision": "cfa461d8afac05cefc3671128d00adaa3c0720f4",
+      "version": null,
+      "source": "https://github.com/ipython/ipykernel",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "ironclaw",
+      "name": "ironclaw",
+      "destination": "quarantine/ironclaw",
+      "revision": "b0b999d96781516ee05e6ba961d6f3ead900da96",
+      "version": null,
+      "source": "https://github.com/nearai/ironclaw",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "jido",
+      "name": "jido",
+      "destination": "quarantine/jido",
+      "revision": "90b163eef87ace89a153e94f114c8dc736be2ccd",
+      "version": null,
+      "source": "https://github.com/agentjido/jido",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "jido-ai",
+      "name": "jido-ai",
+      "destination": "quarantine/jido-ai",
+      "revision": "01b7dca0f8897980097260c6cd15515658c56676",
+      "version": null,
+      "source": "https://github.com/agentjido/jido_ai",
+      "category": "agent-runtime-sdk",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "k-dense-byok",
+      "name": "k-dense-byok",
+      "destination": "quarantine/k-dense-byok",
+      "revision": "ef60be84a27bd2096851ab307514ac3de734214f",
+      "version": null,
+      "source": "https://github.com/K-Dense-AI/k-dense-byok",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-k-dense-byok-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "kaagum",
+      "name": "kaagum",
+      "destination": "quarantine/kaagum",
+      "revision": "3d286e6896a64d2857b947500a485a36393724c2",
+      "version": null,
+      "source": "https://git.systemreboot.net/kaagum",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "kimi-cli",
+      "name": "kimi-cli",
+      "destination": "quarantine/kimi-cli",
+      "revision": "9ab1286b8fe4e6bcd116949a27ce5e0ac3389c82",
+      "version": null,
+      "source": "https://github.com/MoonshotAI/kimi-cli",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "ldp",
+      "name": "ldp",
+      "destination": "quarantine/ldp",
+      "revision": "7220ca1e06292b856b1a3f1fe2c94170bc933055",
+      "version": null,
+      "source": "https://github.com/Future-House/ldp",
+      "category": "evaluation-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "experiment-evaluation"
+    },
+    {
+      "id": "letta",
+      "name": "letta",
+      "destination": "quarantine/letta",
+      "revision": "5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a",
+      "version": null,
+      "source": "https://github.com/letta-ai/letta",
+      "category": "official-agent-public-index",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "letta-code",
+      "name": "letta-code",
+      "destination": "quarantine/letta-code",
+      "revision": "96eb977b9477045423005a3630e5f9293140249a",
+      "version": null,
+      "source": "https://github.com/letta-ai/letta-code",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "letta-v1-historical",
+      "name": "letta-v1-historical",
+      "destination": "quarantine/letta-v1-historical",
+      "revision": "56ba9c25552605eec89de8ed3dc6394b625c1993",
+      "version": null,
+      "source": "https://github.com/letta-ai/letta",
+      "category": "historical-agent-framework",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "mcp-agent-mail",
+      "name": "mcp-agent-mail",
+      "destination": "quarantine/mcp-agent-mail",
+      "revision": "3fad5ec672869f81d2ca0a4c525dde004ac96f45",
+      "version": null,
+      "source": "https://github.com/Dicklesworthstone/mcp_agent_mail",
+      "category": "collaboration-service",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "metagpt",
+      "name": "metagpt",
+      "destination": "quarantine/metagpt",
+      "revision": "11cdf466d042aece04fc6cfd13b28e1a70341b1f",
+      "version": null,
+      "source": "https://github.com/geekan/MetaGPT",
+      "category": "agent-collaboration",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "mini-swe-agent",
+      "name": "mini-swe-agent",
+      "destination": "quarantine/mini-swe-agent",
+      "revision": "2afd0fb81bacbf0aacfac9ded6f093c5acd0bf7c",
+      "version": null,
+      "source": "https://github.com/SWE-agent/mini-swe-agent.git",
+      "category": "initial-reference",
+      "catalog": "papers/legacy-reference-catalog.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "mistral-vibe",
+      "name": "mistral-vibe",
+      "destination": "quarantine/mistral-vibe",
+      "revision": "7c19608af06f6c61d63f8f7a5c3430da73fba2ab",
+      "version": null,
+      "source": "https://github.com/mistralai/mistral-vibe",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "nanobot",
+      "name": "nanobot",
+      "destination": "quarantine/nanobot",
+      "revision": "d3d70f20655bce5d3c7a017bfbe803efe09a2438",
+      "version": null,
+      "source": "https://github.com/HKUDS/nanobot",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "ntm",
+      "name": "ntm",
+      "destination": "quarantine/ntm",
+      "revision": "ee589e7e7f95bcb3aec3b5945031e60b1c952097",
+      "version": null,
+      "source": "https://github.com/Dicklesworthstone/ntm",
+      "category": "collaboration-control",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "nullclaw",
+      "name": "nullclaw",
+      "destination": "quarantine/nullclaw",
+      "revision": "55907af88e51ff37cc114dcb6eb3ca438e5b0c2b",
+      "version": null,
+      "source": "https://github.com/nullclaw/nullclaw",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "oh-my-pi",
+      "name": "oh-my-pi",
+      "destination": "quarantine/oh-my-pi",
+      "revision": "8b25ad4a05625dde65df41d057756b4815f4837c",
+      "version": null,
+      "source": "https://github.com/can1357/oh-my-pi",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "open-interpreter",
+      "name": "open-interpreter",
+      "destination": "quarantine/open-interpreter",
+      "revision": "9acdb707400234bebe31e672b808235495916b95",
+      "version": null,
+      "source": "https://github.com/openinterpreter/openinterpreter",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "open-interpreter-python",
+      "name": "open-interpreter-python",
+      "destination": "quarantine/open-interpreter-python",
+      "revision": "e77c93612380ccd8a4954de1bd295a4be0ebb875",
+      "version": null,
+      "source": "https://github.com/endolith/open-interpreter",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "open-swe",
+      "name": "open-swe",
+      "destination": "quarantine/open-swe",
+      "revision": "9613f663bbff2b0b158dd9238b915ae3874aa67b",
+      "version": null,
+      "source": "https://github.com/langchain-ai/open-swe",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "openagents-sdk",
+      "name": "openagents-sdk",
+      "destination": "quarantine/openagents-sdk",
+      "revision": "faf416fca40b1cf73f585636478587967bc9f6f5",
+      "version": null,
+      "source": "https://github.com/openagents-org/openagents-sdk",
+      "category": "agent-runtime-sdk",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "openai4s",
+      "name": "openai4s",
+      "destination": "quarantine/openai4s",
+      "revision": "9f20ef8d89c195487e41d39942a146159f190c0c",
+      "version": null,
+      "source": "https://github.com/PKU-YuanGroup/OpenAI4S",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "openclaw",
+      "name": "openclaw",
+      "destination": "quarantine/openclaw",
+      "revision": "646c42b4c630d1c01910eda96172f2a1da020224",
+      "version": null,
+      "source": "https://github.com/openclaw/openclaw",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    },
+    {
+      "id": "opencode",
+      "name": "opencode",
+      "destination": "quarantine/opencode",
+      "revision": "2006259a02a87edf9e37f253cbddf3188309026b",
+      "version": null,
+      "source": "https://github.com/sst/opencode.git",
+      "category": "initial-reference",
+      "catalog": "papers/legacy-reference-catalog.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "opendev",
+      "name": "opendev",
+      "destination": "quarantine/opendev",
+      "revision": "d32c660e4eed1a8e988d1fd58da88e41ba641d08",
+      "version": null,
+      "source": "https://github.com/opendev-to/opendev",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "openhands",
+      "name": "openhands",
+      "destination": "quarantine/openhands",
+      "revision": "953c944eee62b8077a65436c2c8fd6b355342562",
+      "version": null,
+      "source": "https://github.com/All-Hands-AI/OpenHands",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "paper-qa",
+      "name": "paper-qa",
+      "destination": "quarantine/paper-qa",
+      "revision": "57e89f7223b0960d5ee5ea048c69e3c47e088572",
+      "version": null,
+      "source": "https://github.com/Future-House/paper-qa",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "pi",
+      "name": "pi",
+      "destination": "quarantine/pi",
+      "revision": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
+      "version": null,
+      "source": "https://github.com/earendil-works/pi",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "pi-agent-rust",
+      "name": "pi-agent-rust",
+      "destination": "quarantine/pi-agent-rust",
+      "revision": "38d4f8835a069480f54b92ec72423e746a41c22d",
+      "version": null,
+      "source": "https://github.com/Dicklesworthstone/pi_agent_rust",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "plandex",
+      "name": "plandex",
+      "destination": "quarantine/plandex",
+      "revision": "e2d772072efadbe41d2946d97d79be55532dbab5",
+      "version": null,
+      "source": "https://github.com/plandex-ai/plandex",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "prime-agent",
+      "name": "prime-agent",
+      "destination": "quarantine/prime-agent",
+      "revision": "e75f59efc6f74fcb23e45048f0f23b34490571d0",
+      "version": null,
+      "source": "https://github.com/PrimeIntellect-ai/prime-agent",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "qwen-code",
+      "name": "qwen-code",
+      "destination": "quarantine/qwen-code",
+      "revision": "310f4ba3ab954eb858b500c6aee3551cc564ee0a",
+      "version": null,
+      "source": "https://github.com/QwenLM/qwen-code",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "restate",
+      "name": "restate",
+      "destination": "quarantine/restate",
+      "revision": "2180b55410f6512f8534012167aa536116d75c8a",
+      "version": null,
+      "source": "https://github.com/restatedev/restate",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "restate-sdk-python",
+      "name": "restate-sdk-python",
+      "destination": "quarantine/restate-sdk-python",
+      "revision": "ad4ea7c0a60b5745681a809fe57656bec0939c38",
+      "version": null,
+      "source": "https://github.com/restatedev/sdk-python",
+      "category": "supporting-workflow-sdk",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "restate-sdk-rust",
+      "name": "restate-sdk-rust",
+      "destination": "quarantine/restate-sdk-rust",
+      "revision": "5cd9a3d24d7ddc21f29c8c43074d3d67ca67c163",
+      "version": null,
+      "source": "https://github.com/restatedev/sdk-rust",
+      "category": "supporting-workflow-sdk",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "rlm",
+      "name": "rlm",
+      "destination": "quarantine/rlm",
+      "revision": "d04208afbad29ca675ab13478c40ee8bebc84bfe",
+      "version": null,
+      "source": "https://github.com/alexzhang13/rlm",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "robin",
+      "name": "robin",
+      "destination": "quarantine/robin",
+      "revision": "4a5cce310f3bc7663a67117db88af43b84733ffe",
+      "version": null,
+      "source": "https://github.com/Future-House/robin",
+      "category": "scientific-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "roo-code",
+      "name": "roo-code",
+      "destination": "quarantine/roo-code",
+      "revision": "b867ec9145750d0ae1ff7f02d35406e9bf2a0b16",
+      "version": null,
+      "source": "https://github.com/RooVetGit/Roo-Code",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "s6",
+      "name": "s6",
+      "destination": "quarantine/s6",
+      "revision": "67254f0c147f9b9f71aabc7988e52bdaeb9576ab",
+      "version": null,
+      "source": "https://github.com/skarnet/s6",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "sbcl",
+      "name": "sbcl",
+      "destination": "quarantine/sbcl",
+      "revision": "e0b6f381c2abb096fc2c4b00d1caead9b6f968be",
+      "version": null,
+      "source": "https://github.com/sbcl/sbcl",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "scientific-agent-skills",
+      "name": "scientific-agent-skills",
+      "destination": "quarantine/scientific-agent-skills",
+      "revision": "91497e335489dcb544ec8ddc8f6b7ce5fd6d1121",
+      "version": null,
+      "source": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "category": "scientific-skills-support",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "scientific-workbenches"
+    },
+    {
+      "id": "self-harness",
+      "name": "self-harness",
+      "destination": "quarantine/self-harness",
+      "revision": "2720dbb3f52283684f4b85a1065d642df1779dd8",
+      "version": null,
+      "source": "https://github.com/qzzqzzb/Self-Harness",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "experiment-evaluation"
+    },
+    {
+      "id": "sly",
+      "name": "sly",
+      "destination": "quarantine/sly",
+      "revision": "3ffa216d0818972f7a7fea38a566a6b570349f3b",
+      "version": null,
+      "source": "https://github.com/joaotavora/sly",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "smolagents",
+      "name": "smolagents",
+      "destination": "quarantine/smolagents",
+      "revision": "c30b115286e000e98711fae5e85993547b73d826",
+      "version": null,
+      "source": "https://github.com/huggingface/smolagents",
+      "category": "agent-runtime",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "spacetimedb",
+      "name": "spacetimedb",
+      "destination": "quarantine/spacetimedb",
+      "revision": "629e8c1e809a3d60bba7c863243a64d1e0dbb7d9",
+      "version": null,
+      "source": "https://github.com/clockworklabs/SpacetimeDB",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "squirreling",
+      "name": "squirreling",
+      "destination": "quarantine/squirreling",
+      "revision": "249f5bb27ed4d685e13bd23bf67bfc8053117eab",
+      "version": null,
+      "source": "https://github.com/hyparam/squirreling",
+      "category": "reference",
+      "catalog": "papers/2026-09-30-reference-acquisition.json",
+      "group": "systems-primitives"
+    },
+    {
+      "id": "stakpak-agent",
+      "name": "stakpak-agent",
+      "destination": "quarantine/stakpak-agent",
+      "revision": "760cd2b5984d29c2d513bb15ca33e995fae45f17",
+      "version": null,
+      "source": "https://github.com/stakpak/agent",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "station",
+      "name": "station",
+      "destination": "quarantine/station",
+      "revision": "782088e561998bf357d95a838a0566a8229425d9",
+      "version": null,
+      "source": "https://github.com/dualverse-ai/station",
+      "category": "scientific-collaboration",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "collaboration"
+    },
+    {
+      "id": "swe-agent",
+      "name": "swe-agent",
+      "destination": "quarantine/swe-agent",
+      "revision": "3ea751c087f32b16e039a2233dd6eefecef325d5",
+      "version": null,
+      "source": "https://github.com/princeton-nlp/SWE-agent",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "sweep",
+      "name": "sweep",
+      "destination": "quarantine/sweep",
+      "revision": "a8b8b67bda4f89faac9314d34e7c7d5a64f76046",
+      "version": null,
+      "source": "https://github.com/sweepai/sweep",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "tabby",
+      "name": "tabby",
+      "destination": "quarantine/tabby",
+      "revision": "21b29048d7bcf6b94f9f482f2d0fd05efadfd19f",
+      "version": null,
+      "source": "https://github.com/TabbyML/tabby",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "interactive-clients"
+    },
+    {
+      "id": "trae-agent",
+      "name": "trae-agent",
+      "destination": "quarantine/trae-agent",
+      "revision": "e839e559ac61bdd0e057c375dd1dee391fee797d",
+      "version": null,
+      "source": "https://github.com/bytedance/trae-agent",
+      "category": "coding-agent-or-assistant",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "python-coding"
+    },
+    {
+      "id": "vtcode",
+      "name": "vtcode",
+      "destination": "quarantine/vtcode",
+      "revision": "fc68c9e1f454a2ffc7da794decee27c8ebb92771",
+      "version": null,
+      "source": "https://github.com/vinhnx/VTCode",
+      "category": "coding-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "native-coding"
+    },
+    {
+      "id": "windmill",
+      "name": "windmill",
+      "destination": "quarantine/windmill",
+      "revision": "8953ca670aac63feab1a04369df50a669c1f40bc",
+      "version": null,
+      "source": "https://github.com/windmill-labs/windmill",
+      "category": "supporting-workflow-runtime",
+      "catalog": "papers/2026-09-30-known-agent-acquisition.json",
+      "group": "programmable-frameworks"
+    },
+    {
+      "id": "zeroclaw",
+      "name": "zeroclaw",
+      "destination": "quarantine/zeroclaw",
+      "revision": "83f0ff3805ad2f2535d63db2fa85a72c02f5dd05",
+      "version": null,
+      "source": "https://github.com/zeroclaw-labs/zeroclaw",
+      "category": "general-agent",
+      "catalog": "papers/2026-09-30-discovered-agent-acquisition.json",
+      "group": "persistent-agents"
+    }
+  ]
+}

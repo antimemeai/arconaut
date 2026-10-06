@@ -1,0 +1,395 @@
+{
+  "id": "kaagum",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Guile Scheme"
+    ],
+    "execution": "One Guile ACP process; synchronous HTTP and serial Linux-container child calls in a TEA reducer/effects loop.",
+    "service_boundary": "Owns in-memory sessions/transient tool containers; consumes remote OpenAI-compatible/forge/Kagi services."
+  },
+  "summary": "Read/search ACP agent; configured tools exclude writes and arbitrary command execution.",
+  "inspection": {
+    "files": [
+      "quarantine/kaagum/bin/kaagum",
+      "quarantine/kaagum/kaagum/tea.scm",
+      "quarantine/kaagum/kaagum/openai.scm",
+      "quarantine/kaagum/kaagum/tools.scm",
+      "quarantine/kaagum/kaagum/tools/base.scm",
+      "quarantine/kaagum/kaagum/tools/forges.scm",
+      "quarantine/kaagum/kaagum/tools/kagi.scm",
+      "quarantine/kaagum/kaagum/container.scm",
+      "quarantine/kaagum/kaagum/trace.scm",
+      "quarantine/kaagum/tests/tools.scm"
+    ],
+    "scope": "CLI\u2192ACP reducer\u2192HTTP\u2192validated tools\u2192container output\u2192continuation; config/permission/cancel and sole type-test.",
+    "limits": "Source read only, reference not executed. HTTP/tool effects block input; stderr not captured. No exposed kernel/workflows or persisted session restoration established."
+  },
+  "actions": [
+    {
+      "name": "read",
+      "surface": "model tool",
+      "input": "path; start-line/end-line",
+      "output": "Raw text/errors",
+      "lifecycle": "Synchronous container/call ID",
+      "authority": "ACP permission; read-only cwd",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "list",
+      "surface": "model tool",
+      "input": "root; POSIX pattern",
+      "output": "type/size/path rows",
+      "lifecycle": "Synchronous container",
+      "authority": "Named-tool permission",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    {
+      "name": "search",
+      "surface": "model tool",
+      "input": "pattern, files-root, files-pattern",
+      "output": "file:line:match",
+      "lifecycle": "Synchronous container",
+      "authority": "Named-tool permission",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    {
+      "name": "github-issue",
+      "surface": "model tool",
+      "input": "host, owner, repo, number",
+      "output": "Issue discussion",
+      "lifecycle": "Synchronous network-enabled container",
+      "authority": "ACP permission",
+      "evidence": [
+        "e10"
+      ]
+    },
+    {
+      "name": "kagi-search; kagi-extract",
+      "surface": "model tool",
+      "input": "query/lens/date bounds; URL",
+      "output": "Search results/Markdown/errors",
+      "lifecycle": "Synchronous optional network tools",
+      "authority": "Operator supplies key command",
+      "evidence": [
+        "e1",
+        "e11"
+      ]
+    },
+    {
+      "name": "/cwd; /tools",
+      "surface": "operator command",
+      "input": "No useful args",
+      "output": "cwd/tool-permission table",
+      "lifecycle": "Immediate end turn",
+      "authority": "ACP client",
+      "evidence": [
+        "e13"
+      ]
+    },
+    {
+      "name": "initialize; session/new; session/prompt; session/set_config_option; session/cancel",
+      "surface": "programmable API",
+      "input": "JSON-RPC, session ID/cwd/prompt/model",
+      "output": "Session/config/update/stopReason",
+      "lifecycle": "In-memory state; cancel waits for input boundary",
+      "authority": "ACP client",
+      "evidence": [
+        "e6",
+        "e2"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read/list/search only; write explicitly TODO.",
+      "evidence": [
+        "e3"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Harness-owned tool thunks in containers; no general shell/PTY/ongoing process tool.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "code_actions": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model discovery/per-session model switch; single active request, not colleagues.",
+      "evidence": [
+        "e6",
+        "e9"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Logical sessions/pending calls exist; execution is serial/blocking.",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cancel clears pending state; input cannot arrive during a blocking HTTP/container effect.",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional fsynced ACP trace; no comprehensive provider/program stderr/transformation corpus.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e8"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session model config changes subsequent requests; startup tool set has no exposed executable reload.",
+      "evidence": [
+        "e1",
+        "e6"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Remote provider/forge/Kagi consumption, no remote service lifecycle.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tools default pending approval; allow/reject always affects later named calls; per-tool mounts/namespaces.",
+      "evidence": [
+        "e4",
+        "e6"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "One invalid argument-type oracle; no inspected cancel/container/concurrency oracle.",
+      "evidence": [
+        "e12"
+      ]
+    },
+    "time_order": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/kaagum/bin/kaagum",
+      "start": 103,
+      "end": 140,
+      "claim": "Constructs base/forge/optional Kagi tool set and trace port."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/kaagum/kaagum/tea.scm",
+      "start": 964,
+      "end": 1032,
+      "claim": "Effects executed serially before further ACP input; blocking HTTP/tools."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/kaagum/kaagum/tools/base.scm",
+      "start": 89,
+      "end": 231,
+      "claim": "Read/list/search and explicit write TODO."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/kaagum/kaagum/tools.scm",
+      "start": 179,
+      "end": 305,
+      "claim": "Typed arguments, per-tool approvals and call/result pairing."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/kaagum/kaagum/container.scm",
+      "start": 33,
+      "end": 55,
+      "claim": "Transient container captures stdout, drains then waits; stderr TODO."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/kaagum/kaagum/tea.scm",
+      "start": 376,
+      "end": 528,
+      "claim": "ACP initialize/new/prompt/model configuration/cancel; cancel clears state."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/kaagum/kaagum/tea.scm",
+      "start": 202,
+      "end": 237,
+      "claim": "Pending-call barrier and removal of nonprotocol/reasoning fields."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/kaagum/kaagum/trace.scm",
+      "start": 23,
+      "end": 36,
+      "claim": "Optional textual trace fsyncs each line."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/kaagum/kaagum/openai.scm",
+      "start": 33,
+      "end": 72,
+      "claim": "OpenAI-compatible completion/model discovery HTTP consumer."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/kaagum/kaagum/tools/forges.scm",
+      "start": 139,
+      "end": 185,
+      "claim": "github-issue reads public GitHub/Forgejo discussion."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/kaagum/kaagum/tools/kagi.scm",
+      "start": 62,
+      "end": 136,
+      "claim": "Optional Kagi search/extraction tools."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/kaagum/tests/tools.scm",
+      "start": 24,
+      "end": 44,
+      "claim": "One invalid-type test with specific error oracle."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/kaagum/kaagum/tea.scm",
+      "start": 273,
+      "end": 339,
+      "claim": "Only cwd/tools slash commands; immediate end-turn."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/kaagum/tests/tools.scm",
+      "focus": "Tool argument type mismatch",
+      "oracle": "Exact synthetic invalid-type error; no container/transport/permission execution.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Small explicit state/effects separation.",
+    "Draining stdout before wait prevents saturated-pipe deadlock."
+  ],
+  "limits": [
+    "HTTP/tool effects block input; stderr not captured. No exposed kernel/workflows or persisted session restoration established."
+  ],
+  "arconaut_questions": [
+    "Can reducer/effect separation support independent scheduling and steering while effects run?",
+    "How should tool standing authority and mount scope be configured without per-call ceremony?"
+  ]
+}

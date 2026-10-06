@@ -1,0 +1,618 @@
+{
+  "id": "agent-zero",
+  "kind": "extensible persistent Python agent and workbench",
+  "runtime": {
+    "languages": [
+      "Python",
+      "JavaScript (web UI)"
+    ],
+    "execution": "Python async monologue with background event-loop threads, extension middleware, local/SSH persistent PTY shells and background worker contexts.",
+    "service_boundary": "Owns local contexts, shells, vector memory and snapshots; consumes model/MCP/A2A/SSH/host bridge services. Local shells are agent-owned, not shared compute consumption."
+  },
+  "summary": "Broad editable extension machinery changes arguments/results/continuation around core functions; persistent terminal sessions and parallel workers coexist with nonpersistent Python subprocess actions.",
+  "inspection": {
+    "files": [
+      "quarantine/agent-zero/agent.py",
+      "quarantine/agent-zero/helpers/extension.py",
+      "quarantine/agent-zero/helpers/modules.py",
+      "quarantine/agent-zero/helpers/extract_tools.py",
+      "quarantine/agent-zero/plugins/_code_execution/tools/code_execution_tool.py",
+      "quarantine/agent-zero/plugins/_code_execution/helpers/tty_session.py",
+      "quarantine/agent-zero/tools/parallel.py",
+      "quarantine/agent-zero/helpers/parallel_tools.py",
+      "quarantine/agent-zero/helpers/defer.py",
+      "quarantine/agent-zero/tools/call_subordinate.py",
+      "quarantine/agent-zero/tools/a2a_chat.py",
+      "quarantine/agent-zero/plugins/_memory/tools/memory_load.py",
+      "quarantine/agent-zero/plugins/_memory/helpers/memory.py",
+      "quarantine/agent-zero/helpers/history.py",
+      "quarantine/agent-zero/extensions/python/message_loop_prompts_before/_90_organize_history_wait.py",
+      "quarantine/agent-zero/helpers/persist_chat.py",
+      "quarantine/agent-zero/extensions/python/hist_add_tool_result/_90_save_tool_call_file.py",
+      "quarantine/agent-zero/plugins/_time_travel/helpers/time_travel.py",
+      "quarantine/agent-zero/tools/notify_user.py",
+      "quarantine/agent-zero/tests/test_parallel_code_lifetime.py",
+      "quarantine/agent-zero/tests/test_history_compression_wait.py"
+    ],
+    "scope": "Read actual loop/provider/tools, implicit/explicit extension loader, code execution/PTTY lifetime, parallel/delegation/A2A, memory, history/persistence/time-travel and direct lifetime/compression test oracles.",
+    "limits": "No acquired code executed. Not every built-in/community plugin or host bridge traced. Extension watchdog registration function exists but startup wiring not established in inspected paths; core provider adapter internals not exhaustive."
+  },
+  "actions": [
+    {
+      "name": "code_execution_tool / input / output / reset",
+      "surface": "model tools",
+      "input": "code, terminal/python/node runtime, numbered session/reset",
+      "output": "terminal output and session-running state",
+      "lifecycle": "persistent shell, new Python/node process per code action; output timeout need not terminate command",
+      "authority": "model code execution plugin, local or configured SSH authority",
+      "evidence": [
+        "code",
+        "session",
+        "terminal"
+      ]
+    },
+    {
+      "name": "parallel start/background/await/cancel",
+      "surface": "model tool",
+      "input": "tool_calls or job_ids, timeout/wait",
+      "output": "job handles, partial/final results/status",
+      "lifecycle": "background contexts, result collection; terminal cancellation label precedes cleanup settlement",
+      "authority": "model orchestrates ordinary tools/child contexts",
+      "evidence": [
+        "parallel",
+        "cancel",
+        "defer"
+      ]
+    },
+    {
+      "name": "call_subordinate / a2a_chat",
+      "surface": "model tools",
+      "input": "profile/context_id or remote URL, message/attachments",
+      "output": "subordinate reply/context ID or remote task result",
+      "lifecycle": "local awaited monologue or remote wait; busy child reuse refused",
+      "authority": "model delegates profile/remote agent; no general local busy peer mailbox established",
+      "evidence": [
+        "delegate",
+        "busy",
+        "a2a"
+      ]
+    },
+    {
+      "name": "Explicit/implicit extension programs",
+      "surface": "programmable extension API",
+      "input": "Python files at hook/function hierarchy; mutable arguments/results",
+      "output": "rewritten context/model/tool/result/exception",
+      "lifecycle": "per call; fresh local tools; cached extensions invalidated by watchdog primitive",
+      "authority": "ordinary extension code; host APIs broad, model can author via file/program actions",
+      "evidence": [
+        "wrapper",
+        "prompt",
+        "model",
+        "dispatch",
+        "toolload",
+        "extload"
+      ]
+    },
+    {
+      "name": "memory save/load/delete/forget family",
+      "surface": "model tools",
+      "input": "text/document metadata or similarity query/filter",
+      "output": "document identity and retrieved memories",
+      "lifecycle": "standing vector DB persists; not general SQL or interpreter heap",
+      "authority": "model memory plugin",
+      "evidence": [
+        "memory",
+        "memwrite"
+      ]
+    },
+    {
+      "name": "Time Travel snapshot/list/travel/revert",
+      "surface": "operator/API",
+      "input": "workspace and commit identity",
+      "output": "snapshot/diff/affected files",
+      "lifecycle": "pre-change snapshot and preserved references; file restoration only",
+      "authority": "operator/API workspace scope",
+      "evidence": [
+        "travel"
+      ]
+    },
+    {
+      "name": "notify_user",
+      "surface": "model tool",
+      "input": "message/title/detail/priority/timeout",
+      "output": "display notification",
+      "lifecycle": "nonterminal notification",
+      "authority": "model invoke; no grievance-state/table mechanism",
+      "evidence": [
+        "notify"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model terminal programs and workspace snapshots edit/read files; dedicated all-plugin file tool families not exhaustively traced.",
+      "evidence": [
+        "code",
+        "travel"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Persistent numbered local/SSH PTY shells, output/input/reset and parallel lifetime handling; bounded kill settlement loses handle on final wait errors.",
+      "evidence": [
+        "session",
+        "terminal",
+        "pty",
+        "code"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model Python/node/shell programs compose ordinary computing; native hooks receive full mutable objects.",
+      "evidence": [
+        "code",
+        "session",
+        "wrapper"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent shell holds cwd/process state; Python action invokes ipython -c each time, so Python variable namespace not persistent in this path.",
+      "evidence": [
+        "session",
+        "code"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Persisted vector documents with IDs/metadata and model similarity/filter query; scope is memory retrieval, not SQL research workbench.",
+      "evidence": [
+        "memory",
+        "memwrite"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Implicit/explicit Python hooks may short circuit/replace functions and rewrite model/tool/continuation, plus parallel job tool.",
+      "evidence": [
+        "implicit",
+        "wrapper",
+        "dispatch",
+        "parallel"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-call chat/utility model resolution and middleware can replace model/message programmatically; profiles/delegation retained.",
+      "evidence": [
+        "model",
+        "delegate"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Remote A2A conversational tasks with cached context; local child call awaited, separate busy child cannot be reused without await/cancel. No traced open local peer room.",
+      "evidence": [
+        "a2a",
+        "delegate",
+        "busy"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Parallel tool/child background jobs and persistent multiple shells; ordinary tool loop distinct from parallel tool.",
+      "evidence": [
+        "parallel",
+        "code",
+        "session"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cooperative pause/interventions at stream/tool checkpoints; cancellation marks job terminal after future.cancel rather than confirmed cleanup completion.",
+      "evidence": [
+        "intervene",
+        "cancel",
+        "defer",
+        "pty"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual mutable function-start/end and result hooks can replace prompt/model/function/continuation behavior; activation not default settled-work staging.",
+      "evidence": [
+        "wrapper",
+        "prompt",
+        "loop",
+        "dispatch"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Nested topic/bulk summarization and token-decrease/pass-budget guard; provider state clearing test checks ID retention.",
+      "evidence": [
+        "compress",
+        "wait",
+        "compact-test"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "History may preserve nested summary records but old bulk fallback removes; only long nonbackground results archived separately. Time Travel is workspace files, not model-context repair operation.",
+      "evidence": [
+        "compress",
+        "large",
+        "travel"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Logs capped1000, background excluded, tool-result extra archives only>=500; transformed/masked text and omitted runtime fields, not all original provider/program attempts.",
+      "evidence": [
+        "serialize",
+        "save",
+        "large",
+        "terminal"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can read long-result archive paths and memory retrieval; full original IO absent and file time-travel query scoped separately.",
+      "evidence": [
+        "large",
+        "memory",
+        "travel"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool classes imported from file per get_tool; prompt/model resolved per call. Cached extension invalidation primitive exists but startup watchdog wiring not established here.",
+      "evidence": [
+        "toolload",
+        "module",
+        "alias",
+        "prompt",
+        "model",
+        "extload"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Chat reconstruction excludes underscore runtime state/shell handles/background contexts; source extension loading and file travel do not implement executable/outpost refit.",
+      "evidence": [
+        "serialize",
+        "save",
+        "travel"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "SSH interactive shell and remote A2A task consumer with cached chat ID; external standing service lifecycle not governed by these client actions.",
+      "evidence": [
+        "session",
+        "a2a"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Editable broad extension programs plus versioned file snapshots support model self-change; independent experiment/evaluate/promote governance not traced.",
+      "evidence": [
+        "wrapper",
+        "code",
+        "travel"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model notify_user gives nonterminal details/priority; automatic state capture, issue plus external complaint table not established.",
+      "evidence": [
+        "notify"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native code plugin dispatch runs model program and extension objects with broad access; precise all-plugin approvals/host deployment boundaries not fully studied.",
+      "evidence": [
+        "code",
+        "wrapper",
+        "dispatch"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Command-once/poll/cancellation-close mocks and exact stalled-compression/ID state oracles; OS termination/provider settlement not tested here.",
+      "evidence": [
+        "lifetime-test",
+        "compact-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Monotonic stream cadence, wall completed-job time and ordered history; paused callbacks do not establish pauseable logical deadlines.",
+      "evidence": [
+        "loop",
+        "cancel",
+        "intervene"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "loop",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 431,
+      "end": 538,
+      "claim": "Provider stream hooks, interventions, model-result hook may skip default processing; tool break result ends monologue."
+    },
+    {
+      "id": "prompt",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 564,
+      "end": 626,
+      "claim": "Before/after prompt extensions rewrite system/history; latest formatted context stored separately."
+    },
+    {
+      "id": "model",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 887,
+      "end": 959,
+      "claim": "Per-call model resolved and call-data/model/messages/callbacks exposed to before/after middleware."
+    },
+    {
+      "id": "implicit",
+      "path": "quarantine/agent-zero/helpers/extension.py",
+      "start": 80,
+      "end": 103,
+      "claim": "Implicit function extension contract allows argument/result replacement, short circuit and exception replacement."
+    },
+    {
+      "id": "wrapper",
+      "path": "quarantine/agent-zero/helpers/extension.py",
+      "start": 167,
+      "end": 189,
+      "claim": "Actual async decorator executes start/original/end with mutable data."
+    },
+    {
+      "id": "extload",
+      "path": "quarantine/agent-zero/helpers/extension.py",
+      "start": 326,
+      "end": 396,
+      "claim": "Agent-path extension precedence and cached classes; watchdog callbacks clear class caches, startup wiring not established here."
+    },
+    {
+      "id": "toolload",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 1581,
+      "end": 1616,
+      "claim": "Tool class located in profile hierarchy then freshly loaded and instantiated."
+    },
+    {
+      "id": "module",
+      "path": "quarantine/agent-zero/helpers/modules.py",
+      "start": 12,
+      "end": 24,
+      "claim": "Tool module file executes via importlib spec per load."
+    },
+    {
+      "id": "alias",
+      "path": "quarantine/agent-zero/helpers/extract_tools.py",
+      "start": 1,
+      "end": 4,
+      "claim": "Agent loader alias resolves to actual modules loader."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 1491,
+      "end": 1522,
+      "claim": "Tool before/after and argument/result extension hooks; returned break_loop determines continuation."
+    },
+    {
+      "id": "code",
+      "path": "quarantine/agent-zero/plugins/_code_execution/tools/code_execution_tool.py",
+      "start": 55,
+      "end": 112,
+      "claim": "Terminal/Python/Node/output/reset actions; parallel workers keep polling then close shells in finally."
+    },
+    {
+      "id": "session",
+      "path": "quarantine/agent-zero/plugins/_code_execution/tools/code_execution_tool.py",
+      "start": 134,
+      "end": 185,
+      "claim": "Persistent per-agent shell state; local/SSH connect cleanup; Python action is ipython -c subprocess, not persistent namespace."
+    },
+    {
+      "id": "terminal",
+      "path": "quarantine/agent-zero/plugins/_code_execution/tools/code_execution_tool.py",
+      "start": 206,
+      "end": 261,
+      "claim": "Existing shell command/output polling; one closed-PTY retry can resubmit command; printable command masked/clipped."
+    },
+    {
+      "id": "pty",
+      "path": "quarantine/agent-zero/plugins/_code_execution/helpers/tty_session.py",
+      "start": 69,
+      "end": 145,
+      "claim": "TERM then KILL bounded waits and FD release-once; final wait errors suppressed before dropping process handle."
+    },
+    {
+      "id": "intervene",
+      "path": "quarantine/agent-zero/agent.py",
+      "start": 1092,
+      "end": 1115,
+      "claim": "Cooperative pause at checkpoints, intervention preserves partial text and raises; does not globally suspend subprocess/provider work."
+    },
+    {
+      "id": "parallel",
+      "path": "quarantine/agent-zero/tools/parallel.py",
+      "start": 23,
+      "end": 77,
+      "claim": "Start/background/await/cancel model tool with job IDs and wait semantics."
+    },
+    {
+      "id": "cancel",
+      "path": "quarantine/agent-zero/helpers/parallel_tools.py",
+      "start": 650,
+      "end": 676,
+      "claim": "Calls deferred kill then immediately marks job terminal; no awaited settlement in this function."
+    },
+    {
+      "id": "defer",
+      "path": "quarantine/agent-zero/helpers/defer.py",
+      "start": 169,
+      "end": 186,
+      "claim": "Ordinary deferred kill cancels future without awaiting task cleanup; optional thread drain separate."
+    },
+    {
+      "id": "delegate",
+      "path": "quarantine/agent-zero/tools/call_subordinate.py",
+      "start": 197,
+      "end": 243,
+      "claim": "Subordinate monologue awaited and context persisted, existing context_id continuation supported."
+    },
+    {
+      "id": "busy",
+      "path": "quarantine/agent-zero/tools/call_subordinate.py",
+      "start": 144,
+      "end": 155,
+      "claim": "Reusing separate subordinate while running refused; must await or cancel parallel job."
+    },
+    {
+      "id": "a2a",
+      "path": "quarantine/agent-zero/tools/a2a_chat.py",
+      "start": 91,
+      "end": 131,
+      "claim": "Remote task send/wait and cached provider context ID; awaited RPC, not local peer chat room."
+    },
+    {
+      "id": "memory",
+      "path": "quarantine/agent-zero/plugins/_memory/tools/memory_load.py",
+      "start": 8,
+      "end": 27,
+      "claim": "Model standing memory similarity query with limit/threshold/filter."
+    },
+    {
+      "id": "memwrite",
+      "path": "quarantine/agent-zero/plugins/_memory/helpers/memory.py",
+      "start": 470,
+      "end": 494,
+      "claim": "Document IDs/timestamps/area and persisted vector insert/update."
+    },
+    {
+      "id": "compress",
+      "path": "quarantine/agent-zero/helpers/history.py",
+      "start": 525,
+      "end": 627,
+      "claim": "Topic/bulk summaries and nested records with progress guard; old bulk fallback may remove records."
+    },
+    {
+      "id": "wait",
+      "path": "quarantine/agent-zero/extensions/python/message_loop_prompts_before/_90_organize_history_wait.py",
+      "start": 12,
+      "end": 66,
+      "claim": "Compaction wait exits on no token reduction or max passes and logs stall."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/agent-zero/helpers/persist_chat.py",
+      "start": 50,
+      "end": 118,
+      "claim": "Background contexts excluded; chat atomic write flush/file+directory fsync, later load reconstructs contexts."
+    },
+    {
+      "id": "serialize",
+      "path": "quarantine/agent-zero/helpers/persist_chat.py",
+      "start": 186,
+      "end": 246,
+      "claim": "Underscore runtime state excluded, history serialized and log capped1000; not live shell/parallel/provider continuation image."
+    },
+    {
+      "id": "large",
+      "path": "quarantine/agent-zero/extensions/python/hist_add_tool_result/_90_save_tool_call_file.py",
+      "start": 9,
+      "end": 44,
+      "claim": "Only large>=500 nonbackground tool results separately saved and file path attached."
+    },
+    {
+      "id": "travel",
+      "path": "quarantine/agent-zero/plugins/_time_travel/helpers/time_travel.py",
+      "start": 875,
+      "end": 925,
+      "claim": "Workspace Git snapshot/travel/revert changes files with preserved reference; not captured model context/runtime refit."
+    },
+    {
+      "id": "notify",
+      "path": "quarantine/agent-zero/tools/notify_user.py",
+      "start": 7,
+      "end": 37,
+      "claim": "Model notification title/detail/priority/display-time, no agent-state complaint database linkage."
+    },
+    {
+      "id": "lifetime-test",
+      "path": "quarantine/agent-zero/tests/test_parallel_code_lifetime.py",
+      "start": 11,
+      "end": 73,
+      "claim": "Mocks prove command once and poll/close rules even cancellation; followup-session jobs rejected, actual OS death not oracle."
+    },
+    {
+      "id": "compact-test",
+      "path": "quarantine/agent-zero/tests/test_history_compression_wait.py",
+      "start": 89,
+      "end": 130,
+      "claim": "Literal compression pass limits and retained response ID list after active state clearing."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/agent-zero/tests/test_parallel_code_lifetime.py",
+      "focus": "side-effect single execution and owned shell cleanup",
+      "oracle": "Exact execute once/poll rules and close mocked on cancellation; no actual OS termination proof.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/agent-zero/tests/test_history_compression_wait.py",
+      "focus": "compaction progress and provider-context reset",
+      "oracle": "No-progress stops once, max-pass bound and response IDs preserved while active IDs removed; fake history, not summary quality oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Substantial extensible function machinery with mutable args/results/exceptions.",
+    "Real ordinary terminal/SSH integration and explicit parallel result handles.",
+    "Atomic chat persistence includes file and directory fsync."
+  ],
+  "limits": [
+    "Persistent shell does not make ipython -c actions a persistent Python kernel.",
+    "Cancellation status can precede cleanup, and terminal close forgets handle after suppressed final wait errors.",
+    "Selective chat/log/results omit background work and runtime state."
+  ],
+  "arconaut_questions": [
+    "Give model executable turn programs with explicit version/activation semantics, beyond ad hoc callback freshness.",
+    "Keep wait timeout, cancel request and confirmed resource settlement distinct.",
+    "Separate terminal session, interpreter namespace and shared service lease contracts."
+  ]
+}

@@ -1,0 +1,621 @@
+{
+  "id": "prime-agent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "Python"
+    ],
+    "execution": "Rust provider/turn core and daemon supervisor/workers; per-session owned CPython stdio kernel on one asyncio loop; bash background process groups, RLM child sessions and independent provider requests.",
+    "service_boundary": "Owns session workers, Python namespaces, child/batch process containment and JSON harness stores; consumes providers/MCP; kernels are session-owned rather than shared fabric consumers."
+  },
+  "summary": "Code-first coding agent: the shipped model tool is ipython; Python composes host skills, shell handles, RLM child sessions and mutable harness state.",
+  "inspection": {
+    "files": [
+      "quarantine/prime-agent/crates/pa-cli/src/prompt_command.rs",
+      "quarantine/prime-agent/crates/pa-agent/src/agent_loop/run.rs",
+      "quarantine/prime-agent/crates/pa-core/src/tools/ipython.rs",
+      "quarantine/prime-agent/crates/pa-core/src/kernel/manager/mod.rs",
+      "quarantine/prime-agent/crates/pa-core/src/kernel/manager/startup.rs",
+      "quarantine/prime-agent/crates/pa-core/src/kernel/manager/teardown.rs",
+      "quarantine/prime-agent/crates/pa-core/src/kernel/state_snapshot.rs",
+      "quarantine/prime-agent/prime-agent-runtime/src/rlm/repl.py",
+      "quarantine/prime-agent/prime-agent-runtime/src/rlm/bash.py",
+      "quarantine/prime-agent/prime-agent-runtime/src/rlm/harness.py",
+      "quarantine/prime-agent/prime-agent-runtime/src/rlm/__init__.py",
+      "quarantine/prime-agent/crates/pa-core/src/session_engine/refine.rs",
+      "quarantine/prime-agent/crates/pa-core/src/refinement/executor.rs",
+      "quarantine/prime-agent/crates/pa-core/src/session_engine/compaction_exec.rs",
+      "quarantine/prime-agent/crates/pa-core/src/session_engine/compaction_arms.rs",
+      "quarantine/prime-agent/crates/pa-core/src/session_engine/ipython_state.rs",
+      "quarantine/prime-agent/crates/pa-core/src/session_engine/host_requests.rs",
+      "quarantine/prime-agent/crates/pa-daemon/src/agent_engine/turn/boundary.rs",
+      "quarantine/prime-agent/crates/pa-daemon/src/agent_messaging.rs",
+      "quarantine/prime-agent/crates/pa-daemon/src/agent_message_ingest.rs",
+      "quarantine/prime-agent/crates/pa-daemon/src/session_custom.rs",
+      "quarantine/prime-agent/skills/agent-message/src/agent_message/__init__.py",
+      "quarantine/prime-agent/skills/agent-observe/src/agent_observe/__init__.py",
+      "quarantine/prime-agent/skills/compact/src/compact/__init__.py",
+      "quarantine/prime-agent/skills/refine/src/refine/__init__.py",
+      "quarantine/prime-agent/crates/pa-agent/tests/agent_loop_scripted.rs",
+      "quarantine/prime-agent/crates/pa-daemon/src/worker/agent_message_tests.rs"
+    ],
+    "scope": "Shipped tool selection/loop\u2192kernel provision/execute/result\u2192host bridge\u2192family routing, compaction/refine settlement, snapshot limits/cleanup; scripted continuation and busy delivery test assertions.",
+    "limits": "Source read only, reference not executed. No reference execution. Rust port retains misleading TypeScript comments in Python skills. Snapshot persistence omits unsafe/unpicklable/oversize namespace objects and does not preserve live process/socket identity. Refinement governs prompt/memory/skill/subagent entries, not executable rebuild and validated autoresearch."
+  },
+  "actions": [
+    {
+      "name": "ipython",
+      "surface": "model tool",
+      "input": "Python code string",
+      "output": "stdout/stderr/repr/error/attachments/duration; host receipts in details",
+      "lifecycle": "Sequential cell in owned persistent Python namespace; abort can leave busy kernel needing wait/kill",
+      "authority": "Model code has ordinary filesystem/import/host authority, no tool approval gate traced here",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4"
+      ]
+    },
+    {
+      "name": "bash; BashHandle.pid/running/output/tail/poll/kill; await handle",
+      "surface": "programmable API",
+      "input": "Shell string; signal/grace; tail lines",
+      "output": "Persistent process handle and BashResult",
+      "lifecycle": "Starts immediately; foreground cancellation kills group; released background work survives cell abort but not kernel teardown",
+      "authority": "Model via Python; owned host process group",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10"
+      ]
+    },
+    {
+      "name": "rlm.spawn; rlm.create_session; rlm.find_models; rlm.list_subagents; rlm.collect; rlm.delete_subagent",
+      "surface": "programmable API",
+      "input": "Prompt/name/model/thinking/cwd; child selectors/timeout",
+      "output": "Child/session typed IDs; roster/results",
+      "lifecycle": "Independent child sessions retained until deletion; collect nonblocking or bounded await",
+      "authority": "Model Python host bridge; direct-family lifecycle; create_session daemon root only",
+      "evidence": [
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "agent_message.send",
+      "surface": "programmable API",
+      "input": "message, receiver_role parent/sibling/child and receiver_name; broadcast all",
+      "output": "Identity/delivery receipts",
+      "lifecycle": "Busy target queued with queuedAt; role/family route; peer then supervisor fallback",
+      "authority": "Model skill inside kernel; paused/capacity gates",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "agent_observe.list_agents/get_agent/recent_messages",
+      "surface": "programmable API",
+      "input": "Target; count/max_chars",
+      "output": "Family/session state and bounded message previews",
+      "lifecycle": "Read-only host requests",
+      "authority": "Model skill; bounded transcript scope",
+      "evidence": [
+        "e25"
+      ]
+    },
+    {
+      "name": "HarnessState.get/list/search/create/update/delete; create_memory/create_prompt_note/create_skill/create_subagent; record_refinement",
+      "surface": "programmable API",
+      "input": "Typed entries/id/content/scope; query; evidence/outcome",
+      "output": "Structured entries and durable JSON harness state",
+      "lifecycle": "mtime refresh then save; local/global definitions affect future prompt/resources",
+      "authority": "Model Python mutations; explicit global scope",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "compact.status/run; refine.status/run; /compact; /refine",
+      "surface": "programmable API",
+      "input": "Optional instructions; global refine flag",
+      "output": "Scheduled/reason/status and durable summary/refinement outcomes",
+      "lifecycle": "Queued until settled turn; compaction then refinement; requested compaction stops run and queued continuation resumes",
+      "authority": "Model skill and operator command; no mid-cell transform",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21",
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "/reload",
+      "surface": "operator command",
+      "input": "None",
+      "output": "Success; fresh per-use config",
+      "lifecycle": "Settings/auth/MCP next-use refresh; no executable recompile",
+      "authority": "Operator",
+      "evidence": [
+        "e24"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Python ordinary file APIs and skill imports compose edits/search; not dedicated JSON tools in shipped surface.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Immediate shell handles, bounded tail/poll/group kill, foreground versus released-background cancellation semantics.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Python code cells compose bash/host skills/child calls and normal programs.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e14"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session-owned CPython namespace persists; snapshots selectively dill variables with16MiB/256MiB limits; handles/threads/sockets cannot be assumed restored.",
+      "evidence": [
+        "e4",
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Queryable mutable local/global structured HarnessState JSON entries and refinements; not a general shared SQL service.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python code, named skills/subagent definitions and child APIs supply programmable composition; full turn scheduler remains Rust hooks.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e12",
+        "e14"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model lookup and per-child model/thinking selection; simultaneous independent child sessions rather than only UI switch.",
+      "evidence": [
+        "e14",
+        "e16"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model role-addressed/broadcast messages with receipts and busy-target queue; bounded ingestion and pause gate, no blind retry.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "RLM child sessions and released background bash handles can outlive one cell; Python execution cells remain sequential.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6",
+        "e14",
+        "e15"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Loop steering/follow-up polling and abort; Python interrupt recovery distinguishes busy previous cell; shell foreground versus background semantics.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e6"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Rust API offers steering/continuation/stop hooks; model changes skills/subagent/prompt entries, not arbitrary Rust scheduling body in flight.",
+      "evidence": [
+        "e3",
+        "e12",
+        "e19"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic/manual/model-scheduled summaries retain tail anchor/previous summary; durable notice explicitly prunes oversized kernel names.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retained session entries and bounded family previews plus Python file access can compose retrieval; no exposed original-complete repair action traced.",
+      "evidence": [
+        "e11",
+        "e25",
+        "e26"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session/refinement/compaction durable records preserve important transitions, but diagnostic rotation/output bounds and namespace loss preclude complete original IO claim.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e20",
+        "e22",
+        "e28"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python file reading and bounded family recent-message APIs support inspection; structured harness search queries memories, not complete original transport audit.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e25"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model mutates harness entries; host refit rebuilds system prompt after settled turn; settings/auth/MCP resolved per use, executable unchanged.",
+      "evidence": [
+        "e11",
+        "e19",
+        "e22",
+        "e23",
+        "e24"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Kernel/session snapshot restoration and daemon lifecycle are partial continuity primitives; no actual executable self-compile/quiescent outpost handoff traced.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10",
+        "e24"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes providers and MCP through host/Python bridge; owns per-session kernels and child processes rather than shared kernel service consumer boundary.",
+      "evidence": [
+        "e2",
+        "e14",
+        "e16",
+        "e24"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Dedicated plan/apply/rollback of harness entry definitions and automatic review gates exist; expected outcomes/history are not discriminating experiment/evaluation governance or executable rebuild.",
+      "evidence": [
+        "e13",
+        "e19",
+        "e22",
+        "e23"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Shipped ipython allows model authored ordinary Python and host skill/harness mutations; scope/relationship constraints around global stores and family delivery.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e17",
+        "e23"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Scripted model continuation oracle checks actual second-request ID/result ordering; busy message oracle checks queued receipt. Mocks do not validate live provider/kernel/platform behavior.",
+      "evidence": [
+        "e18",
+        "e26"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Explicit scheduled heartbeat run times/state and awaited-handle lifecycle; monotonic timeout/cancellation boundary supports local ordering, not cross-system original causal ledger.",
+      "evidence": [
+        "e5",
+        "e15",
+        "e19",
+        "e27"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/prime-agent/crates/pa-cli/src/prompt_command.rs",
+      "start": 113,
+      "end": 124,
+      "claim": "Effective shipped tool selection is ipython, not independent shell/edit JSON tools."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/prime-agent/crates/pa-core/src/tools/ipython.rs",
+      "start": 489,
+      "end": 520,
+      "claim": "Single sequential code-string tool forwards to persistent kernel with structured outputs/attachments/errors."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/prime-agent/crates/pa-agent/src/agent_loop/run.rs",
+      "start": 30,
+      "end": 263,
+      "claim": "Continuation pairs tool results; steering/follow-up/continuation/stop hooks and abort checks govern boundaries."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/repl.py",
+      "start": 636,
+      "end": 680,
+      "claim": "Persistent namespace compiles/executes Python cell with async support and error/interrupt events."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/bash.py",
+      "start": 376,
+      "end": 429,
+      "claim": "BashHandle exposes pid/running/output/tail/poll/kill with process group escalation."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/bash.py",
+      "start": 954,
+      "end": 973,
+      "claim": "Foreground await cancellation kills command group; released background handle survives cell cancellation, owned until kernel teardown."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/prime-agent/crates/pa-core/src/kernel/state_snapshot.rs",
+      "start": 14,
+      "end": 59,
+      "claim": "Namespace snapshot caps are 16MiB per variable and 256MiB aggregate with saved/skipped/pruned manifest."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/repl.py",
+      "start": 770,
+      "end": 894,
+      "claim": "Dill per-name snapshot skips failures/size excess, stages payload/manifest and may prune oversize live names."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/prime-agent/crates/pa-core/src/kernel/manager/mod.rs",
+      "start": 428,
+      "end": 435,
+      "claim": "Last shared inner owner drop performs best-effort hard cleanup."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/prime-agent/crates/pa-core/src/kernel/manager/teardown.rs",
+      "start": 47,
+      "end": 188,
+      "claim": "Graceful snapshot/host drain/protocol shutdown followed by deadline cleanup and orphan-group reaping."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/harness.py",
+      "start": 322,
+      "end": 395,
+      "claim": "Model-accessible HarnessState uses structured local/global JSON with mtime reload."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/harness.py",
+      "start": 615,
+      "end": 704,
+      "claim": "Harness entries can be fetched/deleted/listed/created, persisted with explicit scope."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/harness.py",
+      "start": 895,
+      "end": 945,
+      "claim": "Refinement records evidence/outcome and small-edit planning, not an experiment oracle."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/__init__.py",
+      "start": 161,
+      "end": 234,
+      "claim": "RLM spawn/create_session/model lookup uses host bridge and returns stable child/session handles."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/prime-agent/prime-agent-runtime/src/rlm/__init__.py",
+      "start": 390,
+      "end": 428,
+      "claim": "RLM collect polls or bounded waits for retained direct-child results, no parent steering."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/prime-agent/crates/pa-daemon/src/agent_messaging.rs",
+      "start": 227,
+      "end": 303,
+      "claim": "Family controller uses durable identity, peer transport then supervisor fallback; no blind retry of non-idempotent sends."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/prime-agent/skills/agent-message/src/agent_message/__init__.py",
+      "start": 17,
+      "end": 62,
+      "claim": "Role-addressed/broadcast send calls host bridge and returns delivery receipts."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/prime-agent/crates/pa-daemon/src/worker/agent_message_tests.rs",
+      "start": 204,
+      "end": 222,
+      "claim": "Busy-worker test asserts queued status/time rather than silently dropping or denying delivery."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/prime-agent/crates/pa-daemon/src/agent_engine/turn/boundary.rs",
+      "start": 33,
+      "end": 128,
+      "claim": "Pending compact/refine consumed at settled boundary, compact then refine; summarizer gets its own cancellation slot."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/prime-agent/crates/pa-core/src/session_engine/ipython_state.rs",
+      "start": 180,
+      "end": 227,
+      "claim": "Compaction prunes oversized variables and appends namespace/persistence notice."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/prime-agent/crates/pa-core/src/session_engine/compaction_exec.rs",
+      "start": 42,
+      "end": 93,
+      "claim": "Summary request includes previous summary and authoritative retained-tail anchor."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/prime-agent/crates/pa-core/src/session_engine/refine.rs",
+      "start": 23,
+      "end": 112,
+      "claim": "Refinement durable audit type, auto review defaults/gates, local scope guard and model-facing outcome/notice."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/prime-agent/crates/pa-core/src/refinement/executor.rs",
+      "start": 202,
+      "end": 313,
+      "claim": "Plan requests scoped JSON entry edits; apply handles rollback/result, not harness executable compilation."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/prime-agent/crates/pa-daemon/src/session_custom.rs",
+      "start": 335,
+      "end": 347,
+      "claim": "Reload resolves settings/auth/MCP per use; command succeeds without executable reload."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/prime-agent/skills/agent-observe/src/agent_observe/__init__.py",
+      "start": 15,
+      "end": 52,
+      "claim": "Read-only family listing/live summaries/bounded recent message previews."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/prime-agent/crates/pa-agent/tests/agent_loop_scripted.rs",
+      "start": 265,
+      "end": 300,
+      "claim": "Tool continuation oracle inspects second request exact user/assistant/toolResult pairing and ID."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/prime-agent/crates/pa-core/src/session_engine/host_requests.rs",
+      "start": 21,
+      "end": 68,
+      "claim": "Standing heartbeat state includes schedule/next/last run/status/count and steer/follow-up delivery."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/prime-agent/crates/pa-core/src/kernel/manager/startup.rs",
+      "start": 23,
+      "end": 109,
+      "claim": "Kernel stderr tails/log budgets/rotation bound retained diagnostic bytes."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/prime-agent/crates/pa-agent/tests/agent_loop_scripted.rs",
+      "focus": "Tool continuation and event order",
+      "oracle": "Second scripted provider call must include matching tool-call ID/result and correct role order; scripted transport only.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/prime-agent/crates/pa-daemon/src/worker/agent_message_tests.rs",
+      "focus": "Busy-target message retention",
+      "oracle": "Worker busy flag forces queued receipt/queuedAt and queue content assertions; no live-model delivery exercised.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/prime-agent/crates/pa-core/src/session_engine/ipython_state.rs",
+      "focus": "Post-compaction kernel-loss disclosure",
+      "oracle": "Probe fixtures require prune notice/name list; a mocked namespace probe does not establish dill or OS serialization safety.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Code-first single tool gives model a compact compositional surface.",
+    "Harness entry changes and compact/refine are scheduled at a meaningful settled boundary.",
+    "Busy-target receipts and explicit foreground/background process ownership are unusually precise."
+  ],
+  "limits": [
+    "No reference execution. Rust port retains misleading TypeScript comments in Python skills. Snapshot persistence omits unsafe/unpicklable/oversize namespace objects and does not preserve live process/socket identity. Refinement governs prompt/memory/skill/subagent entries, not executable rebuild and validated autoresearch."
+  ],
+  "arconaut_questions": [
+    "Which standing services should become external consumers instead of owned per-session kernels?",
+    "Can refinement expected outcomes be replaced with explicit direct-property oracles and experiment lineage?",
+    "Which transcript/kernel snapshot omissions must trigger model-readable continuity warnings and repair paths?"
+  ]
+}

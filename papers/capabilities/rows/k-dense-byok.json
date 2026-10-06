@@ -1,0 +1,521 @@
+{
+  "id": "k-dense-byok",
+  "kind": "scientific coding-agent workbench",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript",
+      "Python"
+    ],
+    "execution": "Fastify host embeds Pi sessions; browser SSE observes detached runs; remote Modal workers have durable job records.",
+    "service_boundary": "Local tools run as the backend OS user. Modal and model/MCP providers are consumed services; ordinary chat runs depend on the host remaining alive."
+  },
+  "summary": "A scientific Pi consumer adds specialists, managed remote jobs, authored notebooks, bounded provenance and scientific compaction.",
+  "inspection": {
+    "files": [
+      "quarantine/k-dense-byok/server/src/agent/session-registry.ts",
+      "quarantine/k-dense-byok/server/src/api/sessions.ts",
+      "quarantine/k-dense-byok/server/src/agent/run-pipeline.ts",
+      "quarantine/k-dense-byok/server/src/agent/compaction-bridge.ts",
+      "quarantine/k-dense-byok/server/src/agent/session-message-gate.ts",
+      "quarantine/k-dense-byok/server/src/agent/notebook.ts",
+      "quarantine/k-dense-byok/server/src/agent/notebook-memory.ts",
+      "quarantine/k-dense-byok/docs/provenance.md",
+      "quarantine/k-dense-byok/server/src/agent/modal-tool.ts",
+      "quarantine/k-dense-byok/server/src/modal/manager.ts",
+      "quarantine/k-dense-byok/docs/sub-agents.md",
+      "quarantine/k-dense-byok/server/src/agent/subagent-control.ts",
+      "quarantine/k-dense-byok/docs/automation.md",
+      "quarantine/k-dense-byok/docs/limitations.md",
+      "quarantine/k-dense-byok/docs/watchdog.md",
+      "quarantine/k-dense-byok/docs/contributing-workflows.md",
+      "quarantine/k-dense-byok/server/test/compaction-bridge.test.ts",
+      "quarantine/k-dense-byok/server/test/session-message-gate.test.ts",
+      "quarantine/k-dense-byok/server/test/modal-durable.test.ts",
+      "quarantine/k-dense-byok/server/test/provenance-harvest.test.ts"
+    ],
+    "scope": "Kady session creation, run lifecycle, steering/compaction, notebook recall, child controls, remote tool dispatch and selected test assertions",
+    "limits": "Pi and pi-subagents dependency internals are not vendored here; their inner execution loops are not independently proven by Kady wrappers. No acquired code or tests executed."
+  },
+  "actions": [
+    {
+      "name": "POST /sessions/:id/run",
+      "surface": "operator/API",
+      "input": "Session/project, prompt/images, model, thinking level and optional Fusion config.",
+      "output": "SSE frames, runId, usage/cost/error/done; reconnects observe retained broker buffer.",
+      "lifecycle": "Detached host task owns Pi prompt and finalizers; browser lifetime is independent, backend restart ends ordinary turn.",
+      "authority": "Host session/model credential and spend gates; Fusion temporarily clears executable tool registry.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "POST /sessions/:id/steer; POST /sessions/:id/abort",
+      "surface": "operator/API",
+      "input": "Live session plus steering message; or session abort.",
+      "output": "Pending messages or 409 with restored texts; abort returns cleared queued texts.",
+      "lifecycle": "Steering lands after current tool calls via Pi; abort is recorded before awaiting provider teardown.",
+      "authority": "Host budget rechecked for steering; abort cannot silently authorize queued future work.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "session_before_compact / POST /sessions/:id/compact",
+      "surface": "lifecycle extension / operator API",
+      "input": "Pi cut preparation, prior summary, custom instructions, abort signal and scientific stores.",
+      "output": "Compaction summary with firstKeptEntryId, usage and science-state metadata.",
+      "lifecycle": "Custom hook runs on compaction; manual route refuses a streaming turn; errors delegate to Pi fallback.",
+      "authority": "Credentials of selected compaction model; pending handles retained literally.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "notebook",
+      "surface": "model tool",
+      "input": "Typed hypothesis/method/observation/decision/note, evidence/artifact/result links, corrections and optional plans.",
+      "output": "Stamped entry ID or soft save error; snapshots/bindings stored alongside narrative.",
+      "lifecycle": "Append to session notebook; supersedes links preserve prior authored records.",
+      "authority": "Model writes narrative fields, host stamps attribution/run/time and snapshot facts.",
+      "evidence": [
+        "e8"
+      ]
+    },
+    {
+      "name": "notebook source-linked search/read",
+      "surface": "programmable API / recall tool support",
+      "input": "Bounded query or explicit source identity plus optional expectedDigest.",
+      "output": "Ranked source-linked records, corrections/coverage/currentness qualifiers and bounded text.",
+      "lifecycle": "Read-time artifact rechecks; omitted records remain explicit and are not rewritten into facts.",
+      "authority": "Project/session namespace and source/digest validation; recalled text is historical data.",
+      "evidence": [
+        "e9"
+      ]
+    },
+    {
+      "name": "modal_run; modal_submit; modal_submit_batch",
+      "surface": "model tools",
+      "input": "Command, instance/GPU count, image/packages/environment/cache, files_in/out, timeout, optional group.",
+      "output": "Job/group IDs and public state; modal_run also retained stdout/stderr.",
+      "lifecycle": "Submit persists before remote scheduling; async survives chat abort; blocking run abort cancels.",
+      "authority": "Provider credentials, project budget reservations and transfer validation; local sandbox remains canonical.",
+      "evidence": [
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "modal_status; modal_wait; modal_cancel; modal_results",
+      "surface": "model tools",
+      "input": "job_id and optional wait timeout.",
+      "output": "State/accounting/output metadata; retained logs; cancellation acknowledgement.",
+      "lifecycle": "Wait timeout does not imply remote failure; cancel terminates remote sandbox; durable identity belongs to job store.",
+      "authority": "Project-scoped manager resolves job ownership; bounded log/retention limits.",
+      "evidence": [
+        "e11"
+      ]
+    },
+    {
+      "name": "subagents:rpc:v1:request / Host.rpc / preflight",
+      "surface": "host programmable control",
+      "input": "Method/params or child agent/task/model/context plus parent session and tool ceiling.",
+      "output": "Correlated success/data or error; 20-second RPC timeout.",
+      "lifecycle": "Session-scoped host registration disposes pending calls on closure.",
+      "authority": "Inherited/intersected capability ceiling; distinct child models and scoped parent context.",
+      "evidence": [
+        "e14",
+        "e13"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Pi filesystem tools are wired and their events recorded; actual builtin byte read/write implementation belongs to Pi. Opaque shell and simultaneous file edits escape complete attribution.",
+      "evidence": [
+        "e1",
+        "e10",
+        "e16"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local shell executes with backend OS-user authority through Pi; Modal command execution has explicit submit/wait/cancel/result lifecycle. Local isolation and complete shell effects are not provided.",
+      "evidence": [
+        "e1",
+        "e11",
+        "e16"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Pi edit/bash plus MCP codemode/search are composed into the session. Kady supplies no independently traced compiler/LSP action engine here.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Kady session creation, run lifecycle, steering/compaction, notebook recall, child controls, remote tool dispatch and selected test assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Append-oriented notebook/provenance/job stores provide durable project records and source-linked recall; these are application records, not a generic standing SQL service or kernel variable database.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Specialist workflow scripts and schedules enter pi-subagents via host RPC/preflight. The 326 UI workflows are prompt templates; timers require Kady and overlap is skipped.",
+      "evidence": [
+        "e14",
+        "e15",
+        "e18"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Run model selection, independently configured specialist models and optional reviewer/Fusion paths are explicit. This is not an IRC peer room.",
+      "evidence": [
+        "e2",
+        "e13",
+        "e14"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Supervisor questions and scoped child control RPC support lead/child conversation and operator transcript/steer/stop/resume. No general peer-room protocol is established.",
+      "evidence": [
+        "e13",
+        "e14"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Detached run ownership, background specialists and durable Modal batches have distinct handles; shared project files can conflict and ordinary host turns are not restart durable.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e12",
+        "e14",
+        "e16"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Steer queues a message into a streaming run with raced-message restoration; abort marks broker state before awaited model abort and clears queued prompts. Blocking Modal run cancellation differs from submitted durable jobs.",
+      "evidence": [
+        "e4",
+        "e11"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session construction installs executable lifecycle hooks (before-agent, tool-call, before-compaction, provider rewrite) and active-tool changes. No operator/model live arbitrary turn-program replacement contract is established.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e6",
+        "e14"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Bounded scientific preamble is combined with model narrative, cut-entry/usage metadata and split-turn handling. Literal job/control handles and uncertainty are retained; any hook failure uses Pi default.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Source-linked notebook search/read reports supersession, changed artifacts, incomplete coverage and digest identity. These supply recall for repair; no full original-context reconstruct/replace action is traced.",
+      "evidence": [
+        "e9",
+        "e5"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session/tool-derived JSONL provenance and durable job stores record useful lineage, not all original IO. Opaque commands infer bounded scans; nested children, overwritten bytes and flush errors are gaps.",
+      "evidence": [
+        "e3",
+        "e10",
+        "e16"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Artifact provenance exposes bounded version-aware upstream lineage; research recall returns source URI/digest and qualifiers. Completeness/currentness are explicitly withheld when coverage or identity is missing.",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "A run can change selected model/thinking and Fusion active tools; remote credentials can enable already-present tools. Skills/MCP/specialist/watchdog definitions generally apply to new chats, not universal hot code reload.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e13",
+        "e16"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Browser reconnect observes a detached live backend run; ordinary turns end on backend restart. Modal jobs use separate durable recovery. No harness-refit/context-outpost handoff is established.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e16"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Named MCP tools are wired through Pi pipeline and Modal submit/status/wait/results consume external compute. Modal job lifetime differs from chat/host lifetime; no governance of a shared scientific fabric is shown.",
+      "evidence": [
+        "e1",
+        "e11",
+        "e12"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected Kady session creation, run lifecycle, steering/compaction, notebook recall, child controls, remote tool dispatch and selected test assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "documentation",
+      "detail": "Watchdog warnings have evidence/proposed action and can steer continuation, but are bounded authored review findings, not a universal model complaint capturing full state into an external issue DB.",
+      "evidence": [
+        "e17"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Host OS account is the local execution authority; child tool ceilings intersect host policy, external CLI specialists bypass accounting and are disabled by default. Pattern guards and budget gates have admitted-call/opaque-script limits.",
+      "evidence": [
+        "e1",
+        "e14",
+        "e16"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Optional watchdog reviews bounded diffs/transcripts and can request repair; it neither reruns analyses nor proves scientific validity. Static tests below test known boundary faults, not model scientific competence.",
+      "evidence": [
+        "e17",
+        "e16"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Run claims serialize message activation through finalization; event-bus RPC uses unique request IDs and timeout. Durable job sequence/cursors and wall-clock timestamps are useful local orders, not a global causal clock.",
+      "evidence": [
+        "e7",
+        "e14",
+        "e12"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/k-dense-byok/server/src/agent/session-registry.ts",
+      "start": 385,
+      "end": 446,
+      "claim": "Pi session construction wires custom scientific tools, data guards and MCP/codemode/search extensions; initial resource reload occurs before session creation."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/k-dense-byok/server/src/api/sessions.ts",
+      "start": 810,
+      "end": 889,
+      "claim": "Per-run model/thinking selection and Fusion tool suppression precede detached executeRun(session.prompt); observer HTTP closure does not own finalization."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/k-dense-byok/server/src/agent/run-pipeline.ts",
+      "start": 303,
+      "end": 440,
+      "claim": "Events feed provenance and usage; flush/ledger occur before completion, but their errors warn and execution still completes."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/k-dense-byok/server/src/api/sessions.ts",
+      "start": 463,
+      "end": 547,
+      "claim": "Abort marks handle before awaiting session abort and clears queues; live steering rechecks spend and returns raced-undelivered messages."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/k-dense-byok/server/src/agent/compaction-bridge.ts",
+      "start": 38,
+      "end": 220,
+      "claim": "Bounded deterministic scientific preamble retains authored uncertainty/corrections, result/environment IDs and literal pending Modal/child control handles."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/k-dense-byok/server/src/agent/compaction-bridge.ts",
+      "start": 233,
+      "end": 325,
+      "claim": "Compaction calls the configured summary generator with custom instructions; returns summary/cut-entry/usage/details or falls back to Pi default on errors."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/k-dense-byok/server/src/agent/session-message-gate.ts",
+      "start": 1,
+      "end": 44,
+      "claim": "Deferred session messages wait for run release before and after delivery; a failed submission does not discard later queued notices."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/k-dense-byok/server/src/agent/notebook.ts",
+      "start": 105,
+      "end": 195,
+      "claim": "Notebook validates typed narratives, snapshots artifact/result links and stamps host role/run/time, allowing only selected model-authored fields; save failure is a soft error."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/k-dense-byok/server/src/agent/notebook-memory.ts",
+      "start": 61,
+      "end": 147,
+      "claim": "Recall reports correction/history/coverage qualifiers, source identities and read-time artifact health, with bounded response size; it is not a permanent extracted-fact writer."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/k-dense-byok/docs/provenance.md",
+      "start": 9,
+      "end": 91,
+      "claim": "Provenance differentiates observed, inferred and declared edges, version lineage and bounded environment snapshots; opaque scans/children and retention have explicit gaps."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/k-dense-byok/server/src/agent/modal-tool.ts",
+      "start": 270,
+      "end": 437,
+      "claim": "Native Modal tool family submits durable jobs and returns identifiers/state/logs; blocking run abort cancels while asynchronous submit survives chat abort."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/k-dense-byok/server/src/modal/manager.ts",
+      "start": 360,
+      "end": 419,
+      "claim": "Job record is persisted before asynchronous scheduling; batch failure cancels already-submitted children and returns one group handle."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/k-dense-byok/docs/sub-agents.md",
+      "start": 3,
+      "end": 74,
+      "claim": "Specialists share files but have distinct models/context/tool ceilings; external CLIs are disabled by default, direct-child harvest only and configuration generally affects new chats."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/k-dense-byok/server/src/agent/subagent-control.ts",
+      "start": 16,
+      "end": 100,
+      "claim": "Scoped event-bus RPC has UUID reply correlation and 20-second timeout; preflight uses parent model/session/tool ceiling and pending Modal work enters background-work tracking."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/k-dense-byok/docs/automation.md",
+      "start": 6,
+      "end": 50,
+      "claim": "Persisted schedules depend on a resident backend, fresh contexts, catch-up policy and no-overlap; missions expose mission.show."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/k-dense-byok/docs/limitations.md",
+      "start": 19,
+      "end": 69,
+      "claim": "Host sandbox is a workspace rather than OS isolation; ordinary runs end on backend restart, records are not complete execution IO and hashes cannot recover overwritten versions."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/k-dense-byok/docs/watchdog.md",
+      "start": 3,
+      "end": 38,
+      "claim": "Optional reviewer gets bounded transcript/diffs, can trigger continuations/stalemate and may fail silently; it does not execute or independently verify science."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/k-dense-byok/docs/contributing-workflows.md",
+      "start": 3,
+      "end": 26,
+      "claim": "Workflow catalogue consists of JSON prompt templates plus UI-selected input references, not an executable orchestration graph."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/k-dense-byok/server/test/compaction-bridge.test.ts",
+      "focus": "Lost child/remote handles and false certainty after compaction",
+      "oracle": "Seeded real stores assert literal pending job/control IDs, foreign/terminal exclusions, corrected/uncertain records; fake generator tests fallback and usage. It does not prove narrative fidelity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/k-dense-byok/server/test/session-message-gate.test.ts",
+      "focus": "Reentrant follow-up overtaking provenance/accounting",
+      "oracle": "Real Pi sessions with a fake provider and gated provenance flush assert zero dispatch while claimed, FIFO message boundaries, two separately ledgered runs and claim release. No live provider cancellation oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/k-dense-byok/server/test/modal-durable.test.ts",
+      "focus": "Crash recovery accounting and bounded durable remote results",
+      "oracle": "Fake Modal factory with real temporary stores asserts orphan reservation release, terminal job persistence, cursor rollover and independently known installed result bytes. It does not exercise real cloud sandbox recovery.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/k-dense-byok/server/test/provenance-harvest.test.ts",
+      "focus": "False write-time certainty from retrospective child hashes",
+      "oracle": "Synthetic child transcripts and known local file bytes assert harvest identity, no scan baseline for opaque shell, stale mismatch and unknown on matching retrospective hash. This deliberately rejects a misleading currentness claim.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Literal handles and explicit uncertainty survive scientific compaction.",
+    "Run claims include finalization and queued system-message activation.",
+    "Remote job lifecycle and citation/provenance identity limits are unusually explicit."
+  ],
+  "limits": [
+    "TypeScript/Pi dependent host is architecturally outside the preferred Arconaut core languages.",
+    "Application JSONL records and authored notebook are not a complete original audit or shared standing database.",
+    "Configuration applies mainly to new chats; refit continuity and autonomous harness improvement are not established."
+  ],
+  "arconaut_questions": [
+    "Should turn completion include audit persistence as a required commit rather than Kady's warn-and-continue finalizer?",
+    "Which literal service/child handles and authority facts must survive each compaction option?",
+    "How should source-linked correction recall preserve uncertainty without converting authored notebook entries into truth?"
+  ]
+}

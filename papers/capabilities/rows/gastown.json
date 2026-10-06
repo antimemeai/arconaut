@@ -1,0 +1,691 @@
+{
+  "id": "gastown",
+  "kind": "external-agent workspace, role and workflow orchestrator",
+  "runtime": {
+    "languages": [
+      "Go"
+    ],
+    "execution": "CLI and daemon supervise role-specific external harness processes in tmux/worktrees; hooks, detached pollers, async notifications.",
+    "service_boundary": "Owns town/rigs/worktree/Beads and role infrastructure; external harness owns provider requests, coding tools and compaction."
+  },
+  "summary": "Gas Town coordinates persistent work and ephemeral external sessions through role-specific automation, formulas, hooks, mail, nudges, handoff and escalation.",
+  "inspection": {
+    "files": [
+      "quarantine/gastown/README.md",
+      "quarantine/gastown/internal/session/lifecycle.go",
+      "quarantine/gastown/internal/config/agents.go",
+      "quarantine/gastown/internal/mail/router.go",
+      "quarantine/gastown/internal/mail/delivery.go",
+      "quarantine/gastown/internal/cmd/nudge.go",
+      "quarantine/gastown/internal/nudge/poller.go",
+      "quarantine/gastown/internal/cmd/sling.go",
+      "quarantine/gastown/internal/formula/parser.go",
+      "quarantine/gastown/internal/cmd/molecule_step.go",
+      "quarantine/gastown/internal/cmd/handoff.go",
+      "quarantine/gastown/internal/cmd/seance.go",
+      "quarantine/gastown/internal/cmd/escalate.go",
+      "quarantine/gastown/internal/cmd/escalate_impl.go",
+      "quarantine/gastown/internal/daemon/handler.go",
+      "quarantine/gastown/internal/daemon/daemon.go",
+      "quarantine/gastown/internal/events/events.go",
+      "quarantine/gastown/internal/agentlog/claudecode.go",
+      "quarantine/gastown/internal/cmd/feed.go",
+      "quarantine/gastown/internal/cmd/handoff_test.go",
+      "quarantine/gastown/internal/mail/delivery_test.go",
+      "quarantine/gastown/internal/formula/parallel_test.go",
+      "quarantine/gastown/internal/cmd/done.go"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "StartSession / StopSession",
+      "surface": "Go lifecycle API",
+      "input": "role, session/workdir/agent override/command/env; graceful bool",
+      "output": "runtime start result or error",
+      "lifecycle": "tmux external process; C-c wait then kill",
+      "authority": "configured command/env; runtime-specific approval bypass presets",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "gt sling <bead-or-formula> [target]",
+      "surface": "operator/agent command",
+      "input": "target, vars, formula, force/raw/dry-run flags",
+      "output": "hooked base bead and attached workflow wisp",
+      "lifecycle": "durable assignment before external work completion; rollback on partial spawn failures",
+      "authority": "operator or model shell; force can discard old molecules",
+      "evidence": [
+        "e12"
+      ]
+    },
+    {
+      "name": "gt mol step done <step-id>",
+      "surface": "operator/agent command",
+      "input": "step ID, dry-run/JSON",
+      "output": "closed step, next/parallel/complete/blocked result",
+      "lifecycle": "reads durable readiness; continuation restarts agent; fan-out notices need manual/other-agent work",
+      "authority": "agent declares completion; not independently verified task correctness",
+      "evidence": [
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "gt mail send / Router.Send",
+      "surface": "operator/agent CLI and Go API",
+      "input": "recipient/message body/priority/thread; list/queue/announce/channel/group",
+      "output": "persisted message or validation/write error",
+      "lifecycle": "notification async best-effort; WaitPendingNotifications fences goroutine lifetime only",
+      "authority": "configured address routing/backend; no proof of model reception",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "AcknowledgeDeliveryBead",
+      "surface": "Go mail API",
+      "input": "bead ID, recipient identity, routes",
+      "output": "acked labels or error",
+      "lifecycle": "multiwrite ack-last ordering and retry timestamp reuse",
+      "authority": "recipient/caller claims receipt; not semantic completion",
+      "evidence": [
+        "e9"
+      ]
+    },
+    {
+      "name": "gt nudge <target> --mode wait-idle|queue|immediate",
+      "surface": "operator/agent command",
+      "input": "target/message/priority/DND force",
+      "output": "terminal submission or queue/error",
+      "lifecycle": "prompt detection, cooperative hook/poller; timeout watchers; immediate fallback if queue fails",
+      "authority": "caller force overrides DND; receipt is not model result",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "gt handoff --auto / --cycle",
+      "surface": "operator/agent CLI and compaction hook",
+      "input": "subject/message/stdin/reason",
+      "output": "context mail ID and marker/restart",
+      "lifecycle": "auto can continue after mail failure; cycle requires persistence then native continue/respawn",
+      "authority": "child supplies context/compaction; restart can kill active work",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "gt seance [--talk ID] [-p prompt]",
+      "surface": "operator/agent command",
+      "input": "previous native session ID/prefix, optional question",
+      "output": "one-shot answer stdio or interactive child chat",
+      "lifecycle": "external --fork-session --resume; temporary transcript links cleaned",
+      "authority": "new external model request authority; no context repair in current session implied",
+      "evidence": [
+        "e21"
+      ]
+    },
+    {
+      "name": "gt escalate / ack / close / stale",
+      "surface": "operator/agent command",
+      "input": "description/severity/reason/source/related bead/fingerprint",
+      "output": "tracked escalation bead, per-route statuses",
+      "lifecycle": "dedup+severity mail; ack/close and stale handling; notification status can overclaim",
+      "authority": "model/operator may report blocker; no full state snapshot captured",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "gt done",
+      "surface": "agent command",
+      "input": "completed|deferred|escalated, branch/issue/verify options",
+      "output": "MR/work exit outcome",
+      "lifecycle": "retirement only when durable handoff succeeds; source helper guards push/MR/local strategy",
+      "authority": "worker and configured merge workflow; not refit",
+      "evidence": [
+        "e33",
+        "e34"
+      ]
+    },
+    {
+      "name": "gt feed",
+      "surface": "operator command",
+      "input": "plain/problems/window/time/rig",
+      "output": "curated event/Beads/convoy views",
+      "lifecycle": "live activity monitor, polling and dashboard actions",
+      "authority": "documented exposed monitor; full rendering branch not traced",
+      "evidence": [
+        "e29"
+      ]
+    },
+    {
+      "name": "Daemon.Run",
+      "surface": "service API",
+      "input": "town config/context",
+      "output": "role/process lifecycle and maintenance",
+      "lifecycle": "signal/timer loops; operational accessor rereads disk",
+      "authority": "owns town infrastructure and lifecycle, not consumer-only fabric",
+      "evidence": [
+        "e24",
+        "e25",
+        "e26"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Town rigs/worktree/hooks and per-agent workdir/settings; actual coding tools delegated external harness.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "tmux startup/health/kill, detached nudge poller and predecessor subprocess.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e11",
+        "e21"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Formula TOML and launch-command composition orchestrate external work; no traced model program VM for native tool composition.",
+      "evidence": [
+        "e2",
+        "e12",
+        "e13"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Inspected role controller supplies external agent processes rather than persistent language interpreter.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Beads/Dolt work/mail/identity ledger accessible through CLI; town owns/routs infrastructure, not general shared computation consumer.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real formula attachment and readiness/step completion; fan-out handler marks ready work and prints goroutine notices, then restarts first step. Other steps need separate agents/manual execution.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Runtime presets and per-role/override commands can launch distinct agent/model harnesses; no own provider sampling or model switching protocol inferred.",
+      "evidence": [
+        "e2",
+        "e5"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Concurrent external roles communicate with persistent mail, channels/groups and nudges; asynchronous delivery acknowledgment distinct from answered conversation.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Many external roles/pollers can coexist; specific molecule parallel path does not perform parallel tasks despite comments.",
+      "evidence": [
+        "e1",
+        "e11",
+        "e15"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "DND-aware nudge and queued hooks/poller; wait-idle can fall back to immediate input when queue fails. C-c followed by kill is process stop, not provider quiescence acknowledgment.",
+      "evidence": [
+        "e4",
+        "e10"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Config/presets/hooks/continuation prompts/formula work structure external harness turns; no inspected programmable inner model step.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e12",
+        "e16"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "PreCompact auto/cycle packages state and native --continue succession; underlying agent does actual compaction. Auto mode can write marker despite failed mail.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Bounded handoff state and predecessor fork/resume query can recover information; no traced original-to-current context restoration API.",
+      "evidence": [
+        "e20",
+        "e21"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operational timestamp JSONL plus optional Claude native transcript watcher. Missing workspace drops events; callers ignore errors; no fsync or universal original model/tool I/O capture. Handoff clears terminal scrollback.",
+      "evidence": [
+        "e18",
+        "e27",
+        "e28"
+      ]
+    },
+    "audit_query": {
+      "status": "documented",
+      "basis": "source",
+      "detail": "Feed time/rig/visibility and Beads/convoy monitor plus predecessor discovery/query; inspected entry contract not full query/renderer implementation.",
+      "evidence": [
+        "e21",
+        "e29"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operational accessors reread config, heartbeat reset adopts next interval; launch presets applied when starting/restarting. No default affected-turn/workflow activation fence traced.",
+      "evidence": [
+        "e2",
+        "e24",
+        "e25",
+        "e26"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persist-before-cycle context mail and external --continue respawn, with kill semantics; no compilation/outpost transfer or verified active program/provider request emptiness.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e21"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Town can stream optional conversation logs to external endpoint; owns town database/lifecycle rather than merely consumes externally governed fabric. Federation documented but internals not traced.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e28"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "Inspected formula/config/role mechanisms permit composition; no governed model autoresearch/executable refit loop established.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native severity escalation captures reason/source/related bead/fingerprint and tracks ack/close; does not capture full agent state into external complaint DB. RuntimeNotified can mean async attempted, not observed.",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model/operator CLI access and powerful runtime defaults; built-in Claude/Gemini bypass routine approvals. Force nudge and molecule replacement remain caller powers.",
+      "evidence": [
+        "e5",
+        "e10",
+        "e12"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read tests check restart-command strings, label partial-write semantics and formula readiness. No executed model, tmux successor or actual parallel task oracle.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e32"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Ack-last metadata ordering/retry identity, timer heartbeat and separate async notification; event RFC3339 timestamp not global monotonic sequence or causality.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e26",
+        "e27"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/gastown/README.md",
+      "start": 1,
+      "end": 119,
+      "claim": "Role-based town/worktree orchestration around external coding harnesses; advertised workflows, monitoring and federation."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/gastown/internal/session/lifecycle.go",
+      "start": 144,
+      "end": 228,
+      "claim": "Start resolves agent config, provisions settings and constructs command/env before tmux startup."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/gastown/internal/session/lifecycle.go",
+      "start": 267,
+      "end": 315,
+      "claim": "Startup verifies runtime health and optionally tails Claude conversation to remote logging; external provider loop remains separate."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/gastown/internal/session/lifecycle.go",
+      "start": 355,
+      "end": 378,
+      "claim": "Graceful stop sends C-c then ultimately kills session process tree."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/gastown/internal/config/agents.go",
+      "start": 228,
+      "end": 265,
+      "claim": "Built-in Claude/Gemini launch flags bypass routine permissions; resume/hooks/fork capabilities are runtime-specific."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/gastown/internal/mail/router.go",
+      "start": 863,
+      "end": 890,
+      "claim": "Mail routing selects list/queue/announce/channel/group or single recipient."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/gastown/internal/mail/router.go",
+      "start": 1112,
+      "end": 1208,
+      "claim": "Single message validates and persists via bd; notification scheduled asynchronously and error ignored; ephemeral messages may not sync Git."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/gastown/internal/mail/router.go",
+      "start": 1655,
+      "end": 1698,
+      "claim": "Idle notification submits terminal nudge or queues cooperative boundary delivery; notified count includes queue receipt."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/gastown/internal/mail/delivery.go",
+      "start": 31,
+      "end": 115,
+      "claim": "Delivery acknowledgment writes recipient/time before final ack label and removes pending after ack; retries reuse sole matching timestamp."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/gastown/internal/cmd/nudge.go",
+      "start": 190,
+      "end": 304,
+      "claim": "Default wait-idle checks prompt support; queues and starts non-Claude poller; queue failure can degrade to immediate terminal send; lost session returns error."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/gastown/internal/nudge/poller.go",
+      "start": 31,
+      "end": 98,
+      "claim": "Detached nudge-poller has configured poll/idle intervals, PID tracking and process Release; PID write failure leaves untracked process."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/gastown/internal/cmd/sling.go",
+      "start": 878,
+      "end": 991,
+      "claim": "Sling defaults bare polecat work to formula, guards existing attachment, allows force burning, instantiates then stores base-bead/molecule relationship."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/gastown/internal/formula/parser.go",
+      "start": 13,
+      "end": 115,
+      "claim": "TOML parsing validates workflow/convoy/expansion/aspect types and references; declarative program rather than model-turn interpreter."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/gastown/internal/cmd/molecule_step.go",
+      "start": 95,
+      "end": 177,
+      "claim": "Step done closes durable step then finds readiness and returns/dispatches continue/parallel/done/blocked."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/gastown/internal/cmd/molecule_step.go",
+      "start": 298,
+      "end": 422,
+      "claim": "Continuation respawns pane; fan-out only marks steps in progress, prints notices in goroutines and continues first; no actual parallel work execution."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/gastown/internal/cmd/handoff.go",
+      "start": 98,
+      "end": 128,
+      "claim": "Handoff --auto saves state, --cycle saves and replaces session; hook wiring delegates underlying model compaction."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/gastown/internal/cmd/handoff.go",
+      "start": 378,
+      "end": 432,
+      "claim": "Auto mode collects bounded state, mail failure only warns and marker is written anyway."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/gastown/internal/cmd/handoff.go",
+      "start": 515,
+      "end": 591,
+      "claim": "Cycle requires mail persistence before event/restart, constructs --continue prompt, clears scrollback and respawns pane; no executable rebuild fence."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/gastown/internal/cmd/handoff.go",
+      "start": 342,
+      "end": 372,
+      "claim": "Self succession relies on respawn-pane kill semantics so handoff command survives to issue restart; no active provider/tool emptiness test."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/gastown/internal/cmd/handoff.go",
+      "start": 1467,
+      "end": 1529,
+      "claim": "Collected continuity data combines Git, hook, bounded inbox and work views with failed subprocesses omitted."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/gastown/internal/cmd/seance.go",
+      "start": 208,
+      "end": 277,
+      "claim": "Seance resolves predecessor, temporarily links native session, launches external --fork-session --resume with one-shot or interactive stdio; clears nested-session guard."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/gastown/internal/cmd/escalate.go",
+      "start": 23,
+      "end": 61,
+      "claim": "Exposed severity-routed escalation command with ack/close/stale and fingerprint."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/gastown/internal/cmd/escalate_impl.go",
+      "start": 90,
+      "end": 188,
+      "claim": "Creates deduplicated tracked escalation fields and routed mail; RuntimeNotified=true is set after asynchronous Router.Send and overstates observed notification."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/gastown/internal/daemon/handler.go",
+      "start": 389,
+      "end": 398,
+      "claim": "Rigs and operational config reread from disk by accessor."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/gastown/internal/daemon/daemon.go",
+      "start": 729,
+      "end": 749,
+      "claim": "Daemon signal dispatch processes lifecycle or tracker reload; other signal shuts down."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/gastown/internal/daemon/daemon.go",
+      "start": 829,
+      "end": 843,
+      "claim": "Heartbeat interval is reread operational config after tick; no affected-agent turn fence."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/gastown/internal/events/events.go",
+      "start": 28,
+      "end": 148,
+      "claim": "Timestamped orchestration JSONL has audit/feed visibility and cross-process flock; absent workspace silently drops; writer returns errors without fsync; callers often ignore."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/gastown/internal/agentlog/claudecode.go",
+      "start": 15,
+      "end": 90,
+      "claim": "Opt-in Claude transcript watcher chooses newest eligible native file by time and tails across session replacement; not universal provider audit."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/gastown/internal/cmd/feed.go",
+      "start": 46,
+      "end": 108,
+      "claim": "Exposed feed combines event file, Beads and convoy views; time/rig filters, problems/attach/nudge/handoff documented contract."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/gastown/internal/cmd/handoff_test.go",
+      "start": 349,
+      "end": 405,
+      "claim": "Temporary settings/env test asserts continue flag/custom prompt in constructed restart command; does not spawn real successor."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/gastown/internal/mail/delivery_test.go",
+      "start": 12,
+      "end": 54,
+      "claim": "Pure delivery-label test keeps partial acknowledgments pending until terminal ack label."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/gastown/internal/formula/parallel_test.go",
+      "start": 7,
+      "end": 55,
+      "claim": "Parser/readiness test verifies expected formula dependency and sequential choice; does not execute parallel work."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/gastown/internal/cmd/done.go",
+      "start": 30,
+      "end": 59,
+      "claim": "Done completion/defer/escalate command submits branch to merge queue and retires after durable handoff; underlying coding work external."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/gastown/internal/cmd/done.go",
+      "start": 92,
+      "end": 104,
+      "claim": "Retirement withheld on push/MR failure or local merge strategy."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/gastown/internal/cmd/handoff_test.go",
+      "focus": "Restart continuity command construction",
+      "oracle": "Temp filesystem/settings/env assert --continue and custom prompt in string; does not observe successor context.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gastown/internal/mail/delivery_test.go",
+      "focus": "Partial acknowledgment and retry labels",
+      "oracle": "Pure label parser keeps partial ack pending and exposes recipient/time after final ack; no real crash during bd writes.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/gastown/internal/formula/parallel_test.go",
+      "focus": "Formula graph readiness",
+      "oracle": "Reads template, asserts dependency and selected next sequential step; not real parallel execution.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Persist-before-cycle refusal preserves continuity source when mail fails.",
+    "Acknowledgment labels separate partial state from terminal receipt.",
+    "Native predecessor fork/resume offers a concrete context recovery experiment."
+  ],
+  "limits": [
+    "Molecule fan-out handler supplies readiness and notices, not execution of parallel work.",
+    "Escalation RuntimeNotified status can overclaim asynchronous best-effort mail notification.",
+    "Town succession kills/respawns external harness rather than performing compile refit; audit is selective and runtime-dependent."
+  ],
+  "arconaut_questions": [
+    "How can Arconaut package predecessor access as inspectable context repair without opaque fork side effects?",
+    "Which mailbox/model-consumption statuses should be distinct and causally linked?",
+    "Can executable continuity be proved independently of terminal readiness and workflow status labels?"
+  ]
+}

@@ -1,0 +1,494 @@
+{
+  "id": "smolagents",
+  "kind": "code-action/tool-calling agent framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous multi-step generators, provider adapters, local AST interpreter state, threaded tool calls and optional remote Jupyter executors.",
+    "service_boundary": "Owns Python agent memory/state and default local or created remote executor; consumes model/tool/MCP dependencies. Docker executor creates/cleans its kernel/container, rather than leasing an existing shared kernel."
+  },
+  "summary": "Python code is a native agent action combining tools, managed agents and arbitrary authorized computation across retained executor variables.",
+  "inspection": {
+    "files": [
+      "quarantine/smolagents/src/smolagents/agents.py",
+      "quarantine/smolagents/src/smolagents/local_python_executor.py",
+      "quarantine/smolagents/src/smolagents/remote_executors.py",
+      "quarantine/smolagents/src/smolagents/memory.py",
+      "quarantine/smolagents/tests/test_local_python_executor.py",
+      "quarantine/smolagents/tests/test_agents.py"
+    ],
+    "scope": "MultiStepAgent run/finalize, CodeAgent/tool dispatch, local timeout/state, Docker kernel ownership, memory/export and source oracles",
+    "limits": "No downloaded code/tests run; no full provider/MCP or isolation conformance assessment. AST restrictions are not treated as a security sandbox."
+  },
+  "actions": [
+    {
+      "name": "run / interrupt",
+      "surface": "operator/program agent API",
+      "input": "task/images/additional_args/reset/max_steps/stream",
+      "output": "final answer or RunResult, streamed steps",
+      "lifecycle": "interrupt between steps; reset chat/monitor but preserves executor state",
+      "authority": "caller owns model/tool/executor configuration",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "name": "python_interpreter / final_answer",
+      "surface": "native model code action",
+      "input": "parsed Python program with tool/agent calls and state variables",
+      "output": "CodeOutput/output/logs/final-answer signal or AgentExecutionError",
+      "lifecycle": "stateful per executor; logs/output capped; no atomic state rollback on failure",
+      "authority": "authorized imports/functions/tools; local AST interpreter not security sandbox",
+      "evidence": [
+        "e3",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "execute_tool_call / process_tool_calls",
+      "surface": "model tool/managed-agent dispatcher",
+      "input": "tool name/arguments possibly state reference",
+      "output": "typed native value/observation/error; media stored in agent state",
+      "lifecycle": "parallel future completion; retained order ID-sorted",
+      "authority": "known tools/agents, argument validation/sanitize native I/O",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "managed_agent.__call__",
+      "surface": "model callable delegated agent",
+      "input": "task and kwargs",
+      "output": "rendered report plus optional truncated summary",
+      "lifecycle": "synchronous agent run; separate model permitted; remote executor disallows",
+      "authority": "configured registered agent name, no peer room protocol",
+      "evidence": [
+        "e5",
+        "e9",
+        "e13"
+      ]
+    },
+    {
+      "name": "LocalPythonExecutor.send_variables / send_tools / __call__",
+      "surface": "supplied code executor API",
+      "input": "variables/tools and Python string",
+      "output": "CodeOutput with final flag/log/output",
+      "lifecycle": "resident state survives calls until object destroyed; timeout not hard kill",
+      "authority": "host functions/import whitelist configurable including broad authority",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "DockerExecutor.run_code_raise_errors / cleanup",
+      "surface": "supplied remote executor lifecycle",
+      "input": "Python code or cleanup",
+      "output": "Jupyter outputs/error; kernel/container identity",
+      "lifecycle": "creates own kernel, per-call websocket; cleanup stop/remove",
+      "authority": "operator config/host Docker authority; not shared-kernel consumer lease",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "step_callbacks / final_answer_checks / get_full_steps / save",
+      "surface": "program customization/evaluation/inspection/export",
+      "input": "callback/check functions, agent state or output directory",
+      "output": "mutations/check verdicts, step dicts, agent/tool code/config artifacts",
+      "lifecycle": "finalize each step, checks before finish; export ignores callbacks/checks, no heap checkpoint",
+      "authority": "operator-supplied host callbacks and final policy",
+      "evidence": [
+        "e2",
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authorized imports/local tool callables can expose host filesystem; remote code uses created container kernel. No default general coding filesystem tool inferred.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authorized host functions/imports or remote kernel can start programs; only executor container ownership/cleanup traced, no native durable child registry.",
+      "evidence": [
+        "e6",
+        "e9",
+        "e10"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native CodeAgent python_interpreter action parses Python and composes tool/managed-agent calls, variables and final_answer; JSON tool agent separate.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e6"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "AST state persists across steps and conversation reset does not clear executor state; created remote Jupyter kernel persists until cleanup. No restart/shared multi-consumer lease or heap restore.",
+      "evidence": [
+        "e1",
+        "e6",
+        "e9",
+        "e10"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Resident memory/variables and pluggable tools can access DB; no general standing database supplied by these paths.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model Python code programs control flow and tools/managed agents; per-step callbacks and optional planning/retry/final-answer checks program the agent.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e13",
+        "e15"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Managed agent objects can use separate models and are callable as tools; remote-code path excludes managed agents.",
+      "evidence": [
+        "e5",
+        "e9",
+        "e13"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Managed-agent task/report is synchronous delegation, with bounded report summaries; selected implementation no peer mail/room steering. Remote-code delegation explicitly restricted.",
+      "evidence": [
+        "e5",
+        "e9",
+        "e13"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "JSON tools/managed calls ThreadPoolExecutor runs independent calls, completion-order yields; no transaction settlement across external effects.",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Interrupt switch checked between steps; timeout future cannot kill running Python thread and executor context waits shutdown. Tests do not prove deadline return or external effect stop.",
+      "evidence": [
+        "e2",
+        "e8",
+        "e16"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Step callbacks receive mutable agent at finalize; planning/check policies and Python model actions configurable. No before-provider transform/hot turn-definition protocol traced.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e15"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "summary_mode projects messages omitting model/planning content and managed reports truncate; not managed compaction event with archived context lineage.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mutable memory full steps and callbacks can reconstruct/change model context; reset clears stored steps and no corruption-repair protocol.",
+      "evidence": [
+        "e2",
+        "e12",
+        "e15"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "ActionStep includes model inputs/outputs/code and full-step export, but logs/output already truncated and reset deletes memory; model_output may be augmented closing tag, not untouched raw response.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e11",
+        "e12"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "get_full_steps/get_succinct_steps and replay/return_full_code expose structured per-run inspection; not persistent everything-query DB.",
+      "evidence": [
+        "e11",
+        "e12"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python tool/agent dictionaries and finalize callback supply ordinary mutable machinery; executor tools sent at each run. No atomic live deployment/reload protocol established.",
+      "evidence": [
+        "e1",
+        "e5",
+        "e15"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Save/from_dict exports agent code/configuration; callbacks/checks explicitly ignored and resident memory/executor heap omitted. No outpost refit/active work drain.",
+      "evidence": [
+        "e9",
+        "e13",
+        "e14"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Remote executor choices and provider/native tool objects consume services; Docker/Jupyter lifecycle is agent-owned here.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e9",
+        "e10"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Code actions/callbacks/checks/export are ingredients for experiments, not a wired candidate harness evaluation/adoption loop.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "AgentError plus code/input/output/timing/step IDs provide diagnostics; no standing complaint table/state snapshot filing.",
+      "evidence": [
+        "e2",
+        "e11"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Allowed tools/imports/functions and argument validation; local executor explicitly not security sandbox, remote executor restrictions different. No routine approval pipeline seen in native code path.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Final-answer checks can inspect memory/agent state and force retry; timeout/AST/reset tests actual numerical/error/step assertions but no semantic validity of arbitrary check.",
+      "evidence": [
+        "e2",
+        "e16"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Step timings/numbers and tool IDs; threaded effects execute completion order while persisted observations sorted IDs; no durable effect ordering/settlement.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e11"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 436,
+      "end": 500,
+      "claim": "Run retains state/additional args and passes tools/variables to executor; reset clears conversation/monitor, not local executor state."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 540,
+      "end": 625,
+      "claim": "Step loop checks interrupt only before step, optional planner; error/finalize callback then append; final-answer callbacks assert and agent retries on failure."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 1647,
+      "end": 1754,
+      "claim": "CodeAgent records model input/output, parses/fixes code action, invokes python_interpreter, records logs and truncated output observation."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 1361,
+      "end": 1439,
+      "claim": "JSON tools including managed agents execute in thread pool; futures yield completion order then retained calls/observations sorted by ID."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 1444,
+      "end": 1502,
+      "claim": "Tool-name validation, state-reference argument substitution, validation and sanitized native or managed-agent call; errors converted into agent execution diagnostics."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/smolagents/src/smolagents/local_python_executor.py",
+      "start": 1688,
+      "end": 1768,
+      "claim": "Local executor keeps state/custom tools/import permissions across calls, explicitly not security sandbox, configured print cap and timeout."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/smolagents/src/smolagents/local_python_executor.py",
+      "start": 1637,
+      "end": 1669,
+      "claim": "AST operations mutate live state; print capture truncated before return/errors; timeout wrapper around execution without transactional rollback."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/smolagents/src/smolagents/local_python_executor.py",
+      "start": 285,
+      "end": 319,
+      "claim": "Timeout uses future.result inside ThreadPoolExecutor context; running thread cannot be force-killed. Context manager exit waits worker by ordinary executor semantics, so timeout exception alone does not establish prompt hard stop."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 1593,
+      "end": 1620,
+      "claim": "Executor selectable local/blaxel/e2b/modal/docker; cleanup called; managed agents explicitly unsupported with remote code execution."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/smolagents/src/smolagents/remote_executors.py",
+      "start": 623,
+      "end": 704,
+      "claim": "Docker executor builds/starts own container, new authenticated Jupyter kernel and websocket calls; cleanup stops/removes container."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/smolagents/src/smolagents/memory.py",
+      "start": 53,
+      "end": 101,
+      "claim": "ActionStep stores inputs/output/code/tool calls/error/timing/state projection; serialization sanitizes values and images raw bytes, not universal transport/effect archive."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/smolagents/src/smolagents/memory.py",
+      "start": 214,
+      "end": 250,
+      "claim": "Memory is resident step list, reset deletes it; full/succinct exported steps and pretty replay are inspection, not replaying effects."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 868,
+      "end": 912,
+      "claim": "Managed agent renders task/report and optional bounded work summary; save exports tools/agent/prompts/UI/requirements code artifacts."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 970,
+      "end": 1009,
+      "claim": "to_dict serializes configuration/tool code/provider configuration and ignores callbacks/final-answer checks; not live memory/kernel checkpoint."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/smolagents/src/smolagents/agents.py",
+      "start": 416,
+      "end": 434,
+      "claim": "Step callback registry accepts per-step class callbacks; caller receives agent at finalize for normal-operation mutation."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/smolagents/tests/test_local_python_executor.py",
+      "start": 2180,
+      "end": 2255,
+      "claim": "Timeout tests assert eventual error and completion/thread finished within generous bound, not deadline latency/no post-timeout side effects."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/smolagents/tests/test_local_python_executor.py",
+      "focus": "AST state/tool protection and threaded timeout mechanics",
+      "oracle": "Exact state/result/error tests plus timeout/thread join assertions. Timeout tests require eventual exception and thread completion, but do not measure prompt deadline nor prove killed worker/effects; source uses waiting executor context.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/smolagents/tests/test_agents.py",
+      "focus": "chat reset and final-answer validation retry",
+      "oracle": "Fake models produce exact number 7.2904, assert memory step counts 3/5/3 with reset, rejecting check diagnostics and accepted final step count. Does not prove reset clears interpreter variables or arbitrary answer correctness.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Code combines tool calls/control flow/variables natively instead of one JSON action per operation.",
+    "ActionStep retains rich request/code/result structure and checks/callbacks have actual agent access.",
+    "Interpreter and remote kernel boundaries visible and local non-sandbox claim explicit."
+  ],
+  "limits": [
+    "Thread future timeout is not a kill boundary and context-manager shutdown may delay exception until worker completion; tests lack hard latency/effect oracle.",
+    "Conversation reset does not reset executor state; exported agent code/config does not checkpoint heap or callback policy.",
+    "Owned remote kernels/cleanup and managed-agent restrictions differ from shared fabric consumers."
+  ],
+  "arconaut_questions": [
+    "How should logical turn reset, model-context reset and external computation-state reset be independent named operations?",
+    "Can code actions retain uncapped original output and exact source/generated transforms while offering bounded model views?",
+    "What executable refit barrier proves worker settlement beyond timeout exceptions?"
+  ]
+}

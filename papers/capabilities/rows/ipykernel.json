@@ -1,0 +1,322 @@
+{
+  "id": "ipykernel",
+  "kind": "Python execution kernel service",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Jupyter messages over ZMQ with separate control thread; Python/IPython shell, asyncio execution and optional threaded subshells.",
+    "service_boundary": "Kernel is an independent computation service; a harness should consume its protocol rather than infer ownership from locality."
+  },
+  "summary": "Persistent code execution, rich replies, history queries and separate control channel; restart continuity is not live-object persistence.",
+  "inspection": {
+    "files": [
+      "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "quarantine/ipykernel/ipykernel/kernelbase.py",
+      "quarantine/ipykernel/ipykernel/subshell_manager.py",
+      "quarantine/ipykernel/tests/test_kernel.py",
+      "quarantine/ipykernel/tests/test_subshells.py"
+    ],
+    "scope": "Read namespace initialization, execute/result handling, SIGINT and shutdown, history dispatch, subshell manager and selected tests.",
+    "limits": "IPython/Jupyter client dependencies are not independently audited; arbitrary native/foreign code cancellation and serialization not established."
+  },
+  "actions": [
+    {
+      "name": "execute_request",
+      "surface": "supplied primitive",
+      "input": "Code, silent/store_history/allow_stdin, cell metadata and user expressions",
+      "output": "execute_reply status, counter, values/errors and IOPub payloads",
+      "lifecycle": "Persistent shell; async or blocking execution.",
+      "authority": "Authorized kernel client; host-process code authority",
+      "evidence": [
+        "execute",
+        "reply"
+      ]
+    },
+    {
+      "name": "history_request",
+      "surface": "supplied primitive",
+      "input": "Tail/range/search, raw/output flags, session/range/pattern",
+      "output": "Stored code/history tuples",
+      "lifecycle": "Synchronous manager lookup exposed through reply.",
+      "authority": "Kernel client",
+      "evidence": [
+        "history"
+      ]
+    },
+    {
+      "name": "interrupt_request / shutdown_request",
+      "surface": "supplied primitive",
+      "input": "Interrupt or restart flag",
+      "output": "Addressed control reply; loops stop on shutdown",
+      "lifecycle": "Interrupt best effort; shutdown settles protocol but does not snapshot values.",
+      "authority": "Kernel control client",
+      "evidence": [
+        "interrupt",
+        "shutdown"
+      ]
+    },
+    {
+      "name": "create/list/delete subshell requests",
+      "surface": "supplied primitive",
+      "input": "Subshell identity and control operation",
+      "output": "Thread-backed execution route or unknown-subshell error",
+      "lifecycle": "Independent route, shared kernel lifetime.",
+      "authority": "Kernel client",
+      "evidence": [
+        "subshell"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python cells and user expressions are executable request payloads with structured values/errors.",
+      "evidence": [
+        "execute"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Same shell retains namespace across requests until process/environment restart; no arbitrary-object serialization promised.",
+      "evidence": [
+        "namespace"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "IPython history_manager is accessible through Python, but a standing application/evidence DB service contract was not established by kernel protocol paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Client programs can compose execution/history/control requests; agent turns and workflow ownership belong to consumer.",
+      "evidence": [
+        "execute"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Optional subshell threads permit overlapping execution in the same kernel; shared namespace is not isolated agent ownership.",
+      "evidence": [
+        "subshell"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Separate control path sends signal and main-thread async cancellation; subshells cannot install the same signal handler, native blocking code need not stop promptly.",
+      "evidence": [
+        "interrupt",
+        "signal_async"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Store-history is optional and history queries expose shell code/output history; this is not all original message bytes, stream outputs or provider activity.",
+      "evidence": [
+        "execute",
+        "history"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "History tail/range/search of stored code and optional outputs; not complete original provider/IO corpus.",
+      "evidence": [
+        "history"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executed Python can change functions and variables in the existing namespace; transactionally activating harness programs after a turn is consumer machinery.",
+      "evidence": [
+        "namespace",
+        "execute"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Shutdown/restart flag stops loops; namespace/data migration and harness re-inhabitation are not supplied by this path.",
+      "evidence": [
+        "shutdown"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Independent Jupyter message kernel is a service boundary; remote transport security and reconnect client state are not fully traced here.",
+      "evidence": [
+        "subshell"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python code executes with kernel process authority; exposed client/model approvals must be designed outside the kernel.",
+      "evidence": [
+        "execute"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inspected tests assert exported Unicode history and concurrent shared-variable relations; interrupt test primarily asserts eventual addressed reply.",
+      "evidence": [
+        "reply"
+      ]
+    },
+    "time_order": {
+      "status": "na",
+      "basis": "role",
+      "detail": "time_order: this reference supplies Python execution kernel service; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "namespace",
+      "path": "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "start": 98,
+      "end": 152,
+      "claim": "User namespace is assigned to a persistent IPython shell."
+    },
+    {
+      "id": "execute",
+      "path": "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "start": 374,
+      "end": 439,
+      "claim": "Code is transformed and dispatched to blocking or asynchronous IPython cell runner with optional history."
+    },
+    {
+      "id": "reply",
+      "path": "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "start": 470,
+      "end": 507,
+      "claim": "Reply includes error traceback/type/value, execution counter, user expressions and partial payloads."
+    },
+    {
+      "id": "interrupt",
+      "path": "quarantine/ipykernel/ipykernel/kernelbase.py",
+      "start": 1097,
+      "end": 1132,
+      "claim": "Interrupt sends SIGINT to process or process group on POSIX; Windows message interrupt unsupported here."
+    },
+    {
+      "id": "shutdown",
+      "path": "quarantine/ipykernel/ipykernel/kernelbase.py",
+      "start": 1134,
+      "end": 1170,
+      "claim": "Shutdown reply carries restart flag, then stops control and shell loops; not namespace snapshot."
+    },
+    {
+      "id": "history",
+      "path": "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "start": 612,
+      "end": 646,
+      "claim": "Tail/range/search dispatch to history manager, with raw/output flags."
+    },
+    {
+      "id": "subshell",
+      "path": "quarantine/ipykernel/ipykernel/subshell_manager.py",
+      "start": 36,
+      "end": 113,
+      "claim": "Manager owns subshell thread/socket lifetime and serializes cache mutations/sends; control thread routes separately."
+    },
+    {
+      "id": "signal_async",
+      "path": "quarantine/ipykernel/ipykernel/ipkernel.py",
+      "start": 320,
+      "end": 368,
+      "claim": "SIGINT cancels async future in main thread; subshells cannot use that signal handler."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/ipykernel/tests/test_kernel.py",
+      "focus": "Unicode history export and signal/message interruption of input().",
+      "oracle": "History file must contain exact source including abc\u00fe; interrupt test validates execute_reply parent ID, not completeness of stdout or foreign-call termination.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ipykernel/tests/test_subshells.py",
+      "focus": "Overlapping subshell execution with shared variables.",
+      "oracle": "Barrier/sleep assertions establish expected overlap and execute_reply status; time-sensitive test is skipped under coverage.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "An explicit computation consumer/service boundary and structured execution identity.",
+    "Separate control traffic and history retrieval are useful even without agent machinery."
+  ],
+  "limits": [
+    "Kernel history is narrower than a complete original audit.",
+    "Interrupt acknowledgement and restart flags cannot be treated as universal cancellation or memory continuity."
+  ],
+  "arconaut_questions": [
+    "How does a harness pause only its requests and standing programs while other clients continue using a shared kernel?",
+    "What values/handles must be serialized or reacquired independently of the kernel process?"
+  ]
+}

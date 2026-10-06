@@ -1,0 +1,138 @@
+{
+  "recorded_at": "2026-10-01T07:22:29.269859+00:00",
+  "sources": [
+    {
+      "name": "Darwin SDK execve(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/execve.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-execve.2",
+      "sha256": "551d9ae27d03112b9db14479fe283e16f9bcd722868ce43e8861adcc6fe2d770",
+      "bytes": 9141,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK wait(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/wait.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-wait.2",
+      "sha256": "2178648ce5091cba439ca601216ec3f368ed64487f91385f68b65e7b5e5e5409",
+      "bytes": 8764,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK fcntl(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/fcntl.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-fcntl.2",
+      "sha256": "cbb0c4e1e2778eb1c7be8ccca7bbdb7c4e5e73c41b5823118992441d540fd205",
+      "bytes": 28079,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK recv(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/recv.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-recv.2",
+      "sha256": "03cfc49cde9a7378497501af3d914e1b9ebe4feaa7bf7ba3c682307092467040",
+      "bytes": 9980,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK pipe(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/pipe.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-pipe.2",
+      "sha256": "e1b9d9e1a50a8dbaf504d7e691680672054bd9e491b80173ef39644952b8940b",
+      "bytes": 3842,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK kill(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/kill.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-kill.2",
+      "sha256": "6c16952e8d776338a5d57b182734b72e1ef4772fc8e5e58ce720841776ba8a3e",
+      "bytes": 4811,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK kqueue(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/kqueue.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-kqueue.2",
+      "sha256": "48302f5a7c664d9323dca51593253a30e7263161a6ea514fcb89cdcedd03d2a4",
+      "bytes": 23602,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK fsync(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/fsync.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-fsync.2",
+      "sha256": "2399c28e11ea3a1e71b85d0002ac96b540372d405926657a101025f70ae10006",
+      "bytes": 4187,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "Darwin SDK write(2)",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/write.2",
+      "destination": "papers/platform/refit-custody-2026-10-01/darwin-write.2",
+      "sha256": "c901c9512813ba2542a4ab3cf59414a73a992e6865c07fbea7ca251cd2bd5bad",
+      "bytes": 9233,
+      "provenance": "Installed Apple Xcode macOS SDK primary manual; not current-kernel runtime qualification"
+    },
+    {
+      "name": "POSIX.1-2024 recvmsg",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/recvmsg.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-recvmsg.html",
+      "sha256": "f7281e904b0aad16c0b054cf56499faf314a85b85835530fd33b03d23f5ca456",
+      "bytes": 13840,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 sendmsg",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/sendmsg.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-sendmsg.html",
+      "sha256": "f670e8542ae647d4597cc51a4792806bc3a38a4e749db88a962ec7eef2ae7595",
+      "bytes": 13732,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 exec",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/exec.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-exec.html",
+      "sha256": "48155c576661c580a239e2291190244a8e3145b0493cdcae62dc7a58b2d6b938",
+      "bytes": 57832,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 write",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/write.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-write.html",
+      "sha256": "1b45e6a71f8bc9bff702da5633d42c88fd927c1d0efc5bafe7a939d23eb66e6a",
+      "bytes": 31921,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 wait",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/wait.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-wait.html",
+      "sha256": "8c9d5d9bf54b098e460832d466503567376fdd61d24cbef0d461389d113a36e5",
+      "bytes": 36271,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 kill",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/kill.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-kill.html",
+      "sha256": "779bf66b859e9d5f10c5adc4ccac0afb2b1088daa3eaaa81a22e40751f1a0cc2",
+      "bytes": 15293,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    },
+    {
+      "name": "POSIX.1-2024 pipe",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/pipe.html",
+      "destination": "papers/platform/refit-custody-2026-10-01/posix-pipe.html",
+      "sha256": "d8425cee340fdacb4f8b3db37a7ed1bced59e9b8227aed4a0cff387ced8d81f4",
+      "bytes": 12561,
+      "provenance": "Primary POSIX Issue 8 function contract"
+    }
+  ],
+  "apple_sdk": {
+    "version": "26.2",
+    "canonical_name": "macosx26.2",
+    "settings_source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json"
+  }
+}

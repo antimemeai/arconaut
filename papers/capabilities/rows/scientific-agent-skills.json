@@ -1,0 +1,383 @@
+{
+  "id": "scientific-agent-skills",
+  "kind": "scientific skill pack with executable helpers",
+  "runtime": {
+    "languages": [
+      "Markdown",
+      "Python"
+    ],
+    "execution": "Host agent discovers SKILL.md; selected helper scripts are normal Python processes. Autoskill explicitly composes local observation, embedding and LLM services.",
+    "service_boundary": "Consumes host execution/skills, public databases and user-managed screenpipe/LLM endpoints; supplies no coding-agent turn loop."
+  },
+  "summary": "181 scientific skills, references, scripts and a workflow-derived skill drafting primitive",
+  "inspection": {
+    "files": [
+      "quarantine/scientific-agent-skills/plugin.json",
+      "quarantine/scientific-agent-skills/skills/database-lookup/SKILL.md",
+      "quarantine/scientific-agent-skills/skills/autoskill/scripts/match_skills.py",
+      "quarantine/scientific-agent-skills/skills/autoskill/scripts/run.py",
+      "quarantine/scientific-agent-skills/skills/autoskill/scripts/synthesize.py",
+      "quarantine/scientific-agent-skills/skills/autoskill/scripts/promote.py",
+      "quarantine/scientific-agent-skills/skills/autoskill/scripts/backends.py",
+      "quarantine/scientific-agent-skills/skills/autoskill/SKILL.md",
+      "quarantine/scientific-agent-skills/skills/pydicom/scripts/uid_mapping_validator.py",
+      "quarantine/scientific-agent-skills/tests/autoskill/test_e2e.py",
+      "quarantine/scientific-agent-skills/tests/autoskill/test_promote.py"
+    ],
+    "scope": "plugin metadata, database-lookup contract, autoskill discovery/provider/synthesis/staging/promotion and deterministic fake-service tests; representative DICOM UID validation",
+    "limits": "Catalog breadth inventoried, not every helper manually traced. Host dispatch/compaction/audit enforcement are outside pack."
+  },
+  "actions": [
+    {
+      "name": "SKILL.md frontmatter / load_skill_descriptions(skills_dir)",
+      "surface": "Host skill catalog and autoskill Python discovery",
+      "input": "Directory of */SKILL.md name/description",
+      "output": "Selected skill guidance or list used for cosine similarity",
+      "lifecycle": "On file read/load; no host reload scheduling contract",
+      "authority": "Host loader and autoskill client filesystem authority",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "database-lookup retrieval contract",
+      "surface": "Authored public API workflow",
+      "input": "Named database, entity IDs, filters, completeness/count/pagination requirements",
+      "output": "Bounded API results plus endpoints/params/access date/count reconciliation",
+      "lifecycle": "External API request/response; no persistent interpreter or standing app DB",
+      "authority": "Read/Bash frontmatter; authored confirmation thresholds; host enforces authority",
+      "evidence": [
+        "e2"
+      ]
+    },
+    {
+      "name": "autoskill.run(config, start_time, end_time, ...)",
+      "surface": "Executable observation→proposal helper",
+      "input": "Screenpipe client/token, time window, embedding/LLM backend and skills/output directories",
+      "output": "Timestamped plan/report and staged new-skills/composition-recipes folders",
+      "lifecycle": "On-demand synchronous run; dry-run stops after clustering; no resident auto loop",
+      "authority": "User-triggered in skill contract; calls separately managed services",
+      "evidence": [
+        "e4",
+        "e8"
+      ]
+    },
+    {
+      "name": "autoskill.synthesize(cluster, top_k_skills, backend)",
+      "surface": "Executable model request and parse",
+      "input": "Redacted cluster and candidate descriptions",
+      "output": "reuse target or compose/novel valid-name nonempty SKILL.md draft",
+      "lifecycle": "One selected backend call per cluster, response schema validation",
+      "authority": "Backend credential/endpoint selected by invoking client",
+      "evidence": [
+        "e5",
+        "e7"
+      ]
+    },
+    {
+      "name": "autoskill.promote(proposed_path, skills_dir, name)",
+      "surface": "Executable staged file move",
+      "input": "Proposal directory, target catalog and name",
+      "output": "Moved skill folder; existing target rejected",
+      "lifecycle": "Filesystem promotion; no quality eval, rollback or in-flight host redefinition",
+      "authority": "Explicit CLI/client invocation; host activation unspecified",
+      "evidence": [
+        "e6"
+      ]
+    },
+    {
+      "name": "uid_mapping_validator.validate_mapping(...)",
+      "surface": "Executable scientific-data validator",
+      "input": "Bounded map, optional key/scope and2.25 requirement",
+      "output": "Aggregate error_codes/counts/ok; no UIDs emitted",
+      "lifecycle": "One call, no network; validates map consistency, not dataset completeness",
+      "authority": "Caller files/key; host invocation needed",
+      "evidence": [
+        "e9"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Helper machinery reads skill directories and writes/moves staged drafts; not a general model file dispatcher.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable Python helpers and authored code workflows compose external APIs; underlying host grants execution.",
+      "evidence": [
+        "e4",
+        "e7",
+        "e9"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "limited",
+      "basis": "documentation",
+      "detail": "Public database lookup guidance consumes external corpora; it supplies neither model-owned standing DB nor generic query engine.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Autoskill composes an executable pipeline with injectable clients/backend/embedder; broader science workflows are skill instructions, not a new agent scheduler.",
+      "evidence": [
+        "e4"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Autoskill chooses local OpenAI-compatible, Anthropic or Foundry backend; no live multi-model peer coordination.",
+      "evidence": [
+        "e7"
+      ]
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Database skill prescribes provenance; autoskill writes reduced reports/proposals after redaction/clustering, not all original observations/model IO.",
+      "evidence": [
+        "e2",
+        "e4"
+      ]
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Consumes independently managed screenpipe and LLM endpoints, plus documented public database APIs; does not control their continuity.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e7",
+        "e8"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Dedicated observe→draft→promote skill machinery exists; output shape and staging are checked, but no performance experiment, harness modification or autonomous acceptance criterion.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6",
+        "e10"
+      ]
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this scientific skill pack with executable helpers role: the reference supplies 181 scientific skills, references, scripts and a workflow-derived skill drafting primitive rather than an agent execution engine.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Per-skill allowed-tools and authored user-triggered observation/remote choices; runtime enforcement belongs to host.",
+      "evidence": [
+        "e2",
+        "e8"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Offline fake-service tests verify pipeline artifacts and promotion; DICOM helper checks domain mapping invariants. No oracle establishes proposed skill usefulness.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Autoskill converts observation timestamps and creates UTC-named proposal windows; no event-clock/paused-time semantics.",
+      "evidence": [
+        "e4"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/scientific-agent-skills/plugin.json",
+      "start": 1,
+      "end": 22,
+      "claim": "Plugin metadata identifies scientific skill pack."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/scientific-agent-skills/skills/database-lookup/SKILL.md",
+      "start": 1,
+      "end": 38,
+      "claim": "Frontmatter discovery and bounded public database retrieval/provenance contract, not a resident DB."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/scripts/match_skills.py",
+      "start": 5,
+      "end": 46,
+      "claim": "Directory frontmatter description discovery and cosine top-k matching."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/scripts/run.py",
+      "start": 68,
+      "end": 132,
+      "claim": "Fetch/redact/segment/cluster/match/synthesize writes proposals and report; dry-run avoids synthesis."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/scripts/synthesize.py",
+      "start": 57,
+      "end": 79,
+      "claim": "LLM output validates verdict/name/nonempty body, not skill behavior."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/scripts/promote.py",
+      "start": 14,
+      "end": 32,
+      "claim": "Promotion moves a staged folder, refuses existing target; no evaluation/host activation mechanism."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/scripts/backends.py",
+      "start": 50,
+      "end": 116,
+      "claim": "Single-request Claude/Foundry and OpenAI-compatible local LLM adapters; selection is not collaboration."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/scientific-agent-skills/skills/autoskill/SKILL.md",
+      "start": 28,
+      "end": 51,
+      "claim": "User-triggered observation/draft workflow, local screenpipe, redacted summaries and opt-in remote backend."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/scientific-agent-skills/skills/pydicom/scripts/uid_mapping_validator.py",
+      "start": 57,
+      "end": 143,
+      "claim": "Bounded UID mapping checks syntax, uniqueness, standard UID protection and optional keyed derivation; aggregate result explicitly not deidentification proof."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/scientific-agent-skills/tests/autoskill/test_e2e.py",
+      "start": 146,
+      "end": 199,
+      "claim": "Offline fake services check specific cluster/report and staged draft outcomes; do not test improvement effectiveness."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/scientific-agent-skills/tests/autoskill/test_promote.py",
+      "start": 16,
+      "end": 60,
+      "claim": "Literal folder move/content preservation/missing proposal oracles."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/scientific-agent-skills/tests/autoskill/test_e2e.py",
+      "focus": "Offline observation/redaction/clustering/matching/draft pipeline",
+      "oracle": "Deterministic fake OCR/LLM/embedding check known surviving patterns and exact staged draft paths. Does not establish real-world detection or generated skill quality.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/scientific-agent-skills/tests/autoskill/test_promote.py",
+      "focus": "Proposal move and content preservation",
+      "oracle": "Literal path/content/presence and explicit failure checks; no host activation or effectiveness oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Concrete proposal pipeline with injectable dependencies and offline literal oracles.",
+    "Scientific helpers can expose aggregate invariant failures rather than plausible prose."
+  ],
+  "limits": [
+    "Skill discovery does not imply host execution/reload/authority enforcement.",
+    "Promotion is a file move; no comparative evaluation of proposed skills or harness self-refit."
+  ],
+  "arconaut_questions": [
+    "Can workflow-derived proposal machinery feed model-governed autodroit experiments with independent performance oracles?",
+    "How should scientific helper provenance be captured at original request/response scope while consumer services remain independent?"
+  ]
+}

@@ -1,0 +1,566 @@
+{
+  "id": "hermes-agent",
+  "kind": "persistent extensible Python agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous conversation loop, daemon tool/child pools, per-owner Python session kernels and gateway background routing.",
+    "service_boundary": "Consumes model/SSH/container/MCP services; owns local kernels, process registry, SQLite transcript and plugin tasks. This local ownership differs from Arconaut shared-service consumption."
+  },
+  "summary": "Strong non-destructive transcript compaction, programmable context-engine selection, live child steering and real persistent Python; abandoning tool threads is not resource settlement.",
+  "inspection": {
+    "files": [
+      "quarantine/hermes-agent/agent/turn_facade.py",
+      "quarantine/hermes-agent/agent/tool_executor.py",
+      "quarantine/hermes-agent/agent/conversation_loop.py",
+      "quarantine/hermes-agent/tools/code_kernel.py",
+      "quarantine/hermes-agent/tools/code_execution_tool.py",
+      "quarantine/hermes-agent/tools/terminal_tool_background.py",
+      "quarantine/hermes-agent/tools/delegate_tool_config.py",
+      "quarantine/hermes-agent/tools/delegate_tool_child_run.py",
+      "quarantine/hermes-agent/tools/delegate_tool_registry.py",
+      "quarantine/hermes-agent/tools/session_search_tool.py",
+      "quarantine/hermes-agent/hermes_state_messages.py",
+      "quarantine/hermes-agent/hermes_cli/plugins.py",
+      "quarantine/hermes-agent/agent/curator.py",
+      "quarantine/hermes-agent/tests/tools/test_code_kernel.py",
+      "quarantine/hermes-agent/tests/hermes_state/test_compression_watermark_commit.py"
+    ],
+    "scope": "Traced actual turn facade/loop context hooks, commit-before-project tools, kernel namespace/destruction, remote fallback, delegation credentials/control, background process routing, SQLite compaction and curator fork.",
+    "limits": "Source study only; no acquired code executed. Not every gateway, provider, approval rule or community plugin traced; no universal absence claims."
+  },
+  "actions": [
+    {
+      "name": "execute_code / reset",
+      "surface": "model tool",
+      "input": "Python code, enabled-tools scope, reset",
+      "output": "output/status/kernel execution count and tool results",
+      "lifecycle": "persistent owner namespace; timeout/interrupt destroys it; remote spawn failure changes to per-call mode",
+      "authority": "model execution guard and configured project/strict/backend scope",
+      "evidence": [
+        "namespace",
+        "kernel",
+        "remote",
+        "entry"
+      ]
+    },
+    {
+      "name": "terminal background / process routing",
+      "surface": "model tools",
+      "input": "command/cwd/PTY, notification/watch flags",
+      "output": "tracked session handle, output and completion routing",
+      "lifecycle": "background survives turn when permitted; finite hosts require polling",
+      "authority": "owner/task registry; local or remote environment",
+      "evidence": [
+        "background"
+      ]
+    },
+    {
+      "name": "delegate_task spawn/list/steer/stop",
+      "surface": "model tool and operator overlay",
+      "input": "tasks, model/provider override, subagent ID/message",
+      "output": "child handles/results, queued steering or interrupt_requested",
+      "lifecycle": "sync/parallel/background paths; child timeout can leave worker closing later",
+      "authority": "only own spawn tree; bound session/transport checks",
+      "evidence": [
+        "credentials",
+        "child",
+        "child-timeout",
+        "steer",
+        "control"
+      ]
+    },
+    {
+      "name": "ContextEngine.select_context / on_turn_complete",
+      "surface": "programmable API",
+      "input": "request/history clones, token budget, turn metadata",
+      "output": "replacement request projection, completion callback",
+      "lifecycle": "per turn, invalid/exception selection keeps original request",
+      "authority": "native extension engine access; persisted history clone prevents write-through",
+      "evidence": [
+        "context"
+      ]
+    },
+    {
+      "name": "session_search discover/read/scroll/browse",
+      "surface": "model tool",
+      "input": "query/session/anchor/window/profile/role",
+      "output": "actual retained messages and links",
+      "lifecycle": "standing SQLite history reads; scope differs from raw provider audit",
+      "authority": "model registered tool using registry-acquired DB",
+      "evidence": [
+        "search",
+        "search-schema",
+        "archive"
+      ]
+    },
+    {
+      "name": "archive_and_compact",
+      "surface": "host API",
+      "input": "summary, covered IDs/watermark, lease holder",
+      "output": "new active projection and retained old rows",
+      "lifecycle": "atomic publication preserves arrivals, rejects stale lease",
+      "authority": "host compaction service and DB API",
+      "evidence": [
+        "archive",
+        "archive-commit"
+      ]
+    },
+    {
+      "name": "Curator review fork",
+      "surface": "operator/background program",
+      "input": "configured skills candidates and review prompt",
+      "output": "skill mutations, report and scheduler metadata",
+      "lifecycle": "background model fork; ledgered skill surface only",
+      "authority": "curator excludes terminal; no independent benefit evaluation proved",
+      "evidence": [
+        "curator"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native code and terminal access plus spill files; dedicated file surfaces not exhaustively traced.",
+      "evidence": [
+        "entry",
+        "background",
+        "spill"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Owner-tracked local/remote process spawn and completion delivery; exact full process-tool control dispatch not studied.",
+      "evidence": [
+        "background"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Persistent Python code calls ordinary registered tools through RPC; native context-engine programs.",
+      "evidence": [
+        "entry",
+        "namespace",
+        "context"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual GLOBALS persist across cells, exception retains namespace; timeout/interrupt explicitly destroys state. Remote failures can degrade to per-call execution.",
+      "evidence": [
+        "namespace",
+        "kernel",
+        "remote",
+        "kernel-test"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "SQLite persisted/searchable transcript with shared handle borrowing, not general model SQL research DB.",
+      "evidence": [
+        "archive",
+        "search",
+        "search-schema"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Context engine controls request selection, plugin message injection and child/program orchestration; arbitrary whole-turn replacement not established.",
+      "evidence": [
+        "context",
+        "plugin",
+        "control"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Per-child model/provider/endpoint credentials resolve distinct from parent.",
+      "evidence": [
+        "credentials"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model can steer live owned children at iteration boundary, but no unrestricted peer-room path established in this scope.",
+      "evidence": [
+        "steer",
+        "control"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Concurrent tool pools, child futures and background process routing.",
+      "evidence": [
+        "parallel",
+        "child",
+        "background"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Steering queues with missed-delivery accounting; cancellation may abandon still-active tool worker or defer child close. Kernel timeout kills namespace.",
+      "evidence": [
+        "steer",
+        "abandon",
+        "parallel",
+        "child-timeout",
+        "kernel"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Custom context engine changes per-request context and completion program; broad native plugins, not proven hot replacement of complete turn semantics.",
+      "evidence": [
+        "context",
+        "plugin"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Atomic non-destructive projection with coverage/watermark, lease fencing and concurrent-tail cloning.",
+      "evidence": [
+        "archive",
+        "archive-commit",
+        "archive-test"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retained inactive/compacted originals and model search/read support repair; automatic arbitrary corrupted-context repair operation not established.",
+      "evidence": [
+        "archive",
+        "archive-test",
+        "search-schema"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Commit-before-project helps transcript durability; transformed/redacted/bounded outputs, capped best-effort spill and truncated curator arguments are not all original IO.",
+      "evidence": [
+        "commit",
+        "kernel",
+        "spill",
+        "curator"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Actual model message search/read/scroll; raw provider requests/transport/effect streams not established as captured/queryable.",
+      "evidence": [
+        "search",
+        "search-schema",
+        "commit"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Plugins own registration cleanup and live injection, code config read per execution; precise all reload settling/staging paths not fully traced.",
+      "evidence": [
+        "plugin",
+        "entry"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "DB transcript/leases support reattach and component changes, but abandoned tool workers/local-owned kernels do not establish quiescent executable refit/outpost handoff.",
+      "evidence": [
+        "turn",
+        "parallel",
+        "kernel",
+        "archive"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Configured remote execution consumer with persistent remote kernel/fallback and independent child model endpoint.",
+      "evidence": [
+        "remote",
+        "credentials",
+        "background"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model curator can consolidate/modify skills through constrained ledgered tools; independent experiment/heldout performance promotion not established.",
+      "evidence": [
+        "curator"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established beyond inspected turn, kernel, transcript, plugin and delegation paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Code execution approved/blocked at guard, project/strict backends; model child control scoped to own tree. Complete bypass/default approval policy outside inspection.",
+      "evidence": [
+        "entry",
+        "control"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Read namespace literal tests, real host-death subprocess oracle and exact compaction concurrent-tail/archive oracles; not executed here.",
+      "evidence": [
+        "kernel-test",
+        "death-test",
+        "archive-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Monotonic execution deadline/duration distinct from wall-clock DB lease expiry; ordered durable arrivals and explicit inactivity child waits.",
+      "evidence": [
+        "parallel",
+        "kernel",
+        "archive",
+        "child"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "turn",
+      "path": "quarantine/hermes-agent/agent/turn_facade.py",
+      "start": 141,
+      "end": 201,
+      "claim": "Scoped run, finalization and lease refresh thread joins; turn completion does not join all abandoned tool workers."
+    },
+    {
+      "id": "abandon",
+      "path": "quarantine/hermes-agent/agent/tool_executor.py",
+      "start": 942,
+      "end": 982,
+      "claim": "Sequential interrupt gives3s grace then cancelled result, cancels future and shuts executor without waiting on abandoned worker."
+    },
+    {
+      "id": "parallel",
+      "path": "quarantine/hermes-agent/agent/tool_executor.py",
+      "start": 1411,
+      "end": 1488,
+      "claim": "Concurrent tools deadline/interrupt abandon daemon worker pool rather than await all active effects."
+    },
+    {
+      "id": "commit",
+      "path": "quarantine/hermes-agent/agent/tool_executor.py",
+      "start": 1110,
+      "end": 1153,
+      "claim": "Tool-result spill/transformation append and DB flush precede completed projection."
+    },
+    {
+      "id": "context",
+      "path": "quarantine/hermes-agent/agent/conversation_loop.py",
+      "start": 1280,
+      "end": 1346,
+      "claim": "Actual optional context-engine selection and completion hooks with copied history and fail-open fallback."
+    },
+    {
+      "id": "namespace",
+      "path": "quarantine/hermes-agent/tools/code_kernel.py",
+      "start": 55,
+      "end": 73,
+      "claim": "Cell exec uses GLOBALS, capturing output/errors; variables persist across requests."
+    },
+    {
+      "id": "kernel",
+      "path": "quarantine/hermes-agent/tools/code_kernel.py",
+      "start": 781,
+      "end": 839,
+      "claim": "Timeout/interrupt discard kernel/state, redacted bounded results and spill references; sys.exit explicitly ends kernel."
+    },
+    {
+      "id": "teardown",
+      "path": "quarantine/hermes-agent/tools/code_kernel.py",
+      "start": 339,
+      "end": 360,
+      "claim": "Kernel teardown signals process tree and removes resources."
+    },
+    {
+      "id": "kill",
+      "path": "quarantine/hermes-agent/tools/code_execution_tool.py",
+      "start": 801,
+      "end": 821,
+      "claim": "TERM tree wait5s then KILL, without second confirmed-death wait in this helper."
+    },
+    {
+      "id": "remote",
+      "path": "quarantine/hermes-agent/tools/code_execution_tool.py",
+      "start": 659,
+      "end": 697,
+      "claim": "Remote persistent kernel first, failures fall open to per-call script execution."
+    },
+    {
+      "id": "entry",
+      "path": "quarantine/hermes-agent/tools/code_execution_tool.py",
+      "start": 765,
+      "end": 798,
+      "claim": "Code guard then local persistent session kernel or remote path; max call/time limits."
+    },
+    {
+      "id": "spill",
+      "path": "quarantine/hermes-agent/tools/code_execution_tool.py",
+      "start": 46,
+      "end": 101,
+      "claim": "Inline byte truncation and best-effort digest spill capped5million characters; not complete original-output audit."
+    },
+    {
+      "id": "background",
+      "path": "quarantine/hermes-agent/tools/terminal_tool_background.py",
+      "start": 89,
+      "end": 139,
+      "claim": "Tracked local/env process spawn with owner and gateway completion routing; finite hosts report lack of async delivery."
+    },
+    {
+      "id": "credentials",
+      "path": "quarantine/hermes-agent/tools/delegate_tool_config.py",
+      "start": 483,
+      "end": 504,
+      "claim": "Child model/provider/endpoint override actually resolved, not simply inherited adapter."
+    },
+    {
+      "id": "child",
+      "path": "quarantine/hermes-agent/tools/delegate_tool_child_run.py",
+      "start": 850,
+      "end": 875,
+      "claim": "Thread-backed child run with liveness-aware wait."
+    },
+    {
+      "id": "child-timeout",
+      "path": "quarantine/hermes-agent/tools/delegate_tool_child_run.py",
+      "start": 924,
+      "end": 941,
+      "claim": "Timeout result includes phase/API count/last-event age; still-running worker closes later via callback."
+    },
+    {
+      "id": "steer",
+      "path": "quarantine/hermes-agent/tools/delegate_tool_registry.py",
+      "start": 124,
+      "end": 157,
+      "claim": "Live child steering queues without cutting tool; missed boundary explicitly reported, ownership checked."
+    },
+    {
+      "id": "control",
+      "path": "quarantine/hermes-agent/tools/delegate_tool_registry.py",
+      "start": 264,
+      "end": 301,
+      "claim": "Model list/steer/stop own spawn tree; stop response says interrupt_requested, not terminated."
+    },
+    {
+      "id": "search",
+      "path": "quarantine/hermes-agent/tools/session_search_tool.py",
+      "start": 619,
+      "end": 639,
+      "claim": "Model session query dispatch borrows and releases shared SessionDB handles."
+    },
+    {
+      "id": "search-schema",
+      "path": "quarantine/hermes-agent/tools/session_search_tool.py",
+      "start": 652,
+      "end": 666,
+      "claim": "Search/read/scroll/browse actual DB messages, not generated summary; schema contract."
+    },
+    {
+      "id": "archive",
+      "path": "quarantine/hermes-agent/hermes_state_messages.py",
+      "start": 1074,
+      "end": 1119,
+      "claim": "Compaction retains soft-archived originals, lease-fenced publish and concurrent arrival watermark."
+    },
+    {
+      "id": "archive-commit",
+      "path": "quarantine/hermes-agent/hermes_state_messages.py",
+      "start": 1130,
+      "end": 1158,
+      "claim": "Actual transaction archives old rows, inserts summary and clones concurrent tail; no deletion."
+    },
+    {
+      "id": "plugin",
+      "path": "quarantine/hermes-agent/hermes_cli/plugins.py",
+      "start": 1290,
+      "end": 1329,
+      "claim": "Owned registration cleanup and plugin-triggered live gateway message injector; remaining global slot profile keying TODO."
+    },
+    {
+      "id": "curator",
+      "path": "quarantine/hermes-agent/agent/curator.py",
+      "start": 1085,
+      "end": 1150,
+      "claim": "Actual model fork modifies skills through ledgered surface; metadata tool args truncated, no independent usefulness gate."
+    },
+    {
+      "id": "kernel-test",
+      "path": "quarantine/hermes-agent/tests/tools/test_code_kernel.py",
+      "start": 68,
+      "end": 97,
+      "claim": "Literal cross-cell value/reset/exception namespace tests."
+    },
+    {
+      "id": "death-test",
+      "path": "quarantine/hermes-agent/tests/tools/test_code_kernel.py",
+      "start": 106,
+      "end": 147,
+      "claim": "Real subprocess host kill then kernel.wait oracle, not just registry absence."
+    },
+    {
+      "id": "archive-test",
+      "path": "quarantine/hermes-agent/tests/hermes_state/test_compression_watermark_commit.py",
+      "start": 43,
+      "end": 137,
+      "claim": "Exact summary+arrival order and sidecars; originals retained inactive."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/hermes-agent/tests/tools/test_code_kernel.py",
+      "focus": "namespace/lifecycle",
+      "oracle": "Literal retained values and reset/exception behavior; separate real process wait after host death; not run.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/hermes-agent/tests/hermes_state/test_compression_watermark_commit.py",
+      "focus": "compaction concurrent arrivals and originals",
+      "oracle": "Exact ordered contents/sidecars and inactive original rows, stale lease refusal; not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Non-destructive compaction preserves original rows and concurrent arrivals.",
+    "Persistent Python kernel is actual cross-cell namespace, with explicit destructive timeout.",
+    "Child stop response explicitly distinguishes request from completion."
+  ],
+  "limits": [
+    "Daemon worker abandonment lets a turn complete with unconfirmed effects.",
+    "Host-owned kernels/processes differ from shared standing-service consumption.",
+    "Selective transcript/result persistence is not original IO audit."
+  ],
+  "arconaut_questions": [
+    "Use compaction coverage/watermark and retained originals to model repair datasets.",
+    "Do not infer quiescence from completed turn or cancelled future.",
+    "Make persistent-to-per-call execution degradation explicit to model/operator."
+  ]
+}

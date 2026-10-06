@@ -1,0 +1,393 @@
+Mods overview - Claude Code Docs (https://code.claude.com/docs/en/plugins/mods/overview)
+citeturn224view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn207view0","lineno":165}); Total lines: 342
+L128: ##
+L129: 
+L130: cite52†​ L131: 
+L132: Decide whether to trust a mod
+L133: 
+L134: A mod is code that runs with your permissions, inside Claude Code. Install mods only from authors and cite14†marketplaces you trust .
+L135: ###
+L136: 
+L137: cite62†​ L138: 
+L139: What a mod can reach
+L140: 
+L141: A mod runs with your permissions, so before you install one, know what it has access to. Once it loads, a mod can:
+L142:   * Act on your machine as you: read and write files anywhere your user account can, start programs, and make network requests
+L143:   * Read your secrets: environment variables and settings files, including an API key you keep in either
+L144:   * See your session: every prompt you send and every tool call Claude makes
+L145:   * Change your session: rewrite a prompt or a tool call, submit a prompt as if you had typed it, or send a message to another of your sessions
+L146:   * Act without asking you: approve a tool call before you’re asked
+L147:   * Spend your usage: call a model on your plan or API key
+L148: Mods aren’t sandboxed. If you turn on cite63†sandboxing , the sandbox isolates the Bash commands Claude runs, and a process that a mod starts runs outside it. A mod that approves tool calls can approve one that an `ask` rule would prompt for, or that one of your own `PreToolUse` hooks blocked. cite64†Extend permissions with hooks lists what such a mod can approve, including when it can approve a call that a `deny` rule refuses. A mod can restyle much of Claude Code’s interface, but not the permission prompt.
+L149: It can’t change what a prompt shows you.
+L150: ###
+L151: 
+L152: cite58†​ L153: 
+L154: List what a mod does before you install one
+L155: 
+L156: Before you install a mod, you can list which events it handles and what it asks Claude Code to do, such as read a file or make a network request, without running it. Get the plugin’s files first, for example by cloning its repository. Then, in your shell, run `claude plugin validate` on the plugin’s directory:
+L157: 
+L158:     `claude plugin validate ./some-mod
+L159:     `
+L160: The `hooks:` and `calls:` lines in the output list the events the mod handles and what it asks Claude Code to do. cite65†Review what a mod can do shows the output and which calls to look for.
+L161: ##
+L162: 
+L163: cite66†​ L164: 
+L165: Turn mods on or off
+L166: 
+L167: Mods are on by default. In the terminal, use Claude Code v2.1.287 or later. The Desktop app includes its own copy of Claude Code, and mods work there from v2.1.286. Check the version in the place you use mods:
+L168:   * Terminal: in your shell, run `claude --version`. If yours is older, cite67†update Claude Code .
+L169:   * Desktop app: in a local session in the Code tab, enter `/status` and read the Claude Code row, which shows a version such as `2.1.286`. If yours is older, update the Desktop app.
+L170: To turn mods off, choose how many to stop, and for how long. To turn them back on, undo the same change:
+L171:   * One mod: disable or uninstall its plugin from the cite68†Installed tab in `/plugin` L172:   * Every installed mod, for one session: start Claude Code with cite69†`--safe-mode` , which also disables your other customizations
+L173:   * Every mod you installed, in every session: set cite70†`"disableAllHooks": true` in `~/.claude/settings.json`. Your settings hooks and custom status line stop too. What your organization manages keeps running.
+L174: If you use Claude Code through an organization, an administrator can also limit which mods load. Administrators start at cite71†Stop user-installed mods from loading . `disableAllHooks` and your organization’s `allowManagedModsOnly` stop a mod and leave the rest of its plugin in place: the plugin stays installed, and its skills, commands, agents, and MCP servers load. Other settings and flags reach further.
+L175: cite70†`disableAllHooks` and cite72†What runs under `allowManagedHooksOnly` list what each one does to a plugin and its settings hooks. To find out whether mods can load for you, see cite73†Check whether mods can load .
+L176: If you set `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` during early access, remove it. Claude Code v2.1.287 and later ignores it, so setting it to `0` doesn’t keep mods off.
+L177: ###
+L178: 
+L179: cite60†​ L180: 
+L181: See which mods a session loaded
+L182: 
+L183: To see which mods a terminal session loaded, run `/plugin` at the Claude Code prompt. A dim line under the tabs gives the count and the names, such as `1 mod active · first-mod`. If a mod you installed isn’t named there, see cite74†Find out why a mod does nothing .
+L184: ##
+L185: 
+L186: cite35†​ L187: 
+L188: How a mod works
+L189: 
+L190: A mod is a cite4†plugin whose code registers event handlers, called hooks. Claude Code runs a hook when its event happens, such as when Claude calls a tool or when the spinner is drawn. A small mod has three files:
+L191: 
+L192:     `first-mod/
+L193:     ├── .claude-plugin/
+L194:     │   └── plugin.json
+L195:     └── hooks/
+L196:         ├── hooks.json
+L197:         └── register.js
+L198:     `
+L199:   * `plugin.json`: the plugin’s cite32†manifest L200:   * `hooks.json`: cite75†points to your code file L201:   * `register.js`: cite49†your code , called the hooks module. It tells Claude Code which events to run your functions on.
+L202: This is a complete `register.js`. It counts the tool calls Claude makes and shows the count beside the spinner while Claude works, as in `Thinking · tool calls: 3…`.
+L203: hooks/register.js
+L204: 
+L205:     `// The count, shared by the two hooks below
+L206:     let calls = 0
+L207: 
+L208:     // Claude Code calls this once when the mod loads
+L209:     export function register(on) {
+L210:       // Runs each time Claude is about to use a tool
+L211:       on('tool.call', async ($, e, next) => {
+L212:         calls += 1
+L213:         // Ask Claude Code to draw the interface again, so the new count shows
+L214:         $.ui.invalidate('ui.render')
+L215:         // Let the tool run as usual
+L216:         return next(e)
+L217:       })
+L218:       // Runs each time Claude Code draws the spinner
+L219:       on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
+L220:         // Keep Claude Code's spinner, with the count added after its word
+L221:         return next({ ...e, props: { ...e.props, suffix: ' · tool calls: ' + calls + '…' } })
+L222:       })
+L223:     }
+L224:     `
+L225: The file registers two hooks, and both use the `calls` variable at the top:
+L226:   * The cite76†`tool.call` hook runs each time Claude is about to use a tool. It adds one to `calls`, asks Claude Code to draw the interface again, and lets the tool run as usual.
+L227:   * The cite77†`ui.render` hook runs each time Claude Code draws the spinner. It keeps Claude Code’s own spinner and adds the count after the word.
+L228: This recording shows the mod at work. Watch the spinner line above the prompt box: while Claude lists a directory and reads two files, it reads `Thinking · tool calls: 1…`, then `2…`, then `3…`.
+L229: ###
+L230: 
+L231: cite78†​ L232: 
+L233: What a hook can do with an event
+L234: 
+L235: Claude Code runs your hook before it acts on the event, so the hook decides what happens next. It can:
+--------------------------------------------------------------------------------
+Draw in the interface with a mod - Claude Code Docs (https://code.claude.com/docs/en/plugins/mods/interface)
+citeturn224view1 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn208view1","lineno":709}); Total lines: 875
+L657: To have your sites drawn again after your own data changes, call `$.ui.invalidate('ui.render')`. This pane counts presses. The button’s callback changes `count`, then asks for a redraw:
+L658: 
+L659:     `let count = 0
+L660: 
+L661:     on('ui.render', { component: 'Pane' }, async ($, e, next) => {
+L662:       if (e.requestId !== 'counter') return next(e)
+L663:       const { Box, Text, Button } = $.ui.resolve(e)
+L664:       return Box({
+L665:         flexDirection: 'row',
+L666:         columnGap: 2,
+L667:         children: [
+L668:           Button({
+L669:             key: 'more',
+L670:             label: 'Add one',
+L671:             onPress: () => {
+L672:               count += 1
+L673:               // The data changed, so ask Claude Code to draw the pane again
+L674:               $.ui.invalidate('ui.render')
+L675:             },
+L676:           }),
+L677:           Text({ children: ['Count: ' + count] }),
+L678:         ],
+L679:       })
+L680:     })
+L681:     `
+L682: Each press raises the number in the pane. The cite39†`hello-tabs` example wraps the same call in its `redraw` function. A value you keep in cite82†`$.state` doesn’t need the call, because writing the value redraws the sites that read it.
+L683: ###
+L684: 
+L685: cite55†​ L686: 
+L687: Redraw on a timer
+L688: 
+L689: To keep a clock, a countdown, or a value from outside the session current, redraw on a schedule. Start a timer in the module’s `session.start` hook. If the module already has one, as `hello-tabs` does, add the cite83†`$.clock.every` line to it:
+L690: 
+L691:     `on('session.start', async ($, e, next) => {
+L692:       // Every 1000 milliseconds, ask Claude Code to draw your sites again
+L693:       $.clock.every(1000, () => $.ui.invalidate('ui.render'))
+L694:       return next(e)
+L695:     })
+L696:     `
+L697: Claude Code now runs your `ui.render` hook once a second. The timer stops when the module reloads, and the new instance of the module starts its own.
+L698: ###
+L699: 
+L700: cite56†​ L701: 
+L702: How often a site can redraw
+L703: 
+L704: Claude Code throttles redraws of a site, so your mod can call `$.ui.invalidate` as often as its data changes. For how often each site can redraw, see the cite84†limits table . Calls that come faster than the limit are coalesced into one redraw. That redraw runs your hook once, and the hook reads your data as it is at that moment, so the latest value shows and the values in between don’t. An animation can’t run faster than the limit.
+L705: ##
+L706: 
+L707: cite57†​ L708: 
+L709: Keep state
+L710: 
+L711: Where a mod keeps a value decides how long the value lasts: until the module reloads, until the session ends, or from one session to the next. Choose by how long the value has to last:
+L712: Keep it in  | It lasts until  | Use it for
+L713: --- | --- | ---
+L714: A module-level variable  | The module reloads, which happens every time you save a file during development  | Values you can lose, as `tab` is in `hello-tabs`
+L715: `$.state`  | The session ends, or the user runs `/clear`, `/resume`, or `/branch`  | Values a drawing depends on that should survive a reload
+L716: `$.store`  | Your mod deletes it, or no session reads or writes the store for cite85†`cleanupPeriodDays` . The store is a key-value store, saved as a JSON file of your plugin’s own under `~/.claude/plugins/store/`.  | Settings, history, anything the user expects to find next time
+L717: `$.store.get(key)` resolves to the value or `undefined`, and `$.store.set(key, value)` takes any JSON value.
+L718: ###
+L719: 
+L720: cite82†​ L721: 
+L722: Keep a value in `$.state`
+L723: `$.state` holds values for the length of a session, and it redraws for you. It’s reactive state: a `ui.render` hook that reads a value subscribes to it, so Claude Code redraws that site each time you write the value, and you don’t call `$.ui.invalidate`. A value in `$.state` also survives a reload of the module, which a variable doesn’t. To set it up, declare your values, point your manifest at the declaration, then define and use each value. The examples move the `count` from `hello-tabs` into `$.state`.
+L724: ####
+L725: 
+L726: cite59†​ L727: 
+L728: Declare the values
+L729: 
+L730: Declare the values in a type declaration file. The outer key is your plugin’s name, and each entry under it is a value and its type. Save this as `hello-tabs/types/index.d.ts`:
+L731: 
+L732: hello-tabs/types/index.d.ts
+L733: 
+L734:     `declare module 'claude-code' {
+L735:       interface PluginState {
+L736:         'hello-tabs': {
+L737:           tab: 'one' | 'two'
+L738:           count: number
+L739:         }
+L740:       }
+L741:     }
+L742:     `
+L743: ####
+L744: 
+L745: cite60†​ L746: 
+L747: Point the manifest at the declaration
+L748: 
+L749: To let `claude plugin validate` check your code against that file, add a `types` field to the manifest with its path:
+L750: 
+L751: hello-tabs/.claude-plugin/plugin.json
+L752: 
+L753:     `{
+L754:       "name": "hello-tabs",
+L755:       "version": "0.1.0",
+L756:       "description": "Opens a pane with two tabs and a counter",
+L757:       "author": { "name": "Your Name" },
+L758:       "types": "./types/index.d.ts"
+L759:     }
+L760:     `
+L761: ####
+L762: 
+L763: cite61†​ L764: 
+L765: Define, read, and write a value
+L766: In your module, define each value with a default, read it while drawing, and write it from a callback. `atom` names a value and its default, `read` returns it, and `update` writes it. The three helpers call `$.state.get` and `$.state.set` for you:
+L767: 
+L768:     `import { atom, read, update } from 'claude-code'
+L769: 
+L770:     // At the top of the module: name the value and give its default
+L771:     const count = atom({ plugin: 'hello-tabs', key: 'count' }, 0)
+L772: 
+L773:     // In the ui.render hook: read the value to draw it
+L774:     const n = await read($, count)
+L775: 
+L776:     // In a Button: write a new value from the old one
+L777:     onPress: () => update($, count, (value) => value + 1)
+L778:     `
+L779: Because the `ui.render` hook read `count`, Claude Code runs the hook again each time the button writes it. These rules apply to the code:
+L780:   * Write `plugin` and `key` as string literals: `claude plugin validate` reads them from your source
+L781:   * Declare every value in the type declaration file: otherwise validation fails with `hello-tabs.count is not declared`
+L782:   * Write from a callback or another event’s hook: a `ui.render` hook can read state and can’t write it, so write from `onPress`, `onSubmit`, or a hook for another event
+L783: ####
+L784: 
+L785: cite86†​ L786: 
+L787: Change `hello-tabs` to use `$.state`
+L788: 
+L789: To move `count` in `hello-tabs` into `$.state`, change every line that uses it:
+L790:   * At the top of the module: add the `import` line, and replace `let count = 0` with the `atom` line
+L791:   * In the `ui.render` hook: add the `read` line before `tabButton`, and draw `'Count: ' + n` in the `Text`
+L792:   * In the Add one button: replace `onPress` with the one in cite64†Save from more than one session , which saves the count as well as writing it
+L793:   * In the `session.start` hook: replace the two lines that read `saved` with the `loadCount` call from cite63†Load a saved value again after `/clear` L794: Keep `redraw` for the tab buttons, because `tab` is still a variable.
+L795: ###
+L796: 
+L797: cite63†​ L798: 
+L799: Load a saved value again after `/clear`
+--------------------------------------------------------------------------------
+Create a mod - Claude Code Docs (https://code.claude.com/docs/en/plugins/mods/create)
+citeturn224view2 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn213view3","lineno":299}); Total lines: 447
+L268: If `/tally` isn’t in the command list, the module didn’t load. See cite54†Find out why a mod does nothing .
+L269: 
+L270: 7
+L271: 
+L272: Change the code while the session runs
+L273: 
+L274: Leave the session open. In `register.js`, change `' · tool calls: '` to `' · tools used: '` in the `ui.render` hook and save. The highlighted line is the one that changes:
+L275: first-mod/hooks/register.js
+L276: 
+L277:     `  // Runs each time Claude Code draws the spinner
+L278:       on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
+L279:         // Keep Claude Code's spinner, with the count added after its word
+L280:         return next({ ...e, props: { ...e.props, suffix: ' · tools used: ' + calls + '…' } })
+L281:       })
+L282:     `
+L283: 
+L284: A line in the transcript says `first-mod` reloaded and lists its hooks, and the next spinner uses the new text, as in `Thinking · tools used: 1…`.
+L285: ###
+L286: 
+L287: cite53†​ L288: 
+L289: How the example mod works
+L290: 
+L291: Each function you pass to `on` is a hook, which is an event handler. Claude Code passes every hook the same three arguments:
+L292:   * The mods API, named `$`: every method a mod can call to reach outside itself, in cite55†namespaces such as `$.ui` and `$.command`
+L293:   * The event, named `e`: the cite56†event’s input as plain data, such as a tool call’s name and arguments
+L294:   * The next handler, named cite57†`next` : a function that passes the event on to the other mods and then to Claude Code’s own behavior, and returns the result
+L295: The hooks in `first-mod` handle their events in these ways:
+L296:   * Observe: the `session.start` hook registers the command, and the `tool.call` hook counts the call and asks for a redraw. Both return `next(e)`, so the session starts and the tool runs as usual.
+L297:   * Answer: the `command.run` hook returns its own result and never calls `next`. The second argument to `on`, `{ command: 'tally' }`, is a filter, called a cite58†matcher , so the hook runs only for `/tally`.
+L298:   * Rewrite: the `ui.render` hook calls `next` with a copy of `e` whose `suffix` holds the count, so Claude Code draws its usual spinner with your text after the word
+L299: Claude Code watches a directory loaded with `--plugin-dir` and hot-reloads the hooks module when a file in it changes. Each reload runs `register` again, so `calls` resets to `0` and `/tally` starts counting again. To keep a value across reloads, see cite59†Keep state .
+L300: ##
+L301: 
+L302: cite60†​ L303: 
+L304: Keep working on a mod
+L305: 
+L306: Once a mod loads, you can have Claude change it, check your code against the type definitions for your version, list the events and calls Claude Code finds in it, and test it.
+L307: ###
+L308: 
+L309: cite61†​ L310: 
+L311: Change a mod with Claude
+L312: 
+L313: To change a mod you already have, start the session with `--plugin-dir` pointed at the mod’s directory, so that what Claude writes loads in the same session:
+L314: 
+L315:     `claude --plugin-dir ./first-mod
+L316:     `
+L317: Then ask for the change, for example `add a /tally-reset command to this mod that sets the tally back to zero`. Claude edits the hooks module, runs `claude plugin validate`, and fixes what it reports. A directory you load with `--plugin-dir` is a cite41†protected path , so in `default` and `acceptEdits` modes you’re asked to approve each of Claude’s edits to the mod. The protected paths table gives the result for the other permission modes.
+L318: Files Claude saves during its turn reload when the turn ends, so you can try `/tally-reset` as soon as Claude finishes.
+L319: ###
+L320: 
+L321: cite62†​ L322: 
+L323: Get type definitions for your version
+L324: Each time Claude Code loads or reloads a mod from a directory you pass to `--plugin-dir`, or a mod cite35†Claude wrote for you , it writes TypeScript declaration files, ending in `.d.ts`, into `.claude-plugin/types/` inside the mod’s directory. They describe the exact events, mods API methods, and elements in the Claude Code version you’re running, so your editor can autocomplete and type-check your hooks.
+L325: To browse the declarations online, read cite63†`mods/types/claude-code.d.ts`†github.com in the Claude Code repository, whose first line names the version that wrote it. The directory holds these files:
+L326: Path  | What it declares
+L327: --- | ---
+L328: `claude-code/index.d.ts`  | Every event and its input and result, every mods API namespace and method, and the elements each surface can draw
+L329: `claude-code-tools/index.d.ts`  | The built-in tools’ inputs and results, so that checking `e.tool === 'Bash'` narrows `e`
+L330: `claude-code-mcp/index.d.ts`  | The inputs of the MCP tools that were connected the last time you saved a file in the mod
+L331: `index.d.ts` in a directory named for a plugin  | What that plugin adds to the mods API. There’s one directory for each plugin your `plugin.json` lists under `dependencies`.
+L332: `tsconfig.json`  | Compiler options that fit a hooks module
+L333: If your mod has no `tsconfig.json` of its own, Claude Code adds one at the mod’s root that extends the generated one, so your editor and `tsc -p ./first-mod` type-check the mod without more setup. The events and methods can change between releases, so trust these files over any page, this one included, when they disagree. `claude-code/index.d.ts` is the fullest reference for your build, with a comment and an example for every mods API method.
+L334: To look something up, search the file for its name, such as `'tool.call'`.
+L335: ###
+L336: 
+L337: cite64†​ L338: 
+L339: Check what Claude Code reads from your mod
+L340: 
+L341: To see your mod the way Claude Code sees it, without running your code or starting a session, use `claude plugin validate`. It checks the manifest and runs the same static analysis on the hooks module’s source that Claude Code runs when it loads a mod. In your shell, run it on the mod’s directory:
+L342: 
+L343:     `claude plugin validate ./first-mod
+L344:     `
+L345: For `first-mod`, the output includes these lines.
+L346: 
+L347:     `  ❯ ./register.js hooks: session.start, tool.call, command.run{command=tally}, ui.render{component=Spinner}
+L348:       ❯ ./register.js calls: $.command.register, $.ui.invalidate
+L349: 
+L350:     ✔ Validation passed
+L351:     `
+L352: The `hooks:` line lists the events your module hooks, each with its filter in braces. The `calls:` line lists every mods API method it calls. A module that reads or sets environment variables also gets `env reads:` and `env writes:` lines, and one that uses cite59†`$.state` gets `state reads:` and `state writes:`. If an event you meant to handle is missing from the first line, Claude Code won’t call that hook either.
+--------------------------------------------------------------------------------
+Use the mods API - Claude Code Docs (https://code.claude.com/docs/en/plugins/mods/api)
+citeturn224view3 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn213view2","lineno":180}); Total lines: 283
+L158: cite40†The types for your build list the other options, such as `effort`, and the cite49†limits give the `maxTokens` default. `$.model.fork({ prompt })` asks one question over the current conversation instead, with the same model and system prompt, so the Claude API serves most of it from the prompt cache. These calls use the user’s plan or API key.
+L159: ##
+L160: 
+L161: cite50†​ L162: 
+L163: Run work in the background
+L164: Work that outlives one event, such as checking on something once a minute, runs on a timer you start from `session.start`. A hook itself runs for one event and has a cite49†time limit on its own execution time. Time spent waiting on `next` or on a mods API call doesn’t count, except a `$.clock.sleep`. `$.clock.every` and `$.clock.after` take the place of `setInterval` and `setTimeout`, with the delay in milliseconds first: `$.clock.after(5000, fn)` calls `fn` once, five seconds from now.
+L165: Each returns a timer with a `cancel()` method, and `await $.clock.now()` gives the time in milliseconds. This hook looks up a pull request’s checks once a minute and shows the result under the prompt. `summarize` is a function of your own that turns the command’s JSON output into a few words:
+L166: 
+L167:     `on('session.start', async ($, e, next) => {
+L168:       // Call the function every 60,000 milliseconds, starting one minute from now
+L169:       $.clock.every(60_000, async () => {
+L170:         const status = await $.process.run(['gh', 'pr', 'checks', '--json', 'state'])
+L171:         // Replace the line under the prompt with the latest summary
+L172:         $.ui.status('checks: ' + summarize(status.stdout))
+L173:       })
+L174:       // Return without waiting for the timer, so the session starts right away
+L175:       return next(e)
+L176:     })
+L177:     `
+L178: The session starts as usual. A minute later, a line appears under the prompt with a `⚠`, the mod’s name, and then `checks:` and your summary. It’s replaced once a minute after that. The timer’s callback runs outside any event, so it keeps running between turns and doesn’t start one. If the callback throws, the error goes to the cite51†debug log and the timer runs again at the next interval.
+L179: ###
+L180: 
+L181: cite52†​ L182: 
+L183: Show something without starting a turn
+L184: 
+L185: A background job can show the user something without starting a turn. Each of these calls puts text in a different place:
+L186: Call  | What the user sees
+L187: --- | ---
+L188: `$.ui.status(text)`  | One line under the prompt that stays until you change it. It starts with `⚠` and the mod’s name, as in `⚠ my-mod: checks: 3 passing`.
+L189: `$.ui.toast(text)`  | A toast notification at the top right, with the mod’s name above the text, that disappears after a few seconds
+L190: `$.ui.log(text)`  | A dim line in the transcript that Claude doesn’t read. It starts with `●` and the mod’s name, as in `● my-mod: build finished`.
+L191: ###
+L192: 
+L193: cite53†​ L194: 
+L195: Start a turn from a background job
+L196: When a background job finds something that needs Claude’s attention, it can start a turn by submitting a prompt with `$.prompt.submit({ text })`. Claude reads the text after a sentence that names your mod as the sender. To send it as the user’s own words, without that sentence, add `asUser: true`. The call waits until the session is idle and then starts a new turn. It resolves when that turn starts, so don’t `await` it in a handler that runs while Claude is working.
+L197: ###
+L198: 
+L199: cite54†​ L200: 
+L201: Stop background work
+L202: 
+L203: Timers stop when the module reloads. For long-running work inside a hook, cite55†`next.signal` is an `AbortSignal` that aborts when the event your hook is handling is abandoned, for example when the user interrupts, so pass it to anything long-running.
+L204: ##
+L205: 
+L206: cite56†​ L207: 
+L208: Send and receive messages between sessions
+L209: A mod can send a plain-text message to another of your sessions or to one of this session’s subagents, and observe the messages that arrive and leave. `$.session.send({ to, text })` sends one, the same delivery the SendMessage tool makes. `to` is `{ sessionId }` for a session, `{ agentId }` for a subagent from `$.agent.list()`, or the string address a received message came from. The call resolves once the message is queued, with `{ isDelivered: true }`.
+L210: When nothing was delivered it resolves with `{ isDelivered: false, reason }`, and `reason` says why. This hook answers a `/ping` command, cite43†registered as a command , by asking the session whose id you type after it for a status:
+L211: 
+L212:     `on('command.run', { command: 'ping' }, async ($, e) => {
+L213:       // e.args is the session id typed after /ping
+L214:       const sent = await $.session.send({ to: { sessionId: e.args }, text: 'Status? One line.' })
+L215:       // The call resolves either way, so check isDelivered to learn what happened
+L216:       if (!sent.isDelivered) $.ui.toast('Not delivered: ' + sent.reason)
+L217:       // An empty result prints nothing in this session's transcript
+L218:       return {}
+L219:     })
+L220:     `
+L221: When the message is queued, nothing appears in your session, and the other session’s Claude reads `Status? One line.` When nothing was delivered, a toast notification gives the reason. `session.receive` and `session.send` let a mod observe the messages. Return `next(e)` from both to pass each message through unchanged:
+L222: Event  | Fires when  | Useful fields
+L223: --- | --- | ---
+L224: `session.receive`  | A message arrives for this session, before Claude reads it  | `e.text`, and `e.origin.kind`, such as `peer` or `peer-send-message` for another session or agent, `task-notification`, or `scheduled-trigger`. Return `{ consumed: reason }` to keep it from Claude.
+L225: `session.send`  | A message is about to leave, from the SendMessage tool or a mod  | `e.to`, `e.text`, and `e.origin.kind`, which is `model` or `plugin`
+L226: A session set to cite57†refuse inbound messages refuses a message before `session.receive` fires, so a hook never sees it. A message that’s held for your approval reaches the hook first, so a mod can read a message you haven’t approved yet. The hook’s `next(e)` rejects when the message isn’t delivered. The sender’s name on a received message is whatever the sender wrote, so don’t base a decision on it.
+L227: ##
+L228: 
+L229: cite58†​ L230: 
+L231: Reach files, processes, and the network
+L232: 
+L233: A mod reaches the file system, processes, and the network through the mods API, with the same permissions as the user running Claude Code. The hooks module itself has no Node.js APIs, no timer globals such as `setTimeout`, and no network or file access of its own. Standard JavaScript and web APIs such as `URL`, `TextEncoder`, `AbortController`, and `crypto.subtle` are available. Each namespace below covers one kind of access:
+

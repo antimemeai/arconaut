@@ -1,0 +1,624 @@
+{
+  "id": "letta-code",
+  "kind": "stateful coding harness/App Server/channel runtime",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Node/Bun event-loop host with local or remote backend, pi provider adapters, client tools/background processes/workflows and scoped mods.",
+    "service_boundary": "Owns harness conversation/agent runtime, local transcript/memory files and managed children; consumes optional Cloud/providers/SDK/remote computers. Local and Cloud stores are different boundaries."
+  },
+  "summary": "Operator/model-configurable harness with default unrestricted mode, executable mods, background workflow programs, peer messaging, managed context and mod-learning candidates.",
+  "inspection": {
+    "files": [
+      "quarantine/letta-code/src/backend/dev/provider-turn-executor.ts",
+      "quarantine/letta-code/src/headless.ts",
+      "quarantine/letta-code/src/agent/approval-execution.ts",
+      "quarantine/letta-code/src/tools/manager.ts",
+      "quarantine/letta-code/src/tools/impl/bash.ts",
+      "quarantine/letta-code/src/tools/impl/process_manager.ts",
+      "quarantine/letta-code/src/tools/impl/workflow.ts",
+      "quarantine/letta-code/src/tools/workflow/workflow-engine.ts",
+      "quarantine/letta-code/src/tools/workflow/journal.ts",
+      "quarantine/letta-code/src/backend/local/local-store.ts",
+      "quarantine/letta-code/src/mods/mod-engine.ts",
+      "quarantine/letta-code/src/mods/types.ts",
+      "quarantine/letta-code/src/mods/learning-harness.ts",
+      "quarantine/letta-code/src/cli/commands/mods.ts",
+      "quarantine/letta-code/src/tools/impl/send-agent-message.ts",
+      "quarantine/letta-code/src/permissions/mode.ts",
+      "quarantine/letta-code/src/tools/workflow/workflow-engine.test.ts",
+      "quarantine/letta-code/src/backend/local-backend.test.ts",
+      "quarantine/letta-code/src/mods/mod-engine.test.ts"
+    ],
+    "scope": "local provider path/headless approval-return loop, tool manager/shell/workflow, local store compaction, mod import/reload/hooks/learning, peer sends and direct source test assertions",
+    "limits": "Large TS harness; inspected concrete mechanisms only, not complete App Server/channel/Cloud engine. SDK/pi dependency internals and Cloud behavior are not inferred."
+  },
+  "actions": [
+    {
+      "name": "headless/interactive send -> ProviderTurnExecutor",
+      "surface": "operator/backend API",
+      "input": "agent/conversation input and tool/provider settings",
+      "output": "stream chunks/model call IDs plus pending client tool calls",
+      "lifecycle": "client executes results and continues unless interrupted",
+      "authority": "backend/provider credentials and scoped tool authority",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "executeTool / PreToolUse / mod tool_start,tool_end",
+      "surface": "model/program dispatch",
+      "input": "native/mod tool name,args, call/context ID and parent scope",
+      "output": "tool result/error or rewritten/blocked input/result",
+      "lifecycle": "hooks and mod checks around execution; foreground AbortSignal",
+      "authority": "unrestricted default or configured policy; scoped context",
+      "evidence": [
+        "e3",
+        "e4",
+        "e18",
+        "e24"
+      ]
+    },
+    {
+      "name": "Bash / background task tools",
+      "surface": "model tools",
+      "input": "command/cwd/env/timeout/run_in_background",
+      "output": "stdout/stderr or bash/task ID and output file",
+      "lifecycle": "background intentionally outlives turn abort; explicit later control needed",
+      "authority": "shell sandbox/permission mode; invocation secrets scrubbed",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "Workflow",
+      "surface": "model tool",
+      "input": "JS script/scriptPath/args/model/maxConcurrent/allowedTools",
+      "output": "background workflow ID/progress/result notification and journal directory",
+      "lifecycle": "VM program; every launched subagent drained even unawaited or abort",
+      "authority": "exposed tool policy plus SDK subagent allowed roster",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "workflow agent / decide / parallel / pipeline",
+      "surface": "workflow program API",
+      "input": "prompt/model/tool/options or state/decision schema; optional conversation continuation ID",
+      "output": "raw worker result/outcome/token accounting or structured decision",
+      "lifecycle": "bounded concurrency/counts; original script/outcome persisted, no replay from journal",
+      "authority": "authored workflow plus spawner service authority",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "SendAgentMessage",
+      "surface": "model peer tool",
+      "input": "target agent/conversation/computer and message",
+      "output": "accepted steer turn receipt or tracked followup completion/task",
+      "lifecycle": "Letta enqueue or external Claude/Codex existing session; same computer",
+      "authority": "sender from runtime context, not arbitrary forged sender",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    {
+      "name": "mod activate API + reload",
+      "surface": "operator/program extension",
+      "input": "scoped TS/JS factory registering tools/providers/commands/hooks/permissions",
+      "output": "owner/generation registry snapshot and diagnostic/disposer",
+      "lifecycle": "mtime import cache; dispose/abort old generation then publish new during load",
+      "authority": "mod API capability flags; executable code trusted within selected scope",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "compactConversationAll / compaction event",
+      "surface": "operator/backend policy",
+      "input": "conversation/agent, summary, kept tail and stats",
+      "output": "new context IDs plus append-only parent-linked compaction record",
+      "lifecycle": "model summary request separate; prior local transcript retained",
+      "authority": "configured compaction settings/backend",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "mods learn / runModLearning",
+      "surface": "operator experiment command",
+      "input": "objective/spec/evaluation scenarios/candidate diversity/max candidates/promote path",
+      "output": "per-candidate reports/history/artifacts, score and optional promoted mod",
+      "lifecycle": "generation→behavior checks/markers→best passed optional copy; not deployment barrier",
+      "authority": "operator-specified run/promote scope; model candidate code may be evaluated in subprocess",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Coding tools/shell run locally with scoped context, background IDs/output files and explicit permission/hook dispatch; shared remote services stay independently governed.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Coding tools/shell run locally with scoped context, background IDs/output files and explicit permission/hook dispatch; shared remote services stay independently governed.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model Workflow executes plain JavaScript orchestration with agent/decision/parallel primitives in VM; shell executes ordinary programs. JS host remains event-loop based.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Background process Maps/VM script are per host; persistent output/transcript does not retain computation heap. Shared kernel would be separately consumed.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local agent/conversation JSONL and MemFS state plus selectable remote backend; append-compaction retains originals while context IDs change. Not one universal Cloud/local DB.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native background Workflow JS programs spawn/resume subagents, decide, parallel/pipeline with limits, cancellation and drain settlement; journal is explicitly not replay engine.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workflow model/decision settings, provider-registering mods, and external Claude/Codex sessions compose multiple models, not only picker.",
+      "evidence": [
+        "e7",
+        "e15",
+        "e22",
+        "e23"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "SendAgentMessage uses target agent/conversation and external session steering with completion/interrupt handles; scope/source governs sender and original computer.",
+      "evidence": [
+        "e22",
+        "e23"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Background shells/subagents/workflows and semaphore-bounded concurrent calls; drains launched workers even if not awaited by script.",
+      "evidence": [
+        "e5",
+        "e7",
+        "e8",
+        "e9"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Abort propagates foreground tools/workflow and peer active steering has receipt; deliberate background shell outlives turn AbortSignal, mods disposal is not a whole-work barrier.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e9",
+        "e16",
+        "e23"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Executable mods register commands/tools/providers/permissions and transform turn-start/tool-start/end; hooks can block/rewrite tool inputs. Certain LLM/compaction events are observation only.",
+      "evidence": [
+        "e4",
+        "e14",
+        "e15",
+        "e18"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local all/sliding compaction and configurable prompt/model separate transcript append from context IDs; source tests preserve prior originals and rebuild system context.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13",
+        "e26"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Append-only prior transcript/first-kept linkage and separate projected context permit recall/reconstruction; full automatic model-governed corrupted-context repair not inferred from storage.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Original transcript and workflow script/args/outcomes retained; secrets scrubbed, observation scopes bounded, Maps/remote dependencies and raw transport/OS byte archive not universal.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10",
+        "e13",
+        "e18"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Transcript/parent-linked entries and workflow journals queryable by consumers; not complete original core audit DB merely because local history search exists.",
+      "evidence": [
+        "e10",
+        "e13"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mods transpile/import/register and reload generations; disposal/new registry published before load finishes, no active-work draining and no default turn/workflow-conclusion gate in this loader.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e17"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent logical transcript/memory and peer continuation IDs survive future sessions; live background process handles are in-memory and mod reload not compiled full-harness outpost refit.",
+      "evidence": [
+        "e6",
+        "e10",
+        "e13",
+        "e16",
+        "e23"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider stream/local/remote backend, SDK workflow agents and remote/external session messages actual consuming boundaries; Cloud engine not available here.",
+      "evidence": [
+        "e1",
+        "e7",
+        "e22"
+      ]
+    },
+    "self_improvement": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Operator mods learn runs candidate generation/evaluation with behavioral assertions/markers and optional passed-selected promotion. This bounded mod optimization is not general self-improvement correctness.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mod diagnostics, workflow outcomes and task IDs offer attributable fault records; full snapshot+external bead-table rageshake not established.",
+      "evidence": [
+        "e10",
+        "e14",
+        "e17"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default unrestricted; scoped modes and mod permission/PreToolUse policies allow sophisticated configuration. External sender scope and computer constraints are explicit.",
+      "evidence": [
+        "e4",
+        "e22",
+        "e24"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workflow drain oracle gates slow worker; transcript preservation exact IDs; mod-learning checks declared args/markers. No executed conformance or semantic model evaluation claimed.",
+      "evidence": [
+        "e19",
+        "e25",
+        "e26"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Transcript entry IDs/parents differ from message IDs, workflow task completion drains workers, mods generation protects stale load, peer turn/completion handles separate states.",
+      "evidence": [
+        "e9",
+        "e13",
+        "e17",
+        "e23"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/letta-code/src/backend/dev/provider-turn-executor.ts",
+      "start": 552,
+      "end": 565,
+      "claim": "Provider executor builds turn input, adapter streams and projects provider context usage into Letta chunks."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/letta-code/src/headless.ts",
+      "start": 2635,
+      "end": 2673,
+      "claim": "Headless executes client approval batch, exposes paired tool events, checks interrupt before sending results back and continues backend round."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/letta-code/src/agent/approval-execution.ts",
+      "start": 207,
+      "end": 230,
+      "claim": "Approved tool passes AbortSignal, exact call/context IDs and parent scope to shared executeTool."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/letta-code/src/tools/manager.ts",
+      "start": 2220,
+      "end": 2280,
+      "claim": "Mod permission check precedes PreToolUse hook; hooks can block/rewrite input, cancellation signal injected only internally."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/letta-code/src/tools/impl/bash.ts",
+      "start": 396,
+      "end": 438,
+      "claim": "Background shell has ID/output file, launcher/sandbox/env and timeout; background mode deliberately does not inherit caller abort signal; output streamed/scrubbed."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/letta-code/src/tools/impl/process_manager.ts",
+      "start": 15,
+      "end": 79,
+      "claim": "Background process/task identity/handles are in-memory Maps; outputFile optional persisted data does not preserve live handle across restart."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/letta-code/src/tools/impl/workflow.ts",
+      "start": 1,
+      "end": 90,
+      "claim": "Model Workflow validates/starts JS program as background task, progress/completion bridge; SDK agents consume model/tool settings and return task ID."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/letta-code/src/tools/workflow/workflow-engine.ts",
+      "start": 63,
+      "end": 105,
+      "claim": "Every agent() promise tracked even if script forgets await; bounded semaphore and total agent/decision caps, separate decision primitive."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/letta-code/src/tools/workflow/workflow-engine.ts",
+      "start": 330,
+      "end": 384,
+      "claim": "Workflow VM executes plain JS; script result/error/abort drains every launched subagent before settlement. Signal honoring is a spawner contract."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/letta-code/src/tools/workflow/journal.ts",
+      "start": 1,
+      "end": 76,
+      "claim": "Persists original script/args and completed subagent outcomes in owner-only run directory; source explicitly says nothing replays from journal."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/letta-code/src/backend/local/local-store.ts",
+      "start": 1157,
+      "end": 1222,
+      "claim": "Compaction updates resident/context IDs but appends transcript compaction event with previous message linkage, not rewrite from bounded resident tail."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/letta-code/src/backend/local/local-store.ts",
+      "start": 2935,
+      "end": 2974,
+      "claim": "Persistence distinguishes append-compaction from explicit rewrite; guard prevents bounded resident tail from truncating original transcript."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/letta-code/src/backend/local/local-store.ts",
+      "start": 3006,
+      "end": 3045,
+      "claim": "Compaction append retains parent and first-kept IDs, timestamps/stats; JSONL append preserves earlier entries and rebuild mapping."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/letta-code/src/mods/mod-engine.ts",
+      "start": 1374,
+      "end": 1417,
+      "claim": "Scoped mod discovery creates owner/generation/capabilities and abort-controller registry; extension active per source."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/letta-code/src/mods/mod-engine.ts",
+      "start": 1440,
+      "end": 1482,
+      "claim": "TS mod transpiled/imported with mtime cache key; activates API and registers disposer."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/letta-code/src/mods/mod-engine.ts",
+      "start": 1678,
+      "end": 1709,
+      "claim": "Disposal aborts owners, invokes synchronous disposers, unregisters tools/providers/permissions and clears cache; no await of all owned external work."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/letta-code/src/mods/mod-engine.ts",
+      "start": 1739,
+      "end": 1788,
+      "claim": "Reload disposes active registry and publishes empty/new generations during load; stale generation cannot overwrite current registry. Not transactional old-to-new with unchanged availability."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/letta-code/src/mods/types.ts",
+      "start": 316,
+      "end": 345,
+      "claim": "Mod turn/tool results can alter input/output; LLM/compaction boundary events are observation callbacks, not raw provider transport control."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/letta-code/src/mods/learning-harness.ts",
+      "start": 1120,
+      "end": 1172,
+      "claim": "Mod-learning behavioral assertions check handler count, diagnostics and exact argument preservation; pass determined by all checks."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/letta-code/src/mods/learning-harness.ts",
+      "start": 2350,
+      "end": 2378,
+      "claim": "Selects best candidate report; optional promotion copies only if selected report passed. Evaluation score is declared marker/assertion scope, not general coding quality."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/letta-code/src/cli/commands/mods.ts",
+      "start": 755,
+      "end": 819,
+      "claim": "Operator mods learn command actually invokes candidate harness with configured spec/candidate/promote options; not an unwired helper."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/letta-code/src/tools/impl/send-agent-message.ts",
+      "start": 52,
+      "end": 105,
+      "claim": "Peer message derives authenticated runtime sender/conversation; target may be Letta or external Claude/Codex session, original-computer constraint explicit."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/letta-code/src/tools/impl/send-agent-message.ts",
+      "start": 101,
+      "end": 132,
+      "claim": "Codex in-flight steering returns accepted turn handle; new followup requires completion and interrupt handles before background tracking."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/letta-code/src/permissions/mode.ts",
+      "start": 1,
+      "end": 18,
+      "claim": "Current default permission mode is unrestricted; other standard/acceptEdits/strict modes configurable."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/letta-code/src/tools/workflow/workflow-engine.test.ts",
+      "start": 373,
+      "end": 399,
+      "claim": "Direct test gates un-awaited slow worker and asserts workflow unsettled until worker completes and token accounting included."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/letta-code/src/backend/local-backend.test.ts",
+      "start": 799,
+      "end": 824,
+      "claim": "Local compaction test asserts original message entries remain with distinct entry IDs, appended parent-linked summary, then reloads backend."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/letta-code/src/tools/workflow/workflow-engine.test.ts",
+      "focus": "unawaited work settlement and cancellation",
+      "oracle": "Gated spawner exact unsettled-before-release, final tokens/results; abort tests inspect outcome/journal. Fake spawner contract not arbitrary remote effect stop.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/letta-code/src/mods/mod-engine.test.ts",
+      "focus": "mod registry owner/generation and shadowing",
+      "oracle": "Actual temp module import registration compared exact loaded paths/owner/generation; tests are not run here and do not ensure active programs quiesce on reload.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/letta-code/src/backend/local-backend.test.ts",
+      "focus": "compaction originals and reconstruction",
+      "oracle": "Exact original entry IDs retained, new parent-linked compaction append and backend reload; mocked summary/provider cannot judge semantic fidelity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Model-ergonomic executable mods and Workflow supply substantial programming surfaces.",
+    "Default unrestricted policy and inter-agent/external-session receipts directly fit expert-operator aims.",
+    "Separate original transcript/compaction and explicit drain of launched workflow workers are useful patterns.",
+    "Mod-learning evaluates declared behavior before optional selected promotion."
+  ],
+  "limits": [
+    "Node/Bun TS event-loop architecture conflicts with operator preference; study does not select it.",
+    "Mod reload clears old registry before new activation and does not wait all external effects.",
+    "Workflow journal is debug record, not durable replay; process handles in-memory; Cloud boundaries separate."
+  ],
+  "arconaut_questions": [
+    "Can owned systems-runtime continuation retain this mod/workflow ergonomics without event-loop dependence?",
+    "How do model changes stage until turn/affected workflows finish while interrupt/apply-now settles every own action?",
+    "Which mod-learning oracles are independent of generated candidate and attack real task quality?",
+    "Can all original actions/provider requests be retained before redaction/truncation while operator-visible secrets stay protected?"
+  ]
+}

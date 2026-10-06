@@ -1,0 +1,655 @@
+{
+  "id": "ntm",
+  "kind": "terminal coordination control and workflow runtime",
+  "runtime": {
+    "languages": [
+      "Go"
+    ],
+    "execution": "Compiled CLI/TUI plus optional resident/detached workers; tmux/SSH actuates external coding-agent TUIs, and pipeline command steps launch /bin/sh children.",
+    "service_boundary": "Governs pane/session lifecycle and its workflow workers; provider requests/inner agent programs belong to external harnesses. Consumes Agent Mail and trackers. This is closer to a control plane than an ordinary Arconaut consumer."
+  },
+  "summary": "Heterogeneous tmux agent orchestration with addressed prompt delivery, workflow/pipeline execution, uncertain-send recovery, context rotation and local audit.",
+  "inspection": {
+    "files": [
+      "quarantine/ntm/internal/dispatch/dispatch.go",
+      "quarantine/ntm/internal/tmux/opencode_submit.go",
+      "quarantine/ntm/internal/tmux/session.go",
+      "quarantine/ntm/internal/pipeline/executor.go",
+      "quarantine/ntm/internal/pipeline/state.go",
+      "quarantine/ntm/internal/pipeline/state_resume.go",
+      "quarantine/ntm/internal/pipeline/background_resume.go",
+      "quarantine/ntm/internal/pipeline/process_wait_linux.go",
+      "quarantine/ntm/internal/pipeline/process_group_unix.go",
+      "quarantine/ntm/internal/context/rotation.go",
+      "quarantine/ntm/internal/audit/logger.go",
+      "quarantine/ntm/internal/audit/query.go",
+      "quarantine/ntm/internal/session/prompts.go",
+      "quarantine/ntm/internal/config/watch.go",
+      "quarantine/ntm/internal/tui/dashboard/model.go",
+      "quarantine/ntm/internal/tmux/client.go",
+      "quarantine/ntm/internal/cli/send.go",
+      "quarantine/ntm/internal/checkpoint/restore_context_ready.go",
+      "quarantine/ntm/internal/session/restore.go",
+      "quarantine/ntm/internal/cli/mail.go",
+      "quarantine/ntm/internal/pipeline/submission_verification_test.go",
+      "quarantine/ntm/internal/context/rotation_test.go",
+      "quarantine/ntm/internal/tmux/opencode_submit_test.go",
+      "quarantine/ntm/internal/pipeline/process_group_lifecycle_linux_test.go",
+      "quarantine/ntm/internal/config/config_test.go",
+      "quarantine/ntm/internal/audit/audit_test.go"
+    ],
+    "scope": "shared prompt dispatch, tmux submission/interrupt, pipeline command and recovery state, context rotation/native compaction, audit/query, config watcher, mail wrapper and selected real test oracles",
+    "limits": "No provider adapters/inner harness tool execution traced; broad ensemble/tracker/REST server/checkpoint import/encryption surfaces remain uninspected. Terminal evidence is bounded and provider-layout dependent."
+  },
+  "actions": [
+    {
+      "name": "ntm send / --robot-send; dispatch Prepare/Dispatch",
+      "surface": "operator/model CLI or programmatic terminal coordination",
+      "input": "Session, exact pane selectors/type/tag filters, prompt/context file, submit/clear/pacing/redaction options.",
+      "output": "Per-pane prepared/delivered/failed/blocked receipts with target/protocol and aggregate counts; no original prompt in neutral receipt.",
+      "lifecycle": "Pre-actuation refusal is retry-safe; post-keystroke outcome can be uncertain; terminal submission is separate from model work completion.",
+      "authority": "OS/tmux target access, optional configured preflight/redaction/guard; inner agent decides own execution.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e26"
+      ]
+    },
+    {
+      "name": "ntm interrupt / SendInterruptForAgent",
+      "surface": "operator/model terminal control",
+      "input": "Target agent pane/type.",
+      "output": "Terminal-key command success/error.",
+      "lifecycle": "Escape for OMP, Ctrl+C otherwise; requests interruption but does not prove provider/work quiescence.",
+      "authority": "Control-plane access to target pane.",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "ntm pipeline run / resume; Executor.run/ResumeWithOptions",
+      "surface": "operator/model CLI and programmable YAML/TOML workflow",
+      "input": "Graph of prompt/command/template/composite steps, variables, dependencies/limits/wait/retries; run ID and continue/restart-failed/force-iter/reset.",
+      "output": "Durable run/step states, bounded outputs, per-attempt uncertain/delivered/completed agent record; start acknowledgements for detached worker.",
+      "lifecycle": "Saves intent before prompt send; default resume refuses unknown delivery, retains completed rounds/results; deliberate restart may resend. Command effects are not a general transaction.",
+      "authority": "Own run/pane locks and child processes; user-defined programs act with OS authority, not inner model tools.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8",
+        "e9",
+        "e10",
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "command step: /bin/sh -c",
+      "surface": "workflow supplied primitive",
+      "input": "Substituted command/stdin/env args, cwd, timeout/output limits and wait mode.",
+      "output": "Bounded captured/parsed output and native status; tracked child for WaitNone.",
+      "lifecycle": "Own process group; Linux leader pinned until descendants settle; TERM then KILL/error if unsettled. Escaped groups not arbitrary OS effect settlement.",
+      "authority": "Workflow author grants ordinary OS execution authority; independent daemons remain outside ownership.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14"
+      ]
+    },
+    {
+      "name": "rotate context compact / rotate",
+      "surface": "operator/model CLI and control API",
+      "input": "Exact original agent, action and provider supported compaction or generated handoff.",
+      "output": "Fresh measured compaction result or replacement pane/rotation outcome.",
+      "lifecycle": "Native compaction requires attributed fresh provider accounting and stable ready state. Replacement receives summary before original retirement; failure preserves predecessor.",
+      "authority": "Own target agents; no main-harness compile/refit or all-client-work drain implemented.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e28"
+      ]
+    },
+    {
+      "name": "sessions restore / RestoreContext",
+      "surface": "operator/model CLI and topology API",
+      "input": "Saved pane topology/launch specs/directories, target/force options.",
+      "output": "Recreated topology or partial/error outcome.",
+      "lifecycle": "Validate before destructive replacement; RestoreContext alone does not launch agents; fresh readiness required for separate context injection.",
+      "authority": "Explicit force can kill existing owned session; stops local monitor first.",
+      "evidence": [
+        "e28",
+        "e29"
+      ]
+    },
+    {
+      "name": "ntm audit show / SearchContext",
+      "surface": "operator/model CLI and query API",
+      "input": "Session/time/type/target/grep/offset/limit filters and cancellation.",
+      "output": "Matching redacted JSONL entries/count/truncated flag.",
+      "lifecycle": "Persistent writer-local hashes and buffered/fsync logs; query can skip malformed lines and individual file errors.",
+      "authority": "Host file access; privacy can disable records; not all provider traffic available.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e19",
+        "e20"
+      ]
+    },
+    {
+      "name": "config.Watch",
+      "surface": "runtime program API, wired dashboard",
+      "input": "Working directory and merged-config callback.",
+      "output": "Reloaded config callback and close function.",
+      "lifecycle": "Debounced500ms; invalid reload logs error; dashboard pending update replaces older value, no affected-workflow activation barrier.",
+      "authority": "Runtime-owned config reader; project command overrides filtered elsewhere, no blanket model rewrite.",
+      "evidence": [
+        "e23",
+        "e24"
+      ]
+    },
+    {
+      "name": "ntm mail send",
+      "surface": "operator/model external service client",
+      "input": "Session agents/addresses, explicit subject/body/file or one-use prepared-redaction handle.",
+      "output": "Delegated Agent Mail delivery result.",
+      "lifecycle": "Consumes separately running mail service; prepared handle consumption differs from persistent mailbox lifecycle.",
+      "authority": "HumanOverseer/client admission is separate from service identity and agent terminal control.",
+      "evidence": [
+        "e30"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workflow commands have ordinary cwd/filesystem authority; pipeline state, audit and history write owned local files. Not an inner-agent filesystem tool suite.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e22"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Controls terminal sessions/agent-specific keys and owns isolated command groups; Linux WNOWAIT pins identity through descendant cleanup. External providers/escaped daemon work are separate.",
+      "evidence": [
+        "e5",
+        "e12",
+        "e13",
+        "e14",
+        "e29"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "User-defined shell workflow and external program orchestration are code-action support; no persistent model code interpreter is supplied.",
+      "evidence": [
+        "e12"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this terminal coordination control and workflow runtime role: the reference supplies Heterogeneous tmux agent orchestration with addressed prompt delivery, workflow/pipeline execution, uncertain-send recovery, context rotation and local audit. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "inspection",
+      "detail": "Outside this terminal coordination control and workflow runtime role: the reference supplies Heterogeneous tmux agent orchestration with addressed prompt delivery, workflow/pipeline execution, uncertain-send recovery, context rotation and local audit. rather than an agent execution engine.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Executable persisted pipeline graphs, variable substitution, composite round progress and resume policies; the agent pane is an endpoint, not a supplied generic LLM turn implementation.",
+      "evidence": [
+        "e6",
+        "e9",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Addresses heterogeneous external agent panes by native type/variant and routes per-agent submit/interrupt choreography; it does not own their provider adapters.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e5"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed pane prompts and external Agent Mail let operator/model coordinate live agents; receipt shows transport submission, not recipient decision or peer-room original context.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e30"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Parallel/composite workflow progress and cross-process pane/run ownership support concurrent work; state resumes settled rounds while unknown sends require intervention.",
+      "evidence": [
+        "e6",
+        "e10",
+        "e11"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Can clear/stage/submit/interrupt per-agent input. Busy/TUI observations are layout-dependent; unknown/capture failures can proceed best effort, key success does not settle execution.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "source",
+      "detail": "Owns outer coordination/pipeline programs, while the external coding agents own their provider turns. No replacement of their internal turn programs is supplied.",
+      "evidence": [
+        "e1",
+        "e12"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native provider compaction has exact target/process checks, server-wide transcript attribution, fresh accounting and stable completion; generated rotation summary is a distinct replacement mode.",
+      "evidence": [
+        "e15",
+        "e16"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Archived prompt history and predecessor-preserving handoff can supply repair input; saved context is withheld until exact replacement readiness. No reconstruction of every original provider/context byte.",
+      "evidence": [
+        "e15",
+        "e21",
+        "e22",
+        "e28"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Has redacted hash-linked buffered JSONL, prompt history and bounded delivery evidence. Privacy disables records, text is redacted/clipped, call sites may ignore audit errors; not all external model traffic or OS effects.",
+      "evidence": [
+        "e1",
+        "e7",
+        "e17",
+        "e18",
+        "e21",
+        "e22",
+        "e29"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Structured/grep/time/session query over stored audit with bounded defaults and cancellation; malformed lines and per-file errors silently omitted, so successful query is not a completeness verdict.",
+      "evidence": [
+        "e19",
+        "e20"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Merged config watcher is actually wired into dashboard; debounced updates may replace pending value. It does not wait current turn/affected workflows or rebuild every client/runtime.",
+      "evidence": [
+        "e23",
+        "e24"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Actual external-agent replacement launches same identity/type and delivers generated handoff before predecessor retirement; topology restore is separate. This does not compile/reinhabit NTM or preserve unresolved provider/program execution.",
+      "evidence": [
+        "e15",
+        "e28",
+        "e29"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes Agent Mail and can actuate separate tmux endpoint over SSH; local transcript compaction explicitly refuses remote accounting assumptions.",
+      "evidence": [
+        "e16",
+        "e25",
+        "e30"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model-governed experimental modification/evaluation/activation of the NTM harness established in inspected dispatch/pipeline/rotation/config paths. User-authored workflows alone do not prove it.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No agent-state complaint/bead action established in inspected dispatch, mail, pipeline, rotation and audit paths; broad support/tracker surfaces were not inspected.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "OS/tmux control and optional DCG/redaction preflight; positive dead-shell/trust-frame refusals precede actuation. DCG-unavailable skips gate; inner agent permissions are independent.",
+      "evidence": [
+        "e2",
+        "e26",
+        "e29"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Native compaction checks measured fresh reduction; workflow declared outputs only stat existence and warn without failing status, not research quality or harness improvement truth.",
+      "evidence": [
+        "e16",
+        "e27"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Persisted prompt delivery stages/times, completed-round watermarks, wall-clock expiry/poll thresholds and writer-local sequence/hash; no global order across agent effects.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e10",
+        "e16",
+        "e18"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/ntm/internal/dispatch/dispatch.go",
+      "start": 1,
+      "end": 197,
+      "claim": "Human/robot adapter shares neutral addressed Request, target/protocol, per-pane redaction-safe receipts. Result intentionally excludes outbound original text."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/ntm/internal/dispatch/dispatch.go",
+      "start": 373,
+      "end": 439,
+      "claim": "Delivery refuses known dead-agent shells/trust frames before keystrokes, marks guaranteed non-actuation, then composer clear and stage/single/double Enter with verifier. Unknown/capture failures may proceed best effort."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/ntm/internal/tmux/opencode_submit.go",
+      "start": 132,
+      "end": 192,
+      "claim": "OpenCode pre-Enter refuses positively empty composer after polls but capture/layout failure returns success; post-submit verifies held payload separately."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/ntm/internal/tmux/session.go",
+      "start": 2201,
+      "end": 2232,
+      "claim": "Double-Enter uses cancellable delays, optional OpenCode staged check, then two Enter actuation calls."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/ntm/internal/tmux/session.go",
+      "start": 3254,
+      "end": 3296,
+      "claim": "Interrupt sends agent-specific terminal key: Escape for OMP, otherwise Ctrl+C. It is not direct provider/program settlement."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/ntm/internal/pipeline/executor.go",
+      "start": 1738,
+      "end": 1847,
+      "claim": "Saved uncertain-send intent precedes paste; recovery binds step hash/session/tmux endpoint/pane PID. Sending status refuses resume; successful verification stores delivered."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/ntm/internal/pipeline/executor.go",
+      "start": 1845,
+      "end": 1916,
+      "claim": "Observed response accumulates bounded scrollback deltas excluding prompt echo; WaitNone is only submit completion, time/idle modes differ, completion saved before pane release."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/ntm/internal/pipeline/executor.go",
+      "start": 987,
+      "end": 1007,
+      "claim": "Automatic retry stops for sending-state unknown delivery rather than assuming failure means non-delivery."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/ntm/internal/pipeline/state.go",
+      "start": 260,
+      "end": 344,
+      "claim": "Persistent JSON run state validates run ID/version, uses atomic write and preserves schema marker; this is a current recovery projection, not an append-all-original ledger."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/ntm/internal/pipeline/state_resume.go",
+      "start": 13,
+      "end": 95,
+      "claim": "Continue/restart-failed/force-iter and explicit reset define recovery policy; foreach tracks item fingerprint/completed iterations/round watermarks to avoid rerunning settled work."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/ntm/internal/pipeline/background_resume.go",
+      "start": 1,
+      "end": 105,
+      "claim": "Detached same-binary resume acknowledges startup; stable run ID/new immutable request identity, child RunControl ownership precedes load/verification; no parent replacement checkpoint."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/ntm/internal/pipeline/executor.go",
+      "start": 1305,
+      "end": 1400,
+      "claim": "Command steps launch /bin/sh -c with own process group/env/cwd, bounded stdout/stderr, timeout and explicit wait mode; fire-and-forget child wait is tracked."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/ntm/internal/pipeline/process_wait_linux.go",
+      "start": 16,
+      "end": 128,
+      "claim": "Linux WNOWAIT pins leader before group signal; waits ordinary group descendants, TERM/grace/KILL/settle joins observer then reaps. Escaped groups and settlement errors remain bounded claims."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/ntm/internal/pipeline/process_group_unix.go",
+      "start": 1,
+      "end": 100,
+      "claim": "Owned Setpgid, bounded inherited-output wait and group signals with best-effort procfs descendant fallback; not a shared service governor."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/ntm/internal/context/rotation.go",
+      "start": 1505,
+      "end": 1615,
+      "claim": "Waits source completed handoff, launches replacement and submits context before retiring original; handoff failure preserves original and cleans replacement. Summaries are not exact heap/context recovery."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/ntm/internal/context/rotation.go",
+      "start": 1684,
+      "end": 1872,
+      "claim": "Native compaction checks original process identity, server-wide provider transcript attribution, fresh accounting and completed input state; rejects ambiguity/remote transcript assumptions and requires two stable polls."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/ntm/internal/audit/logger.go",
+      "start": 145,
+      "end": 193,
+      "claim": "LogEvent sanitizes/redacts payload/metadata and may skip persistence due to privacy; caller must handle failure separately."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/ntm/internal/audit/logger.go",
+      "start": 513,
+      "end": 580,
+      "claim": "Writer-local audit entries gain UTC time, sequence/hash link then buffer; flush performs fsync, but Log can return before buffer flush."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/ntm/internal/audit/query.go",
+      "start": 118,
+      "end": 202,
+      "claim": "Structured audit search default limit10000 returns partial on cancellation, but individual file errors are skipped rather than surfaced as complete-corpus uncertainty."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/ntm/internal/audit/query.go",
+      "start": 335,
+      "end": 383,
+      "claim": "Grep and structured filter parse line records; malformed JSON lines are skipped and scanner capped10MB."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/ntm/internal/session/prompts.go",
+      "start": 100,
+      "end": 132,
+      "claim": "Prompt history uses privacy guard and cross-process lock; privacy skips success rather than recording original."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/ntm/internal/session/prompts.go",
+      "start": 180,
+      "end": 238,
+      "claim": "Prompt history current JSON writes atomically after redaction; warn/block persistence modes coerce to redact, so originals are not universally retained."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/ntm/internal/config/watch.go",
+      "start": 12,
+      "end": 78,
+      "claim": "Merged global/project configuration watcher debounces500ms and calls callback only after successful reload; errors keep previous config."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/ntm/internal/tui/dashboard/model.go",
+      "start": 694,
+      "end": 723,
+      "claim": "Dashboard actually wires config watcher, replacing pending channel update when full. No global end-of-turn activation is imposed."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/ntm/internal/tmux/client.go",
+      "start": 279,
+      "end": 301,
+      "claim": "Tmux commands run locally or through SSH target with separate command construction; cancellation governs transport, not all remote agent effects."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/ntm/internal/cli/send.go",
+      "start": 3588,
+      "end": 3626,
+      "claim": "Optional DCG inspects likely commands for non-Claude targets; unavailable adapter skips gate, not a universal tool authorization layer."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/ntm/internal/pipeline/executor.go",
+      "start": 604,
+      "end": 657,
+      "claim": "Cancel cancels workflow context; declared-output stat checks issue warnings and never flip pipeline status. Existence is not quality or semantic evaluation."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/ntm/internal/checkpoint/restore_context_ready.go",
+      "start": 16,
+      "end": 90,
+      "claim": "Saved-context delivery waits exact target and fresh stable observations, without clearing draft/answering dialogs/interruption/relaunching merely to make it ready."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/ntm/internal/session/restore.go",
+      "start": 24,
+      "end": 139,
+      "claim": "Session restore validates topology/spec/directories before optional forced replacement, pins physical panes and stops local resident monitor before kill-session; audit failures ignored at this call site."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/ntm/internal/cli/mail.go",
+      "start": 100,
+      "end": 146,
+      "claim": "Mail send accepts explicit raw/prepared-redaction handle/file/body; handle requires explicit subject and consumes once to avoid raw prefix leaking into derived metadata."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/ntm/internal/pipeline/submission_verification_test.go",
+      "focus": "Unknown transport and explicit resend authority.",
+      "oracle": "Read277–308: failed submission creates sending intent and exactly one attempt; ordinary resume sends nothing; explicit restart-failed authorizes exactly one additional paste. Mock transport oracle attacks duplicate dispatch, not actual provider acceptance.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ntm/internal/context/rotation_test.go",
+      "focus": "Fresh accounting, transcript identity, busy completion and process substitution.",
+      "oracle": "Read75–160: eight explicit modes, exact command/count and before150000/after30000 oracle; only reduced/busy-then-reduced succeed. Injected observations do not validate every changing provider layout.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ntm/internal/tmux/opencode_submit_test.go",
+      "focus": "Composer versus transcript echo and dropped payload.",
+      "oracle": "Read1–105: recorded scrubbed OpenCode captures assert exact composer strings, unrelated/other-agent/plain-shell negatives; native live-pane test is gated and was not run.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ntm/internal/pipeline/process_group_lifecycle_linux_test.go",
+      "focus": "Descendant effect after cancellation.",
+      "oracle": "Read61–98: child ignoresTERM and redirects IO, publishes PID, waits on gate; after cleanup returns gate opens and any late-effect file fails. Strong causal OS oracle, Linux-specific, read only.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ntm/internal/config/config_test.go",
+      "focus": "Actual project reload and command-source precedence.",
+      "oracle": "Read1116–1183: filesystem edit waits callback and asserts project cc5 and retained global command; real async timeout catches no update. Not an all-workflow activation test.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ntm/internal/audit/audit_test.go",
+      "focus": "Writer-discriminated chain filenames.",
+      "oracle": "Read435–497: test name/comment says concurrent writers, but only first logger is constructed/logged; verifies one file checksum and prefix/date/discriminator. It does not instantiate second writer or concurrent writes, so name overstates oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Durable unknown-send state refuses guessing/replay; explicit restart distinguishes intentional duplicate authority.",
+    "Provider compaction requires attributed fresh accounting rather than cached token estimates.",
+    "Replacement handoff preserves original until context submission succeeds.",
+    "Linux process cleanup pins leader identity and tests post-cleanup causal effect.",
+    "Model-friendly machine outputs separate terminal transport receipt from messages."
+  ],
+  "limits": [
+    "Go/tmux control plane rather than provider-owning agent; consumer versus governance boundary differs from Arconaut.",
+    "Screen parsing/layout/capture errors limit terminal acceptance certainty.",
+    "Audit/log originals redacted/bounded and privacy/ignored failures leave gaps.",
+    "Hash chains are writer-local; inspected concurrency-named test is actually single writer.",
+    "No core executable refit or durable settlement of arbitrary external effects."
+  ],
+  "arconaut_questions": [
+    "Which operations need separate offered/submitted/accepted/completed identities, and when does uncertain state require a model decision rather than automatic retry?",
+    "Can a provider-native compaction contract expose attributed before/after originals/accounting directly, avoiding screen heuristics?",
+    "What minimum owned-program settlement boundary should survive compile/refit while shared daemons remain external?",
+    "How can the model write expressive workflows without making its consumer harness the whole fleet governor?"
+  ]
+}

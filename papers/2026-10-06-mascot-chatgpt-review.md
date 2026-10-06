@@ -1,0 +1,10 @@
+I found no mascot-specific overlap, color-state, pixel-bounds, animation, or cursor-restoration fault in the supplied code.
+
+- **Layout:** At columns `C`, content ends at `C−19`; the 16-cell sprite occupies `C−16` through `C−1`. Two blank columns separate them, and the final terminal column remains unused. The sprite occupies rows 1–12, safely within the minimum visible height of 20.
+- **Pixels and color:** Both animation phases stay inside the 16×24 source grid. Bobbing shifts pixels down one source row; only an empty bottom row is discarded. Per-cell resets prevent foreground/background leakage, and the final reset precedes cursor restoration.
+- **Animation:** Busy, visible turns request redraws every 500 ms and alternate bobbing and white-pixel shading. Idle rendering ignores phase and stays static. Narrow rendering omits the sprite.
+- **Cursor and resize:** The final absolute cursor move follows sprite drawing. Full-line erasure removes the previous sprite when crossing the visibility threshold, assuming the stated terminal width rules.
+
+**One resize fault exists in the surrounding loop:** physical dimensions below 10 rows or 12 columns are replaced with larger fictitious dimensions. At **9×90**, the frame’s final newline scrolls the physical screen, displacing the layout before cursor restoration. At **20×8**, rendering with an 11-cell content width can wrap unexpectedly. Fix this by retaining actual dimensions and selecting a reduced layout—or a minimal “terminal too small” frame—before calculating pane sizes.
+
+This was a static review of the supplied code only. I did not inspect other source or run tests. Wrapping and composer-prefix correctness remain dependent on the omitted `terminal_lines` implementation; terminal half-block width and truecolor behavior were taken as supported.

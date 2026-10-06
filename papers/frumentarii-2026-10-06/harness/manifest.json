@@ -1,0 +1,510 @@
+[
+  {
+    "name": "dgm",
+    "repo": "https://github.com/jennyzzt/dgm",
+    "pin": "a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2",
+    "archive": "quarantine/evo-harness-dgm.tar.gz",
+    "extracted": "quarantine/evo-harness-dgm",
+    "sha256": "3c98ae6bfa7b6597cbcddaf02bcce46e56ff97cdf6d14867251211be8069d961",
+    "restore": "curl -L https://codeload.github.com/jennyzzt/dgm/tar.gz/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2 -o quarantine/evo-harness-dgm.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-dgm.tar.gz quarantine/evo-harness-dgm",
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "sica",
+    "repo": "https://github.com/MaximeRobeyns/self_improving_coding_agent",
+    "pin": "ed8275dca4d3c5dbf77229964351fe9b424797dc",
+    "archive": "quarantine/evo-harness-sica.tar.gz",
+    "extracted": "quarantine/evo-harness-sica",
+    "sha256": "01bbd8619d06694f6ce26708f8059b947cce595d2e5b88bfa2961cbdc35d7a17",
+    "restore": "curl -L https://codeload.github.com/MaximeRobeyns/self_improving_coding_agent/tar.gz/ed8275dca4d3c5dbf77229964351fe9b424797dc -o quarantine/evo-harness-sica.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-sica.tar.gz quarantine/evo-harness-sica",
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "seal",
+    "repo": "https://github.com/Continual-Intelligence/SEAL",
+    "pin": "6d9c9f9ee392c6cc618e771f399d436d190f6ca4",
+    "archive": "quarantine/evo-harness-seal.tar.gz",
+    "extracted": "quarantine/evo-harness-seal",
+    "sha256": "fc624f044fcbc26a2ac5fdfbeff92762fce74f1c18a8f34dfce965a2f6322267",
+    "restore": "curl -L https://codeload.github.com/Continual-Intelligence/SEAL/tar.gz/6d9c9f9ee392c6cc618e771f399d436d190f6ca4 -o quarantine/evo-harness-seal.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-seal.tar.gz quarantine/evo-harness-seal",
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "exo",
+    "repo": "https://github.com/exoharness/exo",
+    "pin": "e58617450b0752e5afcdd8bb4558f4ba8c3d11f4",
+    "archive": "quarantine/evo-harness-exo.tar.gz",
+    "extracted": "quarantine/evo-harness-exo",
+    "sha256": "768ff739dabe59cfd2e06b28c7c2497bd035d22198dab3aae281e7431ec9a4e9",
+    "restore": "curl -L https://codeload.github.com/exoharness/exo/tar.gz/e58617450b0752e5afcdd8bb4558f4ba8c3d11f4 -o quarantine/evo-harness-exo.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-exo.tar.gz quarantine/evo-harness-exo",
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "stop",
+    "repo": "https://github.com/microsoft/stop",
+    "pin": "0d6780c54306b2486dd36e9c4ae9b49aceb27ea4",
+    "archive": "quarantine/evo-harness-stop.tar.gz",
+    "extracted": "quarantine/evo-harness-stop",
+    "sha256": "6a65084d6d1c388cfdf76ed91e8d3b54bdf6ff97746f896862e457e29b572ec3",
+    "restore": "curl -L https://codeload.github.com/microsoft/stop/tar.gz/0d6780c54306b2486dd36e9c4ae9b49aceb27ea4 -o quarantine/evo-harness-stop.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-stop.tar.gz quarantine/evo-harness-stop",
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "modularrsi",
+    "repo": "https://github.com/IQuestLab/ModularRSI",
+    "pin": "b5c72c36b0d08ff93f00ee202a8fbdebe849dfb9",
+    "archive": "quarantine/evo-harness-modularrsi.tar.gz",
+    "extracted": "quarantine/evo-harness-modularrsi",
+    "sha256": "b97ef22303c584871feb2e0f6cb1baad4f72839f95bbd6d207c5c5129527c549",
+    "restore": "curl -L https://codeload.github.com/IQuestLab/ModularRSI/tar.gz/b5c72c36b0d08ff93f00ee202a8fbdebe849dfb9 -o quarantine/evo-harness-modularrsi.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-modularrsi.tar.gz quarantine/evo-harness-modularrsi",
+    "omitted": [],
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "ouroboros",
+    "repo": "https://github.com/razzant/ouroboros",
+    "pin": "4b37f96223b4b8248eea80c9be22cf923759cd5a",
+    "archive": "quarantine/evo-harness-ouroboros.tar.gz",
+    "extracted": "quarantine/evo-harness-ouroboros",
+    "sha256": "01b7ec63d1168838d9e68f95371cf2fdc17fd860544febf63eefad02101274ea",
+    "restore": "curl -L https://codeload.github.com/razzant/ouroboros/tar.gz/4b37f96223b4b8248eea80c9be22cf923759cd5a -o quarantine/evo-harness-ouroboros.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-ouroboros.tar.gz quarantine/evo-harness-ouroboros",
+    "omitted": [],
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "trusting-trust",
+    "repo": "https://github.com/froeschele/trusting-trust-revisited",
+    "pin": "93f1a8f32fd22261852445d6a348e7a8f417da28",
+    "archive": "quarantine/evo-harness-trusting-trust.tar.gz",
+    "extracted": "quarantine/evo-harness-trusting-trust",
+    "sha256": "11201ed5d64739bc681f70f2b455708cfefa3d58a820eb2d2bf34c635aef68f8",
+    "restore": "curl -L https://codeload.github.com/froeschele/trusting-trust-revisited/tar.gz/93f1a8f32fd22261852445d6a348e7a8f417da28 -o quarantine/evo-harness-trusting-trust.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-trusting-trust.tar.gz quarantine/evo-harness-trusting-trust",
+    "omitted": [],
+    "status": "acquired",
+    "archive_preserved": true
+  },
+  {
+    "name": "helix",
+    "repo": "https://github.com/HKUDS/HELIX",
+    "pin": "b5adffa6065931b4d8833f6576188ce93006217f",
+    "archive": "quarantine/evo-harness-helix.tar.gz",
+    "extracted": "quarantine/evo-harness-helix",
+    "sha256": "6d2d1e83b68d246cd07b3a94b37353ca6a4ad09a42188247d4dc7a18b5b981c0",
+    "restore": "curl -L https://codeload.github.com/HKUDS/HELIX/tar.gz/b5adffa6065931b4d8833f6576188ce93006217f -o quarantine/evo-harness-helix.tar.gz && python3 papers/frumentarii-2026-10-06/harness/safe_extract.py quarantine/evo-harness-helix.tar.gz quarantine/evo-harness-helix",
+    "omitted": [
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-000-abc387-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-000-abc387-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-001-abc387-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-001-abc387-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-002-abc387-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-002-abc387-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-003-abc387-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-003-abc387-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-004-abc388-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-004-abc388-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-005-abc388-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-005-abc388-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-006-abc388-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-006-abc388-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-007-abc388-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-007-abc388-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-008-abc388-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-008-abc388-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-009-abc388-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-009-abc388-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-010-abc388-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-010-abc388-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-011-abc389-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-011-abc389-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-012-abc389-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-012-abc389-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-013-abc389-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-013-abc389-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-014-abc389-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-014-abc389-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-015-abc389-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-015-abc389-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-016-abc389-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-016-abc389-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-017-abc390-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-017-abc390-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-018-abc390-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-018-abc390-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-019-abc390-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-019-abc390-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-020-abc390-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-020-abc390-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-021-abc390-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-021-abc390-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-022-abc390-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-022-abc390-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-023-abc390-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-023-abc390-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-024-abc391-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-024-abc391-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-025-abc391-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-025-abc391-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-026-abc391-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-026-abc391-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-027-abc391-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-027-abc391-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-028-abc391-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-028-abc391-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-029-abc391-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-029-abc391-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-030-abc392-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-030-abc392-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-031-abc392-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-031-abc392-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-032-abc392-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-032-abc392-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-033-abc392-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-033-abc392-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-034-abc392-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-034-abc392-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-035-abc392-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-035-abc392-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-036-abc393-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-036-abc393-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-037-abc393-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-037-abc393-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-038-abc393-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-038-abc393-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-039-abc393-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-039-abc393-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-040-abc393-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-040-abc393-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-041-abc394-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-041-abc394-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-042-abc394-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-042-abc394-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-043-abc394-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-043-abc394-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-044-abc394-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-044-abc394-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-045-abc394-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-045-abc394-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-046-abc394-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-046-abc394-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-047-abc394-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-047-abc394-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-048-abc395-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-048-abc395-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-049-abc395-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-049-abc395-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-050-abc395-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-050-abc395-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-051-abc395-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-051-abc395-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-052-abc395-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-052-abc395-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-053-abc396-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-053-abc396-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-054-abc396-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-054-abc396-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-055-abc396-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-055-abc396-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-056-abc396-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-056-abc396-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-057-abc396-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-057-abc396-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-058-abc396-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-058-abc396-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-059-abc396-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-059-abc396-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-060-abc397-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-060-abc397-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-061-abc397-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-061-abc397-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-062-abc397-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-062-abc397-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-063-abc397-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-063-abc397-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-064-abc397-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-064-abc397-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-065-abc397-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-065-abc397-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-066-abc397-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-066-abc397-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-067-abc398-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-067-abc398-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-068-abc398-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-068-abc398-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-069-abc398-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-069-abc398-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-070-abc398-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-070-abc398-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-071-abc398-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-071-abc398-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-072-abc398-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-072-abc398-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-073-abc399-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-073-abc399-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-074-abc399-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-074-abc399-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-075-abc399-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-075-abc399-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-076-abc399-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-076-abc399-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-077-abc399-f",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-077-abc399-f' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-078-abc399-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-078-abc399-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-079-abc400-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-079-abc400-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-080-abc400-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-080-abc400-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-081-abc400-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-081-abc400-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-082-abc400-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-082-abc400-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-083-abc400-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-083-abc400-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-084-abc400-g",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-084-abc400-g' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-085-arc190-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-085-arc190-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-086-arc190-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-086-arc190-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-087-arc190-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-087-arc190-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-088-arc191-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-088-arc191-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-089-arc191-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-089-arc191-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-090-arc191-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-090-arc191-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-091-arc192-e",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-091-arc192-e' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-092-arc192-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-092-arc192-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-093-arc192-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-093-arc192-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-094-arc192-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-094-arc192-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-095-arc193-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-095-arc193-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-096-arc193-a",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-096-arc193-a' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-097-arc193-d",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-097-arc193-d' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-098-arc194-c",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-098-arc194-c' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench-v6-099-arc194-b",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench-v6-099-arc194-b' is a link to an absolute path"
+      },
+      {
+        "path": "packages/conformance/fixtures/tasks/livecodebench100.manifest.json",
+        "reason": "'packages/conformance/fixtures/tasks/livecodebench100.manifest.json' is a link to an absolute path"
+      }
+    ],
+    "status": "acquired-with-unsafe-links-omitted",
+    "archive_preserved": true
+  }
+]

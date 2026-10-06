@@ -1,0 +1,600 @@
+{
+  "id": "codex",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "JavaScript (model code in embedded V8)"
+    ],
+    "execution": "Rust Tokio session submission loop/turn tasks, cancellable tool futures and native executor services; optional per-cell V8 runtimes behind code-mode session transport.",
+    "service_boundary": "Owns local sessions, child agents, executors/terminal handles and optional code-mode worker; consumes provider/MCP/remote executor/code-mode services via explicit transports."
+  },
+  "summary": "Native coding core with configurable tool plans, local/remote environments, PTY handles, code-mode composition, v1/v2 multi-agent APIs and managed local/remote compaction.",
+  "inspection": {
+    "files": [
+      "quarantine/codex/codex-rs/core/src/session/handlers.rs",
+      "quarantine/codex/codex-rs/core/src/session/turn.rs",
+      "quarantine/codex/codex-rs/core/src/tools/router.rs",
+      "quarantine/codex/codex-rs/core/src/tools/parallel.rs",
+      "quarantine/codex/codex-rs/core/src/tools/orchestrator.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec/exec_command.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec/write_stdin.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/apply_patch.rs",
+      "quarantine/codex/codex-rs/core/src/tools/code_mode/execute_handler.rs",
+      "quarantine/codex/codex-rs/core/src/tools/code_mode/execute_spec.rs",
+      "quarantine/codex/codex-rs/code-mode-runtime/src/runtime/mod.rs",
+      "quarantine/codex/codex-rs/code-mode-runtime/src/runtime/globals.rs",
+      "quarantine/codex/codex-rs/code-mode-protocol/src/description.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+      "quarantine/codex/codex-rs/core/src/agent/control/delivery.rs",
+      "quarantine/codex/codex-rs/core/src/agent/control/execution.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/new_context_window.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/new_context_window_spec.rs",
+      "quarantine/codex/codex-rs/core/src/compact.rs",
+      "quarantine/codex/codex-rs/core/src/model_request.rs",
+      "quarantine/codex/codex-rs/core/src/session/step_activation.rs",
+      "quarantine/codex/codex-rs/rollout/src/policy.rs",
+      "quarantine/codex/codex-rs/rollout/src/search.rs",
+      "quarantine/codex/codex-rs/rollout-trace/src/inference.rs",
+      "quarantine/codex/codex-rs/rollout-trace/src/payload.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec_tests.rs",
+      "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "quarantine/codex/codex-rs/tui/src/slash_command.rs"
+    ],
+    "scope": "Submission/turn/stream dispatch and continuation; executor filesystem/PTY interaction, optional code-mode cells, multi-agent wake modes/permissions, compaction/checkpoint/state activation, audit retention and direct tool tests.",
+    "limits": "Source read only, reference not executed. Large feature-gated surface: row inventories native catalogs and representative dispatch mechanisms, not every connector-generated tool or entire provider/platform backend. Original inference trace explicitly omits raw stream deltas; selected rollout event persistence varies by history mode. No executable rebuild/self-improvement machinery traced."
+  },
+  "actions": [
+    {
+      "name": "exec_command; shell; shell_command",
+      "surface": "model tool",
+      "input": "Command/cwd/environment/shell/login/tty/yield/output; profile-dependent schema",
+      "output": "Output/exit or ongoing session ID; errors/events",
+      "lifecycle": "Native local/remote exec; PTY or pipes; yielded ongoing work via write_stdin",
+      "authority": "Model; standing approval/sandbox/network policy per environment",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e23"
+      ]
+    },
+    {
+      "name": "write_stdin",
+      "surface": "model tool",
+      "input": "session_id, chars, yield_time_ms, max_output_tokens",
+      "output": "New output/exit/session status",
+      "lifecycle": "Poll or write ongoing process; Ctrl-C bytes possible; cancellation respects executor lifecycle",
+      "authority": "Model; stdin approval/policy can reject",
+      "evidence": [
+        "e7"
+      ]
+    },
+    {
+      "name": "apply_patch",
+      "surface": "model tool",
+      "input": "Freeform patch, selected environment",
+      "output": "Patch results/diffs/errors",
+      "lifecycle": "Verified file changes; streamed preview then execution",
+      "authority": "Model; selected filesystem approval/sandbox",
+      "evidence": [
+        "e8"
+      ]
+    },
+    {
+      "name": "functions.exec; functions.wait (code mode)",
+      "surface": "model tool",
+      "input": "Raw JS; pragma yield/output; cell_id/terminate",
+      "output": "Text/media/notifications or yielded cell ID and resumed results",
+      "lifecycle": "Fresh isolate per cell; serializable session store/load; tool promises awaited; optional runtime feature",
+      "authority": "Model; nested enabled tools inherit native authority, no direct FS/network in JS",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "spawn_agent; send_message; followup_task; wait_agent; list_agents; interrupt_agent",
+      "surface": "model tool",
+      "input": "Task/name/fork/model; canonical/relative target; message; timeout",
+      "output": "Agent path/ID, statuses/mailbox/result, interruption state",
+      "lifecycle": "V2 independently working agents; queue-only message versus wake-on-idle follow-up; bounded active capacity",
+      "authority": "Model; configured delegation/tree/depth/authority rules; direct JS nesting may exclude collab tools",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "new_context",
+      "surface": "model tool",
+      "input": "No args",
+      "output": "New-context request acknowledgement",
+      "lifecycle": "Requests fresh window without summarization; environment persists",
+      "authority": "Model if configured",
+      "evidence": [
+        "e17"
+      ]
+    },
+    {
+      "name": "MCP/extension/dynamic/hosted tool catalogs; tool_search; list/read_mcp_resource; view_image; update_plan; request_user_input",
+      "surface": "model tool",
+      "input": "Per-tool discovered schema/resource URI/plan/image/user prompt",
+      "output": "Native/remote typed tool results and UI responses",
+      "lifecycle": "Dispatch through finalized direct/deferred/nested plan; feature/model dependent",
+      "authority": "Model plus operator-configured extensions/services; catalog represents generated tools",
+      "evidence": [
+        "e5",
+        "e27"
+      ]
+    },
+    {
+      "name": "Op::TurnInput; Op::Interrupt; /compact; /feedback",
+      "surface": "operator command",
+      "input": "Prompt/turn settings; cancellation; summary instructions; feedback/log choice",
+      "output": "Streamed events, compact checkpoint, feedback UI",
+      "lifecycle": "Submission loop independent of task; task cancellation versus background-terminal cleanup distinguished",
+      "authority": "Operator; /feedback not autonomous model complaint",
+      "evidence": [
+        "e1",
+        "e2",
+        "e16",
+        "e26"
+      ]
+    },
+    {
+      "name": "search_rollout_matches; active next-step settings update",
+      "surface": "programmable API",
+      "input": "Search term/home/archive; validated model/settings/environments update",
+      "output": "Matching saved paths/snippets; Applied/Rejected/Unavailable",
+      "lifecycle": "Query retained rollout; next sampling step settings snapshot, old tool retains original step",
+      "authority": "Client/harness extension/operator authority",
+      "evidence": [
+        "e18",
+        "e22",
+        "e4"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native patch plus shell reads/search and selected local/remote executor filesystem; output/tool schemas feature-dependent.",
+      "evidence": [
+        "e6",
+        "e8"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "PTY/pipe exec, yielded session IDs and write_stdin polling/input with per-environment policy.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Optional raw JS code-mode cells compose enabled tools with Promise orchestration, store/load and yield/wait.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fresh V8 isolate each cell; serializable store/load shares values across session, not arbitrary persistent interpreter namespace or OS handles.",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Serialized code-mode key/value store and local retained rollouts supply state primitives; internal thread DB is not established as a standing model query service.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e19",
+        "e22"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model code-mode programs and extension request/stream hooks allow composition; unrestricted replaceable turn-scheduler program not established.",
+      "evidence": [
+        "e9",
+        "e11",
+        "e27"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Child model override and fork selection; provider/client abstraction with request-scoped metadata.",
+      "evidence": [
+        "e12",
+        "e27"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "V2 addressed canonical task paths; send_message queues without waking, followup_task can wake idle; messages retain author/recipient and wake mode.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e14",
+        "e15"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent child sessions, yielded processes/cells and selected parallel tool calls; per-step immutable tool advertising retained.",
+      "evidence": [
+        "e4",
+        "e7",
+        "e9",
+        "e12"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent submission loop handles interrupts; V2 messages deliberately cannot secretly interrupt, separate interrupt action; process/cell cancellation explicit.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e7",
+        "e25"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Next-step model/settings/environment activation and compiled extension request/response contributors exist; arbitrary model replacement of native loop not traced.",
+      "evidence": [
+        "e18",
+        "e27"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Managed pre-turn/manual/mid-turn local/remote variants, checkpoint lineage and controlled initial-context reinjection; model fresh-window action distinct.",
+      "evidence": [
+        "e2",
+        "e16",
+        "e17"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Saved rollout/query and retained-context checkpoints make originals partly retrievable; no model-native repair-originals operation traced.",
+      "evidence": [
+        "e16",
+        "e19",
+        "e22"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional trace captures request-attempt/tool/runtime/terminal/checkpoint payload references; inference explicitly summarizes completed items rather than raw stream deltas; selected persistence is not everything.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e21"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Program API searches plain/compressed saved/archived rollouts; scope is retained rollout text, not complete transport/program audit.",
+      "evidence": [
+        "e22"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Next-step settings/environment changes revalidate authority and task identity; old tool call keeps advertising StepContext. Executable replacement not included.",
+      "evidence": [
+        "e4",
+        "e18"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Thread/rollout resume and code-mode reconnect are present primitives; actual self-rebuild/quiescent handoff and re-inhabitation not traced in inspected lifecycle files.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native executor abstraction supports remote paths/permission enforcement and code-mode session transport; consumes provider/MCP services.",
+      "evidence": [
+        "e6",
+        "e9"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Generic file/code actions and extensions exist; dedicated change/evaluate/rebuild experiment governance not established in inspected turn/tool/config paths.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator /feedback sends logs; no model-invokable state-capturing complaint/database follow-up affordance traced.",
+      "evidence": [
+        "e26"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Standing approval policy plus filesystem/network profiles; selected-environment login authority enforced; expert full-access/never configurations exist but managed constraints revalidated.",
+      "evidence": [
+        "e6",
+        "e18",
+        "e23",
+        "e24"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Specific handler authority and message non-interruption oracles inspected; mock/internal dispatch assertions do not validate all OS/provider backends.",
+      "evidence": [
+        "e24",
+        "e25"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool invocation Instant measurements, call/turn/cell IDs and retained step identity; these are local lifecycle ordering primitives rather than global audit completeness.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e18",
+        "e20"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/codex/codex-rs/core/src/session/handlers.rs",
+      "start": 422,
+      "end": 506,
+      "claim": "Independent submission loop processes interrupt/input while turn tasks exist."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/codex/codex-rs/core/src/session/turn.rs",
+      "start": 163,
+      "end": 249,
+      "claim": "Turn creates model client session, runs pre-sampling compaction and preserves input even on compaction failure."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/codex/codex-rs/core/src/session/turn.rs",
+      "start": 2775,
+      "end": 2823,
+      "claim": "Completed stream items dispatch tool/output handling and set continuation need."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/codex/codex-rs/core/src/tools/parallel.rs",
+      "start": 44,
+      "end": 164,
+      "claim": "Tool runtime retains advertising step; cancellable futures and parallel eligibility choose execution locks."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/codex/codex-rs/core/src/tools/router.rs",
+      "start": 47,
+      "end": 181,
+      "claim": "Exposed tool plan supports direct/code-mode/deferred tools and distinct terminal/child capability checks."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec/exec_command.rs",
+      "start": 155,
+      "end": 245,
+      "claim": "Exec routes through selected local/remote environment filesystem and permission profile."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec/write_stdin.rs",
+      "start": 58,
+      "end": 122,
+      "claim": "write_stdin uses ongoing process/session ID, yield/output limits, cancellation and approval errors."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/apply_patch.rs",
+      "start": 63,
+      "end": 121,
+      "claim": "Patch handler supports selected environment filesystem and streamed argument parsing."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/codex/codex-rs/core/src/tools/code_mode/execute_handler.rs",
+      "start": 86,
+      "end": 181,
+      "claim": "Exec submits raw JS to code service, holds cell ID, yields/resumes and traces original cell request/runtime response."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/codex/codex-rs/code-mode-runtime/src/runtime/mod.rs",
+      "start": 175,
+      "end": 235,
+      "claim": "Each cell starts V8 isolate/context; receives serialized stored values and pending tool/timer state."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/codex/codex-rs/code-mode-protocol/src/description.rs",
+      "start": 19,
+      "end": 46,
+      "claim": "Model surface describes fresh isolate, no direct OS/network, serializable store/load and Promise lifetime."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs",
+      "start": 101,
+      "end": 200,
+      "claim": "Spawn resolves model/fork mode/depth and durable canonical agent path."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+      "start": 32,
+      "end": 52,
+      "claim": "send_message maps to QueueOnly addressed delivery."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+      "start": 32,
+      "end": 52,
+      "claim": "followup_task maps to TriggerTurn addressed delivery."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/codex/codex-rs/core/src/agent/control/delivery.rs",
+      "start": 11,
+      "end": 43,
+      "claim": "Message mode preserves author/recipient and wake flag; messages and new tasks distinct."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/codex/codex-rs/core/src/compact.rs",
+      "start": 59,
+      "end": 96,
+      "claim": "Manual/pre-turn compaction clears context baseline; mid-turn injects initial context before last user message; checkpoint metadata separate."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/new_context_window.rs",
+      "start": 14,
+      "end": 48,
+      "claim": "Model new_context requests empty context window without summarizing and leaves environment state."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/codex/codex-rs/core/src/session/step_activation.rs",
+      "start": 297,
+      "end": 378,
+      "claim": "Updates validate current task identity and managed authority, then install next-step settings/environments atomically."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/codex/codex-rs/rollout/src/policy.rs",
+      "start": 10,
+      "end": 65,
+      "claim": "Durable rollout stores selected response items/context/compaction/inter-agent communications; unknown item classes excluded."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/codex/codex-rs/rollout-trace/src/inference.rs",
+      "start": 1,
+      "end": 96,
+      "claim": "Optional request-attempt trace; explicit non-delta completed/interrupted output summary, not raw streamed deltas."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/codex/codex-rs/rollout-trace/src/payload.rs",
+      "start": 9,
+      "end": 49,
+      "claim": "Trace references separate original request/results/runtime/terminal/compaction payload files."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/codex/codex-rs/rollout/src/search.rs",
+      "start": 25,
+      "end": 100,
+      "claim": "Program API searches saved/archived plain or compressed rollouts using rg or scanning fallback."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/codex/codex-rs/core/src/tools/orchestrator.rs",
+      "start": 125,
+      "end": 173,
+      "claim": "Execution authority combines standing approval policy and filesystem/network sandbox profile."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec_tests.rs",
+      "start": 356,
+      "end": 395,
+      "claim": "Oracle rejects login shell when selected environment forbids it even if turn allows it."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "start": 1858,
+      "end": 1920,
+      "claim": "V2 send-message rejects interrupt argument and verifies no interrupt Op emitted."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/codex/codex-rs/tui/src/slash_command.rs",
+      "start": 69,
+      "end": 95,
+      "claim": "Feedback command sends logs to maintainers; not a model-state complaint tool."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/codex/codex-rs/core/src/model_request.rs",
+      "start": 12,
+      "end": 46,
+      "claim": "Extension contributors can modify request metadata/intercept response streams."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/unified_exec_tests.rs",
+      "focus": "Environment-specific command authority",
+      "oracle": "Login request rejected based on selected environment even when turn policy allows login; actual handler invoked with fixture.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/codex/codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "focus": "Accidental message interrupt",
+      "oracle": "Unknown interrupt field yields model-facing error and captured worker Ops contain no interrupt; internal-thread fixture, no live model.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Immutable advertising-step retention avoids changing authority/tool definitions under pending calls.",
+    "Queue-only message and trigger-turn task are deliberately separate operations.",
+    "Optional trace separates original payload storage from reduced graph/UI."
+  ],
+  "limits": [
+    "Large feature-gated surface: row inventories native catalogs and representative dispatch mechanisms, not every connector-generated tool or entire provider/platform backend. Original inference trace explicitly omits raw stream deltas; selected rollout event persistence varies by history mode. No executable rebuild/self-improvement machinery traced."
+  ],
+  "arconaut_questions": [
+    "Should our generic code action use a session kernel or fresh isolate with explicit serialized storage?",
+    "How should Arconaut originals include every provider delta/failed attempt and unbounded program streams beyond this trace scope?",
+    "What activation boundary preserves old workflows while applying model-authored turn-program changes?"
+  ]
+}

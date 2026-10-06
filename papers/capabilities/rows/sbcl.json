@@ -1,0 +1,321 @@
+{
+  "id": "sbcl",
+  "kind": "native Common Lisp compiler/runtime",
+  "runtime": {
+    "languages": [
+      "Common Lisp",
+      "C"
+    ],
+    "execution": "Compiled Lisp in a long-lived OS process; OS threads and child processes are explicit.",
+    "service_boundary": "A runtime used by an application, not an agent or shared-computation governor."
+  },
+  "summary": "Live compilation and global-state core images are powerful primitives, with explicit thread, stream and runtime compatibility limits.",
+  "inspection": {
+    "files": [
+      "quarantine/sbcl/src/code/save.lisp",
+      "quarantine/sbcl/src/code/target-load.lisp",
+      "quarantine/sbcl/src/compiler/main.lisp",
+      "quarantine/sbcl/src/code/run-program.lisp",
+      "quarantine/sbcl/src/code/target-thread.lisp",
+      "quarantine/sbcl/src/code/time.lisp",
+      "quarantine/sbcl/tests/save.impure.lisp"
+    ],
+    "scope": "Read save/deinit, source/FASL load, compile-file interface, process execution/control, thread interruption and save rejection tests.",
+    "limits": "No complete compiler/runtime audit or execution of SBCL; no agent protocol or harness rebuild coordinator supplied."
+  },
+  "actions": [
+    {
+      "name": "LOAD / COMPILE-FILE",
+      "surface": "supplied primitive",
+      "input": "Source/FASL path and compiler options",
+      "output": "Loaded globals or FASL path, diagnostics and errors",
+      "lifecycle": "Live process; definitions may change future calls.",
+      "authority": "Host application process authority",
+      "evidence": [
+        "load",
+        "compile"
+      ]
+    },
+    {
+      "name": "SB-EXT:RUN-PROGRAM",
+      "surface": "supplied primitive",
+      "input": "Executable, literal argv, directory, environment, PTY and IO options",
+      "output": "PROCESS handle and streams/status hook",
+      "lifecycle": "Wait by default; :wait nil gives ongoing process.",
+      "authority": "Host OS authority",
+      "evidence": [
+        "process"
+      ]
+    },
+    {
+      "name": "SB-THREAD:INTERRUPT-THREAD",
+      "surface": "supplied primitive",
+      "input": "Thread and callback",
+      "output": "Asynchronous execution or thread error",
+      "lifecycle": "FIFO interrupts; critical sections defer delivery.",
+      "authority": "Application thread control",
+      "evidence": [
+        "interrupt"
+      ]
+    },
+    {
+      "name": "SB-EXT:SAVE-LISP-AND-DIE",
+      "surface": "supplied primitive",
+      "input": "Core path, toplevel, executable flag and hooks",
+      "output": "Core or combined executable; current process exits",
+      "lifecycle": "Quiescent image snapshot; later startup at toplevel.",
+      "authority": "Application owns image and thread cleanup",
+      "evidence": [
+        "save",
+        "deinit"
+      ]
+    },
+    {
+      "name": "GET-INTERNAL-REAL-TIME / GET-INTERNAL-RUN-TIME",
+      "surface": "supplied primitive",
+      "input": "No arguments",
+      "output": "Elapsed startup/CPU time units",
+      "lifecycle": "Current runtime instance.",
+      "authority": "Calling Lisp program",
+      "evidence": [
+        "time"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "LOAD reads executable source/FASL; ordinary filesystem work must be composed by an application.",
+      "evidence": [
+        "load"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Child-process handles with PTY/streams, nonwaiting launch, status hooks and separate control APIs; no agent wrappers.",
+      "evidence": [
+        "process"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Lisp source/FASL can execute in the live runtime; exposure to a model remains application work.",
+      "evidence": [
+        "load"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Lisp global state persists for process life; image save retains globals but not stacks or open streams.",
+      "evidence": [
+        "save"
+      ]
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Arbitrary Lisp programs and threads can compose computation; no agent workflow semantics supplied.",
+      "evidence": [
+        "compile"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "OS-thread interruption and child-process handles provide mechanisms, not workflow ownership.",
+      "evidence": [
+        "interrupt"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Asynchronous thread interrupts exist, with explicit cleanup hazards; the operator queue semantics are application work.",
+      "evidence": [
+        "interrupt"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "na",
+      "basis": "role",
+      "detail": "original_audit: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "na",
+      "basis": "role",
+      "detail": "audit_query: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Source/FASL load and compilation in the same process; compiled direct references may affect redefinition and active frames are not refitted automatically.",
+      "evidence": [
+        "compile"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Core save/restart preserves globals only, requires thread quiescence, changes streams and cannot transfer images across rebuilt runtimes; this does not supply an executable refit/outpost.",
+      "evidence": [
+        "save",
+        "deinit"
+      ]
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies native Common Lisp compiler/runtime; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Loaded programs and child processes run with host process authority; no model approval policy exists here.",
+      "evidence": [
+        "process"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Save tests assert a specific multiple-thread error and continued finalizer identity; they do not validate harness/provider continuity.",
+      "evidence": [
+        "deinit"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Separate startup real-time and process CPU time; no durable agent causal clock or paused-work policy.",
+      "evidence": [
+        "time"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "save",
+      "path": "quarantine/sbcl/src/code/save.lisp",
+      "start": 96,
+      "end": 223,
+      "claim": "Images preserve global state, unwind stacks, change streams and require single-thread quiescence; even separately built runtimes are incompatible."
+    },
+    {
+      "id": "deinit",
+      "path": "quarantine/sbcl/src/code/save.lisp",
+      "start": 340,
+      "end": 380,
+      "claim": "Save hooks precede checked live/starting/joinable-thread rejection and foreign teardown."
+    },
+    {
+      "id": "load",
+      "path": "quarantine/sbcl/src/code/target-load.lisp",
+      "start": 205,
+      "end": 267,
+      "claim": "LOAD evaluates source or loads FASL into the current Lisp environment."
+    },
+    {
+      "id": "compile",
+      "path": "quarantine/sbcl/src/compiler/main.lisp",
+      "start": 1879,
+      "end": 1920,
+      "claim": "COMPILE-FILE returns FASL; block compilation may resolve function references at compilation time."
+    },
+    {
+      "id": "process",
+      "path": "quarantine/sbcl/src/code/run-program.lisp",
+      "start": 718,
+      "end": 870,
+      "claim": "RUN-PROGRAM accepts literal argv, optional PTY/streams, wait flag, status hook and preserved descriptors."
+    },
+    {
+      "id": "interrupt",
+      "path": "quarantine/sbcl/src/code/target-thread.lisp",
+      "start": 2391,
+      "end": 2421,
+      "claim": "Thread interrupts are asynchronous and FIFO but nonlocal transfer during cleanup may skip cleanup."
+    },
+    {
+      "id": "time",
+      "path": "quarantine/sbcl/src/code/time.lisp",
+      "start": 14,
+      "end": 24,
+      "claim": "Startup real-time and process CPU time are separate interfaces."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/sbcl/tests/save.impure.lisp",
+      "focus": "Attempt to image-save while another thread is waiting.",
+      "oracle": "assert-error expects save-with-multiple-threads-error; second case checks finalizer remains a thread after rejected save.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Live native compilation and interactive redefinition without a JS host.",
+    "The image contract explicitly distinguishes globals from stacks, threads and OS streams."
+  ],
+  "limits": [
+    "An image is tied to the exact runtime build; rebuilding the native runtime needs a separate data handoff.",
+    "Interrupts can disrupt cleanup; a disciplined quiescence protocol remains application work."
+  ],
+  "arconaut_questions": [
+    "Can a data handoff preserve agent identity and context while leaving compiler/runtime images disposable?",
+    "Which mutable definitions are indirectly dispatched so activation can occur after turn/workflow conclusion?"
+  ]
+}

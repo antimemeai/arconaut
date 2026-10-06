@@ -1,0 +1,318 @@
+{
+  "id": "claude-code-official-public",
+  "kind": "official public plugin/mod source and product index",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "Python",
+      "shell (extensions only)"
+    ],
+    "execution": "Extension callbacks and hook subprocesses; host engine source unavailable in this reference.",
+    "service_boundary": "Examples consume host APIs; no ownership claim about the closed engine."
+  },
+  "summary": "Official extension source exposes context middleware, per-action rules and stop continuation; this repository is not the full coding-agent implementation.",
+  "inspection": {
+    "files": [
+      "quarantine/claude-code-official-public/README.md",
+      "quarantine/claude-code-official-public/plugins/README.md",
+      "quarantine/claude-code-official-public/mods/agents-md/hooks/register.ts",
+      "quarantine/claude-code-official-public/plugins/hookify/hooks/pretooluse.py",
+      "quarantine/claude-code-official-public/plugins/hookify/README.md",
+      "quarantine/claude-code-official-public/plugins/ralph-wiggum/hooks/stop-hook.sh",
+      "quarantine/claude-code-official-public/mods/agents-md/tests/register.test.ts"
+    ],
+    "scope": "Read official index, extension catalog, context hook implementation/test, Hookify rule loading and Ralph continuation program.",
+    "limits": "Host engine and plugin loader wiring unavailable; tests depend on unavailable claude-code/testing host. No product binary or hook executed."
+  },
+  "actions": [
+    {
+      "name": "Context and Read middleware",
+      "surface": "extension program",
+      "input": "instructionFiles options, prompt.context and Read event",
+      "output": "merged instruction list / additional context",
+      "lifecycle": "per request/read; per-agent dedup inherited on fork",
+      "authority": "extension program receives host FS/session/env APIs",
+      "evidence": [
+        "context",
+        "read"
+      ]
+    },
+    {
+      "name": "Hookify editable action rules",
+      "surface": "hook subprocess and operator commands",
+      "input": "Markdown rule files and hook JSON stdin",
+      "output": "warning/block response or nonblocking diagnostic",
+      "lifecycle": "files reloaded at each hook invocation; no restart claimed",
+      "authority": "operator/model can author rule files; host hook execution authority remains external",
+      "evidence": [
+        "hook",
+        "rules"
+      ]
+    },
+    {
+      "name": "Ralph stop continuation",
+      "surface": "extension stop hook",
+      "input": "state Markdown, iteration limit, completion promise, transcript path",
+      "output": "repeat prompt or allow stop",
+      "lifecycle": "stop event drives new continuation; state atomically replaced",
+      "authority": "operator starts/stops loop; model self-declares promise, no independent performance oracle",
+      "evidence": [
+        "ralph"
+      ]
+    },
+    {
+      "name": "/bug",
+      "surface": "documented operator command",
+      "input": "operator complaint",
+      "output": "product feedback with associated conversation data",
+      "lifecycle": "documented submission; capture details unavailable",
+      "authority": "operator command; model-wide state capture not established",
+      "evidence": [
+        "index"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Context plugin uses host ancestor-file APIs; full read/edit/search implementation belongs to unavailable engine.",
+      "evidence": [
+        "context",
+        "read"
+      ]
+    },
+    "processes": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Product advertises routine terminal/Git work; supplied hooks are subprocess programs, not the engine process-lifetime implementation.",
+      "evidence": [
+        "index",
+        "hook"
+      ]
+    },
+    "code_actions": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Commands/agents/MCP/hooks and real stop continuation supply composable extension programs, not a traced full host scheduling language.",
+      "evidence": [
+        "catalog",
+        "ralph"
+      ]
+    },
+    "multi_model": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Middleware changes prompt context and stop hook requests another continuation; does not establish arbitrary replacement of host turn loop.",
+      "evidence": [
+        "context",
+        "ralph"
+      ]
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Ralph consumes a transcript and README describes feedback retention; neither inspected path establishes full original provider/program IO.",
+      "evidence": []
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Hookify reads editable rules every action and Read checks current env switches; host code/plugin reload boundary remains unavailable.",
+      "evidence": [
+        "hook",
+        "read",
+        "rules"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Ralph repeatedly requests work, with model-written promise/iteration limit; no independent candidate evaluation/promotion mechanism established.",
+      "evidence": [
+        "ralph"
+      ]
+    },
+    "complaints": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Operator /bug reports feedback with conversation data; universal model-invokable state snapshot plus external complaint table is unestablished.",
+      "evidence": [
+        "index"
+      ]
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Hookify editable rules can warn/block but errors fail open; host ordinary execution grants and operator bypass defaults unavailable.",
+      "evidence": [
+        "hook",
+        "rules"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Context tests assert exact instruction contents and failed-walk behavior; host testing package unavailable, not an executed engine test.",
+      "evidence": [
+        "test"
+      ]
+    },
+    "time_order": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established for the closed host engine by the inspected public extension/index paths.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "index",
+      "path": "quarantine/claude-code-official-public/README.md",
+      "start": 7,
+      "end": 70,
+      "claim": "Terminal coding-agent product contract and operator /bug with associated conversation feedback; core unavailable."
+    },
+    {
+      "id": "catalog",
+      "path": "quarantine/claude-code-official-public/plugins/README.md",
+      "start": 3,
+      "end": 59,
+      "claim": "Commands, specialized agents, hooks and MCP configurations are public extension surfaces."
+    },
+    {
+      "id": "context",
+      "path": "quarantine/claude-code-official-public/mods/agents-md/hooks/register.ts",
+      "start": 40,
+      "end": 167,
+      "claim": "Source registers session and prompt.context middleware, optionally merges ancestor instructions."
+    },
+    {
+      "id": "read",
+      "path": "quarantine/claude-code-official-public/mods/agents-md/hooks/register.ts",
+      "start": 169,
+      "end": 280,
+      "claim": "Fork inherits seen-instruction state; Read adds unseen nested instructions and reads attachment switches every action."
+    },
+    {
+      "id": "hook",
+      "path": "quarantine/claude-code-official-public/plugins/hookify/hooks/pretooluse.py",
+      "start": 35,
+      "end": 70,
+      "claim": "Every hook loads rules, evaluates input and emits JSON; hook errors permit operation with a diagnostic."
+    },
+    {
+      "id": "rules",
+      "path": "quarantine/claude-code-official-public/plugins/hookify/README.md",
+      "start": 18,
+      "end": 128,
+      "claim": "Documented editable rule shape and next-tool-use activation, warnings/blocks and event scopes."
+    },
+    {
+      "id": "ralph",
+      "path": "quarantine/claude-code-official-public/plugins/ralph-wiggum/hooks/stop-hook.sh",
+      "start": 50,
+      "end": 177,
+      "claim": "Stop callback reads last transcript assistant text, compares model-written completion promise or iteration budget, updates state and blocks stop with same prompt."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/claude-code-official-public/mods/agents-md/tests/register.test.ts",
+      "start": 17,
+      "end": 87,
+      "claim": "Tests assert exact context injection, no double insertion for CLAUDE.md and failed-walk unchanged context; host is fixture supplied."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/claude-code-official-public/mods/agents-md/tests/register.test.ts",
+      "focus": "instruction precedence and failed ancestor walking",
+      "oracle": "Exact injected path/content and unchanged context on failed walk; supplied host fixtures, not runtime validation.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Public programmable middleware receives context, tools and agent-fork events.",
+    "Action rules are ordinary editable local data with next-use activation."
+  ],
+  "limits": [
+    "Engine unavailable: advertised product features cannot be source-validated here.",
+    "Ralph stopping depends on model text rather than an independent result oracle."
+  ],
+  "arconaut_questions": [
+    "Expose composition of turn/context/stop hooks without making hook errors silent.",
+    "Separate next-action extension semantics from Arconaut settled-turn default activation."
+  ]
+}

@@ -1,0 +1,527 @@
+{
+  "id": "windmill",
+  "kind": "workflow service with embedded AI-agent steps",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "Python",
+      "TypeScript"
+    ],
+    "execution": "PostgreSQL queue and Rust workers launch language child processes; AI steps await provider/MCP requests and queued tool jobs.",
+    "service_boundary": "Service owns worker scheduling, queue, job state, memory and administration; Arconaut would consume it rather than acquire its governance."
+  },
+  "summary": "Programmable job/flow service; embedded model tools are ordinary permissioned jobs, with separate execution history and compactable context.",
+  "inspection": {
+    "files": [
+      "quarantine/windmill/backend/windmill-worker/src/python_executor.rs",
+      "quarantine/windmill/backend/windmill-worker/src/handle_child.rs",
+      "quarantine/windmill/backend/windmill-queue/src/jobs.rs",
+      "quarantine/windmill/backend/windmill-worker/src/worker_flow.rs",
+      "quarantine/windmill/backend/windmill-worker/src/ai/tools.rs",
+      "quarantine/windmill/backend/windmill-worker/src/ai/compaction.rs",
+      "quarantine/windmill/backend/windmill-worker/src/memory_common.rs",
+      "quarantine/windmill/backend/windmill-worker/src/memory_oss.rs",
+      "quarantine/windmill/backend/windmill-audit/src/audit_oss.rs",
+      "quarantine/windmill/backend/src/stranded_jobs.rs",
+      "quarantine/windmill/backend/windmill-worker/src/ai_executor.rs",
+      "quarantine/windmill/backend/windmill-worker/src/wac_executor.rs",
+      "quarantine/windmill/backend/windmill-api/src/jobs.rs"
+    ],
+    "scope": "queue completion/cancellation/deploy restart, child lifecycle, Python wrapper, flow advancement, AI dispatch/memory/compaction, public API and direct test assertions",
+    "limits": "Private enterprise implementations are absent; no service/process execution and no exhaustive language executor or UI review."
+  },
+  "actions": [
+    {
+      "name": "POST /jobs/run/preview, /run/preview_flow, /run/agent/{path}",
+      "surface": "operator/program HTTP",
+      "input": "script/flow/agent path or preview program plus args/workspace",
+      "output": "job UUID; separately query/list results and progress",
+      "lifecycle": "queued worker execution with timeout/cancel",
+      "authority": "caller workspace identity and effective job authority",
+      "evidence": [
+        "e19",
+        "e8"
+      ]
+    },
+    {
+      "name": "execute_tool_calls -> enqueue_windmill_tool",
+      "surface": "model tool dispatch",
+      "input": "advertised function name and JSON arguments; authored flow module",
+      "output": "child job UUID, ordered tool result, AgentAction identity",
+      "lifecycle": "batch concurrent jobs; poll completed table and optionally reserve one local worker",
+      "authority": "job or configured on-behalf-of identity with tag checks",
+      "evidence": [
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "MCP tool dispatch",
+      "surface": "model extension",
+      "input": "registered MCP function and JSON arguments",
+      "output": "tool content/action and stream events",
+      "lifecycle": "await remote MCP client; cleanup/abort after parent cancellation",
+      "authority": "configured external credentials and advertised tool roster",
+      "evidence": [
+        "e6",
+        "e16"
+      ]
+    },
+    {
+      "name": "WAC dispatch/suspend/resume",
+      "surface": "program primitive",
+      "input": "named steps, checkpoints, pending sleep/approval and resume rows",
+      "output": "serialized completed_steps/pending steps/job IDs",
+      "lifecycle": "fresh process replays program against stored checkpoint; excludes already-consumed resume rows",
+      "authority": "authored workflow and authorized resume actor",
+      "evidence": [
+        "e1",
+        "e18"
+      ]
+    },
+    {
+      "name": "cancel job / timeout child",
+      "surface": "operator/service primitive",
+      "input": "job UUID and cancellation author/reason or time limit",
+      "output": "canceled result/reason and child exit; errors on termination",
+      "lifecycle": "poll DB; grace, direct-child signal escalation and reap; does not reverse remote effects",
+      "authority": "caller/job service policy",
+      "evidence": [
+        "e3",
+        "e15",
+        "e16"
+      ]
+    },
+    {
+      "name": "compact_if_needed / Compactor.compact",
+      "surface": "AI-worker policy",
+      "input": "context history, provider, budget and trigger",
+      "output": "shorter model context or unchanged failure; original result unchanged",
+      "lifecycle": "additional provider request; storage truncation remains distinct",
+      "authority": "configured step policy; not arbitrary model powerword",
+      "evidence": [
+        "e9",
+        "e10",
+        "e17"
+      ]
+    },
+    {
+      "name": "read_from_memory / write_to_memory",
+      "surface": "service primitive",
+      "input": "workspace/conversation/step, messages, allow_truncation",
+      "output": "stored messages or count dropped/error",
+      "lifecycle": "DB UPSERT after run; public backend capped 100KB",
+      "authority": "worker DB authority scoped by key",
+      "evidence": [
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "restart_perpetual_runs_on_new_version",
+      "surface": "deploy service",
+      "input": "workspace/script path/new deployed version",
+      "output": "replacement perpetual queued runs",
+      "lifecycle": "cancel and two-pass race recovery, not live execution continuation",
+      "authority": "deployer/service administrator",
+      "evidence": [
+        "e14"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Jobs run arbitrary authored language programs with per-job filesystem/result and monitored child lifecycle; not a shared standing kernel.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Jobs run arbitrary authored language programs with per-job filesystem/result and monitored child lifecycle; not a shared standing kernel.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Jobs run arbitrary authored language programs with per-job filesystem/result and monitored child lifecycle; not a shared standing kernel.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fresh wrapper/process plus WAC serialized checkpoints, not retained Python heap; public dedicated-loop worker support is not established.",
+      "evidence": [
+        "e1",
+        "e2"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Service owns PostgreSQL queue, completed results, flow status and scoped replaceable AI memory. A consuming harness does not govern the database.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e11",
+        "e12"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Authored flow modules and WAC checkpoint/resume are actual programs; embedded AI tools dispatch nested jobs. Flow retry is not an external-effect transaction.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e18"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "AI provider settings and nested AI-agent tool modules permit composed model roles; the inspected batching is jobs, not a live multi-model peer room.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e10"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Nested AI-agent jobs produce returned results; traced queue/agent paths do not establish addressable simultaneous chat peers.",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tool job batches execute independently, poll by UUID and publish ordered results; service has multiple workers.",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Cancel/timeouts propagate through DB polling/graceful agent cancellation and child signals; force abort does not undo external effects.",
+      "evidence": [
+        "e3",
+        "e16"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "User-authored flows/tools/WAC program control steps and outputs; AI step still uses a fixed worker loop rather than model-redefinable core turns.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e18"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Threshold/context rejection/storage policies summarize selected prefix without changing run result; failed/non-shrinking summaries preserve context.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e17"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Original per-run result retained separately from context enables reconstruction by a consumer; no model-native context-repair operation traced.",
+      "evidence": [
+        "e9",
+        "e17"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Uncompacted run messages and job results exist, but saved memory can drop history, child logs have bounds, and community audit API is explicitly no-op/private.",
+      "evidence": [
+        "e3",
+        "e9",
+        "e11",
+        "e13",
+        "e17"
+      ]
+    },
+    "audit_query": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Job/list/queue data and stored transcripts are queryable surfaces; enterprise audit query has no public implementation and returns empty/errors in OSS.",
+      "evidence": [
+        "e13",
+        "e19"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Deploy triggers perpetual-run cancellation/replacement, including race repair; not default turn-conclusion activation or in-process hot code swap.",
+      "evidence": [
+        "e14"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Durable job/flow/WAC data and lost-cancel repair support service restart; no harness outpost/refit protocol and no preservation of arbitrary process heap.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e15",
+        "e18"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider/MCP clients and HTTP job APIs are actual external boundaries. Shared Windmill service remains separately governed.",
+      "evidence": [
+        "e6",
+        "e16",
+        "e19"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authored program deployment and preview execution supply change/experiment primitives, not a model-governed autoresearch evaluator.",
+      "evidence": [
+        "e14",
+        "e19"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Stranded-job alerts/cancel reasons/logs capture service faults, not full agent-state complaint beads.",
+      "evidence": [
+        "e3",
+        "e15"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Effective identity/workspace/tag restrictions bound queued actions; service policies can be separate from a consuming operator-centric harness.",
+      "evidence": [
+        "e8"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Inspected SQL tests specify eligible stranded jobs and race exclusion; compaction asserts original serialized results and tool exchange integrity, without judging semantic summary fidelity.",
+      "evidence": [
+        "e15",
+        "e20"
+      ]
+    },
+    "time_order": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Call-order transcript publication is separate from completion order; SQL cancellation and flow/checkpoint identity avoid stale/racing updates.",
+      "evidence": [
+        "e7",
+        "e15",
+        "e18"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/windmill/backend/windmill-worker/src/python_executor.rs",
+      "start": 1000,
+      "end": 1025,
+      "claim": "Python wrappers persist result/errors; WAC checkpoint is loaded and prepared before a fresh Python process runs."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/windmill/backend/windmill-worker/src/python_executor.rs",
+      "start": 1192,
+      "end": 1238,
+      "claim": "Child is monitored with timeout/cancellation, then structured result read; WAC dispatch is interpreted afterward, not resident Python variables."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/windmill/backend/windmill-worker/src/handle_child.rs",
+      "start": 215,
+      "end": 322,
+      "claim": "Child wait competes with logs/timeout/cancel; Unix escalation signals direct child PID, then kills and reaps it. This alone is not an arbitrary descendant/service quiescence guarantee."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/windmill/backend/windmill-queue/src/jobs.rs",
+      "start": 1770,
+      "end": 1828,
+      "claim": "Queue row deletion and completed-result insertion are one SQL statement; external script effects precede database completion."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/windmill/backend/windmill-worker/src/worker_flow.rs",
+      "start": 415,
+      "end": 495,
+      "claim": "Flow advancement reloads durable module status and pinned runnable/preview flow after child completion."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/tools.rs",
+      "start": 91,
+      "end": 192,
+      "claim": "AI tools are discovered by exposed name, MCP calls dispatched, adjacent ordinary modules batched, structured-output pseudo-tool terminates with arguments."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/tools.rs",
+      "start": 756,
+      "end": 886,
+      "claim": "Queued tool UUIDs are polled from completed jobs; concurrent results become transcript/tool messages in original call order."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/tools.rs",
+      "start": 503,
+      "end": 590,
+      "claim": "Tool job inherits effective job/on-behalf-of authority, workspace/tag restrictions, parent/root identities and priority."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/compaction.rs",
+      "start": 39,
+      "end": 90,
+      "claim": "AgentHistory maintains separate result and context; prefix replacement modifies only model context."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/compaction.rs",
+      "start": 259,
+      "end": 317,
+      "claim": "Compaction installs only a smaller usable summary, retains original history on failure/unhelpful output and bounds consecutive failures."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/windmill/backend/windmill-worker/src/memory_common.rs",
+      "start": 5,
+      "end": 95,
+      "claim": "Standing memory key workspace/conversation/step; 100KB DB entry, optional oldest-message truncation, UPSERT replaces saved view."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/windmill/backend/windmill-worker/src/memory_oss.rs",
+      "start": 1,
+      "end": 62,
+      "claim": "Public OSS memory reads/writes PostgreSQL; enterprise object-storage implementation is separate/unavailable."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/windmill/backend/windmill-audit/src/audit_oss.rs",
+      "start": 72,
+      "end": 109,
+      "claim": "Community audit_log is a no-op, list_audit empty, get_audit rejects. Job transcripts are not this enterprise audit feature."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/windmill/backend/windmill-queue/src/jobs.rs",
+      "start": 649,
+      "end": 686,
+      "claim": "Deploy can restart perpetual scripts; second pass catches completion/restart race. This is cancellation/replacement rather than live kernel/code migration."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/windmill/backend/src/stranded_jobs.rs",
+      "start": 315,
+      "end": 406,
+      "claim": "Stranded cancellation marks under SQL lock and repairs asynchronous completion lost on server stop; it excludes running jobs."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai_executor.rs",
+      "start": 1120,
+      "end": 1187,
+      "claim": "Agent cancellation gets grace period, then task abort handles and orphaned-job cleanup; MCP clients cleaned after outcome."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai_executor.rs",
+      "start": 2250,
+      "end": 2268,
+      "claim": "Returned run result uses unrewritten execution messages; saved memory may retain only newest complete exchanges or none."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/windmill/backend/windmill-worker/src/wac_executor.rs",
+      "start": 255,
+      "end": 337,
+      "claim": "WAC resume uses durable consumed resume-row IDs, inserts approval answer into completed_steps and saves checkpoint; identity separates approval steps."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/windmill/backend/windmill-api/src/jobs.rs",
+      "start": 271,
+      "end": 310,
+      "claim": "Public HTTP run preview/flow/agent and queue/list APIs expose program invocation and job identities."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/compaction.rs",
+      "start": 880,
+      "end": 943,
+      "claim": "Direct tests compare complete serialized result before/after prefix change and assert parallel tool exchanges stay intact."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/windmill/backend/src/stranded_jobs.rs",
+      "focus": "unserved-root selection and pull/cancel race",
+      "oracle": "Exact sorted eligible tag/count set; running job cancellation remains None; DB fixtures exercise real SQL state but not external process stop.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/windmill/backend/windmill-worker/src/ai/compaction.rs",
+      "focus": "original retention and exchange boundaries",
+      "oracle": "Exact serialized before/after result equality, distinct action IDs and exchange starts; synthetic summaries do not assess model fidelity.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Tool execution composes ordinary durable workflow jobs with useful UUIDs and ordered results.",
+    "Separate result/context arrays directly preserve in-run action history through compaction.",
+    "Public source makes community/enterprise audit and memory boundaries visible."
+  ],
+  "limits": [
+    "Job DB completion is not atomic with arbitrary side effects.",
+    "100KB public memory and optional truncation require a separate original archive.",
+    "Unix direct-child signals alone do not settle arbitrary descendants or remote work."
+  ],
+  "arconaut_questions": [
+    "Which job/result handles should Arconaut retain while Windmill remains an independent service?",
+    "Can compaction retain source originals and expose model repair without copying enterprise governance?",
+    "What observable acknowledgment settles each child/remote effect before refit?"
+  ]
+}

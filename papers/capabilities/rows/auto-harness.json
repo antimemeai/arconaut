@@ -1,0 +1,555 @@
+{
+  "id": "auto-harness",
+  "kind": "governance middleware plus partial agent-loop framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Sync AgentLoop/callback provider, separate synchronous/async governance pipelines and supporting task/concurrency utilities.",
+    "service_boundary": "Owns permission/risk/hook/audit summaries and optional transcript/session briefing files; tool effects supplied by caller callbacks. Supporting fork/background/orchestrator objects are not assumed wired into AgentLoop."
+  },
+  "summary": "Governance-first tool middleware with constitution/prompt compiler and a main loop whose actual path differs materially from full advertised pipeline.",
+  "inspection": {
+    "files": [
+      "quarantine/auto-harness/autoharness/agent_loop.py",
+      "quarantine/auto-harness/autoharness/core/pipeline.py",
+      "quarantine/auto-harness/autoharness/core/audit.py",
+      "quarantine/auto-harness/autoharness/session/transcript.py",
+      "quarantine/auto-harness/autoharness/context/autocompact.py",
+      "quarantine/auto-harness/autoharness/context/microcompact.py",
+      "quarantine/auto-harness/autoharness/tools/orchestrator.py",
+      "quarantine/auto-harness/autoharness/agents/background.py",
+      "quarantine/auto-harness/autoharness/agents/fork.py",
+      "quarantine/auto-harness/autoharness/session/resume.py",
+      "quarantine/auto-harness/autoharness/compiler/prompt.py",
+      "quarantine/auto-harness/autoharness/tools/registry.py",
+      "quarantine/auto-harness/tests/test_agent_loop.py",
+      "quarantine/auto-harness/tests/test_audit.py"
+    ],
+    "scope": "AgentLoop/provider/tool callback path, evaluate vs process/async pipeline, audit originals/query limits, compaction/transcript/resume, supporting concurrency/fork/background and direct source assertions",
+    "limits": "No upstream execution. Main-loop integration bounded to traced AgentLoop; wrappers/CLI/integrations and every verification rule not exhaustively traced. Advertisement tests/counts not accepted as conformance."
+  },
+  "actions": [
+    {
+      "name": "AgentLoop.run / step",
+      "surface": "operator/program agent API",
+      "input": "task or current messages + registered tools/provider callback",
+      "output": "final text or response/tool results",
+      "lifecycle": "run fresh local context, capped iterations; serial callbacks via precheck",
+      "authority": "constitution precheck; ask noninteractive denied; original args executed despite replacement precheck",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "ToolRegistry.register / unregister / get / to_api_schema",
+      "surface": "support/model discovery API",
+      "input": "ToolDefinition name/schema/flags/aliases/execute callback",
+      "output": "tool schemas/registered definition or lookup miss",
+      "lifecycle": "mutable registry; run captures schemas once",
+      "authority": "caller implements tool behavior; names/flags are not actual shell/filesystem primitives",
+      "evidence": [
+        "e1",
+        "e19"
+      ]
+    },
+    {
+      "name": "ToolGovernancePipeline.evaluate / process / aprocess",
+      "surface": "governance middleware program API",
+      "input": "ToolCall and config/hooks/executor",
+      "output": "PermissionDecision only or ToolResult/audit when full process used",
+      "lifecycle": "evaluate no execute/posthooks; async full path separate; no generic external-effect replay",
+      "authority": "operator constitution and hooks; callers must propagate transformed input correctly",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "ToolOrchestrator.execute_batch",
+      "surface": "supplied concurrency primitive",
+      "input": "calls and async executor, registry safety flags/concurrency cap",
+      "output": "results submission order/errors",
+      "lifecycle": "safe subset concurrently FIRST then unsafe serial; not main-loop wired",
+      "authority": "caller declares concurrency safety; external side effects opaque",
+      "evidence": [
+        "e13",
+        "e2"
+      ]
+    },
+    {
+      "name": "AutoCompactor.compact / microcompact",
+      "surface": "wired context-management primitive",
+      "input": "messages/summarizer/token budget or keep_recent",
+      "output": "summary+new projected messages/token estimates",
+      "lifecycle": "side summary callback, copied placeholder old results, no durable originals archive guarantee",
+      "authority": "operator mode/threshold, summary quality delegated",
+      "evidence": [
+        "e1",
+        "e11",
+        "e12"
+      ]
+    },
+    {
+      "name": "AuditEngine.log / get_records / stream_records",
+      "surface": "governance audit/support query API",
+      "input": "call/risk/hooks/permission/result; session/type/limit",
+      "output": "hashed-input execution summary JSONL/parsed records",
+      "lifecycle": "append flush, malformed rows skipped; retention/rotation separately available",
+      "authority": "explicitly enabled audit, not main evaluate path nor full original custody",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "TranscriptWriter.append / resume_session / PromptCompiler.compile",
+      "surface": "conversation/briefing/prompt support APIs",
+      "input": "normalized message or saved session/constitution",
+      "output": "JSONL selected content, briefing text or governance prompt addendum",
+      "lifecycle": "file append vs task-list resume vs text compilation; no heap/request continuation",
+      "authority": "operator configuration/session folder; compiler is prompt formatting",
+      "evidence": [
+        "e10",
+        "e16",
+        "e17"
+      ]
+    },
+    {
+      "name": "build_forked_messages / BackgroundAgentManager.register,complete,fail,drain_notifications",
+      "surface": "delegation/task SUPPORT primitives",
+      "input": "parent messages/directive or description/agent ID/output/error",
+      "output": "cloned context/placeholder tool pairs or task/notification/output file",
+      "lifecycle": "constructs/tracks records but no actual launch in class; resident map",
+      "authority": "caller must own actual child launch/settlement; not main-loop multiagent claim",
+      "evidence": [
+        "e14",
+        "e15"
+      ]
+    },
+    {
+      "name": "verify_session / VerificationEngine.verify",
+      "surface": "programmatic evaluation primitive",
+      "input": "claimed result and reconstructed audit or supplied original ToolCall/ToolResult arrays",
+      "output": "aggregate rule verdict/evidence/issues",
+      "lifecycle": "checks supplied evidence; audit-based reconstruction strips original input and output",
+      "authority": "caller rule/context authority; cannot infer execution success from sparse audit",
+      "evidence": [
+        "e18"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller can register filesystem callbacks; registry names/governance path checks do not implement native filesystem operations automatically.",
+      "evidence": [
+        "e3",
+        "e19"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Caller-supplied execute callbacks may run shell/processes; main source no owned process handles or default launcher supplied.",
+      "evidence": [
+        "e3",
+        "e19"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Arbitrary host callback code and middleware execution APIs; selected agent outputs JSON tools, not persistent model-authored code kernel.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e7"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Main run starts fresh local conversation; support background objects track status but no launch/heap persistence routine, no persistent computation protocol.",
+      "evidence": [
+        "e1",
+        "e14",
+        "e16"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Governance JSONL/session/transcript files retain records; no general shared transactional database and summaries omit original bodies.",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e16"
+      ]
+    },
+    "workflow_programming": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Registered callbacks/provider replacement and separately exposed pipelines/orchestrator/fork constructors; main run sequential evaluate+execute bypasses full process/hook/sanitize/audit path.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e5",
+        "e7",
+        "e13",
+        "e15"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Replaceable LLM callback can route models; selected native AgentLoop one model, fork constructor no child launch. No inferred live multi-model engine from support utilities.",
+      "evidence": [
+        "e4",
+        "e15"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fork prompt construction/background completion notifications exist as supports; no main-loop launch/mail/room wiring traced.",
+      "evidence": [
+        "e2",
+        "e14",
+        "e15"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Exposed async orchestrator concurrent safe group then unsafe serial and original return ordering; AgentLoop constructs but does not use it in traced run, executes callbacks serially.",
+      "evidence": [
+        "e2",
+        "e13"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Separate pipeline turn/async governor supports policy boundaries, but selected synchronous run has no queue/provider interrupt/drain contract and background manager no process cancellation.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e7",
+        "e14"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider callback/prompt/registry and pre/post hooks configurable; evaluate may decide on modified replacement while AgentLoop executes original input and skips post-hook/process chain.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e5",
+        "e6",
+        "e7",
+        "e19"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Main wired auto-compaction and microcompact old-tool clearing; summary+canned acknowledgment/current user without archived lineage, pair constraints depend helper/mode.",
+      "evidence": [
+        "e1",
+        "e11",
+        "e12"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Optional transcript can reconstruct previous conversation; reactive/output recovery support names not automatic semantic repair. Reader skips malformed rows and compaction lacks strict integrity lineage.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e16"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Governance audit deliberately hashes input and stores size/status not bodies; AgentLoop precheck path skips full audit. Optional transcript preserves selected normalized content but provider conversion omits other raw blocks.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5",
+        "e8",
+        "e10"
+      ]
+    },
+    "audit_query": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "get_records/stream/summary filters governance record session/type; skips malformed lines and cannot recover raw originals from hashes.",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Registry register/unregister mutable supplied APIs; system prompt/tools built once per run and no executable hotreload/activation barrier traced.",
+      "evidence": [
+        "e1",
+        "e19"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session resume gives task briefing; background task Map resident; no live provider/callback heap/outpost restore or shared kernel reattach.",
+      "evidence": [
+        "e14",
+        "e16"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Replaceable provider callback/direct Anthropic SDK and arbitrary callback tools can consume external services; service runtime governance not supplied by this wrapper.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "self_improvement": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Harness engineering name refers governance construction; PromptCompiler emits text and verification scores rule evidence, not model-governed candidate harness experimentation/promotion.",
+      "evidence": [
+        "e17",
+        "e18"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Trace/audit-error/session failed lists support structured diagnostics; selected path no model-triggered external complaint snapshot/table contract.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e16"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Constitution risk/permission/prehook decisions; main noninteractive ask becomes error, transformed input may be checked but original executed, so normal main path requires critical integration repair before reuse.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e5",
+        "e6"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "verify_session sees empty tool input/body-less output from audit; tests assert audit fields and loop routing, denial oracle admits every str result and fails to prove blocking.",
+      "evidence": [
+        "e8",
+        "e18",
+        "e20"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Flush/lock JSONL timestamps and ordered batch results; safe-first orchestrator reorders effect execution vs submissions, no side-effect intent/settlement atomicity.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e13"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/auto-harness/autoharness/agent_loop.py",
+      "start": 251,
+      "end": 309,
+      "claim": "Each run builds system prompt/tool schemas once and fresh local messages; auto/micro compaction then provider, optional transcript task logging."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/auto-harness/autoharness/agent_loop.py",
+      "start": 328,
+      "end": 435,
+      "claim": "Main loop records assistant/tool transcript, calls pipeline.evaluate then direct _execute_tool serially, denies ask noninteractive; no process pipeline/orchestrator call here."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/auto-harness/autoharness/agent_loop.py",
+      "start": 703,
+      "end": 738,
+      "claim": "Direct registered callback executes original tool input; absent execute callback returns explanatory text; exceptions model-visible error."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/auto-harness/autoharness/agent_loop.py",
+      "start": 632,
+      "end": 701,
+      "claim": "Provider callback replaceable, otherwise Anthropic SDK call creates client; converts only text/tool_use/selected usage, other raw blocks omitted."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/auto-harness/autoharness/core/pipeline.py",
+      "start": 466,
+      "end": 510,
+      "claim": "evaluate is precheck only/no execution/no post-hooks; replacement frozen ToolCall local, returns only PermissionDecision rather than transformed input."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/auto-harness/autoharness/core/pipeline.py",
+      "start": 1066,
+      "end": 1080,
+      "claim": "Hook modify returns new frozen call with original metadata; main AgentLoop still passes original input to execution."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/auto-harness/autoharness/core/pipeline.py",
+      "start": 560,
+      "end": 601,
+      "claim": "Separate async process full executor/posthook/audit route, independent from AgentLoop evaluate path."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/auto-harness/autoharness/core/audit.py",
+      "start": 200,
+      "end": 284,
+      "claim": "Audit input hash only and output status/size/duration/error summary; no raw input/output body; lock flush not complete effect journal."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/auto-harness/autoharness/core/audit.py",
+      "start": 292,
+      "end": 340,
+      "claim": "Governance query filters session/event and reverse-limit; skips malformed records, not lossless integrity enforcement."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/auto-harness/autoharness/session/transcript.py",
+      "start": 18,
+      "end": 99,
+      "claim": "Optional append/flush JSONL conversation transcript separate from governance audit; reader skips malformed JSON lines."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/auto-harness/autoharness/context/autocompact.py",
+      "start": 202,
+      "end": 305,
+      "claim": "Compactor caller summary/circuit breaker, returns summary+synthetic acknowledgment+last-user deep copy; no archive/digest/empty-summary guard in body."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/auto-harness/autoharness/context/microcompact.py",
+      "start": 54,
+      "end": 111,
+      "claim": "Old tool result view replaced by placeholder, copied input and token estimates; preservation keyed selected names."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/auto-harness/autoharness/tools/orchestrator.py",
+      "start": 31,
+      "end": 108,
+      "claim": "Supporting execute_batch partitions concurrency-safe then unsafe; safe group first even if submitted later; ordered return not original effect order."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/auto-harness/autoharness/agents/background.py",
+      "start": 29,
+      "end": 106,
+      "claim": "Background manager registers tasks/completes/fails and notifications/output file; no actual launch routine in inspected full class."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/auto-harness/autoharness/agents/fork.py",
+      "start": 35,
+      "end": 97,
+      "claim": "build_forked_messages clones context and placeholder results/directive; supplied prompt constructor does not start child/provider requests."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/auto-harness/autoharness/session/resume.py",
+      "start": 9,
+      "end": 67,
+      "claim": "Resume generates structured briefing from saved task lists/status; not serialized provider/tool continuation."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/auto-harness/autoharness/compiler/prompt.py",
+      "start": 23,
+      "end": 60,
+      "claim": "PromptCompiler.compile builds governance text, not binary compiler or harness generation/rebuild."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/auto-harness/autoharness/core/pipeline.py",
+      "start": 762,
+      "end": 803,
+      "claim": "verify_session reconstructs ToolCalls with empty input because hash only, ToolResults without raw output, from audit summary; limits evidence for rule verdict."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/auto-harness/autoharness/tools/registry.py",
+      "start": 16,
+      "end": 80,
+      "claim": "Callback/schema/flags/aliases/deferred metadata registry supports register/unregister/lookup; core tools not automatically implemented by names."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/auto-harness/tests/test_agent_loop.py",
+      "start": 295,
+      "end": 357,
+      "claim": "Loop integration oracle checks result routing; denial oracle OR isinstance(result,str) is trivially weak because run returns str and does not prove callback was blocked."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/auto-harness/tests/test_agent_loop.py",
+      "focus": "loop/tool routing and advertised governance integration",
+      "oracle": "Fake callback and SafeTool prove result reaches subsequent provider request. Denial test assertion includes isinstance(result,str), so any normal string output passes; does not assert denied callback not invoked, transformed-input execution or posthook/audit coverage.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/auto-harness/tests/test_audit.py",
+      "focus": "structured governance field serialization",
+      "oracle": "Manual AuditEngine.log fixture asserts event/tool/hook/sanitized summaries and counts; tests isolated engine, not that AgentLoop logs actual executions or preserves raw bodies.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Supplied middleware APIs and callback registry are explicit and easily inspectable.",
+    "Governance query/audit and transcript/briefing roles are separate in source.",
+    "Context projection works on copies rather than pretending all memory is magic."
+  ],
+  "limits": [
+    "Main AgentLoop only evaluate-prechecks then executes original callback args; replacement args returned nowhere and posthooks/full audit not wired.",
+    "Orchestrator/fork/background support does not prove actual concurrent agent launch; background manager is tracking, not executor.",
+    "Governance audit summaries/hash-only inputs cannot support core original study; trivial denial test weakens advertised coverage."
+  ],
+  "arconaut_questions": [
+    "How do action transformation APIs return exact effective arguments and retain both representations so the executor cannot silently use pre-transform data?",
+    "Can main integration tests prove intended paths run and prohibited/failed paths do not, instead of checking any string output?",
+    "Which support modules are actually reachable normal-operation capabilities, and what minimal wiring belongs in baseline?"
+  ]
+}

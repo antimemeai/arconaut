@@ -1,0 +1,274 @@
+{
+  "id": "autoresearch",
+  "kind": "research protocol and GPU experiment program",
+  "runtime": {
+    "languages": [
+      "Python",
+      "Markdown protocol"
+    ],
+    "execution": "External coding agent edits a Python training program and launches separate GPU processes; repo contains no autonomous provider loop.",
+    "service_boundary": "Consumes an externally supplied agent/GPU environment; does not supply harness/provider/service ownership."
+  },
+  "summary": "A narrow, explicit edit/run/measure/keep protocol with a fixed evaluator is useful for autodroit, but its agent governance is authored instructions.",
+  "inspection": {
+    "files": [
+      "quarantine/autoresearch/program.md",
+      "quarantine/autoresearch/train.py",
+      "quarantine/autoresearch/prepare.py"
+    ],
+    "scope": "Read full program instructions, README role, train timing/failure/eval loop and bits-per-byte evaluator.",
+    "limits": "No GPU training, agent invocation or benchmark reproduction; no authored agent engine or test suite in snapshot."
+  },
+  "actions": [
+    {
+      "name": "edit/commit/run/measure/keep/discard loop",
+      "surface": "documented agent workflow",
+      "input": "Candidate train.py, tag and hypothesis",
+      "output": "Commit, val_bpb/VRAM, keep/discard/crash TSV row",
+      "lifecycle": "External agent runs iterations; shell/provider identity lives outside repo.",
+      "authority": "External agent under authored edit scope",
+      "evidence": [
+        "protocol",
+        "loop"
+      ]
+    },
+    {
+      "name": "train.py",
+      "surface": "experiment program",
+      "input": "Model/optimizer/training definitions and prepared GPU data",
+      "output": "Training log and printed BPB/VRAM/time metrics",
+      "lifecycle": "One GPU process, measured five-minute training budget excludes warmup.",
+      "authority": "Host command execution",
+      "evidence": [
+        "train",
+        "result"
+      ]
+    },
+    {
+      "name": "evaluate_bpb",
+      "surface": "evaluation API",
+      "input": "Model, tokenizer and batch size",
+      "output": "Validation bits per byte",
+      "lifecycle": "After candidate training; no harness activation.",
+      "authority": "Fixed evaluator calls editable model loss",
+      "evidence": [
+        "eval"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "External coding agent is instructed to edit only train.py and read fixed evaluator; repo supplies no file tool implementation.",
+      "evidence": [
+        "protocol"
+      ]
+    },
+    "processes": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "External agent launches uv run train.py and is instructed to kill >10-minute runs; lifecycle control is the host agent.",
+      "evidence": [
+        "loop"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Candidate is executable training code, independently run against fixed data/evaluator; no programmable model action runtime.",
+      "evidence": [
+        "train"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "role",
+      "detail": "persistent_kernel: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Markdown specifies a perpetual candidate/measure/keep loop; host agent must execute it.",
+      "evidence": [
+        "loop"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "na",
+      "basis": "role",
+      "detail": "concurrent_work: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "steering_interrupt": {
+      "status": "na",
+      "basis": "role",
+      "detail": "steering_interrupt: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Overwritten run.log and summary TSV plus git candidates do not retain complete original agent/tool/provider IO or all failed attempts.",
+      "evidence": [
+        "loop"
+      ]
+    },
+    "audit_query": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Model reads run.log and results.tsv; no standing queryable audit database.",
+      "evidence": [
+        "loop"
+      ]
+    },
+    "hot_change": {
+      "status": "na",
+      "basis": "role",
+      "detail": "hot_change: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "role",
+      "detail": "rebuild_continuity: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "na",
+      "basis": "role",
+      "detail": "remote_services: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Dedicated candidate code and evaluate/keep workflow can improve training, not automatically the host harness; model selection/governance is instruction-level.",
+      "evidence": [
+        "protocol",
+        "loop",
+        "eval"
+      ]
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies research protocol and GPU experiment program; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "documented",
+      "basis": "documentation",
+      "detail": "Protocol authorizes autonomous edits inside one file after initial setup; library/evaluator restrictions are instructions, not enforcement.",
+      "evidence": [
+        "protocol",
+        "loop"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "BPB against held validation data and crash/time rules provide an external metric; evaluator trusts editable model loss behavior, not a harness correctness TCK.",
+      "evidence": [
+        "eval",
+        "train"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Training budget accumulates time.time deltas after warmup with CUDA synchronization; operator kill deadline is host instruction and wall-clock jumps are not handled here.",
+      "evidence": [
+        "train",
+        "loop"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "protocol",
+      "path": "quarantine/autoresearch/program.md",
+      "start": 20,
+      "end": 50,
+      "claim": "Editable train.py and read-only prepare.py/evaluation constraints; baseline first, metric and simplicity selection."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/autoresearch/program.md",
+      "start": 90,
+      "end": 114,
+      "claim": "External agent commits candidate, runs to log, reads metric, records TSV and keeps/resets; ten-minute kill is an instruction."
+    },
+    {
+      "id": "train",
+      "path": "quarantine/autoresearch/train.py",
+      "start": 535,
+      "end": 605,
+      "claim": "Training loops with CUDA synchronization, NaN/loss fast-fail and measured budget excluding warmup."
+    },
+    {
+      "id": "eval",
+      "path": "quarantine/autoresearch/prepare.py",
+      "start": 344,
+      "end": 370,
+      "claim": "BPB computes loss per target byte over validation tokens with fixed sequence length; editable model produces per-token loss."
+    },
+    {
+      "id": "result",
+      "path": "quarantine/autoresearch/train.py",
+      "start": 607,
+      "end": 630,
+      "claim": "Final printed metric, time, VRAM, tokens and model shape feed external selection."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Tiny editable surface and explicit fixed measurement make experimental progress intelligible.",
+    "Keep/discard/crash vocabulary records unsuccessful experiments as part of research."
+  ],
+  "limits": [
+    "No agent runtime, continuous self-hosted refit or invariant-preserving oracle supplied.",
+    "Fixed prepare.py does not prevent a malicious/incorrect editable model from returning misleading loss; scientific score is narrower than system correctness."
+  ],
+  "arconaut_questions": [
+    "How can autodroit keep model-directed experiment freedom while retaining independent fault-class oracles and failed attempts?",
+    "Which experiment objective is external to the changing harness and cannot be silently altered by it?"
+  ]
+}

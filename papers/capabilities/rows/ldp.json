@@ -1,0 +1,344 @@
+{
+  "id": "ldp",
+  "kind": "trainable agent computation-graph and rollout framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Async get_asv agent/environment loop, operation graph with call IDs, concurrent rollouts and prompt/memory optimizers.",
+    "service_boundary": "Consumes Aviary action environments and supplied model chain; owns research rollout/optimizer state, not independent OS service governance."
+  },
+  "summary": "Explicit state transitions and trainable operation programs support agent-policy experiments; graph/state capture is narrower than complete original audit.",
+  "inspection": {
+    "files": [
+      "quarantine/ldp/src/ldp/agent/simple_agent.py",
+      "quarantine/ldp/src/ldp/alg/rollout.py",
+      "quarantine/ldp/src/ldp/graph/ops.py",
+      "quarantine/ldp/src/ldp/graph/common_ops.py",
+      "quarantine/ldp/src/ldp/alg/optimizer/ape.py",
+      "quarantine/ldp/src/ldp/agent/agent_client.py",
+      "quarantine/ldp/tests/test_agents.py",
+      "quarantine/ldp/tests/test_optimizer.py"
+    ],
+    "scope": "Read Simple/ReAct state and get_asv, rollout step/callback/error/timing, OpResult/OpCtx, LLM call capture, APE prompt update, HTTP agent client and window/optimizer tests.",
+    "limits": "Not full memory/tree/local-weights agent variants; alleged DB rehydration comments are not verified implemented persistence; no providers or evaluation executed."
+  },
+  "actions": [
+    {
+      "name": "Agent.init_state / get_asv",
+      "surface": "agent API",
+      "input": "Tools, prior typed state and observations",
+      "output": "OpResult action, next state and value",
+      "lifecycle": "One programmable decision step; caller drives environment continuation.",
+      "authority": "Agent program under supplied environment authority",
+      "evidence": [
+        "step",
+        "rollout"
+      ]
+    },
+    {
+      "name": "RolloutManager.sample_trajectories",
+      "surface": "rollout API",
+      "input": "Agent, environments, callbacks and step/concurrency limits",
+      "output": "Transitions with action/reward/state/timing and failures",
+      "lifecycle": "Parallel research rollouts; no operator chat implied.",
+      "authority": "Caller experiment program",
+      "evidence": [
+        "timer",
+        "rollout"
+      ]
+    },
+    {
+      "name": "APEOpt.aggregate_trajectory / update",
+      "surface": "learning API",
+      "input": "Reward/gradient trajectories and prompt Op",
+      "output": "Mutated prompt and optimization trace",
+      "lifecycle": "Serialized optimizer update; template variables preserved or proposal discarded.",
+      "authority": "Optimizer/model policy program",
+      "evidence": [
+        "opt"
+      ]
+    },
+    {
+      "name": "HTTPAgentClient.get_asv",
+      "surface": "remote API",
+      "input": "Serialized state, observations/training mode",
+      "output": "Remote OpResult and next state/value",
+      "lifecycle": "Request/reply; call/runtime trace state not automatically migrated.",
+      "authority": "Remote agent client/server",
+      "evidence": [
+        "remote"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "na",
+      "basis": "role",
+      "detail": "code_actions: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "role",
+      "detail": "persistent_kernel: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "OpCtx mentions a DB backend in comments, but inspected class supplies only in-process dict/get/update/clear; no standing DB implementation established.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Agent.get_asv, explicit next state, operation graphs, callbacks and optimizer programs are programmable Python interfaces.",
+      "evidence": [
+        "step",
+        "rollout"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "LLM op consumes configured model chain and instantiated model abstraction; no independent peer chat semantics.",
+      "evidence": [
+        "model"
+      ]
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "role",
+      "detail": "live_collaboration: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Rollout manager uses optional semaphore and async callbacks; independent trajectories can proceed with explicit identities.",
+      "evidence": [
+        "timer",
+        "rollout"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "No live operator busy-message/cancellation semantics established in inspected get_asv/rollout/HTTP paths; external coroutine cancellation is not a full turn contract.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Sliding-window transition selection and optional hiding preserve pairing shape; managed summary/repair policy not supplied.",
+      "evidence": [
+        "state"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Nonmutating prior states/transition records can supply omitted material if retained by caller; model-facing original retrieval/lineage repair operation not traced.",
+      "evidence": [
+        "state",
+        "rollout"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional hidden/windowed active state, first-message LLM return and clearable in-process OpCtx are research observations, not complete retained originals.",
+      "evidence": [
+        "state",
+        "model",
+        "context"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Run/call keyed OpCtx and Transition records are program-readable; clearable in-process research trace.",
+      "evidence": [
+        "context",
+        "rollout"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Config/prompt Op values can change future get_asv calls, and optimizer sets prompt after template check; no settled-turn activation coordinator.",
+      "evidence": [
+        "step",
+        "opt"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "HTTP serialized agent state supports remote state handoff, but OpCtx live data is excluded from model_dump and active calls/native process continuity are separate.",
+      "evidence": [
+        "remote",
+        "context"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "HTTP agent interface consumes remote decision service with serialized next-state handoff; no native executable outpost refit.",
+      "evidence": [
+        "remote"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "APE/memory optimizer programs learn policy prompts from trajectories; traced prompt gate checks template compatibility rather than independent performance improvement.",
+      "evidence": [
+        "opt"
+      ]
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies trainable agent computation-graph and rollout framework; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Registered environment owns tools; caller programs/optimizer can mutate prompts; generic operator approval/agency posture is application work.",
+      "evidence": [
+        "step",
+        "opt"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Trajectory reward/gradient supplies feedback; window test checks protocol pairing, optimizer tests observe prompt trace/reset and task loss.",
+      "evidence": [
+        "test",
+        "opt"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Monotonic per-operation timings plus trajectory timestep and call IDs; no restart/paused-time policy.",
+      "evidence": [
+        "timer",
+        "rollout"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "state",
+      "path": "quarantine/ldp/src/ldp/agent/simple_agent.py",
+      "start": 26,
+      "end": 108,
+      "claim": "Next-state creation can window transitions, hide prior environment state and hide action content without mutating prior state."
+    },
+    {
+      "id": "step",
+      "path": "quarantine/ldp/src/ldp/agent/simple_agent.py",
+      "start": 161,
+      "end": 184,
+      "claim": "get_asv gets next state, resolves config/model op and appends chosen action."
+    },
+    {
+      "id": "rollout",
+      "path": "quarantine/ldp/src/ldp/alg/rollout.py",
+      "start": 411,
+      "end": 472,
+      "claim": "Rollout explicitly calls agent then environment, stores before/after state/action/reward/done/truncated and timer metadata."
+    },
+    {
+      "id": "context",
+      "path": "quarantine/ldp/src/ldp/graph/ops.py",
+      "start": 339,
+      "end": 397,
+      "claim": "Op context stores run/call keyed data globally, excluded from model_dump and clearable; DB rehydration discussed but not implemented by these methods."
+    },
+    {
+      "id": "model",
+      "path": "quarantine/ldp/src/ldp/graph/common_ops.py",
+      "start": 263,
+      "end": 328,
+      "claim": "LLM call uses supplied model-chain configuration; result/logprob saved in Op context, returns first message."
+    },
+    {
+      "id": "opt",
+      "path": "quarantine/ldp/src/ldp/alg/optimizer/ape.py",
+      "start": 172,
+      "end": 241,
+      "claim": "Optimizer selects trajectory examples and updates prompt under lock; template-variable check is gate, not held-out improvement test."
+    },
+    {
+      "id": "remote",
+      "path": "quarantine/ldp/src/ldp/agent/agent_client.py",
+      "start": 20,
+      "end": 76,
+      "claim": "HTTP client passes serialized state/observations/training mode and receives action/next state/value."
+    },
+    {
+      "id": "timer",
+      "path": "quarantine/ldp/src/ldp/alg/rollout.py",
+      "start": 70,
+      "end": 111,
+      "claim": "Monotonic operation duration and semaphore limit bound rollout concurrency."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/ldp/tests/test_agents.py",
+      "start": 836,
+      "end": 864,
+      "claim": "Sliding window test expects exact user/hidden/tool-request/tool-response sequence after five transitions."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/ldp/tests/test_agents.py",
+      "focus": "Window transformation retains valid tool request/response transition.",
+      "oracle": "Exactly four expected messages with user/hidden/request/response types; provider calls use test fixtures/cassettes, no raw original-audit assertion.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/ldp/tests/test_optimizer.py",
+      "focus": "APE example aggregation, update reset and learned task loss.",
+      "oracle": "Known good examples, empty consumed example set and growing prompt trace; task-specific loss improvement with retries, not universal harness invariants.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Ordinary explicit agent/environment states make research and alternative policy paradigms composable.",
+    "Operations carry call identities and trainable parameters; state/trace are separable from model messages."
+  ],
+  "limits": [
+    "A useful graph trace is not an immutable original audit; comments about DB persistence require separate implementation evidence.",
+    "Template-compatible prompt updates are not independent improvement evidence or safe native core refit."
+  ],
+  "arconaut_questions": [
+    "How should active context, retained original state and learned policy parameters have separate identities/lifetimes?",
+    "Can the model experiment with decision programs while independent correctness oracles remain outside editable policy?"
+  ]
+}

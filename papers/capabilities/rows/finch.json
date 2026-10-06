@@ -1,0 +1,349 @@
+{
+  "id": "finch",
+  "kind": "notebook-agent environment and evaluation composition",
+  "runtime": {
+    "languages": [
+      "Python",
+      "R"
+    ],
+    "execution": "Aviary environment consumed by LDP rollout agent; local Jupyter kernel or Docker nbconvert notebook execution.",
+    "service_boundary": "Owns temporary notebook workspaces/kernel/container lifecycle; generic provider loop is delegated to LDP/Aviary, storage can be GCS-backed."
+  },
+  "summary": "A small model-editable notebook analysis environment with full-notebook rerun after each code-cell edit.",
+  "inspection": {
+    "files": [
+      "quarantine/finch/src/fhda/notebook_env.py",
+      "quarantine/finch/src/fhda/utils.py",
+      "quarantine/finch/src/expts/eval.py",
+      "quarantine/finch/src/fhda/data_analysis_env.py",
+      "quarantine/finch/tests/test_nb_env.py"
+    ],
+    "scope": "environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions",
+    "limits": "Underlying LDP provider loop is a dependency rather than implemented in this directory; source only, no Docker/Jupyter/tests/models executed."
+  },
+  "actions": [
+    {
+      "name": "reset / step",
+      "surface": "environment API",
+      "input": "Workspace/language/runtime configuration then ToolRequestMessage.",
+      "output": "Initial tool schemas plus notebook observation; step returns messages,reward delta,done,truncated=false.",
+      "lifecycle": "Episode owns local kernel/container; tool calls sequential and errors handled as observations.",
+      "authority": "Aviary/LDP caller, not standalone Finch-owned provider loop.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e6"
+      ]
+    },
+    {
+      "name": "edit_cell",
+      "surface": "model tool",
+      "input": "contents code and optional idx; invalid numeric idx becomes append.",
+      "output": "Append/edit message followed by updated full notebook environment observation.",
+      "lifecycle": "Finally saves and reruns entire notebook; repeated effects can recur in local live namespace.",
+      "authority": "Arbitrary code under runtime authority, code-only cell surface.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "list_workdir / download_from_bucket",
+      "surface": "model tools",
+      "input": "No arguments for recursive listing; configured optional bucket/path arguments.",
+      "output": "Directory JSON or downloaded workspace contents.",
+      "lifecycle": "Workspace scoped path; download capability exposed only when configured.",
+      "authority": "Configured environment/GCS credentials; not an agent-owned standing database.",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "submit_answer",
+      "surface": "model tool",
+      "input": "String/numeric/structured answer depending on subclass.",
+      "output": "Submitted answer text and done state.",
+      "lifecycle": "DataAnalysisEnv closes owned runtime immediately; base NBEnvironment only sets done.",
+      "authority": "Submission is not correctness validation.",
+      "evidence": [
+        "e3",
+        "e7"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Workspace copied into temporary directory by default; notebook/Markdown/analysis files saved, listed and copied at trajectory end. Cell code can perform file IO under runtime authority.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e4",
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Owns local Jupyter or Docker/container process and closes it at end; no general shell-process handle API is exposed beyond notebook code and fixed nbconvert command.",
+      "evidence": [
+        "e1",
+        "e4"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native edit_cell(contents,idx) modifies code only and reruns full notebook in finally. Local and Docker error behavior differs: local raises at first error; Docker allows cell errors.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local AsyncKernelManager persists for environment episode, but every edit reruns every notebook cell into that live kernel. Docker nbconvert invokes notebook execution anew; neither is a shared standing service, and submit closes analysis kernel.",
+      "evidence": [
+        "e1",
+        "e3",
+        "e4",
+        "e7"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can edit notebook computation sequence; operator configures agent/evaluator/rollout callbacks. No general live workflow scheduler is supplied in this environment.",
+      "evidence": [
+        "e3",
+        "e6",
+        "e8"
+      ]
+    },
+    "multi_model": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Environment tool calls are deliberately concurrency=False and each notebook runs sequentially; independent rollouts belong to external LDP evaluator.",
+      "evidence": [
+        "e2",
+        "e5",
+        "e8"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Composition requires hide_old_env_states when agent supports it; latest full notebook projection replaces redundant old environment observations. This is state projection, not archived managed conversational compaction.",
+      "evidence": [
+        "e2",
+        "e6"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Current notebook is reloadable and rendered as observation; previous overwritten notebook/output bytes are not preserved for repairing omitted or corrupted original conversation.",
+      "evidence": [
+        "e1",
+        "e4"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Action strings, notebook outputs and external trajectory callback offer analysis records. Notebook is overwritten after execution and does not preserve each original version or complete provider/OS IO.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e8"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model code-cell edits take effect immediately through full rerun; this updates scientific program, not the harness or agent turn engine.",
+      "evidence": [
+        "e3"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "GCS-backed workspace and HTTP TaskDatasetClient/evaluator composition are remote-storage/environment boundaries. No consumed durable remote kernel protocol is established.",
+      "evidence": [
+        "e8"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection",
+      "detail": "Not established in the explicitly inspected environment reset/step/action execution, notebook storage/kernel lifetime, rollout composition and notebook integration assertions; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Direct code executes with local kernel authority or mounted Docker workspace. No per-edit approval gate appears on traced action route; isolation depends on configured runtime.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e4"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "NB tests assert executed literal text/plot replacement and normalized environment state; base submit merely ends episode and DataAnalysisEnv does not grade its stored eval_mode here. Evaluator is external dependency.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e8"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Tool calls and cell reruns are sequential; local Jupyter outputs match parent message IDs. No durable attempt/generation causal ledger is shown.",
+      "evidence": [
+        "e2",
+        "e5"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/finch/src/fhda/notebook_env.py",
+      "start": 39,
+      "end": 105,
+      "claim": "Notebook file state can reload, local kernel starts in workdir or Docker mounts /workspace; close terminates owned execution."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/finch/src/fhda/notebook_env.py",
+      "start": 150,
+      "end": 185,
+      "claim": "Tools are edit_cell/list_workdir/submit_answer plus optional bucket download; step invokes sequentially and returns notebook-state observation/reward/done."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/finch/src/fhda/notebook_env.py",
+      "start": 215,
+      "end": 269,
+      "claim": "edit_cell appends/replaces code then finally saves/reruns notebook; submit_answer ends base episode without correctness evaluation."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/finch/src/fhda/notebook_env.py",
+      "start": 286,
+      "end": 384,
+      "claim": "Docker runs nbconvert --execute --inplace --allow-errors, local path uses live kernel; state is overwritten/reloaded and temporary directory cleaned on close."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/finch/src/fhda/utils.py",
+      "start": 150,
+      "end": 234,
+      "claim": "Local rerun iterates cells, matches Jupyter message parent ID, records outputs and raises on error before continuing."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/finch/src/expts/eval.py",
+      "start": 154,
+      "end": 191,
+      "claim": "Configured LDP agent consumes environment via RolloutManager; hide-old-env-state setting is required when offered; outputs copied on trajectory completion."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/finch/src/fhda/data_analysis_env.py",
+      "start": 65,
+      "end": 79,
+      "claim": "DataAnalysisEnv submit marks done and immediately closes owned kernel/container."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/finch/src/expts/eval.py",
+      "start": 67,
+      "end": 91,
+      "claim": "Evaluator callbacks record trajectories/workspaces and configured agent; benchmark apparatus is composition rather than automatic scientific verification."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/finch/tests/test_nb_env.py",
+      "focus": "Notebook execution/projection drift after replacing plot cell",
+      "oracle": "Temporary workspace with real configured kernel/container asserts literal hello/Goodbye counts, plot/image disappearance after edit and EnvStateMessage text/image shapes. Docker/R cases skip when unavailable; no action-history/replay or side-effect-idempotence oracle. Tests not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Simple computation-as-edit surface and notebook-as-current-state ergonomics.",
+    "Kernel/runtime ownership and episode termination are directly visible."
+  ],
+  "limits": [
+    "Rerunning all cells can repeat external effects and accumulate local state.",
+    "Overwritten notebook is a projection, not immutable original audit.",
+    "Provider loop, training and evaluation machinery are external compositions."
+  ],
+  "arconaut_questions": [
+    "Should an edit rerun from a clean namespace, dependency suffix or explicit operator policy?",
+    "How can shared kernel consumers expose namespace lifetime/authority without owning service teardown?"
+  ]
+}

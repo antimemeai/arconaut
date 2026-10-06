@@ -1,0 +1,60 @@
+[
+  {
+    "name": "dgm",
+    "url": "https://arxiv.org/pdf/2505.22954v1",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "sica",
+    "url": "https://arxiv.org/pdf/2504.15228v2",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "stop",
+    "url": "https://arxiv.org/pdf/2310.02304v3",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "seal",
+    "url": "https://arxiv.org/pdf/2506.10943v1",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "helix",
+    "url": "https://arxiv.org/pdf/2608.13951v1",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "self-harness",
+    "url": "https://arxiv.org/pdf/2606.09498v1",
+    "status": "acquired-and-converted"
+  },
+  {
+    "name": "modularrsi",
+    "url": "https://arxiv.org/pdf/2609.14857v1",
+    "status": "acquired-and-converted",
+    "pdf": "modularrsi.pdf",
+    "text": "modularrsi.txt"
+  },
+  {
+    "name": "ouroboros",
+    "url": "https://arxiv.org/pdf/2608.08311v1",
+    "status": "acquired-and-converted",
+    "pdf": "ouroboros.pdf",
+    "text": "ouroboros.txt"
+  },
+  {
+    "name": "trusting-trust",
+    "url": "https://arxiv.org/pdf/2609.17817v1",
+    "status": "acquired-and-converted",
+    "pdf": "trusting-trust.pdf",
+    "text": "trusting-trust.txt"
+  },
+  {
+    "name": "self-evolving-multitask",
+    "url": "https://arxiv.org/pdf/2609.38372v1",
+    "status": "acquired-and-converted",
+    "pdf": "self-evolving-multitask.pdf",
+    "text": "self-evolving-multitask.txt"
+  }
+]

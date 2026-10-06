@@ -1,0 +1,546 @@
+{
+  "id": "devika",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python",
+      "JavaScript/Svelte UI"
+    ],
+    "execution": "Flask/gevent-patched service with per-input Python threads; synchronous prompted stages and provider executor; Playwright browser",
+    "service_boundary": "Owns local project files, SQLite chat/state and browsers/processes; consumes provider/search/deployment APIs. No fabric contract."
+  },
+  "summary": "Fixed planner/researcher/coder and classified follow-up application pipeline; named agents are same-model stages, not concurrent colleagues.",
+  "inspection": {
+    "files": [
+      "quarantine/devika/devika.py",
+      "quarantine/devika/src/agents/agent.py",
+      "quarantine/devika/src/agents/agent.py",
+      "quarantine/devika/src/agents/agent.py",
+      "quarantine/devika/src/agents/agent.py",
+      "quarantine/devika/src/agents/coder/coder.py",
+      "quarantine/devika/src/agents/coder/coder.py",
+      "quarantine/devika/src/agents/runner/runner.py",
+      "quarantine/devika/src/services/utils.py",
+      "quarantine/devika/src/llm/llm.py",
+      "quarantine/devika/src/llm/openai_client.py",
+      "quarantine/devika/src/state.py",
+      "quarantine/devika/src/state.py",
+      "quarantine/devika/src/project.py",
+      "quarantine/devika/src/project.py",
+      "quarantine/devika/src/memory/knowledge_base.py",
+      "quarantine/devika/src/config.py",
+      "quarantine/devika/src/agents/runner/runner.py",
+      "quarantine/devika/devika.py",
+      "quarantine/devika/src/browser/interaction.py",
+      "quarantine/devika/src/agents/agent.py",
+      "quarantine/devika/benchmarks/SWE-bench.md"
+    ],
+    "scope": "Entry/thread routing, initial/follow-up stages, model transport, file parser/save, command/repair, SQLite and config, browser integration and available benchmark material.",
+    "limits": "Source read only, reference not executed. No assertion-based reference tests found. No dependencies or reference executed. Browser/decision branches have specific unwired/faulty calls; owned stores are not shared standing-service capability."
+  },
+  "actions": [
+    {
+      "name": "user-message",
+      "surface": "operator socket",
+      "input": "message/base_model/project/search_engine",
+      "output": "project messages/state and background thread",
+      "lifecycle": "non-cancellable thread, active work can overlap",
+      "authority": "operator selects project/model; no command approval",
+      "evidence": [
+        "e1",
+        "e3"
+      ]
+    },
+    {
+      "name": "answer | run | deploy | feature | bug | report",
+      "surface": "model classifier",
+      "input": "conversation selects action; host builds code/context",
+      "output": "answer text, command results, deployed URL, files or PDF",
+      "lifecycle": "fixed one branch after classifier",
+      "authority": "model selects branch; host executes automatically",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "name": "Coder.execute / save_code_to_project",
+      "surface": "model response convention and host API",
+      "input": "~~~ blocks with File: and code",
+      "output": "file dictionaries then filesystem writes",
+      "lifecycle": "synchronous generation and writes",
+      "authority": "model controls filenames/code, host unguarded join",
+      "evidence": [
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "Runner commands / rerunner action=command | patch",
+      "surface": "model response convention",
+      "input": "commands JSON; failed stdout and generated replacement/patch",
+      "output": "terminal stdout and patched files",
+      "lifecycle": "blocking sequential processes; no handles/cancel/deadline",
+      "authority": "automatic OS execution without confirmation",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    {
+      "name": "search_queries / open_page",
+      "surface": "model-generated queries and host API",
+      "input": "queries plus chosen search engine",
+      "output": "first-link page text, screenshots, formatted summary",
+      "lifecycle": "sequential browser instances close on normal path",
+      "authority": "host search/network access",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "name": "generate_pdf_document | coding_project | browser_interaction | git_clone",
+      "surface": "secondary Decision response grammar",
+      "input": "function/args/reply records",
+      "output": "PDF/files; browser branch faulty; git_clone TODO",
+      "lifecycle": "not established as primary entry; explicit partial branches",
+      "authority": "model-directed branch when host invokes make_decision",
+      "evidence": [
+        "e21",
+        "e20"
+      ]
+    },
+    {
+      "name": "SCROLL UP | SCROLL DOWN | CLICK | TYPE | TYPESUBMIT",
+      "surface": "separate browser model grammar",
+      "input": "visible element index and text",
+      "output": "page manipulation/screenshot",
+      "lifecycle": "owned browser loop; inference call signature mismatch",
+      "authority": "partial browser integration, not working primary dispatch claim",
+      "evidence": [
+        "e20"
+      ]
+    },
+    {
+      "name": "KnowledgeBase.add_knowledge / get_knowledge",
+      "surface": "host supporting API",
+      "input": "tag and contents",
+      "output": "exact-match persistent record",
+      "lifecycle": "owned SQLite; unused in main search",
+      "authority": "not a native model SQL surface",
+      "evidence": [
+        "e16",
+        "e5"
+      ]
+    },
+    {
+      "name": "/api/messages | /api/get-agent-state | /api/get-terminal-session | /api/logs",
+      "surface": "operator HTTP",
+      "input": "project identifier",
+      "output": "saved chat/state/UI/log data",
+      "lifecycle": "snapshot read",
+      "authority": "operator; no complete audit-query contract",
+      "evidence": [
+        "e14",
+        "e15",
+        "e12"
+      ]
+    },
+    {
+      "name": "/api/settings",
+      "surface": "operator HTTP",
+      "input": "nested settings",
+      "output": "singleton/TOML mutation",
+      "lifecycle": "immediate update; existing clients retain some captures",
+      "authority": "operator",
+      "evidence": [
+        "e17",
+        "e18"
+      ]
+    },
+    {
+      "name": "/api/run-code",
+      "surface": "operator HTTP stub",
+      "input": "project/code",
+      "output": "misleading started response",
+      "lifecycle": "TODO, no process",
+      "authority": "not an implemented execution action",
+      "evidence": [
+        "e19"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-generated file blocks saved, plus host project reading; model path joins lack resolved containment guard.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Blocking space-split argv commands capture both pipes but drop stderr from repair/UI; no timeout/handles. Falsy success replays via decorator.",
+      "evidence": [
+        "e8",
+        "e9"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Generated application files and patcher branch plus arbitrary runner commands.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No resident interpreter established in stage/Runner paths; subprocess per command.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Owned SQLite chat/state and exact-tag knowledge API; knowledge calls commented out, no model-facing query surface.",
+      "evidence": [
+        "e12",
+        "e14",
+        "e16",
+        "e5"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python stage objects and fixed dispatch compose workflow; no model-authored hot program surface established.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider selector feeds same base model to every stage; no coordinated distinct participants.",
+      "evidence": [
+        "e2",
+        "e10"
+      ]
+    },
+    "live_collaboration": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Named stages are serial prompted roles, no live peer messaging established.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "HTTP/socket threads overlap even active same-project work; no owned task/session arbitration.",
+      "evidence": [
+        "e1",
+        "e13"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Question polls saved latest user message every five seconds; new input can launch another workflow. Inference timer does not cancel provider worker.",
+      "evidence": [
+        "e3",
+        "e1",
+        "e10"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python fixed branches/templates are editable host code; no coordinated model hot turn activation.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e18"
+      ]
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No managed conversation compaction established; stages construct independent prompts.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persisted project chat and current file corpus can be rebuilt into follow-up prompt; no targeted archived-context repair.",
+      "evidence": [
+        "e4",
+        "e15"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mutable JSON chat/state plus optional prompt logs; response content only and stderr discarded before capture; no complete original stream audit.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e11",
+        "e13",
+        "e14"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host/operator project/chat/state reads expose snapshots, not comprehensive audit.",
+      "evidence": [
+        "e12",
+        "e15"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Config singleton changes immediately while captured stage models/import-time prompt templates persist; no turn/workflow boundary.",
+      "evidence": [
+        "e17",
+        "e18",
+        "e2"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "Saved application state is not handoff of active provider/process operations; no quiescent refit traced.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider adapters, first-link search/browser, deployment branch consume remote services.",
+      "evidence": [
+        "e5",
+        "e10",
+        "e4"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Failure prompts invoke application patcher; no governed harness-change experiment.",
+      "evidence": [
+        "e8",
+        "e4"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model complaint artifact with captured runtime state traced.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Main workflow executes commands/writes automatically; source joins model filenames and splits commands rather than supplying a coherent resource/authority contract.",
+      "evidence": [
+        "e6",
+        "e8"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Inspected benchmarks are not-yet marker; no assertion-based tests found in snapshot file inventory.",
+      "evidence": [
+        "e22"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Second-resolution wall timestamps, polling/sleeps and shared JSON replacements do not establish total order or cancellation.",
+      "evidence": [
+        "e13",
+        "e15",
+        "e3",
+        "e10"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/devika/devika.py",
+      "start": 76,
+      "end": 103,
+      "claim": "Socket input creates per-message Agent and starts threads even when prior work is active; no owner identity/cancellation."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/devika/src/agents/agent.py",
+      "start": 36,
+      "end": 67,
+      "claim": "Named stages all receive the same selected base model."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/devika/src/agents/agent.py",
+      "start": 270,
+      "end": 360,
+      "claim": "Initial workflow planner/monologue/research/question polling/search/coder/save/completion."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/devika/src/agents/agent.py",
+      "start": 179,
+      "end": 268,
+      "claim": "Follow-up action classifier selects answer/run/deploy/feature/bug/report with no generic tool loop."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/devika/src/agents/agent.py",
+      "start": 79,
+      "end": 116,
+      "claim": "Search results fetched through browser and formatter; standing knowledge read/write commented out."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/devika/src/agents/coder/coder.py",
+      "start": 34,
+      "end": 80,
+      "claim": "File-block parser then host write using model filename joined into project path; no resolved containment guard."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/devika/src/agents/coder/coder.py",
+      "start": 90,
+      "end": 134,
+      "claim": "UI vim commands emulate editing; actual file save is separate."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/devika/src/agents/runner/runner.py",
+      "start": 69,
+      "end": 198,
+      "claim": "Commands split on spaces and synchronous subprocess.run without timeout; only stdout passed to state/repair. Retry counter shared across commands; function has no success return."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/devika/src/services/utils.py",
+      "start": 9,
+      "end": 26,
+      "claim": "retry_wrapper repeats entire function on falsy result up to five attempts, including Runner.run_code returning None."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/devika/src/llm/llm.py",
+      "start": 92,
+      "end": 156,
+      "claim": "Inference executes selected provider in ThreadPoolExecutor; timeout raises/sys.exit but context manager waits for worker rather than cancellation."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/devika/src/llm/openai_client.py",
+      "start": 13,
+      "end": 24,
+      "claim": "Single user prompt returns message.content, excluding original response metadata."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/devika/src/state.py",
+      "start": 10,
+      "end": 23,
+      "claim": "Owned SQLite agent_state table stores JSON state stacks."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/devika/src/state.py",
+      "start": 65,
+      "end": 100,
+      "claim": "Stack additions rewrite stored JSON; latest-state updates replace entries."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/devika/src/project.py",
+      "start": 47,
+      "end": 79,
+      "claim": "Chat messages persisted as rewritten JSON stack; UI emitted before persistence."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/devika/src/project.py",
+      "start": 81,
+      "end": 128,
+      "claim": "Host queries latest user message and formatted project chat."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/devika/src/memory/knowledge_base.py",
+      "start": 10,
+      "end": 33,
+      "claim": "SQL knowledge table exact-tag add/get primitive; not wired to main search path."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/devika/src/config.py",
+      "start": 182,
+      "end": 195,
+      "claim": "Settings update mutates singleton and TOML immediately, no activation coordination."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/devika/src/agents/runner/runner.py",
+      "start": 15,
+      "end": 21,
+      "claim": "Prompt templates captured at module import; per-stage clients capture model."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/devika/devika.py",
+      "start": 154,
+      "end": 161,
+      "claim": "run-code endpoint returns started message despite TODO no execution."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/devika/src/browser/interaction.py",
+      "start": 485,
+      "end": 521,
+      "claim": "Browser command grammar exists but LLM.inference call omits required project_name."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/devika/src/agents/agent.py",
+      "start": 128,
+      "end": 177,
+      "claim": "Decision branch git_clone is TODO; browser uses unassigned self.base_model; coding/pdf branches implemented."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/devika/benchmarks/SWE-bench.md",
+      "start": 1,
+      "end": 1,
+      "claim": "Benchmark file contains only not-yet marker; no execution/oracle."
+    }
+  ],
+  "tests": [],
+  "strengths": [
+    "Explicit separation of application generation, search and repair stages makes workflow dataflow inspectable.",
+    "Stored chat/state supplies operator visibility, with concrete gaps against original audit."
+  ],
+  "limits": [
+    "No assertion-based reference tests found. No dependencies or reference executed. Browser/decision branches have specific unwired/faulty calls; owned stores are not shared standing-service capability."
+  ],
+  "arconaut_questions": [
+    "How should a workflow respond to steering while active without launching a second unowned execution?",
+    "Can every command result preserve stderr, exit status, identity and cancellation before model projection?",
+    "Which generated UI states are observations and which are theatrical emulation?"
+  ]
+}

@@ -1,0 +1,545 @@
+{
+  "id": "rlm",
+  "kind": "recursive code-action inference engine",
+  "runtime": {
+    "languages": [
+      "Python",
+      "TypeScript (visualizer)"
+    ],
+    "execution": "Synchronous completion loop with host LM socket handler, retained local/IPython/Docker REPL and bounded threaded recursive subcalls.",
+    "service_boundary": "Owns completion environment/handler/kernel/container and temporary workspace; consumes model providers and optional remote sandbox services. persistent=True reuses an owned environment object, not shared-fabric governance."
+  },
+  "summary": "Treats input context/history as REPL variables; model Python decomposes inputs, invokes plain or recursive models and declares answer readiness.",
+  "inspection": {
+    "files": [
+      "quarantine/rlm/rlm/core/rlm.py",
+      "quarantine/rlm/rlm/environments/local_repl.py",
+      "quarantine/rlm/rlm/environments/ipython_repl.py",
+      "quarantine/rlm/rlm/logger/rlm_logger.py",
+      "quarantine/rlm/rlm/core/types.py",
+      "quarantine/rlm/rlm/environments/docker_repl.py",
+      "quarantine/rlm/tests/test_ipython_repl.py",
+      "quarantine/rlm/tests/test_local_repl_persistent.py",
+      "quarantine/rlm/tests/test_rlm_query.py"
+    ],
+    "scope": "completion/provider/environment lifecycle, local code/subcall/state/compaction, IPython broker/timeout/cleanup, optional logger and persistence/subcall race tests",
+    "limits": "No code/tests/models/sandboxes launched; training implementation not deeply studied. Defaults/local, subprocess IPython and Docker lifecycle traced, other remote environment adapters only registry-bound."
+  },
+  "actions": [
+    {
+      "name": "RLM.completion / close",
+      "surface": "program/operator inference API",
+      "input": "context string/object/root prompt with model/depth/budget/environment config",
+      "output": "RLMChatCompletion response/usage/time/optional trajectory or limit/cancel error",
+      "lifecycle": "completion owns handler; persistent env retained across calls until close",
+      "authority": "operator-configured provider/environment/custom tools, own environment lifecycle",
+      "evidence": [
+        "e1",
+        "e2",
+        "e9"
+      ]
+    },
+    {
+      "name": "execute_code / answer[content,ready]",
+      "surface": "native model Python action",
+      "input": "Python blocks, answer dictionary readiness/content",
+      "output": "stdout/stderr/locals/recursive call metadata/final answer",
+      "lifecycle": "sequential blocks in retained namespace; mutation not external effect transaction",
+      "authority": "local host exec or selected environment isolation; no routine approval shown",
+      "evidence": [
+        "e3",
+        "e7",
+        "e11"
+      ]
+    },
+    {
+      "name": "llm_query / llm_query_batched",
+      "surface": "model REPL helper",
+      "input": "prompt(s), optional registered model name",
+      "output": "plain response(s)/error strings and call metadata",
+      "lifecycle": "await direct model calls, batch ordered; no child REPL",
+      "authority": "model has provider-request agency via host handler",
+      "evidence": [
+        "e1",
+        "e5"
+      ]
+    },
+    {
+      "name": "rlm_query / rlm_query_batched",
+      "surface": "model recursive REPL helper",
+      "input": "prompt(s), optional model override",
+      "output": "child RLM response(s)/errors/trajectory metadata",
+      "lifecycle": "separate child REPL/depth budget, bounded threads wait all then ordered metadata; fallback plain call",
+      "authority": "custom_sub_tools propagated as child tools; no peer chat room implied",
+      "evidence": [
+        "e4",
+        "e5"
+      ]
+    },
+    {
+      "name": "add_context / add_history / SHOW_VARS",
+      "surface": "environment/model state primitives",
+      "input": "new input/context index; messages/history index; inspection",
+      "output": "context_N/history_N, first-item aliases or variable description",
+      "lifecycle": "retained env lifetime; history deep-copy, cleanup deletes",
+      "authority": "model reads code-visible data; memory copies not immutable audit custody",
+      "evidence": [
+        "e3",
+        "e6",
+        "e7"
+      ]
+    },
+    {
+      "name": "_compact_history / append_compaction_entry",
+      "surface": "managed inference/environment primitive",
+      "input": "running trajectory, threshold/options",
+      "output": "summary and replaced provider-history view, prior segments in REPL history",
+      "lifecycle": "side model call then new prompt; no archived originals integrity/semantic guard",
+      "authority": "configured compaction and environment protocol; custom system policy",
+      "evidence": [
+        "e2",
+        "e3",
+        "e6",
+        "e16"
+      ]
+    },
+    {
+      "name": "IPythonREPL.execute_code / broker.stop / cleanup",
+      "surface": "supplied cell/provider bridge lifecycle",
+      "input": "cell code/timeout, broker stop or cleanup",
+      "output": "cell result/TimeoutError text and own-cell calls; channels/kernel shutdown",
+      "lifecycle": "kernel interrupt on cell timeout; existing host callbacks continue; drain discards stale cells",
+      "authority": "operator-owned kernel/broker with bounded subcall admission; no full work-quiescence guarantee",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e13",
+        "e18"
+      ]
+    },
+    {
+      "name": "RLMLogger.log / get_trajectory",
+      "surface": "optional audit/inspection API",
+      "input": "RLMIteration with code/results/prompt/response",
+      "output": "memory metadata/current iterations and optional appended JSONL",
+      "lifecycle": "per completion current view resets; JSONL persists if configured",
+      "authority": "caller explicitly supplies logger; projected values not heap checkpoint",
+      "evidence": [
+        "e14",
+        "e15"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Local context loading uses files and ordinary Python exec context; Docker own workspace/container. Custom tools can supply further filesystem APIs.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e17"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Owned IPython subprocess/Docker environment lifecycle and Python/custom tool computation; no native durable command/process registry traced.",
+      "evidence": [
+        "e7",
+        "e13",
+        "e17"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model Python code executes per response block, with context variables, custom tools, llm_query/rlm_query and answer-ready scaffold.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e7"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "persistent=True retains owned local/IPython/Docker environment across completion calls and versioned inputs/history; close destroys it; no harness-rebuild heap reattach/shared multi-consumer lease.",
+      "evidence": [
+        "e1",
+        "e6",
+        "e9",
+        "e13",
+        "e17"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Context_N/history_N and optional trajectory JSONL hold standing in-memory/file data; no general transactional standing database supplied.",
+      "evidence": [
+        "e6",
+        "e14"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model Python orchestrates sequential/batched plain or recursive submodels under depth/concurrency caps; custom tool/sub-tool propagation.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Named/depth-routed handler clients and model overrides for code subcalls; recursive child configuration propagation, distinct model roles.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e5"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Recursive prompt/result subcalls plus callbacks/metadata, not interactive peer room/mail ownership or shared mutable chat.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e10"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Batched recursive thread pool with ordered results and IPython broker global semaphore over requests, plus provider handler threads.",
+      "evidence": [
+        "e5",
+        "e10"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Root timeout checks between iterations; subprocess cell interrupt does not cancel ongoing host subcall. Shutdown rejects new callbacks but running ones finish, stragglers discarded from future-cell view.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e12",
+        "e18"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model chooses code-based orchestration/recursive completion and custom tools/system policy; no normal-run hot replacement of outer turn algorithm established.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e7"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Threshold summary replaces provider history and retains prior formatted segments in REPL history; supports local/Docker when append method present, no summary fidelity oracle.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3",
+        "e6",
+        "e16"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can inspect versioned original inputs/history/SHOW_VARS after compaction; scaffold restored to stop overwritten context/helper aliases surviving cells. No semantic repair/audit-tamper policy.",
+      "evidence": [
+        "e3",
+        "e6",
+        "e7"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Optional logger retains iteration prompt/response/code/results/subcalls; histories deep copied, but locals projected/shallow copies and late-cell completions discarded, optional disk/no raw external effect completeness.",
+      "evidence": [
+        "e6",
+        "e7",
+        "e12",
+        "e14",
+        "e15",
+        "e18"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Structured JSONL/get_trajectory and REPL-accessible versioned histories enable study; no complete original query DB or immutable custody.",
+      "evidence": [
+        "e6",
+        "e14",
+        "e15"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent env handler address repointed each completion and custom code/tools mutable inside REPL; not source/module hot reload or versioned activation barrier.",
+      "evidence": [
+        "e1",
+        "e7"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent means same owned object reused; close destroys state/container/kernel, logger serializes projections not restorable arbitrary heap or unresolved callbacks.",
+      "evidence": [
+        "e9",
+        "e12",
+        "e13",
+        "e14",
+        "e15",
+        "e17"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider handler clients and remote environment registry/custom tool boundaries consume external services; owning created environment differs from separate shared-service consumer.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e9",
+        "e17"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can code workflows and recursive calls; training advertised separately, selected inference path no self-harness candidate evaluation/promotion loop.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Code stderr/iteration and recursive call metadata plus cell-ID attribution are diagnostic ingredients; no external complaint table/state bead contract.",
+      "evidence": [
+        "e7",
+        "e10",
+        "e14"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local Python exec shares host dependencies and process-global capture/cwd; restricted builtin scaffold is not isolation proof. IPython subprocess/container boundary owns cleanup, callbacks execute parent code.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e10",
+        "e11",
+        "e13",
+        "e17"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Budget/error/depth/time limits and direct mock/persistence/race assertions; quality benchmark/training truth not established by these runtime tests.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e18"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Versioned contexts/history, ordered batch results, cell IDs and timestamped iterations support causal attribution; running stale callbacks can outlive cells and discarded metadata prevents complete settlement audit.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e10",
+        "e12",
+        "e14",
+        "e18"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 225,
+      "end": 298,
+      "claim": "Each completion starts LM handler; persistent environment updates handler/adds context, otherwise builds environment; finally stops handler/cleans nonpersistent env."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 350,
+      "end": 432,
+      "claim": "Completion per-iteration timeout/budget, optional compaction, model prompt then code execution, logs iteration/final answer."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 602,
+      "end": 672,
+      "claim": "Managed compaction summarizes trajectory to REPL history then replaces prompt; model response code blocks executed sequentially and returned as iteration."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 806,
+      "end": 836,
+      "claim": "Recursive child inherits tool/model/environment/depth/budget/time/concurrency settings, separate child logger captures trajectory; not peer room."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/rlm/rlm/environments/local_repl.py",
+      "start": 258,
+      "end": 397,
+      "claim": "llm_query/batched direct calls; rlm_query/batched children, bounded thread pool waits all and records completions original prompt order."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/rlm/rlm/environments/local_repl.py",
+      "start": 399,
+      "end": 490,
+      "claim": "Versioned context_N/history_N, first-context aliases, deep-copy history and compaction history segments; temporary context file loading."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/rlm/rlm/environments/local_repl.py",
+      "start": 547,
+      "end": 602,
+      "claim": "Python exec retained namespace; restores scaffold only on success, exceptions return stderr, shallow locals/result copy; cleanup clears state/temp directory."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/rlm/rlm/environments/local_repl.py",
+      "start": 491,
+      "end": 512,
+      "claim": "Per-instance output lock swaps process-global sys.stdout/stderr and cwd during local cell execution; not universal inter-instance isolation."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 872,
+      "end": 914,
+      "claim": "Persistence supports only local/ipython/docker protocol; close cleans owned persistent environment, no serialize/reattach heap checkpoint."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/rlm/rlm/environments/ipython_repl.py",
+      "start": 125,
+      "end": 205,
+      "claim": "Broker bounds ALL in-flight subcalls with semaphore, per-cell metadata attribution and shutdown admission check."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/rlm/rlm/environments/ipython_repl.py",
+      "start": 1294,
+      "end": 1358,
+      "claim": "Subprocess cell executes with timeout, on TimeoutError interrupts kernel and drains per-cell metadata; cannot itself cancel host provider subcall."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/rlm/rlm/environments/ipython_repl.py",
+      "start": 257,
+      "end": 284,
+      "claim": "Stop rejects NEW subcall work; source says already running callbacks continue; drain discards other-cell stragglers to avoid attribution bleed."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/rlm/rlm/environments/ipython_repl.py",
+      "start": 1451,
+      "end": 1486,
+      "claim": "Cleanup stops channels, shuts kernel now and broker; in-process shell reset. No preservation of active callbacks across refit."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/rlm/rlm/logger/rlm_logger.py",
+      "start": 18,
+      "end": 89,
+      "claim": "Optional per-completion memory/JSONL iteration logger, clears current iteration view for next completion; not crash-recovery/core-everything audit contract."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/rlm/rlm/core/types.py",
+      "start": 188,
+      "end": 229,
+      "claim": "Serialized iteration retains prompt/raw textual response/code/results/recursive calls with locals projected through serializer; not full Python heap image."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/rlm/rlm/core/rlm.py",
+      "start": 438,
+      "end": 480,
+      "claim": "Persistent completion adds message history after success/default final; compaction appends new trajectory segments after continuing iterations."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/rlm/rlm/environments/docker_repl.py",
+      "start": 730,
+      "end": 761,
+      "claim": "Docker cleanup removes owned container/proxy, best-effort workspace cleanup; separate container does not imply standing service lease."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/rlm/tests/test_ipython_repl.py",
+      "start": 633,
+      "end": 662,
+      "claim": "Race oracle proves timed-out originating cell subcall still runs while next cell executes, and late completion is not attributed to next cell."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/rlm/tests/test_local_repl_persistent.py",
+      "focus": "context/history versioning, copy semantics and code readability",
+      "oracle": "Exact context aliases/counts and history deep-copy mutation check; code reads history_0/1/2 and compares list. Tests object lifetime multi-turn data, not restart serialization/shared clients.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/rlm/tests/test_rlm_query.py",
+      "focus": "bounded concurrent child calls and deterministic result/error metadata",
+      "oracle": "Mock/tracked subcalls assert output order/error strings, peak concurrency ceiling and repaired overwritten helpers. Ceiling <=3 does not prove full parallelism despite test description.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/rlm/tests/test_ipython_repl.py",
+      "focus": "late provider callback cell attribution and global semaphore/reentrancy",
+      "oracle": "Read actual timeout race: cell A times out before callback complete, B waits while A finishes, then B rlm_calls empty. Proves isolation of bookkeeping by cell and explicitly continuing provider callback, not quiescence or preserved all-original audit.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Context as ordinary data and code-chosen recursive model calls give direct model orchestration agency.",
+    "Persistent versioned inputs/history and compaction work across retained REPL object, with child metadata.",
+    "Cell attribution/semaphore/race assertions name concrete lifetime hazards rather than hiding them."
+  ],
+  "limits": [
+    "persistent=True is object/environment retention, not rebuild heap restoration/shared compute lease.",
+    "Kernel interrupt can leave parent provider calls active; broker shutdown does not settle them and stale bookkeeping may be discarded.",
+    "Local global stdout/cwd changes and structured logger projections are bounded isolation/audit scopes."
+  ],
+  "arconaut_questions": [
+    "Can all late callbacks retain original causal/effect records even when model-context projection suppresses them?",
+    "How should shared context objects remain operator/model queryable without giving consumer authority over kernel lifetime?",
+    "What strict no-active-provider-work barrier precedes arcorefit while independently governed services keep running?"
+  ]
+}

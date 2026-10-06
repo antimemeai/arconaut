@@ -1,0 +1,541 @@
+{
+  "id": "openhands",
+  "kind": "Agent Canvas frontend/controller and local service launcher",
+  "runtime": {
+    "languages": [
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "React/browser controller plus Node service launcher; coding/model turns delegated to separately distributed Python agent server and automation services",
+    "service_boundary": "Consumes local/remote/cloud conversation backends through TypeScript client; launcher provisions its own local stack. Agent SDK/server source is not in this snapshot."
+  },
+  "summary": "Current OpenHands repository is Agent Canvas 1.24.0, a multi-backend coding-agent/automation controller, not the older Python coding engine. Actual browser child-launch mediation exposes admission versus completion and authority boundaries.",
+  "inspection": {
+    "files": [
+      "quarantine/openhands/README.md",
+      "quarantine/openhands/package.json",
+      "quarantine/openhands/config/defaults.json",
+      "quarantine/openhands/bin/agent-canvas.mjs",
+      "quarantine/openhands/scripts/dev-safe.mjs",
+      "quarantine/openhands/scripts/dev-process-utils.mjs",
+      "quarantine/openhands/src/contexts/conversation-websocket-context.tsx",
+      "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "quarantine/openhands/src/api/automation-service/automation-service.api.ts",
+      "quarantine/openhands/__tests__/services/child-conversation-launch.test.ts",
+      "quarantine/openhands/__tests__/api/agent-server-conversation-service-condense.test.ts",
+      "quarantine/openhands/__tests__/scripts/dev-process-utils.test.ts"
+    ],
+    "scope": "Read current README/package/default pins, launcher command construction/process utilities, actual child-launch WebSocket wiring/local/cloud/control/result/dedup paths, conversation file/send/condense/fork/model APIs, automation dispatch/cancel and independent mock/literal source-test oracles.",
+    "limits": "No reference execution/install. Unvendored agent SDK/server/automation backend and TypeScript client implementation not audited; kernel/provider/turn/audit guarantees cannot be inferred from frontend requests. Full desktop/extension/event caching pipeline not exhaustively inspected."
+  },
+  "actions": [
+    {
+      "name": "launch_child_conversation",
+      "surface": "model client-tool bridge",
+      "input": "model ActionEvent task, local/cloud target, workspace/isolation/title/repository",
+      "output": "backend conversation/start-task ID, URL, isolation/parent-link caveats or error guidance",
+      "lifecycle": "server acknowledgement first; browser async launch then usually posts result; active goal can suppress; dedup is browser-local",
+      "authority": "model client tool handled by operator browser; selected service credentials",
+      "evidence": [
+        "wiring",
+        "dedup",
+        "local-child",
+        "cloud-child",
+        "result"
+      ]
+    },
+    {
+      "name": "sendMessage / createConversation / switchProfile / switchAcpModel",
+      "surface": "controller API",
+      "input": "conversation and message or profile/model plus selected backend/runtime credentials",
+      "output": "sent event or backend start task; model-switch response",
+      "lifecycle": "calls external clients; sent message != consumed input or completed turn",
+      "authority": "operator/controller API; model launch uses configured service",
+      "evidence": [
+        "send",
+        "models",
+        "cloud-child"
+      ]
+    },
+    {
+      "name": "readConversationFile / downloadConversation / forkConversation",
+      "surface": "controller API",
+      "input": "conversation ID and scoped file/event cursor",
+      "output": "file/trajectory bytes or local fork ID",
+      "lifecycle": "backend request; cloud fork rejected; older server fork contract differs",
+      "authority": "controller API under selected backend credentials",
+      "evidence": [
+        "files",
+        "fork"
+      ]
+    },
+    {
+      "name": "condenseConversation",
+      "surface": "controller API",
+      "input": "conversation ID/runtime URL/session key",
+      "output": "external compaction completion/error",
+      "lifecycle": "runtime endpoint call; no local implementation of transformation custody",
+      "authority": "operator/controller API",
+      "evidence": [
+        "condense",
+        "condense-test"
+      ]
+    },
+    {
+      "name": "create/update/dispatch/cancel automation",
+      "surface": "controller API",
+      "input": "prompt, repository, event/cron/timezone specification or run ID",
+      "output": "external automation record/run status",
+      "lifecycle": "scheduler and run lifecycle external; cancel response not observed process settlement",
+      "authority": "operator/controller against configured automation service",
+      "evidence": [
+        "automation",
+        "create",
+        "automation-control"
+      ]
+    },
+    {
+      "name": "agent-canvas / buildAgentServerCommand / signalProcessTree",
+      "surface": "operator command / launcher primitive",
+      "input": "startup mode, local path/Git ref/version and stack process handle",
+      "output": "server argv/process group or signal status",
+      "lifecycle": "separate Python distributions launched via uvx; source rebuilt next invocation; no active compiled refit handoff",
+      "authority": "operator launcher, not ordinary model tool",
+      "evidence": [
+        "launcher",
+        "server-command",
+        "process",
+        "signal"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Controller supplies scoped remote file/trajectory downloads and asks backend to create shared/worktree workspace. Actual model edits and tool engine are unvendored.",
+      "evidence": [
+        "files",
+        "local-child"
+      ]
+    },
+    "processes": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Launcher builds coherent server install/run argv and process-group options/signals. These are stack lifecycle primitives, not model shell execution or final death proof.",
+      "evidence": [
+        "server-command",
+        "process",
+        "signal"
+      ]
+    },
+    "code_actions": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "code_actions: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "persistent_kernel: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "standing_database: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Automation client can import prompt plus cron/event spec, create/update/dispatch/cancel externally owned runs; scheduler and executable workflow engine are separate distribution.",
+      "evidence": [
+        "automation",
+        "create",
+        "automation-control"
+      ]
+    },
+    "multi_model": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actual profile/ACP model-switch requests and local/cloud model configuration surfaces exist. Provider execution/switch timing remains server contract.",
+      "evidence": [
+        "models",
+        "cloud-child"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model client tool can launch a child and normally receive a new-message result; sends address remote conversations. Active goal suppresses result, cloud child lacks parent link; no general peer-room transport or observation guarantee established.",
+      "evidence": [
+        "wiring",
+        "local-child",
+        "cloud-child",
+        "result",
+        "send"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Controller supports independently running backend conversations/automation and child launches. It consumes external concurrency, and launch acknowledgement precedes actual browser/server completion.",
+      "evidence": [
+        "wiring",
+        "local-child",
+        "cloud-child",
+        "automation-control"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "sendEvent(run=True) and automation cancel requests are concrete controller APIs; actual mid-turn consumption, worker cancellation and provider/effect settlement are in unvendored servers.",
+      "evidence": [
+        "send",
+        "automation-control"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "turn_redefinition: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Calls conversation condense endpoint with exact runtime routing; summary strategy and retained original semantics cannot be inferred from client call.",
+      "evidence": [
+        "condense",
+        "condense-test"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Local event-cursor fork and downloaded trajectory supply repair/branching inputs; cloud fork rejected and backend-version behavior differs. No model original reconstruction implementation in this tree.",
+      "evidence": [
+        "fork",
+        "files"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Frontend imports/downloads backend event/trajectory views; child launch ledger only remembers handled IDs and can fail open. No complete original provider/program/transform event capture established by client controller.",
+      "evidence": [
+        "files",
+        "dedup",
+        "wiring",
+        "result"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Controller can download trajectory and branch at selected event ID; authoritative retention/search belongs to the selected backend, not local browser claims.",
+      "evidence": [
+        "files",
+        "fork"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Actual runtime profile and ACP model switch requests; editable SDK launch command picks source on next invocation. Server activation and old-work handling are unavailable, not turn/workflow-conclusion guarantee.",
+      "evidence": [
+        "models",
+        "server-command"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local editable packages rebuilt on server invocation and controller can reconnect to independently hosted conversations. No independently powered compile outpost/main settlement/paused work/reinhabitation protocol traced.",
+      "evidence": [
+        "server-command",
+        "role",
+        "send"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Routes local and cloud conversation requests, resolves per-conversation runtime URL/session key, launches cloud child and consumes automation service. Boundaries and credentials are explicitly selected; underlying provider execution not audited.",
+      "evidence": [
+        "send",
+        "cloud-child",
+        "create",
+        "automation-control"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "self_improvement: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established beyond the inspected browser/controller/launcher/client operations; server implementation is separate and unavailable in this snapshot.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Browser controller invokes model-requested child with operator-selected backend/settings and workspace; launcher describes full-access local server. This does not establish model shell approval policy in separate engine.",
+      "evidence": [
+        "role",
+        "wiring",
+        "local-child",
+        "cloud-child"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Literal routing/request/result witnesses plus real argv passthrough test; child/worktree/condense endpoints mocked, so no engine correctness, isolation, compaction or process-tree settlement conformance.",
+      "evidence": [
+        "child-test",
+        "fallback-test",
+        "replay-test",
+        "condense-test",
+        "process-test"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cloud poll uses Date.now deadline; browser call-ID dedup precedes work and proceeds if storage fails; separate event-cursor fork contract. No durable cross-client causal settlement identity.",
+      "evidence": [
+        "cloud-wait",
+        "dedup",
+        "fork"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "role",
+      "path": "quarantine/openhands/README.md",
+      "start": 1,
+      "end": 88,
+      "claim": "Current role is Agent Canvas across local/remote/cloud backends; local agent-server separately installed, filesystem authority described in setup."
+    },
+    {
+      "id": "package",
+      "path": "quarantine/openhands/package.json",
+      "start": 1,
+      "end": 32,
+      "claim": "Agent Canvas version/core JS module, external TypeScript client dependency; not embedded coding engine."
+    },
+    {
+      "id": "pins",
+      "path": "quarantine/openhands/config/defaults.json",
+      "start": 1,
+      "end": 33,
+      "claim": "Separate agent-server/automation pins, version compatibility and state-path settings."
+    },
+    {
+      "id": "launcher",
+      "path": "quarantine/openhands/bin/agent-canvas.mjs",
+      "start": 134,
+      "end": 177,
+      "claim": "Imports production static stack launcher after mode/build checks; runtime server loaded separately."
+    },
+    {
+      "id": "server-command",
+      "path": "quarantine/openhands/scripts/dev-safe.mjs",
+      "start": 411,
+      "end": 518,
+      "claim": "uvx command selects local editable SDK workspace, Git ref, explicit or default server version; coherent SDK/tools/workspace versions; local source rebuilt on invocation."
+    },
+    {
+      "id": "process",
+      "path": "quarantine/openhands/scripts/dev-process-utils.mjs",
+      "start": 1,
+      "end": 37,
+      "claim": "Explicit running status distinguishes sent signal from actual child exit; service spawn bypasses shell and POSIX new process group."
+    },
+    {
+      "id": "signal",
+      "path": "quarantine/openhands/scripts/dev-process-utils.mjs",
+      "start": 90,
+      "end": 110,
+      "claim": "Group signal/direct fallback returns signalling status; this helper does not wait for effect settlement."
+    },
+    {
+      "id": "wiring",
+      "path": "quarantine/openhands/src/contexts/conversation-websocket-context.tsx",
+      "start": 838,
+      "end": 864,
+      "claim": "Model client-tool ActionEvent actually dispatches browser child-launch handler; server has already acknowledged before browser work."
+    },
+    {
+      "id": "dedup",
+      "path": "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "start": 208,
+      "end": 231,
+      "claim": "Browser localStorage claims tool ID before work; corrupt/full storage proceeds with replay risk rather than blocking launch."
+    },
+    {
+      "id": "local-child",
+      "path": "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "start": 273,
+      "end": 350,
+      "claim": "Requests child in parent workspace; worktree failure retries shared workspace; reports isolation downgrade and best-effort title/parent compatibility."
+    },
+    {
+      "id": "cloud-wait",
+      "path": "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "start": 366,
+      "end": 385,
+      "claim": "Cloud start polling uses wall-clock deadline and returns latest state even without final conversation ID."
+    },
+    {
+      "id": "cloud-child",
+      "path": "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "start": 387,
+      "end": 475,
+      "claim": "Cloud child request inherits repository/settings but deliberately no server parent link; launched result can contain pending start_task_id/null conversation URL."
+    },
+    {
+      "id": "result",
+      "path": "quarantine/openhands/src/services/child-conversation-launch.ts",
+      "start": 482,
+      "end": 559,
+      "claim": "Actual result normally posted as new user message; active goal suppresses it to avoid ending loop; errors are caught because server already acknowledged success."
+    },
+    {
+      "id": "send",
+      "path": "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "start": 420,
+      "end": 456,
+      "claim": "Resolves cloud runtime URL/session key then sends event with run=True via external client; returns sent message, not model completion."
+    },
+    {
+      "id": "files",
+      "path": "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "start": 828,
+      "end": 862,
+      "claim": "Client reads confined conversation file path/downloads trajectory from selected backend; server effect/file implementation external."
+    },
+    {
+      "id": "condense",
+      "path": "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "start": 903,
+      "end": 925,
+      "claim": "Calls selected runtime condense endpoint; rejects missing cloud runtime URL; no local summary/original-retention engine."
+    },
+    {
+      "id": "fork",
+      "path": "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "start": 1021,
+      "end": 1057,
+      "claim": "Requests local event-cursor fork and copies client metadata; cloud rejected, older server contract copies full history."
+    },
+    {
+      "id": "models",
+      "path": "quarantine/openhands/src/api/conversation-service/agent-server-conversation-service.api.ts",
+      "start": 1089,
+      "end": 1175,
+      "claim": "Profile/model switch requests sent to server; local new usage identity avoids old registry entry, ACP model switching delegated to server."
+    },
+    {
+      "id": "automation",
+      "path": "quarantine/openhands/src/api/automation-service/automation-service.api.ts",
+      "start": 130,
+      "end": 176,
+      "claim": "Maps event/cron trigger and imported prompt into automation request; timezone/default timestamp identities."
+    },
+    {
+      "id": "create",
+      "path": "quarantine/openhands/src/api/automation-service/automation-service.api.ts",
+      "start": 321,
+      "end": 344,
+      "claim": "Automation creation routed through pinned cloud/local backend client; external service owns execution."
+    },
+    {
+      "id": "automation-control",
+      "path": "quarantine/openhands/src/api/automation-service/automation-service.api.ts",
+      "start": 429,
+      "end": 466,
+      "claim": "Dispatch/cancel requests return external service run representation, not direct OS lifecycle proof."
+    },
+    {
+      "id": "child-test",
+      "path": "quarantine/openhands/__tests__/services/child-conversation-launch.test.ts",
+      "start": 214,
+      "end": 254,
+      "claim": "Mock API oracle checks requested parent worktree and exact returned child ID/status/workspace result."
+    },
+    {
+      "id": "fallback-test",
+      "path": "quarantine/openhands/__tests__/services/child-conversation-launch.test.ts",
+      "start": 343,
+      "end": 378,
+      "claim": "Mock worktree failure requires shared retry and explicit isolation downgrade in model-visible result."
+    },
+    {
+      "id": "replay-test",
+      "path": "quarantine/openhands/__tests__/services/child-conversation-launch.test.ts",
+      "start": 559,
+      "end": 610,
+      "claim": "Repeated tool ID does not launch twice; active goal starts child but no result posted. Storage failure and cross-tab races not covered."
+    },
+    {
+      "id": "condense-test",
+      "path": "quarantine/openhands/__tests__/api/agent-server-conversation-service-condense.test.ts",
+      "start": 64,
+      "end": 121,
+      "claim": "Mock client oracle checks direct cloud runtime URL/session key and missing-URL failure; no summary fidelity/original retention oracle."
+    },
+    {
+      "id": "process-test",
+      "path": "quarantine/openhands/__tests__/scripts/dev-process-utils.test.ts",
+      "start": 12,
+      "end": 57,
+      "claim": "Sent signal with unexited child remains running; actual spawned Node returns literal metacharacter argument; no descendant shutdown test here."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/openhands/__tests__/services/child-conversation-launch.test.ts",
+      "focus": "Real browser bridge wiring with mocked backend operations",
+      "oracle": "Literal child request/results, worktree failure shared fallback disclosure, repeated call ID one launch, active goal no result message. Does not witness actual worktree isolation, failed localStorage or cross-tab duplicate admission.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openhands/__tests__/api/agent-server-conversation-service-condense.test.ts",
+      "focus": "Exact per-conversation runtime routing",
+      "oracle": "Mocked ConversationClient called with runtime URL/key; missing URL fails without request. No compaction outcome or original reconstruction oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/openhands/__tests__/scripts/dev-process-utils.test.ts",
+      "focus": "Signal receipt versus child exit and shell-free argument transport",
+      "oracle": "Literal unexited process remains running even killed=true; actual Node child emits exact argument containing < and exits zero. No descendants/reaping/service effect witness.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Explicit separation between controller and independently hosted agent backends.",
+    "Actual model/browser child launch includes isolation downgrade and parent-link caveats.",
+    "Process utility/test distinguishes successfully signalling from actual process exit."
+  ],
+  "limits": [
+    "Current snapshot omits coding SDK/server implementation; cannot audit native provider/tools/kernel here.",
+    "Browser tool acknowledgement occurs before action; goal-mode result suppression and storage fail-open affect delivery/replay.",
+    "Remote start polling can return pending state; no complete original audit/refit promise."
+  ],
+  "arconaut_questions": [
+    "An outpost/colleague controller must distinguish admitted launch, running identity, result and settled work.",
+    "Browser focus/reload/goal policy must not silently revoke model delivery custody.",
+    "Keep consumed shared service/governance separate; study the actual software-agent SDK separately before assigning engine capabilities."
+  ]
+}

@@ -1,0 +1,601 @@
+{
+  "id": "fast-agent",
+  "kind": "programmable Python MCP/coding-agent and workflow framework",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Asyncio provider/tool loop, MCP aggregation, local shell runtimes and separate detached POSIX durable process supervisors.",
+    "service_boundary": "Owns agent/session/history, AgentCard instances and managed child processes; consumes model/MCP/external runtime services. Detached supervisors remain local owned computation, not general shared-fabric governance."
+  },
+  "summary": "Mutation-friendly turn hooks, typed workflow agents, live card/server reconfiguration and explicit archived compaction reconstruction.",
+  "inspection": {
+    "files": [
+      "quarantine/fast-agent/src/fast_agent/agents/tool_runner.py",
+      "quarantine/fast-agent/src/fast_agent/agents/tool_agent.py",
+      "quarantine/fast-agent/src/fast_agent/agents/mcp_agent.py",
+      "quarantine/fast-agent/src/fast_agent/tools/shell_runtime.py",
+      "quarantine/fast-agent/src/fast_agent/tools/durable_processes.py",
+      "quarantine/fast-agent/src/fast_agent/tools/durable_process_supervisor.py",
+      "quarantine/fast-agent/src/fast_agent/session/durable_processes.py",
+      "quarantine/fast-agent/src/fast_agent/history/compaction.py",
+      "quarantine/fast-agent/src/fast_agent/history/atif_reconstruction.py",
+      "quarantine/fast-agent/src/fast_agent/session/trajectory.py",
+      "quarantine/fast-agent/src/fast_agent/session/session_manager.py",
+      "quarantine/fast-agent/src/fast_agent/core/managed_runtime.py",
+      "quarantine/fast-agent/src/fast_agent/agents/workflow/parallel_agent.py",
+      "quarantine/fast-agent/src/fast_agent/agents/workflow/evaluator_optimizer.py",
+      "quarantine/fast-agent/tests/unit/fast_agent/history/test_compaction.py",
+      "quarantine/fast-agent/tests/unit/fast_agent/session/test_durable_process_resume.py",
+      "quarantine/fast-agent/tests/unit/fast_agent/agents/test_tool_runner_hooks.py"
+    ],
+    "scope": "ToolRunner/provider delegation/local-MCP dispatch, shell profiles/durable lifetime, session/trajectory/archive reconstruction, reload path, evaluator workflow and direct test assertions",
+    "limits": "No upstream code/tests run. Individual provider adapters/MCP servers/ACP internals not exhaustively inspected; claimed persistence scoped to actual records, not all transport or arbitrary external effects."
+  },
+  "actions": [
+    {
+      "name": "list_tools / call_tool",
+      "surface": "model/programmatic discovery and dispatch",
+      "input": "name, arguments, tool_use_id/request params",
+      "output": "CallToolResult text/media/error, progress callback",
+      "lifecycle": "local then aggregator routing, awaited native callable or remote transport",
+      "authority": "native host/external service authority and explicit web-search permission boundary",
+      "evidence": [
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "execute / bash / shell / exec; poll_process / process / terminate_process",
+      "surface": "model shell profiles",
+      "input": "command/cwd/timeout/background/lifecycle then process ID/poll request",
+      "output": "text output/status, managed or durable process handle",
+      "lifecycle": "foreground yield or background; persistent selects detached supervisor, bounded capture",
+      "authority": "configured local shell authority; aliases/profile shapes differ",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e15"
+      ]
+    },
+    {
+      "name": "DurableProcessStore.create / launch / request_stop / link_session",
+      "surface": "supplied process lifecycle API",
+      "input": "command/shell/cwd/origin/retention limits; process ID/environment",
+      "output": "snapshot with spec/status/PIDs/capture counts and links",
+      "lifecycle": "create distinct launch, exclusive launch claim; durable stop/control record, detached supervision",
+      "authority": "private directories/capacity locking; environment inherited but not persisted",
+      "evidence": [
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "resume_durable_processes",
+      "surface": "session restoration primitive",
+      "input": "agent runtime map/session ID/fallback agent",
+      "output": "attached/unavailable/unattached snapshots",
+      "lifecycle": "reattaches existing linked process; never assumes command replay settles effects",
+      "authority": "runtime consumer with matching origin/fallback shell",
+      "evidence": [
+        "e14",
+        "e24"
+      ]
+    },
+    {
+      "name": "read_text_file / write_text_file / attach_media / read_skill",
+      "surface": "model local tool routing",
+      "input": "path/text or media/skill source",
+      "output": "contents/write result or staged model-compatible media/skill text",
+      "lifecycle": "await local handler; media staging influences next call",
+      "authority": "enabled filesystem/skill runtime, model media limits separate",
+      "evidence": [
+        "e6"
+      ]
+    },
+    {
+      "name": "ToolRunnerHooks before_llm_call / after_llm_call / before_tool_call / after_tool_call / after_turn_complete",
+      "surface": "programmable normal-turn hooks",
+      "input": "runner/history/message/request params",
+      "output": "mutated history/params/injected messages",
+      "lifecycle": "await phase hooks on current iteration/once terminal",
+      "authority": "operator/program authored callbacks; low-level host access",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "ParallelAgent.generate / EvaluatorOptimizerAgent.generate",
+      "surface": "programmable workflow agent",
+      "input": "messages, request params, fanout/fanin or generator/evaluator and threshold/refinement cap",
+      "output": "aggregated or best-rated response; refinement history",
+      "lifecycle": "parallel gather then fanin; bounded actor-critic response loop",
+      "authority": "configured agents/models, no harness promotion implied",
+      "evidence": [
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "compact_conversation / reconstruct_history",
+      "surface": "programmatic/operator compaction + export primitives",
+      "input": "settings/instructions/keep-turns; context history/session dir",
+      "output": "summary/estimates/digest-linked archive then exact reconstructed messages/context boundary or error",
+      "lifecycle": "archive originals before replace when enabled; no tools summary side channel",
+      "authority": "explicitly configured persistence, strict path/digest/schema rejection",
+      "evidence": [
+        "e16",
+        "e17",
+        "e23"
+      ]
+    },
+    {
+      "name": "reload_agents / _refresh_shared_instance",
+      "surface": "operator/program AgentCard refresh",
+      "input": "registry changes/active managed run state",
+      "output": "AgentRefreshResult/new instance map/restored history",
+      "lifecycle": "rebuild impacted, shutdown old under instance lock; no refit barrier in traced body",
+      "authority": "operator/program card definitions and runtime-owned instances",
+      "evidence": [
+        "e20"
+      ]
+    },
+    {
+      "name": "save_trajectory_record / session.save_history",
+      "surface": "supplied audit/checkpoint primitive",
+      "input": "TrajectoryRecord or agent history/identity/checkpoint",
+      "output": "JSON invocation path or rotating history filename/metadata",
+      "lifecycle": "atomic file publication vs current/previous snapshot rotation",
+      "authority": "session directory owner; no universal raw transport archive",
+      "evidence": [
+        "e18",
+        "e19"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model-facing read_text_file/write_text_file/attach_media local filesystem routing plus arbitrary registered MCP capabilities.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Profile-specific execute/bash/exec + poll/process/terminate; persistent background launches supervisor and returns durable handle; ownership/lifecycle explicit.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10",
+        "e15"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native shell/local FunctionTools and external runtime permit ordinary computation; selected core no structured persistent notebook executor. Arbitrary local callables are host code.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e8"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent child shell can host computation outside main harness and be reattached, but this is surviving OS process not serialized interpreter/kernel state or multi-consumer service contract.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e14",
+        "e15"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Session/trajectory/durable-record stores are standing structured files; MCP services could supply databases. No general queryable shared standing DB core inferred.",
+      "evidence": [
+        "e9",
+        "e18",
+        "e19"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Composable parallel fanout/fanin and actor-critic refinement plus local callable tools/phase hooks. Workflow responses retained; no durable graph replay inferred.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e21",
+        "e22"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Fanout/fanin/evaluator/generator are independent agent objects with provider steps; model-specific shell/tool profile selection.",
+      "evidence": [
+        "e1",
+        "e7",
+        "e21",
+        "e22"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Programmed subagent fanout/fanin and parent-child trajectory attribution; selected workflows lack peer mailbox/room protocol, so concurrent models alone do not establish live conversation.",
+      "evidence": [
+        "e18",
+        "e21"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Planned parallel call batches, fanout gather and separate persistent supervisor processes.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e21"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Cancellation reconciles/resumes history and persistent process stop uses durable request; deliberate durable jobs survive runtime close. No claim external effects undone by history rollback.",
+      "evidence": [
+        "e2",
+        "e11",
+        "e13",
+        "e15"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Low-level mutation-friendly before/after provider/tool/terminal hooks change history, request params and injected messages; actual two-step hook test checks injection and order.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e3"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Summary side channel with no tools, retained complete tail/templates and explicit archives/digest; archive failure prevents replacement if persistence enabled.",
+      "evidence": [
+        "e16",
+        "e23"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Strict original reconstruction checks archive hash/path/schema and context replace boundary; hooks can reload context. This gives controlled primitives, not automatic semantic repair policy.",
+      "evidence": [
+        "e3",
+        "e16",
+        "e17",
+        "e23"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Compaction retains original history and summarizer request/response; stateless trajectories retain original/effective tool args. Output retention caps, snapshots and optional no-history mode prevent universal everything-audit claim.",
+      "evidence": [
+        "e9",
+        "e16",
+        "e18",
+        "e19",
+        "e23"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Strict archive reconstruction/structured trajectory schema and process output records enable downstream study; complete database query facility over all raw events not traced.",
+      "evidence": [
+        "e9",
+        "e17",
+        "e18"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Registry-version AgentCard instance rebuild/restore and dynamic local/MCP tool routing; refresh instance lock/shutdown is not explicit all-owned-work quiescence/default workflow-completion barrier.",
+      "evidence": [
+        "e6",
+        "e20"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session restore plus durable supervisor reattachment preserves logical history and independently running local processes; active provider/task heaps not serialized; persistent work remains running rather than paused.",
+      "evidence": [
+        "e14",
+        "e15",
+        "e19",
+        "e20"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "MCP aggregation and external runtime dispatcher consume services with request handlers; service governance not generally adopted by agent.",
+      "evidence": [
+        "e6"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Evaluator-optimizer refines generated answers until threshold/max, picks best response; hooks/tools could compose experiments but this is not harness self-research promotion.",
+      "evidence": [
+        "e3",
+        "e22"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Trajectory IDs/parent call/effective args and cancellation/checkpoint records can underpin complaints; no traced external bead-table/state snapshot filing contract.",
+      "evidence": [
+        "e2",
+        "e18"
+      ]
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local callables run host code; MCP/external/filesystem/shell route boundary and search permission distinct. Individual external service/ACP authorities not inferred from local tool dispatch.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Structured evaluator ratings/feedback drive bounded response refinement; archive/resume/hook tests have concrete structural lifecycle oracles, not semantics-quality proof.",
+      "evidence": [
+        "e22",
+        "e23",
+        "e24"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Exclusive record launch/stop/fsync, checkpoint locking, parent trajectory IDs and keyed tool results give local order; concurrent external calls no complete side-effect settlement journal.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e11",
+        "e18",
+        "e19"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/tool_runner.py",
+      "start": 190,
+      "end": 251,
+      "claim": "Iterator folds selected polling history, auto-compacts followup, discovers tools, before-LLM hook, provider step and after-LLM hook."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/tool_runner.py",
+      "start": 252,
+      "end": 348,
+      "claim": "Tool-use/continue iteration checkpoints, canceled-turn rollback/persistence and terminal after-turn hook; cancellation does not transactionally undo external effects."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/tool_runner.py",
+      "start": 106,
+      "end": 133,
+      "claim": "Low-level hooks explicitly permit history/load/request-parameter mutations and injected messages at loop boundaries."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/tool_agent.py",
+      "start": 966,
+      "end": 1042,
+      "claim": "Tool discovery/planning matches actual names, schedules parallel or sequential calls and keyed results/timings."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/tool_agent.py",
+      "start": 1083,
+      "end": 1153,
+      "claim": "Local function executes FastMCP tool with invocation/progress context, converts native result and synthesizes error CallToolResult."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/mcp_agent.py",
+      "start": 1628,
+      "end": 1729,
+      "claim": "Routes external/filesystem/skill/shell/local handlers first then MCP aggregator; web search permission boundary explicit and human-input opt-in builtin."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/shell_runtime.py",
+      "start": 398,
+      "end": 490,
+      "claim": "Model/tool profiles expose execute/poll/terminate or bash/process or shell/exec aliases, separate capability settings."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/shell_runtime.py",
+      "start": 2970,
+      "end": 3025,
+      "claim": "Native persistent background shell path invokes durable launch and returns tracked status/handle, not an unused helper."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/durable_processes.py",
+      "start": 180,
+      "end": 249,
+      "claim": "Private durable spec/record/capacity lock, command/cwd/origin session/agent and output retention; creation distinct from launch."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/durable_processes.py",
+      "start": 286,
+      "end": 330,
+      "claim": "Launch claims process exactly once and starts detached supervisor inheriting environment without persisting it, separate session/fds."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/durable_processes.py",
+      "start": 1112,
+      "end": 1158,
+      "claim": "Stop request published via exclusive hardlink, flush/fsync and directory fsync; status/capture records temp+replace+fsync."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/durable_process_supervisor.py",
+      "start": 141,
+      "end": 195,
+      "claim": "Supervisor opens append capture streams and launches shell in its own process session with DEVNULL stdin, drains output through threads and retention limits."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/durable_process_supervisor.py",
+      "start": 345,
+      "end": 383,
+      "claim": "Stop/cleanup sends group TERM then group KILL, including remaining descendants after direct child ends."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/fast-agent/src/fast_agent/session/durable_processes.py",
+      "start": 44,
+      "end": 108,
+      "claim": "Resumed session discovers/deduplicates matching linked active records; attaches original-agent/fallback shell; reports unavailable/unattached rather than recreating commands."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/fast-agent/src/fast_agent/tools/shell_runtime.py",
+      "start": 2818,
+      "end": 2875,
+      "claim": "Close terminates session processes but detaches durable ones, explicitly reports remaining handles; not refit pause/quiescence."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/fast-agent/src/fast_agent/history/compaction.py",
+      "start": 568,
+      "end": 682,
+      "claim": "No-tool side-channel summary, failure leaves history; archive must succeed when persistence enabled, digest-linked metadata retains summary request/response, then installs templates+summary+tail."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/fast-agent/src/fast_agent/history/atif_reconstruction.py",
+      "start": 51,
+      "end": 116,
+      "claim": "Strict archive validator checks every message, digest/path/symlink and unique checkpoint; reconstruction inserts model-context boundary instead of replaying retained tail as new effects."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/fast-agent/src/fast_agent/session/trajectory.py",
+      "start": 1,
+      "end": 126,
+      "claim": "Stateless invocation records original/effective args, rendered child input, messages/model/usage and parent-call IDs, atomic temp rename; source says future append-only stream, not current universal journal."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/fast-agent/src/fast_agent/session/session_manager.py",
+      "start": 365,
+      "end": 443,
+      "claim": "Exclusive checkpoint lock, history current/previous rotation and session metadata update; conversational snapshots rather than complete append-only core audit."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/fast-agent/src/fast_agent/core/managed_runtime.py",
+      "start": 463,
+      "end": 544,
+      "claim": "Registry-version refresh rebuilds impacted instances under instance lock, shuts old agents, finalizes new and restores session; no all-work drain shown in this refresh body."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/workflow/parallel_agent.py",
+      "start": 191,
+      "end": 209,
+      "claim": "Fanout child generation via asyncio.gather, telemetry; subsequent fanin separate agent/model."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/fast-agent/src/fast_agent/agents/workflow/evaluator_optimizer.py",
+      "start": 190,
+      "end": 260,
+      "claim": "Evaluator response rating/needs-improvement determines refinement/threshold/max; returns best response, not modified harness or deployment."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/fast-agent/tests/unit/fast_agent/history/test_compaction.py",
+      "start": 825,
+      "end": 883,
+      "claim": "Exact fail-archive unchanged history, persistence-disabled reconstruction rejection, unique archive/no-overwrite collision and partial-write cleanup oracle."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/fast-agent/tests/unit/fast_agent/session/test_durable_process_resume.py",
+      "start": 70,
+      "end": 92,
+      "claim": "Resume assertion routes active linked process to original worker, classifies stale/unavailable and leaves main unattached."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/fast-agent/tests/unit/fast_agent/history/test_compaction.py",
+      "focus": "original archive preservation, reconstruction and summarizer accounting",
+      "oracle": "Fake model summary tests reconstruct exact original messages; compare summary_request and parsed response; injected archive/link/partial-write failures assert unchanged history/bytes/unique outputs. Does not test semantic summary fidelity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/fast-agent/tests/unit/fast_agent/session/test_durable_process_resume.py",
+      "focus": "linked process restoration/ownership/unavailable classification",
+      "oracle": "Source fixtures create POSIX sleep process supervisors and stale records, assert original worker attachment and unavailable/unattached sets with close cleanup. Read only, not executed; it checks lifecycle classification, not arbitrary daemon effect settlement.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/fast-agent/tests/unit/fast_agent/agents/test_tool_runner_hooks.py",
+      "focus": "two-step hook mutation/order",
+      "oracle": "Fake LLM captures request messages; exact hook sequence and injected text assertion prove actual turn agency. No provider-live or refit guarantee.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Mutable phase hooks and rich local/MCP routing expose real programmable turns.",
+    "Compaction archives preserve originals with digest-linked strict reconstruction and full summarizer request/response accounting.",
+    "Detached durable supervisor records and explicit session-vs-persistent lifetime are concrete restartable process-consumer mechanisms."
+  ],
+  "limits": [
+    "Persistent supervisor keeps owned computation running at main shutdown; Arconaut refit policy requires pause/drain or true separate daemon ownership.",
+    "Trajectory files apply especially to stateless invocations; current/previous session snapshots and bounded process output are not universal original audit.",
+    "Response evaluator-optimizer and AgentCard refresh do not establish harness optimization or executable refit."
+  ],
+  "arconaut_questions": [
+    "Can compaction archive/error discipline become normal audit/context repair with full raw originals beyond selected structured messages?",
+    "What external lifecycle contract distinguishes paused owned processes from independent shared daemon consumers at refit?",
+    "Which exact workflow/hook changes should activate after affected runs conclude, and what counts as safe forced interruption?"
+  ]
+}

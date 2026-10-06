@@ -1,0 +1,39 @@
+## Review: interrupted provider-session recovery
+
+Scope inspected: `docs/SESSION_RECOVERY_SUBPLAN.md`, `recover_coding_session` (src/coding.cpp:425-472), startup use (src/main.cpp:95-120), `tests/session_recovery_test.cpp`, `scripts/arco`, and the reconciliation/dispatch semantics in `src/retained_state.cpp` (929-956, 853-897) plus `FramedJournal::confirm_recovery`/`resume_after_reconciliation` (src/journal_writer.cpp:568-600).
+
+### Finding 1 — Settlement is not atomic with reconciliation: journal goes live before terminal-unknown observations exist (partial settlement window)
+
+- Locations: `RetainedState::reconcile` src/retained_state.cpp:945-954; settlement loop src/coding.cpp:453-464.
+- Trigger: `reconcile()` calls `journal_->resume_after_reconciliation()` and sets `reconciled_ = true` immediately after the verifier returns. Only *afterwards* does `recover_coding_session` submit the `AttemptObservationEvent{terminal, unknown}` records. If any `root.submit` in that loop fails (e.g. `capacity` from `JournalCapacity` limits) or the process dies between `reconcile` and the loop, the journal is already `live` and every unresolved attempt is flagged `reconciled_` — yet attempts may have no terminal observation (or only a prefix of them do, if several were abandoned).
+- Consequence: in-memory, `attempt()` (src/retained_state.cpp:844-846) then reports `reconciliation_required == false` for attempts that were never settled, because that predicate is `(!reconciled_ || recording_failed_ || uncertain) && !terminal`. Any in-process consumer that caught the error instead of exiting would treat unsettled provider attempts as reconciled. The on-disk state also records "live resume" with no settlement; recovery on next open happens to redo the work (reconciled_ is in-memory only), which masks the defect but means a persistent submit failure (capacity) loops forever at every startup with the journal resumed-live each time. Settlement should be part of the reconciled transition (submit observations before/within resume, or re-check per-attempt terminal state after the loop and fail `reconciled_` otherwise).
+
+### Finding 2 — Verifier trusts the self-declared `"operation"` string; no binding to the actual adapter or linked invocation (metadata attribution gap)
+
+- Locations: `ProviderCustody::verify` src/coding.cpp:430-451; metadata production src/coding.cpp:497-514; `call_op` bridge src/coding.cpp:311-318.
+- Trigger: the verifier only checks `metadata["operation"] == "provider"` in the decision continuation and that *some* `DecisionEvent` with a matching id exists. It never (a) verifies that `attempt.admission.invocation` is contained in `decision->invocations` or that a matching `InvocationEvent` exists (the doc's "linked admission" requirement), and (b) the operation name is attacker/program-controlled: `arco.call(name, ...)` passes any Lua-supplied `name` into `CodingEngine::operation` (src/coding.cpp:640, 474), so `arco.call("provider", ...)` writes decision metadata claiming `operation: "provider"` while the dispatch body runs `LocalTools::run`, not the provider adapter. A crash after the `AttemptAdmissionEvent` commit but before the terminal observation would cause this non-provider attempt to be settled as an "abandoned provider request".
+- Consequence: misattributed recovery — an attempt that never contacted the provider is summarized as an abandoned provider request (wrong audit semantics), and generally the verifier's custody decision rests on unauthenticated metadata rather than on the admission→invocation→decision chain. In current code the mislabeled body is a no-op (`tools.run("provider")` is unsupported), so no effect replay results today, but the check is the only thing standing between a mislabeled side-effecting operation and a wrongful "safe to abandon" verdict. Also note the decision scan (coding.cpp:433-436) does not break on first match — last matching `DecisionEvent` wins if ids ever collide.
+
+### Finding 3 — Redispatch protection relies on evidence downgrade, which the tests never exercise for the unopened case
+
+- Locations: `RetainedState::dispatch` guard src/retained_state.cpp:863-867; test src/../tests/session_recovery_test.cpp:70, 97-99.
+- The old-attempt redispatch guard refuses dispatch when `opened || evidence != live || terminal observation`. After recovery the settled attempt is terminal (covered), and unopened prior-process attempts are refused only because `confirm_recovery` downgrades all evidence to `recovered` (src/retained_state.cpp:922-924). The test always submits an `AttemptOpenEvent` (line 70), so the never-opened admitted attempt path — the most common real crash window, between the admission submit at coding.cpp:517 and the open inside `dispatch` at retained_state.cpp:876 — has no oracle. If evidence handling ever changed (e.g. recovery promoting evidence), nothing would catch a redispatch of an unopened admitted attempt.
+
+### Finding 4 — Test-oracle gaps versus the documented direct test
+
+- `tests/session_recovery_test.cpp` uses one operation per journal (lines 33-35). The doc requires "accept reconciliation only when *every* unresolved attempt is a coding provider operation" (docs/SESSION_RECOVERY_SUBPLAN.md:9-10). The mixed journal (provider + exec admissions unresolved in the *same* journal, expecting the provider attempt to remain blocked too) is never tested — the current "block everything on any non-provider" behavior could regress to per-attempt settlement undetected.
+- The fixture metadata is only `{"operation": ...}` (line 48) — it never contains the real `input`/`revision`/`generation` fields produced at coding.cpp:497-501, so the test doesn't prove real engine-produced decisions pass, and proves the verifier accepts metadata the engine never emits (reinforces Finding 2).
+- No oracle for: the `session.recovery` summary record (coding.cpp:465-471) being written; the observation payload content; `--audit-last` inspection *not* performing settlement (main.cpp:106-108); the "bootstrap-audit copy reopens, original unchanged" requirement (doc lines 18-19) — absent from this test entirely.
+- The blocked-path oracle (line 86) accepts only `external_unknown`; a regression returning `audit_unavailable` or `conflict` for a non-provider attempt would still "block" but the test would report `corrupt` rather than pinpointing the wrong code. Minor.
+
+### Non-findings (verified correct)
+
+- Startup ordering in main.cpp:104-108 (`open` → `confirm_recovery` → `recover_coding_session` before any engine/turn construction) and inspection-mode skip match the doc; unclean recovery lands in `blocked` state (journal_writer.cpp:587-588) so `reconcile` fails and startup is blocked, satisfying "all other unresolved operations block startup".
+- Second-reopen idempotence is sound: settled attempts are terminal, excluded from `reconcile`'s unresolved set (retained_state.cpp:941), so no duplicate terminal observation is submitted (which validate at retained_state.cpp:343-347 would reject).
+- `scripts/arco` (4 lines) execs only `build/release/arco` with no debug fallback, matching doc lines 19-20.
+- No crash vector found in `verify` itself: JSON parse and string-type checks are guarded; `bad_alloc` is caught by `reconcile` (retained_state.cpp:955).
+- Recovery never replays or reconstructs calls: settlement writes only terminal `unknown` observations with a fixed message; no `dispatch`, no `AdapterReceiptEvent`, no context mutation (test line 102 confirms context preserved).
+
+### Limitations
+
+I did not trace `NativeJournalDirectory`/frame-level crash recovery, `LocalTools::run` name validation, or fleet/native refit areas (out of scope per instructions), and I made no modifications or executions.

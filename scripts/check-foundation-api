@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Compile actual accepted/rejected API shapes with the real foundation target flags."""
+import argparse
+import json
+from pathlib import Path
+import shlex
+import subprocess
+import tempfile
+
+
+ROOT = Path(__file__).resolve().parent.parent
+CASES = (
+    ("valid", "void test(ParticipantId p, ConversationId c, ByteBuffer& b, MonotonicInstant t) { (void)p.bytes(); (void)c; (void)b.view(); auto r = elapsed(t, t); if (r.has_value()) { (void)r.value(); } }", None),
+    ("identity_conversion", "void test(ParticipantId p) { ConversationId c = p; (void)c; }", "no viable conversion"),
+    ("cross_identity_equality", "bool test(ParticipantId p, ConversationId c) { return p == c; }", "invalid operands to binary expression"),
+    ("wall_elapsed", "void test(WallObservation wall, MonotonicInstant mono) { auto r = elapsed(wall, mono); (void)r; }", "no matching function for call to 'elapsed'"),
+    ("temporary_buffer_view", "void test(ByteBuffer b) { auto view = std::move(b).view(); (void)view; }", "call to deleted member function 'view'"),
+    ("discarded_result", "void test(ByteView bytes) { ByteBuffer::copy(bytes, 64); }", "declared with 'nodiscard' attribute"),
+)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--database", type=Path, required=True)
+    args = parser.parse_args()
+    entries = json.loads(args.database.read_text())
+    target = ROOT / "tests/foundation_test.cpp"
+    entry = next(e for e in entries if Path(e["file"]).resolve() == target)
+    command = entry.get("arguments") or shlex.split(entry["command"])
+    flags = []
+    index = 1
+    while index < len(command):
+        value = command[index]
+        if value in ("-o", "-MF", "-MT", "-MQ"):
+            index += 2
+            continue
+        if value not in ("-c", "-MD", "-MMD") and (Path(entry["directory"]) / value).resolve() != target:
+            flags.append(value)
+        index += 1
+    parent = ROOT / "context"
+    parent.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="foundation-api-", dir=parent) as directory:
+        for name, code, diagnostic in CASES:
+            source = Path(directory) / (name + ".cpp")
+            source.write_text('#include "arconaut/foundation.hpp"\nusing namespace arconaut;\n' + code + "\n")
+            result = subprocess.run([command[0], *flags, "-fsyntax-only", str(source)],
+                                    cwd=entry["directory"], capture_output=True, text=True, timeout=30)
+            if diagnostic is None:
+                if result.returncode:
+                    raise RuntimeError(f"accepted API case {name} rejected:\n{result.stderr}")
+            elif result.returncode == 0 or diagnostic not in result.stderr:
+                raise RuntimeError(f"API case {name} lacks required rejection {diagnostic!r}:\n{result.stderr}")
+            print(f"PASS {name}" + (f" rejects: {diagnostic}" if diagnostic else " accepted"))
+
+
+if __name__ == "__main__":
+    main()

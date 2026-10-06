@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Development-only, subscription-backed independent Kimi review."""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import signal
+import subprocess
+import tempfile
+
+
+PROFILE = """---
+name: arconaut-reviewer
+description: Independent read-only code and oracle review
+tools: [Read, Grep, Glob]
+subagents: []
+---
+You are an independent reviewer. Inspect only the files and scope in the task.
+Read-only tools are your entire tool set. Do not change files, run commands, or
+delegate. Report concrete faults with file and line locations, triggers,
+consequences, and fixes. If none, state what you inspected and limitations.
+Your final response is the self-contained handoff.
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--new", action="store_true", help="Start a bound reviewer session")
+    mode.add_argument("--resume", type=Path, help="Resume the exact session from this run directory")
+    parser.add_argument("--brief", type=Path, required=True)
+    parser.add_argument("--cd", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--model", default="kimi-code/k3", help="Existing configured model alias")
+    parser.add_argument("--timeout", type=int, default=900, help="Seconds before stopping Kimi")
+    args = parser.parse_args()
+    workdir = args.cd.resolve(strict=True)
+    if not workdir.is_dir() or args.timeout <= 0:
+        parser.error("--cd must be a directory and --timeout must be positive")
+    brief = args.brief.read_text()
+    if not brief.strip():
+        parser.error("brief is empty")
+    if len(brief.encode()) > 100_000:
+        parser.error("brief exceeds 100 KB; reference files instead")
+    fingerprint = hashlib.sha256(PROFILE.encode()).hexdigest()
+    session = None
+    if args.resume:
+        previous = json.loads((args.resume / "result.json").read_text())
+        if previous.get("profile_sha256") != fingerprint or previous.get("cwd") != str(workdir):
+            parser.error("prior run does not match this reviewer profile and working directory")
+        session = previous.get("session_id")
+        if not isinstance(session, str) or not re.fullmatch(r"session_[0-9a-f-]+", session):
+            parser.error("prior run has no captured session ID; do not guess or use --continue")
+    capture_root = workdir / "context" / "kimi-review"
+    capture_root.mkdir(parents=True, exist_ok=True)
+    run = Path(tempfile.mkdtemp(prefix="run-", dir=capture_root))
+    (run / "brief.txt").write_text(brief)
+    profile = run / "reviewer.md"
+    profile.write_text(PROFILE)
+    command = ["kimi", "--model", args.model, "--output-format", "stream-json"]
+    command += ["--session", session] if session else ["--agent-file", str(profile)]
+    command += ["--prompt", brief]
+    child_env = dict(os.environ)
+    transport_profile = "inherited-node-options"
+    if "NODE_OPTIONS" not in child_env:
+        # The installed Node-based Kimi binary otherwise gives address attempts
+        # too little time on this host. Keep the setting local to this child and
+        # honor any explicit operator-provided Node options without modification.
+        child_env["NODE_OPTIONS"] = "--network-family-autoselection-attempt-timeout=3000"
+        transport_profile = "node-address-attempt-3000ms"
+    result = {"cwd": str(workdir), "model": args.model, "profile_sha256": fingerprint,
+              "transport_profile": transport_profile,
+              "session_id": session, "exit_code": None, "child_exit_code": None,
+              "status": "failed"}
+    child = None
+    interruption_signal = None
+
+    def interrupt(signum, _frame):
+        nonlocal interruption_signal
+        interruption_signal = signum
+        if child is not None and child.returncode is None:
+            raise KeyboardInterrupt
+
+    previous_handlers = {sig: signal.signal(sig, interrupt)
+                         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
+
+    def stop_child():
+        if child is None or child.returncode is not None:
+            return
+        for sig in previous_handlers:
+            signal.signal(sig, signal.SIG_IGN)
+        try:
+            os.killpg(child.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            child.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            child.wait()
+
+    print(f"Kimi review capture: {run}", flush=True)
+    try:
+        with (run / "events.jsonl").open("wb") as out, (run / "stderr.txt").open("wb") as err:
+            if interruption_signal is not None:
+                result.update(status="interrupted", exit_code=128 + interruption_signal,
+                              interruption_signal=interruption_signal)
+                return result["exit_code"]
+            try:
+                child = subprocess.Popen(command, cwd=workdir, stdout=out, stderr=err,
+                                         env=child_env,
+                                         start_new_session=True)
+                if interruption_signal is not None:
+                    raise KeyboardInterrupt
+                code = child.wait(timeout=args.timeout)
+            except (subprocess.TimeoutExpired, KeyboardInterrupt) as failure:
+                stop_child()
+                if isinstance(failure, subprocess.TimeoutExpired):
+                    code = 124
+                    result["status"] = "timeout"
+                else:
+                    result["interruption_signal"] = interruption_signal or signal.SIGINT
+                    code = 128 + result["interruption_signal"]
+                    result["status"] = "interrupted"
+        result["child_exit_code"] = child.returncode
+        child = None
+        result["exit_code"] = code
+        if result["status"] not in ("timeout", "interrupted"):
+            result["status"] = "completed" if code == 0 else "failed"
+        ids = set()
+        with (run / "events.jsonl").open(errors="replace") as events:
+            for line in events:
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(event, dict) and event.get("role") == "meta" and event.get("type") == "session.resume_hint":
+                    candidate = event.get("session_id")
+                    if isinstance(candidate, str) and re.fullmatch(r"session_[0-9a-f-]+", candidate):
+                        ids.add(candidate)
+        if len(ids) == 1 and (session is None or session in ids):
+            result["session_id"] = ids.pop()
+        elif ids:
+            result["session_id"] = None
+            result["session_capture_error"] = "Ambiguous or changed session ID; do not guess"
+    except OSError as failure:
+        result["error"] = str(failure)
+        code = 127
+        result["exit_code"] = code
+    finally:
+        stop_child()
+        if child is not None:
+            result["child_exit_code"] = child.returncode
+        (run / "result.json").write_text(json.dumps(result, indent=2) + "\n")
+        for sig, handler in previous_handlers.items():
+            signal.signal(sig, handler)
+    print(json.dumps(result, indent=2))
+    return code if code >= 0 else 128 - code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

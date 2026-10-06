@@ -1,0 +1,876 @@
+{
+  "id": "kimi-cli",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Asyncio KimiSoul with in-repo Kosong streaming/tool scheduler and KAOS backend; background Bash detached worker, background agents in current event loop",
+    "service_boundary": "Owns local commands/task workers/context files; consumes model/MCP/KAOS services. Persisted task spec is not shared compute control plane."
+  },
+  "summary": "Python coding harness with programmable prompt-flow graphs, schema tools, root-managed background jobs and truly restored subagents, rotating compaction history and wire events.",
+  "inspection": {
+    "files": [
+      "quarantine/kimi-cli/src/kimi_cli/agents/default/agent.yaml",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/packages/kosong/src/kosong/__init__.py",
+      "quarantine/kimi-cli/packages/kosong/src/kosong/_generate.py",
+      "quarantine/kimi-cli/packages/kosong/src/kosong/chat_provider/kimi.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/toolset.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "quarantine/kimi-cli/packages/kaos/src/kaos/local.py",
+      "quarantine/kimi-cli/packages/kaos/src/kaos/local.py",
+      "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "quarantine/kimi-cli/src/kimi_cli/background/worker.py",
+      "quarantine/kimi-cli/src/kimi_cli/background/worker.py",
+      "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/background/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/background/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/subagents/core.py",
+      "quarantine/kimi-cli/src/kimi_cli/subagents/builder.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/agent/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/context.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/compaction.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/compaction.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/wire/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/wire/file.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/utils.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "quarantine/kimi-cli/src/kimi_cli/ui/shell/slash.py",
+      "quarantine/kimi-cli/src/kimi_cli/cli/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/ui/shell/slash.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/approval.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/approval.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/file/write.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/file/replace.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/toolset.py",
+      "quarantine/kimi-cli/tests/core/test_subagent_resume_e2e.py",
+      "quarantine/kimi-cli/tests/background/test_worker.py",
+      "quarantine/kimi-cli/tests/core/test_simple_compaction.py",
+      "quarantine/kimi-cli/src/kimi_cli/tools/dmail/__init__.py",
+      "quarantine/kimi-cli/src/kimi_cli/soul/__init__.py"
+    ],
+    "scope": "Entry run/cancel wiring, soul phases, actual Kosong generation and Kimi provider SDK, tool hooks/dispatch/results, foreground/background custody, child restore/model/role guards, compaction/rotation, wire logger, model reload, feedback and tests.",
+    "limits": "Source read only, reference not executed. Alternative provider/remote KAOS transports, all media/search/question executors, ACP/web UI, flow parser and full hook scheduler not exhaustively traced. Source only, no reference run."
+  },
+  "actions": [
+    {
+      "name": "ReadFile / ReadMediaFile / Glob / Grep",
+      "surface": "model tools",
+      "input": "path/line_offset/n_lines; media path; pattern/directory; regex/search",
+      "output": "file/media/search results",
+      "lifecycle": "awaited KAOS reads; default schemas, not every media/search executor traced",
+      "authority": "Model; file tools plus configurable workspace scope.",
+      "evidence": [
+        "e1",
+        "e39"
+      ]
+    },
+    {
+      "name": "WriteFile / StrReplaceFile",
+      "surface": "model tools",
+      "input": "path/content/mode append-or-overwrite; path/edit {old,new,replace_all} or list",
+      "output": "filesystem change/diff/error",
+      "lifecycle": "awaited; plan mode restricts writes and approval policy applies",
+      "authority": "Model; yolo/afk autoapprove, plan protections remain.",
+      "evidence": [
+        "e39",
+        "e40",
+        "e37",
+        "e38"
+      ]
+    },
+    {
+      "name": "Shell",
+      "surface": "model tool",
+      "input": "command, timeout, run_in_background, description",
+      "output": "foreground clipped output/exit or task ID/full log pointer",
+      "lifecycle": "foreground fresh shell; background detached worker with control store",
+      "authority": "Model; approval unless autoapproved; local host authority.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13",
+        "e16",
+        "e18"
+      ]
+    },
+    {
+      "name": "TaskList / TaskOutput / TaskStop",
+      "surface": "model tools",
+      "input": "active_only/limit; task_id/block/timeout; task_id/reason",
+      "output": "persistent status/output path/preview; stop status",
+      "lifecycle": "root-only; background process control or asyncio agent cancellation",
+      "authority": "Root model; no child background-management access.",
+      "evidence": [
+        "e20",
+        "e21",
+        "e22"
+      ]
+    },
+    {
+      "name": "Agent",
+      "surface": "model tool",
+      "input": "description/prompt/subagent_type/model/resume/run_in_background",
+      "output": "agent_id/task_id, text/summary, resumed/type metadata",
+      "lifecycle": "new or truly context-restored child; simultaneous resume forbidden; background asyncio",
+      "authority": "Model root; per-child alias/spec; role limits and saved launch data.",
+      "evidence": [
+        "e23",
+        "e24",
+        "e25",
+        "e19"
+      ]
+    },
+    {
+      "name": "SetTodoList / AskUserQuestion",
+      "surface": "model tools",
+      "input": "todo list; user question choices",
+      "output": "displayed task state or user answer",
+      "lifecycle": "default catalog; individual executors not deeply traced",
+      "authority": "Model; afk behavior/authority set by runtime.",
+      "evidence": [
+        "e1",
+        "e37"
+      ]
+    },
+    {
+      "name": "EnterPlanMode / ExitPlanMode",
+      "surface": "model tools",
+      "input": "plan entry/exit decisions",
+      "output": "runtime plan mode/status and controlled plan file writes",
+      "lifecycle": "tool-execution mode changes; not redefining turn program",
+      "authority": "Model; default operations and file protections.",
+      "evidence": [
+        "e1",
+        "e8",
+        "e39"
+      ]
+    },
+    {
+      "name": "SearchWeb / FetchURL",
+      "surface": "model tools",
+      "input": "query/limit/include_content; URL",
+      "output": "search/document text",
+      "lifecycle": "consumed network services, catalog and native schemas inspected; full service implementation not audited",
+      "authority": "Model; provider/config credentials.",
+      "evidence": [
+        "e1"
+      ]
+    },
+    {
+      "name": "SendDMail",
+      "surface": "optional model tool",
+      "input": "message/checkpoint_id",
+      "output": "signal reverting future context with message",
+      "lifecycle": "installed only explicit custom agent catalog; rotates context but external file effects remain",
+      "authority": "Model optional; disabled default.",
+      "evidence": [
+        "e45",
+        "e2",
+        "e26",
+        "e1"
+      ]
+    },
+    {
+      "name": "FlowRunner / /flow skill / ralph_loop",
+      "surface": "workflow program API",
+      "input": "graph begin/end/task/decision nodes and labelled edges, move cap",
+      "output": "serial node turns/choice transitions",
+      "lifecycle": "same soul history across prompt stages; invalid decision retry not counted as valid move",
+      "authority": "Host/operator flow skill; model selects branches through <choice>.",
+      "evidence": [
+        "e33"
+      ]
+    },
+    {
+      "name": "steer / run cancel event",
+      "surface": "operator/program API",
+      "input": "follow-up content; cancellation event",
+      "output": "queued user injection/wire SteerInput or RunCancelled",
+      "lifecycle": "steer between steps and before stop; cancel awaits soul/futures",
+      "authority": "Operator/wire client; native model peer-message bus not provided.",
+      "evidence": [
+        "e10",
+        "e2",
+        "e46",
+        "e4"
+      ]
+    },
+    {
+      "name": "/compact [focus] / context checkpoint,revert",
+      "surface": "operator/runtime API",
+      "input": "manual focus; stored checkpoint ID",
+      "output": "summary+tail and active task reminder; rotated full previous context files",
+      "lifecycle": "compaction separately calls model; checkpoint rotates/rebuilds effective data",
+      "authority": "Operator/runtime; model file reads can access history as files, no dedicated repair transaction.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e29",
+        "e26"
+      ]
+    },
+    {
+      "name": "/model / reload / session switch",
+      "surface": "operator commands",
+      "input": "model/thinking/session selection",
+      "output": "config save and same-session runtime reconstruction",
+      "lifecycle": "background work explicitly preserved; no refit pause/quiescence",
+      "authority": "Operator; program reload, not compiled executable handoff.",
+      "evidence": [
+        "e34",
+        "e35"
+      ]
+    },
+    {
+      "name": "/feedback",
+      "surface": "operator command",
+      "input": "feedback text under managed provider or GitHub fallback",
+      "output": "remote feedback with session ID/version/OS/model",
+      "lifecycle": "user prompt/HTTP submit; no captured-state bundle",
+      "authority": "Operator; no default model rageshake tool.",
+      "evidence": [
+        "e36",
+        "e1"
+      ]
+    },
+    {
+      "name": "custom agent YAML / native tool imports / hooks / MCP",
+      "surface": "extension APIs",
+      "input": "agent prompt/tool paths/subagent specs; hook command/callback; MCP config",
+      "output": "native tool descriptors/results and before-tool block",
+      "lifecycle": "runtime composition/deferred loading; hook execution around actions; no affected-workflow activation transaction traced",
+      "authority": "Program/operator defines extension, model may edit files but not hot-install full loop.",
+      "evidence": [
+        "e1",
+        "e7",
+        "e41"
+      ]
+    },
+    {
+      "name": "WireFile.iter_records / Context.restore",
+      "surface": "supporting study/persistence APIs",
+      "input": "JSONL path",
+      "output": "normalized wire events/messages/checkpoints",
+      "lifecycle": "wire merged append and context rotation, malformed data may be skipped",
+      "authority": "Program/operator; not general model SQL audit API.",
+      "evidence": [
+        "e26",
+        "e30",
+        "e31"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native KAOS file/search/media/write/replace with plan/workspace checks; shell expands host access.",
+      "evidence": [
+        "e1",
+        "e39",
+        "e40",
+        "e13"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fresh foreground shell kills direct child without reaping/group ownership; background separate worker has group TERM/KILL/wait and file output.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e15",
+        "e16",
+        "e17",
+        "e18"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Shell general command execution and task-backed background code, not resident kernel.",
+      "evidence": [
+        "e11",
+        "e12",
+        "e18"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No resident notebook/Python namespace in inspected default tools, KAOS or background worker.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent file task/context stores support standing work; no native general shared-DB query client.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e26"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "FlowRunner actual graph prompt/decision transitions, serial stages with model choice; native tools/hooks/agent composition. Invalid choice may repeat without valid-move cap progressing.",
+      "evidence": [
+        "e33",
+        "e1",
+        "e7"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Agent model alias override or saved effective/spec model clones child LLM.",
+      "evidence": [
+        "e24",
+        "e25"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Concurrent parent/children and TaskOutput feedback exist; resume forbidden while running, no send-to-running-colleague/peer bus in native catalog.",
+      "evidence": [
+        "e1",
+        "e19",
+        "e22",
+        "e25"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Tools start during model generation, background shell workers and in-process agent tasks with stable IDs.",
+      "evidence": [
+        "e4",
+        "e5",
+        "e16",
+        "e19"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Between-step steers and cancel-and-await run/futures implemented; foreground shell direct-child kill, background status may mark killed before cleanup.",
+      "evidence": [
+        "e10",
+        "e46",
+        "e4",
+        "e13",
+        "e14",
+        "e20"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Prompt-flow graphs and hook programs expressive; underlying soul step/continuation still host-defined, no model live replacement.",
+      "evidence": [
+        "e33",
+        "e2",
+        "e7"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Auto/manual custom focus summary, preserved tail, begin/end events, rotating original context file and active task snapshot.",
+      "evidence": [
+        "e27",
+        "e28",
+        "e29",
+        "e26",
+        "e44"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Rotated normalized context files and checkpoint reversion support restoration; optional D-Mail conveys later state. No default model managed original-context repair transaction.",
+      "evidence": [
+        "e26",
+        "e45",
+        "e1"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Merged wire JSONL and rotating contexts valuable; raw provider request/HTTP/chunk order and clipped foreground output omitted, recorder failures logged only.",
+      "evidence": [
+        "e30",
+        "e31",
+        "e32",
+        "e5",
+        "e6",
+        "e9"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Wire iter_records/Context.restore and ordinary ReadFile permit study of persisted normalized logs; no model DB audit tables.",
+      "evidence": [
+        "e31",
+        "e26",
+        "e1"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "/model reconstructs same session preserving background tasks; no general after-turn/affected-workflow change transaction.",
+      "evidence": [
+        "e34",
+        "e35"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Real saved child/context restore and runtime Reload are data continuity; detached Bash can persist, agents remain current asyncio tasks. Reload intentionally keeps work active rather than refit quiescence.",
+      "evidence": [
+        "e23",
+        "e25",
+        "e26",
+        "e35",
+        "e16",
+        "e19"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider SDK adapter, MCP client and KAOS boundary consume services; no shared fabric governor.",
+      "evidence": [
+        "e6",
+        "e41",
+        "e13"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Flow ralph/task graph plus editable files/hooks are useful search programs; no governed harness autoresearch/refit lifecycle traced.",
+      "evidence": [
+        "e33",
+        "e39",
+        "e7"
+      ]
+    },
+    "complaints": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator /feedback attaches a few identifiers/version/OS/model, not model-issued full captured-state bead; no native complaint default.",
+      "evidence": [
+        "e36",
+        "e1"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Yolo/afk remove tool approvals; hooks/plan restrictions and root-only task access persist. Explore README prompt constraint not treated as physical readonly.",
+      "evidence": [
+        "e37",
+        "e38",
+        "e7",
+        "e21",
+        "e39"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Mock soul/real storage resume test, real controlled sleep worker status test and compaction prompt oracle; not descendant custody/provider correctness.",
+      "evidence": [
+        "e42",
+        "e43",
+        "e44"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Checkpoints/task IDs/wire wall timestamps and awaited cancellation provide order primitives; merged events and early killed status not complete causal original audit.",
+      "evidence": [
+        "e26",
+        "e31",
+        "e20",
+        "e46"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/kimi-cli/src/kimi_cli/agents/default/agent.yaml",
+      "start": 1,
+      "end": 36,
+      "claim": "Default native action catalog and named subagents; Think/SendDMail disabled here."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1010,
+      "end": 1110,
+      "claim": "Compaction/checkpoint/step/outcome/steer phases; D-Mail revert and next-step steering."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1199,
+      "end": 1218,
+      "claim": "kosong.step receives current prompt/toolset/effective history and wire callbacks."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/kimi-cli/packages/kosong/src/kosong/__init__.py",
+      "start": 104,
+      "end": 184,
+      "claim": "Step starts tools as calls complete during generation; cancels and awaits tracked futures on model failure/cancellation."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/kimi-cli/packages/kosong/src/kosong/_generate.py",
+      "start": 52,
+      "end": 85,
+      "claim": "Actual provider.generate and streamed-part assembly/tool-call callback; normalized messages, not raw HTTP wire."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/kimi-cli/packages/kosong/src/kosong/chat_provider/kimi.py",
+      "start": 146,
+      "end": 200,
+      "claim": "Native provider converts history/tools and uses async OpenAI SDK stream/raw-response API."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/toolset.py",
+      "start": 456,
+      "end": 506,
+      "claim": "PreToolUse hook may block; native tool coroutine awaited and cancellation propagated."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1256,
+      "end": 1347,
+      "claim": "Awaits tool results then grows history and stops on no calls/rejection/repetition."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1389,
+      "end": 1410,
+      "claim": "Normalized assistant/tool context appended after results complete."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 622,
+      "end": 654,
+      "claim": "Steer queue injects follow-up user messages; /btw intercepted elsewhere."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "start": 26,
+      "end": 56,
+      "claim": "Shell command/timeout/background/description parameter contract."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "start": 81,
+      "end": 142,
+      "claim": "Shell approval and bounded output builder with success/error exit interpretation."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/shell/__init__.py",
+      "start": 221,
+      "end": 264,
+      "claim": "Fresh shell via KAOS, timeout only wraps reading pipes; cancellation/timeout calls process.kill, no wait there."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/kimi-cli/packages/kaos/src/kaos/local.py",
+      "start": 39,
+      "end": 64,
+      "claim": "Local process.kill kills direct child without awaiting reap or descendants."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/kimi-cli/packages/kaos/src/kaos/local.py",
+      "start": 165,
+      "end": 177,
+      "claim": "Foreground local subprocess has no new process session/group."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "start": 135,
+      "end": 147,
+      "claim": "Bash task worker is detached process with new OS session."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/kimi-cli/src/kimi_cli/background/worker.py",
+      "start": 87,
+      "end": 119,
+      "claim": "Worker control loop sends group TERM then KILL after grace."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/kimi-cli/src/kimi_cli/background/worker.py",
+      "start": 129,
+      "end": 173,
+      "claim": "Background shell stdout/stderr file and process group; actual wait/timeout/TERM/KILL/reap."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "start": 209,
+      "end": 270,
+      "claim": "Background agents instead asyncio tasks in current parent; persistent task spec and explicit agent/model/prompt."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/kimi-cli/src/kimi_cli/background/manager.py",
+      "start": 347,
+      "end": 403,
+      "claim": "TaskStop agent marks killed before task cancellation cleanup; Bash sends persisted control and best-effort signal."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/background/__init__.py",
+      "start": 111,
+      "end": 161,
+      "claim": "TaskList/TaskOutput/TaskStop schemas, background access root-only."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/background/__init__.py",
+      "start": 214,
+      "end": 265,
+      "claim": "TaskOutput can block with timeout then returns status, preview path/size and full log ReadFile hint."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/kimi-cli/src/kimi_cli/subagents/core.py",
+      "start": 36,
+      "end": 85,
+      "claim": "Real child context restore and persisted prompt reuse; prompt snapshot and new soul."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/kimi-cli/src/kimi_cli/subagents/builder.py",
+      "start": 12,
+      "end": 42,
+      "claim": "Cloned child LLM model override/effective/spec fallback."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/agent/__init__.py",
+      "start": 174,
+      "end": 236,
+      "claim": "Reject simultaneous resume, mark running_background before async dispatch and retain launch-model metadata."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/context.py",
+      "start": 135,
+      "end": 242,
+      "claim": "Revert/clear rotate old file then reconstruct/clear effective messages; normalized append JSONL."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/compaction.py",
+      "start": 114,
+      "end": 147,
+      "claim": "Summary via separate no-tools model step, excludes thinking and returns summary plus preserved tail."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/compaction.py",
+      "start": 154,
+      "end": 198,
+      "claim": "Preserves last configured user-message groups and serializes prior history for summary."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1540,
+      "end": 1595,
+      "claim": "Compaction emits begin, rotates/clears context, writes summary/checkpoint and retains active task snapshot."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/kimi-cli/src/kimi_cli/wire/__init__.py",
+      "start": 23,
+      "end": 64,
+      "claim": "Wire recorder consumes merged complete-message queue; recorder flush failure only logged."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/kimi-cli/src/kimi_cli/wire/file.py",
+      "start": 108,
+      "end": 145,
+      "claim": "JSONL timestamps/protocol metadata, malformed records skipped, append not fsync transaction."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/utils.py",
+      "start": 54,
+      "end": 124,
+      "claim": "Output builder clips chars and per-line size before native result/wire record."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/kimisoul.py",
+      "start": 1849,
+      "end": 1927,
+      "claim": "FlowRunner node/decision execution, bounded valid moves, invalid decision repeats same node."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/kimi-cli/src/kimi_cli/ui/shell/slash.py",
+      "start": 284,
+      "end": 312,
+      "claim": "Model operator command saves config then reloads same session."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/kimi-cli/src/kimi_cli/cli/__init__.py",
+      "start": 679,
+      "end": 712,
+      "claim": "Reload/vis/web explicitly preserve background tasks rather than stopping them; ordinary exit shuts down."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/kimi-cli/src/kimi_cli/ui/shell/slash.py",
+      "start": 444,
+      "end": 501,
+      "claim": "Operator feedback includes session ID/text/version/OS/model; no state bundle/native model complaint."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/approval.py",
+      "start": 172,
+      "end": 179,
+      "claim": "Afk or yolo implies automatic tool approval."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/approval.py",
+      "start": 238,
+      "end": 247,
+      "claim": "Autoapproval path bypasses operator request after trace metadata setup."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/file/write.py",
+      "start": 86,
+      "end": 143,
+      "claim": "KAOS file path validation/plan protection and append/overwrite preparation."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/file/replace.py",
+      "start": 95,
+      "end": 147,
+      "claim": "Multiple old/new edits prepared and no-op rejected before write approval."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/toolset.py",
+      "start": 932,
+      "end": 968,
+      "claim": "MCP request approval, client call timeout and converts is_error results."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/kimi-cli/tests/core/test_subagent_resume_e2e.py",
+      "start": 82,
+      "end": 149,
+      "claim": "Mock soul but real runner/store/context; same ID resumes and assistant context accumulates."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/kimi-cli/tests/background/test_worker.py",
+      "start": 43,
+      "end": 82,
+      "claim": "Real sleep worker controlled stop; checks stored terminal status/reason, not descendants separately."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/kimi-cli/tests/core/test_simple_compaction.py",
+      "start": 131,
+      "end": 150,
+      "claim": "Compaction custom focus included in model prompt; no semantic preservation oracle."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/kimi-cli/src/kimi_cli/tools/dmail/__init__.py",
+      "start": 12,
+      "end": 38,
+      "claim": "Optional SendDMail implemented checkpoint signal, disabled default catalog."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/kimi-cli/src/kimi_cli/soul/__init__.py",
+      "start": 202,
+      "end": 236,
+      "claim": "Run wrapper races cancel event, cancels and awaits soul; wire recorder/notification lifecycle."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/kimi-cli/tests/core/test_subagent_resume_e2e.py",
+      "focus": "Resume identity/history and running-state guard",
+      "oracle": "Mock soul/provider but actual runner/context/store verifies same ID, growing assistant history, type preservation and active-instance rejection.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/kimi-cli/tests/background/test_worker.py",
+      "focus": "Controlled stop and deadlines",
+      "oracle": "Real sleep worker writes terminal killed/timeout status and reason; no independently probed surviving descendants.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/kimi-cli/tests/core/test_simple_compaction.py",
+      "focus": "Summary focus and tail projection",
+      "oracle": "Deterministic custom instruction/tail assertions; no semantic original recovery or vendor response oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "First-class task output/path/stop identity and child context restore.",
+    "Flow graph branching with model choice and same conversation.",
+    "Compaction rotates previous context and reinjects active work snapshot."
+  ],
+  "limits": [
+    "Alternative provider/remote KAOS transports, all media/search/question executors, ACP/web UI, flow parser and full hook scheduler not exhaustively traced. Source only, no reference run."
+  ],
+  "arconaut_questions": [
+    "Can foreground commands use the stronger background process-group/reap contract?",
+    "Can live child messages/steers exist without waiting for idle resume?",
+    "Can original capture retain raw output/provider boundaries before presentation merging and clipping?",
+    "Can after-workflow hot change and quiescent refit separate from keep-running runtime reload?"
+  ]
+}

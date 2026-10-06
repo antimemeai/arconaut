@@ -1,0 +1,607 @@
+{
+  "id": "docker-agent",
+  "kind": "coding-agent/team runtime",
+  "runtime": {
+    "languages": [
+      "Go"
+    ],
+    "execution": "Go goroutine runtime, provider stream loop, parallel tool batches and native/background OS processes.",
+    "service_boundary": "Owns sessions, toolset supervision, child jobs and native memory DB adapter; consumes providers, MCP/toolsets and configured evaluator endpoints."
+  },
+  "summary": "Programmable hook-driven coding team with steering/follow-up queues, model changes, subagents and managed compaction.",
+  "inspection": {
+    "files": [
+      "quarantine/docker-agent/pkg/runtime/loop.go",
+      "quarantine/docker-agent/pkg/runtime/toolexec/dispatcher.go",
+      "quarantine/docker-agent/pkg/runtime/tool_dispatch.go",
+      "quarantine/docker-agent/pkg/tools/builtin/shell/shell.go",
+      "quarantine/docker-agent/pkg/tools/builtin/shell/cmd_unix.go",
+      "quarantine/docker-agent/pkg/tools/builtin/backgroundjobs/backgroundjobs.go",
+      "quarantine/docker-agent/pkg/runtime/runtime.go",
+      "quarantine/docker-agent/pkg/runtime/agent_delegation.go",
+      "quarantine/docker-agent/pkg/runtime/session_compaction.go",
+      "quarantine/docker-agent/pkg/session/store.go",
+      "quarantine/docker-agent/pkg/session/session.go",
+      "quarantine/docker-agent/pkg/hooks/executor.go",
+      "quarantine/docker-agent/pkg/tools/builtin/memory/memory.go",
+      "quarantine/docker-agent/pkg/evaluator/provider/provider.go",
+      "quarantine/docker-agent/pkg/evaluator/evaluator.go",
+      "quarantine/docker-agent/pkg/tools/builtin/filesystem/filesystem.go",
+      "quarantine/docker-agent/pkg/runtime/native_compaction_test.go",
+      "quarantine/docker-agent/pkg/hooks/tool_phases_test.go",
+      "quarantine/docker-agent/pkg/evaluator/provider/typesafe_test.go"
+    ],
+    "scope": "provider/dispatch loop, tool/hook contracts, OS job lifetime, delegation, SQLite compaction, memory/evaluator contracts and direct test assertions",
+    "limits": "No upstream execution; broad runtime sampled through selected actual surfaces. MCP/provider dependencies and full configuration/CLI paths not exhaustively traced."
+  },
+  "actions": [
+    {
+      "name": "read_file / edit_file / write_file / search_files_content",
+      "surface": "model filesystem toolset",
+      "input": "paths, text/edit instructions or query",
+      "output": "text/file result or handler error",
+      "lifecycle": "awaited dispatch; result appended subject to cap",
+      "authority": "model within toolset permissions/hooks; native host filesystem",
+      "evidence": [
+        "e22",
+        "e4",
+        "e15"
+      ]
+    },
+    {
+      "name": "shell",
+      "surface": "model native tool",
+      "input": "command, cwd, timeout",
+      "output": "formatted output/exit/timeout result",
+      "lifecycle": "await child; cancel group TERM then direct-child KILL",
+      "authority": "model approved native host shell, ordinary command authority opaque",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "run_background_job / list_background_jobs / view_background_job / wait_background_job / stop_background_job",
+      "surface": "model native background toolset",
+      "input": "cmd/cwd/recall then job ID",
+      "output": "job_<epoch>_<counter>, bounded output/status/exit; optional recall steering",
+      "lifecycle": "host Map tracks request-independent child; not restored heap/daemon service",
+      "authority": "model via permissions; completion can steer runtime if recall enabled",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    {
+      "name": "transfer_task / handoff / run_skill",
+      "surface": "model/runtime-managed tool",
+      "input": "configured target agent or skill, task/expected output",
+      "output": "child events/answer or route change",
+      "lifecycle": "fresh child session, attached-file/lineage propagation; forwarding waits drained child",
+      "authority": "caller-scoped agent resolver, pin protects concurrent foreground routing",
+      "evidence": [
+        "e4",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "RunAgent",
+      "surface": "programmatic runtime API/background agent",
+      "input": "SubSessionConfig with agent/task/context settings and content callback",
+      "output": "RunResult/content/error/usage",
+      "lifecycle": "pinned child stream collecting; completion hook on failure/cancel",
+      "authority": "runtime-resolved caller; no implied full parent context",
+      "evidence": [
+        "e10",
+        "e12"
+      ]
+    },
+    {
+      "name": "Steer / FollowUp / CancelSteer",
+      "surface": "operator/program runtime API",
+      "input": "QueuedMessage/content/message ID",
+      "output": "queue accepted or full/not-found error",
+      "lifecycle": "urgent after current batch; followups full subsequent turns",
+      "authority": "runtime client controls steering; queued message hook may veto",
+      "evidence": [
+        "e9",
+        "e2"
+      ]
+    },
+    {
+      "name": "change_model / revert_model",
+      "surface": "model/runtime-managed tool",
+      "input": "model identifier/override",
+      "output": "model switch/result events",
+      "lifecycle": "subsequent request model selection; per caller",
+      "authority": "tool permissions plus caller agent rather than unscoped global",
+      "evidence": [
+        "e4",
+        "e1"
+      ]
+    },
+    {
+      "name": "before_llm_call / before_compaction / tool_input_transform / tool_guard",
+      "surface": "programmable hook registry",
+      "input": "event JSON + command/builtin/model configuration, updated messages/input/summary",
+      "output": "continue/block/rewritten context or tool input/diagnostics",
+      "lifecycle": "timed hooks at explicit loop phases; partial failed output nonauthoritative",
+      "authority": "operator authors hooks, registered handler boundary; guard decisions policy-governed",
+      "evidence": [
+        "e1",
+        "e13",
+        "e18",
+        "e24"
+      ]
+    },
+    {
+      "name": "add_memory / get_memories / search_memories / update_memory / delete_memory",
+      "surface": "model native memory tools",
+      "input": "memory/category or ID/query",
+      "output": "ID, JSON list or DB error",
+      "lifecycle": "await injected DB mutation/query; record timestamp not effect-journal transaction",
+      "authority": "model tool approval; memory DB adapter owns storage separately from callable schema",
+      "evidence": [
+        "e19"
+      ]
+    },
+    {
+      "name": "RestartToolset / Evaluator.Evaluate",
+      "surface": "programmatic runtime/support APIs",
+      "input": "toolset display name; separately configured evaluation state",
+      "output": "restart error or typed Result probabilities/score/usage",
+      "lifecycle": "restart lifecycle serialized; evaluator HTTP timed independently",
+      "authority": "runtime/operator configuration and endpoint credentials; assessment policy left caller",
+      "evidence": [
+        "e17",
+        "e20",
+        "e21"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native filesystem read/edit/write/search/directory toolset, passed through approval/hook dispatcher.",
+      "evidence": [
+        "e22",
+        "e4"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Foreground native shell with group cancellation and background jobs with recall, wait/list/view/stop handles; deliberate request-independent background lifetime.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell/command-hook programs provide ordinary opaque native computation; no traced structured notebook/code-action state or persistent language kernel.",
+      "evidence": [
+        "e5",
+        "e18"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Background shell job exists beyond request but per-host job Map/output buffer; does not serialize interpreter heap or restore owned handle after rebuild.",
+      "evidence": [
+        "e7",
+        "e8"
+      ]
+    },
+    "standing_database": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Injected native memory DB CRUD/search and SQLite session/summary storage; these local harness-owned stores differ from externally governed general computation services.",
+      "evidence": [
+        "e14",
+        "e19"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Event hook registry/pipeline with command/builtin/model handlers, task/skill/handoff delegation and runtime-managed actions; imperative workflow through tools/hooks rather than durable graph replay.",
+      "evidence": [
+        "e4",
+        "e10",
+        "e11",
+        "e18"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Provider fallback and model change/revert; pinned child agents run their own configured models without global foreground mutation.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e11",
+        "e12"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Concurrent subagent streams and completion recall steer foreground; selected delegation surfaces are task-oriented, not traced peer room/mail protocol.",
+      "evidence": [
+        "e7",
+        "e9",
+        "e11",
+        "e12"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Parallel tool batches/background jobs and pinned agent sessions; interactive confirmations serialize because decisions unkeyed by call ID.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e11",
+        "e12"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Urgent steer after current batch and queued followups; batch cancellation settles error responses; foreground group TERM but KILL escalates direct child, backgrounds deliberately remain request-independent.",
+      "evidence": [
+        "e3",
+        "e5",
+        "e6",
+        "e7",
+        "e9"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Before-LLM hook can stop/rewrite messages; custom compaction summary/veto, tool transform/guard and command/builtin/model hook registry reshape normal execution.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e13",
+        "e18",
+        "e24"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Managed applied/skipped/failed outcomes, custom/native/LLM modes; atomic stored metadata+summary and provider-specific continuation payload.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e23"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retained pre-summary items and readable fallback summary plus configurable precompaction hook support reconstruction; no automatic corruption-repair protocol established.",
+      "evidence": [
+        "e13",
+        "e14",
+        "e23"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Stored session/history and typed events preserve many originals through summary; configured textual tool cap applies BEFORE append, hook guards may suppress bodies and OS capture is bounded.",
+      "evidence": [
+        "e15",
+        "e16",
+        "e8",
+        "e18",
+        "e23"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "SQLite session_items/summary structure and structured memory queries available; this storage is not complete original request/effect/queryable audit.",
+      "evidence": [
+        "e14",
+        "e19"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Toolset restart lifecycle serialization and post-tool reprobe updates next iteration tool discovery. Selected path lacks full config/code refit with all owned work paused/drained.",
+      "evidence": [
+        "e2",
+        "e17"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Reopen resumes logical session/native compaction payload; transient child pin/lineage/job maps and active provider/OS handles are not durable continuations.",
+      "evidence": [
+        "e8",
+        "e10",
+        "e11",
+        "e23"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes provider fallback, external toolsets and separately configured typed evaluator endpoint; local native jobs are harness-owned rather than fabric-managed.",
+      "evidence": [
+        "e1",
+        "e17",
+        "e20"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Command hooks/evaluators can be composed into experiments; typed assessment primitive leaves policy to caller and selected source does not establish governed self-modifying harness research.",
+      "evidence": [
+        "e18",
+        "e20",
+        "e21"
+      ]
+    },
+    "complaints": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Error/loop notifications, hook diagnostics and session/tool identities support attributable faults; state-capturing external complaint/bead DB not established.",
+      "evidence": [
+        "e2",
+        "e7",
+        "e18"
+      ]
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Ordered session/team permissions and mode/guard/hook approval outcomes. Autonomous removes mode prompts but session ask remains authoritative; noninteractive approval has explicit deny path.",
+      "evidence": [
+        "e3",
+        "e4"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent typed boolean/choice/score evaluator contracts and test oracles; assessment does not itself select or promote harness changes.",
+      "evidence": [
+        "e20",
+        "e21",
+        "e24"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mutex-assigned append positions and compaction transaction order; concurrent tools execute independent, and queue messages activate after batches. IDs/time stamps are not full external causal-effect settlement.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e9",
+        "e14",
+        "e15"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/docker-agent/pkg/runtime/loop.go",
+      "start": 839,
+      "end": 897,
+      "claim": "Before-provider hooks may stop/rewrite messages; fallback provider chain executes request with current tools/budget admission."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/docker-agent/pkg/runtime/loop.go",
+      "start": 970,
+      "end": 1082,
+      "claim": "Records assistant message then dispatches tool batch, reprobes toolsets for next iteration, detects repetition and drains urgent steering after tools."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/docker-agent/pkg/runtime/toolexec/dispatcher.go",
+      "start": 239,
+      "end": 292,
+      "claim": "Independent model calls run parallel through concurrent MapSlice; cancellation stops siblings, confirmations serialized because resume decisions lack call IDs."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/docker-agent/pkg/runtime/tool_dispatch.go",
+      "start": 36,
+      "end": 121,
+      "claim": "Binds change_model/revert_model/transfer_task/handoff/run_skill and ordered permission tiers; session ask beats every safety mode."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/shell/shell.go",
+      "start": 147,
+      "end": 208,
+      "claim": "Native shell starts process group, collects output, waits on completion/cancel, SIGTERM then direct-child SIGKILL escalation."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/shell/cmd_unix.go",
+      "start": 12,
+      "end": 26,
+      "claim": "Unix Setpgid and negative-PID SIGTERM group; direct-child escalation in shell handler is not universal group SIGKILL."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/backgroundjobs/backgroundjobs.go",
+      "start": 230,
+      "end": 338,
+      "claim": "Background job ID/job map, bounded writer, child deliberately outlives request context; monitor can enqueue completion recall."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/backgroundjobs/backgroundjobs.go",
+      "start": 30,
+      "end": 79,
+      "claim": "In-memory background handle/output cap 10MB; grandchild pipe-close may truncate output/SIGPIPE, recommends daemon output redirection."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/docker-agent/pkg/runtime/runtime.go",
+      "start": 2003,
+      "end": 2026,
+      "claim": "Steer admitted after current tool batch; FollowUp queues full next turns one message at a time, queue-full error and cancel-steer ID."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/docker-agent/pkg/runtime/agent_delegation.go",
+      "start": 218,
+      "end": 245,
+      "claim": "Fresh child context/task instructions inherits attached files, agent options and delegation lineage rather than full implicit parent history."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/docker-agent/pkg/runtime/agent_delegation.go",
+      "start": 350,
+      "end": 405,
+      "claim": "Forwarding delegation pins background parent separately from shared foreground agent and drains child events for completion hooks."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/docker-agent/pkg/runtime/agent_delegation.go",
+      "start": 440,
+      "end": 475,
+      "claim": "Background collecting child resolves caller from pinned session and streams/forwards usage, completion hook even failure/cancel."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/docker-agent/pkg/runtime/session_compaction.go",
+      "start": 71,
+      "end": 128,
+      "claim": "Before-compaction hook veto/custom summary; native or delegated LLM strategy, terminal outcomes distinguish applied/skipped/failed."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/docker-agent/pkg/session/store.go",
+      "start": 1452,
+      "end": 1513,
+      "claim": "SQLite compaction metadata+summary row one transaction, apply in-memory only after commit; not arbitrary tool-effect transaction."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/docker-agent/pkg/session/session.go",
+      "start": 881,
+      "end": 901,
+      "claim": "Session append middle-out caps textual tool payload at ingestion and clears request-only assembly marks before stored transcript."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/docker-agent/pkg/session/session.go",
+      "start": 346,
+      "end": 365,
+      "claim": "Configured ingestion cap and prompt backstop have bounded/unlimited settings; old-call prompt truncation separate."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/docker-agent/pkg/runtime/runtime.go",
+      "start": 1210,
+      "end": 1250,
+      "claim": "RestartToolset uses canonical lifecycle wrapper restart serialization; display-name collisions skip nonrestartable matches. No whole runtime compile/refit barrier here."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/docker-agent/pkg/hooks/executor.go",
+      "start": 321,
+      "end": 382,
+      "claim": "Registered command/builtin/model handlers operate on event JSON with timeout, cancellation normalization and partial output dropped on failure."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/memory/memory.go",
+      "start": 160,
+      "end": 227,
+      "claim": "Native add/get/delete/search/update memory dispatch to injected DB with ID/category/created timestamp and JSON results."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/docker-agent/pkg/evaluator/provider/provider.go",
+      "start": 26,
+      "end": 105,
+      "claim": "Configured typesafe evaluator independent endpoint/env credentials per evaluation and timeout; builds boolean/choice/score questions."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/docker-agent/pkg/evaluator/evaluator.go",
+      "start": 1,
+      "end": 29,
+      "claim": "Evaluator returns typed probabilities/choice/score/usage; caller determines policy, not autonomous harness optimization."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/docker-agent/pkg/tools/builtin/filesystem/filesystem.go",
+      "start": 354,
+      "end": 445,
+      "claim": "Native read/edit/write/list/search/mkdir/rmdir tools expose filesystem handlers and schema."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/docker-agent/pkg/runtime/native_compaction_test.go",
+      "start": 439,
+      "end": 481,
+      "claim": "SQLite reopen oracle preserves original items, summary/first-kept/native provider block; another provider gets readable summary but not block replay."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/docker-agent/pkg/hooks/tool_phases_test.go",
+      "start": 24,
+      "end": 83,
+      "claim": "Composition test asserts transform patches retain unrelated fields and caller original not mutated; failure policy retains prior patches."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/docker-agent/pkg/runtime/native_compaction_test.go",
+      "focus": "provider-native summary persistence/reopen and cross-provider replay boundary",
+      "oracle": "Mock compactor plus real temporary SQLite reopen checks four retained items, first-kept index, exact native block, readable fallback and provider-scoped replay. Tests continuation data, not summary faithfulness or live request refit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/docker-agent/pkg/hooks/tool_phases_test.go",
+      "focus": "hook patch composition, immutability, failure policy and verdict classes",
+      "oracle": "Exact map/string and Allowed/exit-code assertions prove ordered patch accumulation and original input unchanged; command fixtures only source-read. No cross-process/harness upgrade oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/docker-agent/pkg/evaluator/provider/typesafe_test.go",
+      "focus": "typed evaluator primitive response contract",
+      "oracle": "HTTP fixture table matches exact parsed boolean/choice/score/usage JSON including zero confidence and ties. Measures protocol conversion, not assessment correctness or optimization benefit.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Hooks materially reshape normal turns, tools and compaction; not observation-only.",
+    "Pinned sub-session routing and explicit urgent/follow-up queues expose useful concurrency ownership.",
+    "Atomic summary continuation plus provider-specific opaque block retained alongside earlier items."
+  ],
+  "limits": [
+    "Captured tool text may already be capped before stored append; complete originals need separate retention.",
+    "Request-independent in-memory background jobs are not restartable computation services; daemonized inherited pipes have explicit loss/SIGPIPE boundary.",
+    "Toolset restart/reprobe is narrower than whole-harness refit; evaluation primitive is not autoresearch."
+  ],
+  "arconaut_questions": [
+    "Can mutable phase hooks retain exact pre/post representations and versioned authority decisions without imposing routine prompts?",
+    "How should an owned-work inventory distinguish request-independent jobs from shared daemon consumers before refit?",
+    "Can provider-native summary blocks coexist with repairable, queryable originals and cross-model context portability?"
+  ]
+}

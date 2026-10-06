@@ -1,0 +1,589 @@
+{
+  "id": "metagpt",
+  "kind": "resident multi-role agent/workflow framework with notebook interpreter",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "asyncio concurrent role rounds; model command maps; owned notebook kernels and persistent shells",
+    "service_boundary": "owns resident team routing, memory, planning and computation; consumes model/browser/RAG services"
+  },
+  "summary": "MetaGPT combines role SOP/react/planner workflows and model-controlled delegation with a separate Python notebook code-generation path. Its local team model is real collaboration but recovery snapshots do not preserve unresolved computation/effects.",
+  "inspection": {
+    "files": [
+      "quarantine/metagpt/metagpt/team.py",
+      "quarantine/metagpt/metagpt/environment/base_env.py",
+      "quarantine/metagpt/metagpt/roles/role.py",
+      "quarantine/metagpt/metagpt/environment/mgx/mgx_env.py",
+      "quarantine/metagpt/metagpt/roles/di/team_leader.py",
+      "quarantine/metagpt/metagpt/roles/di/role_zero.py",
+      "quarantine/metagpt/metagpt/roles/di/engineer2.py",
+      "quarantine/metagpt/metagpt/roles/di/data_interpreter.py",
+      "quarantine/metagpt/metagpt/actions/di/execute_nb_code.py",
+      "quarantine/metagpt/metagpt/tools/libs/terminal.py",
+      "quarantine/metagpt/metagpt/provider/base_llm.py",
+      "quarantine/metagpt/metagpt/context_mixin.py",
+      "quarantine/metagpt/metagpt/utils/common.py",
+      "quarantine/metagpt/metagpt/memory/memory.py",
+      "quarantine/metagpt/metagpt/memory/role_zero_memory.py",
+      "quarantine/metagpt/metagpt/strategy/planner.py",
+      "quarantine/metagpt/tests/metagpt/actions/di/test_execute_nb_code.py",
+      "quarantine/metagpt/tests/metagpt/serialize_deserialize/test_team.py"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "Team.hire / run_project / run / serialize / deserialize",
+      "surface": "operator / Python API",
+      "input": "roles, idea, round limit/budget, snapshot path",
+      "output": "environment history and restored Team",
+      "lifecycle": "concurrent role rounds; exceptions snapshot selected state",
+      "authority": "Python author controls role implementations, configuration and budget",
+      "evidence": [
+        "team",
+        "env",
+        "recover"
+      ]
+    },
+    {
+      "name": "Role.run / set_actions / react modes",
+      "surface": "programmable API",
+      "input": "message, action classes, ReAct/order/plan configuration",
+      "output": "Messages/TaskResult and peer publications",
+      "lifecycle": "observe\u2192think\u2192act; base publishes at run end",
+      "authority": "role author chooses methods/actions, model can select states",
+      "evidence": [
+        "observe",
+        "react"
+      ]
+    },
+    {
+      "name": "TeamLeader.publish_team_message",
+      "surface": "model command",
+      "input": "content and named send_to",
+      "output": "peer inbox message; leader state reset",
+      "lifecycle": "resident message now, peer responds on scheduling round",
+      "authority": "leader model controls delegation/routing",
+      "evidence": [
+        "leader",
+        "env",
+        "mgx"
+      ]
+    },
+    {
+      "name": "Plan.append_task / reset_task / replace_task / finish_current_task / end",
+      "surface": "model commands",
+      "input": "task fields/IDs and optional completion",
+      "output": "mutable plan/status and termination",
+      "lifecycle": "serial commands; planner review may clear working memory",
+      "authority": "RoleZero model configured with plan command map",
+      "evidence": [
+        "map",
+        "commands",
+        "review"
+      ]
+    },
+    {
+      "name": "Editor.create_file / write / read / edit_file_by_replace / search_dir / similarity_search",
+      "surface": "model commands",
+      "input": "paths, file content/replacements, search query",
+      "output": "editor values/results or errors",
+      "lifecycle": "serial command map; catalog includes more editor navigation operations",
+      "authority": "configured RoleZero owns local editor capability",
+      "evidence": [
+        "map",
+        "commands"
+      ]
+    },
+    {
+      "name": "Browser.goto / click / type / scroll / tab_focus / close_tab",
+      "surface": "model commands",
+      "input": "URL, locator/input/tab arguments",
+      "output": "browser state/results",
+      "lifecycle": "awaited mapped operations",
+      "authority": "configured RoleZero model",
+      "evidence": [
+        "map",
+        "commands"
+      ]
+    },
+    {
+      "name": "Terminal.run_command / get_stdout_output / close",
+      "surface": "model command / Python API",
+      "input": "command string, daemon flag",
+      "output": "text output; background queue; no stable job receipt",
+      "lifecycle": "persistent shell sentinel stream; daemon reader bug and EOF loop limits",
+      "authority": "Engineer2 map exposes terminal; substring exclusion not approval system",
+      "evidence": [
+        "engineer",
+        "terminal",
+        "terminalread",
+        "commands"
+      ]
+    },
+    {
+      "name": "DataInterpreter / ExecuteNbCode.run / terminate / reset",
+      "surface": "model-generated code / Python API",
+      "input": "Python code or markdown and timeout",
+      "output": "output string/success, notebook cells/file",
+      "lifecycle": "persistent kernel between cells; timeout interrupt; plan end terminates",
+      "authority": "model code can import/execute in owned local kernel",
+      "evidence": [
+        "di",
+        "kernel",
+        "cell"
+      ]
+    },
+    {
+      "name": "ask_human / reply_to_human",
+      "surface": "model command",
+      "input": "question or response content",
+      "output": "input text or claimed-success string",
+      "lifecycle": "MGX local human input; no remote delivery proof in default reply",
+      "authority": "optional model human request; autonomous planner auto-run bypasses review",
+      "evidence": [
+        "mgx",
+        "commands",
+        "review"
+      ]
+    },
+    {
+      "name": "Memory.get_by_content / try_remember / RoleZeroLongTermMemory.get",
+      "surface": "Python API",
+      "input": "keyword/recent-count/new requirement",
+      "output": "matching resident or retrieved old messages",
+      "lifecycle": "mutable memory and optional retrieval dependency",
+      "authority": "role author; no dedicated model repair operation",
+      "evidence": [
+        "memory",
+        "rag"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "RoleZero editor and Engineer2 terminal/code actions expose filesystem operations; notebook writes code.ipynb after cells.",
+      "evidence": [
+        "map",
+        "engineer",
+        "cell"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent terminal and notebook kernel are owned resident processes; terminal daemon has no handle and reader does not enable background queue, timeout or EOF termination.",
+      "evidence": [
+        "terminal",
+        "terminalread",
+        "kernel"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "DataInterpreter model writes executable Python cells with recommended tool information and retries against actual results.",
+      "evidence": [
+        "di",
+        "cell"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Notebook kernel reuses state across cells; timeout interrupts and dead-kernel reset loses live values; plan-and-act termination closes it at run end. Harness owns kernel rather than consuming independent shared service.",
+      "evidence": [
+        "kernel",
+        "cell",
+        "di"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Optional Chroma/RAG memory supplies persistent retrieval of selected older messages; no general standing SQL/query interface traced in role/tool/kernel paths.",
+      "evidence": [
+        "rag"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Python roles/actions, watch/route rules, reaction strategies and model-editable plans express workflows; role command maps are subclass-extensible.",
+      "evidence": [
+        "react",
+        "map",
+        "leader"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Role/action private model/config can override shared context, permitting mixed-model peers.",
+      "evidence": [
+        "private",
+        "env"
+      ]
+    },
+    "live_collaboration": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Resident role inboxes, routed messages and TeamLeader model dispatch coordinate peers; RoleZero observes between actions. Standard environment is in-process, round-based, with optimistic route success.",
+      "evidence": [
+        "env",
+        "leader",
+        "zero",
+        "mgx"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Non-idle roles run concurrently via gather per round; model commands within each role are serial, and DataInterpreter cells share one executor.",
+      "evidence": [
+        "env",
+        "commands",
+        "di"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "RoleZero picks up inbox news between actions and model ask_human stop ends role. Notebook timeout interrupts; exception snapshot is not global cancellation/drain of other role effects.",
+      "evidence": [
+        "zero",
+        "commands",
+        "cell",
+        "recover"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Overridable observe/think/act/react, selectable strategies and mutable command map provide Python turn design; not a uniform model-exposed hot turn-program API.",
+      "evidence": [
+        "react",
+        "map",
+        "zero"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider offers configurable pre/post message/token truncation; RoleZero uses bounded recent memory and optional older retrieval. No managed compaction event, alternatives or revisioned projections.",
+      "evidence": [
+        "compress",
+        "think",
+        "rag"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Mutable memory queries, optional RAG and Team snapshot restore can recover selected state. Exception recovery deletes latest observed item to force reobservation, risking effect replay; no authoritative original/context revision repair.",
+      "evidence": [
+        "memory",
+        "rag",
+        "team",
+        "recover"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Debug environment memory, masked provider logging, overwritten notebook and Team snapshots record selected state; memories delete/clear and recovery changes them. No full raw request/tool/process audit traced.",
+      "evidence": [
+        "env",
+        "provider",
+        "cell",
+        "memory",
+        "recover"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Role memory searches by content/cause/role and RAG retrieve selected messages; no durable full-event audit query.",
+      "evidence": [
+        "memory",
+        "rag"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Python role/tool/config setters support reconfiguration, but cached private model and mutable map have no affected-turn/workflow activation fence or source reload contract.",
+      "evidence": [
+        "private",
+        "map",
+        "react"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Selected Team/role state serializes after ordinary exceptions/KeyboardInterrupt, and observed message is made retryable; live kernel/terminal handles are excluded and unresolved external effects lack dedup receipts.",
+      "evidence": [
+        "team",
+        "recover",
+        "di",
+        "terminal"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Provider services and optional browser/search/RAG extensions are consumed; peer environment, shell and notebook are locally owned. Remote MGX human methods explicitly require override.",
+      "evidence": [
+        "private",
+        "map",
+        "mgx",
+        "rag"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Experience cache and code error-repair loops plus editor/terminal allow programming improvements; no governed harness refit/research/adoption loop or compiled continuity traced.",
+      "evidence": [
+        "think",
+        "di",
+        "engineer"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No dedicated model frustration report with captured agent state and separate tracked repair queue established in role, team, memory and tool paths inspected.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Mapped model commands execute directly; autonomous planner accepts successful code while manual reviewer may accept failures. Terminal substring exclusions and post-execution pip failure label are limited policy mechanisms.",
+      "evidence": [
+        "commands",
+        "review",
+        "terminal",
+        "cell"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read notebook tests exercise real cross-cell variables, exception and timeout behavior; team serialization tests patch writer and assert reconstructed role types/count, not process/request/effect continuity.",
+      "evidence": [
+        "kernel",
+        "cell",
+        "recover"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Round gather defines coarse barriers and role inbox/memory order; fixed shell sentinel and optimistic no-recipient publish cannot establish durable command/delivery causal receipts.",
+      "evidence": [
+        "env",
+        "observe",
+        "terminalread"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "team",
+      "path": "quarantine/metagpt/metagpt/team.py",
+      "start": 59,
+      "end": 138,
+      "claim": "Team hire/publish/run bounds rounds and budget; snapshot serialization records model data/context; normal run archives project Git, exception decorator handles snapshots."
+    },
+    {
+      "id": "env",
+      "path": "quarantine/metagpt/metagpt/environment/base_env.py",
+      "start": 175,
+      "end": 247,
+      "claim": "Environment routes to resident role inboxes, appends debug memory and returns True even without recipients; non-idle role.run coroutines gather concurrently per round."
+    },
+    {
+      "id": "observe",
+      "path": "quarantine/metagpt/metagpt/roles/role.py",
+      "start": 340,
+      "end": 427,
+      "claim": "Role selects fixed/order/model actions and observes watched/direct messages after inbox pop; history is role memory, with latest observed item retained for recovery."
+    },
+    {
+      "id": "react",
+      "path": "quarantine/metagpt/metagpt/roles/role.py",
+      "start": 454,
+      "end": 554,
+      "claim": "Base role chooses ReAct/order/plan-and-act; planner loops tasks, role memory is updated and final response is published to peers."
+    },
+    {
+      "id": "mgx",
+      "path": "quarantine/metagpt/metagpt/environment/mgx/mgx_env.py",
+      "start": 18,
+      "end": 88,
+      "claim": "MGX leader/direct/public routing rewrites message content; ask_human reads local input; reply_to_human returns claimed success string without transport delivery implementation."
+    },
+    {
+      "id": "leader",
+      "path": "quarantine/metagpt/metagpt/roles/di/team_leader.py",
+      "start": 36,
+      "end": 85,
+      "claim": "Model-visible publish_team_message targets named peer and resets leader state to wait; live room is resident environment, not remote IRC transport."
+    },
+    {
+      "id": "map",
+      "path": "quarantine/metagpt/metagpt/roles/di/role_zero.py",
+      "start": 103,
+      "end": 171,
+      "claim": "RoleZero initializes autonomous planner, exposes plan/human/editor/browser command map and subclass extensions."
+    },
+    {
+      "id": "think",
+      "path": "quarantine/metagpt/metagpt/roles/di/role_zero.py",
+      "start": 198,
+      "end": 274,
+      "claim": "RoleZero builds plan/tool/context request, processes observations and calls configured LLM through optional experience cache; memory subset and output normalization affect prompt."
+    },
+    {
+      "id": "zero",
+      "path": "quarantine/metagpt/metagpt/roles/di/role_zero.py",
+      "start": 280,
+      "end": 335,
+      "claim": "RoleZero parses model command list, stores response/results, observes new inbox items between actions and can ask human to extend large action bound."
+    },
+    {
+      "id": "commands",
+      "path": "quarantine/metagpt/metagpt/roles/di/role_zero.py",
+      "start": 385,
+      "end": 447,
+      "claim": "Command map invokes coroutine/sync functions serially; first unknown/error breaks batch; end/finish/human/terminal handled specially, human stop invokes end."
+    },
+    {
+      "id": "engineer",
+      "path": "quarantine/metagpt/metagpt/roles/di/engineer2.py",
+      "start": 95,
+      "end": 106,
+      "claim": "Normal Engineer2 exposes native terminal plus code write/review/fix and pull/deploy functions, extending RoleZero map."
+    },
+    {
+      "id": "di",
+      "path": "quarantine/metagpt/metagpt/roles/di/data_interpreter.py",
+      "start": 42,
+      "end": 148,
+      "claim": "DataInterpreter produces and executes notebook code with three-attempt repair, stores code/results in working memory; plan completion/error terminates kernel."
+    },
+    {
+      "id": "kernel",
+      "path": "quarantine/metagpt/metagpt/actions/di/execute_nb_code.py",
+      "start": 89,
+      "end": 139,
+      "claim": "Executor starts a notebook kernel and reuses it; terminate kills it and clears handles; reset terminates/builds new kernel rather than replaying old values."
+    },
+    {
+      "id": "cell",
+      "path": "quarantine/metagpt/metagpt/actions/di/execute_nb_code.py",
+      "start": 225,
+      "end": 282,
+      "claim": "Cell timeout interrupts and reports failure; dead kernel resets; Python/markdown cells persist notebook to fixed code.ipynb. Executed pip is marked failure after execution, not blocked before."
+    },
+    {
+      "id": "terminal",
+      "path": "quarantine/metagpt/metagpt/tools/libs/terminal.py",
+      "start": 47,
+      "end": 107,
+      "claim": "Terminal owns persistent shell, substring-filters forbidden commands and appends sentinel. Daemon launches reader without passing daemon=True, so expected queue path is not enabled."
+    },
+    {
+      "id": "terminalread",
+      "path": "quarantine/metagpt/metagpt/tools/libs/terminal.py",
+      "start": 134,
+      "end": 181,
+      "claim": "Reader consumes stdout until fixed sentinel; EOF loops instead of breaking; no timeout/exit-code result. Background queue is populated only when reader daemon argument True; close waits without escalation."
+    },
+    {
+      "id": "provider",
+      "path": "quarantine/metagpt/metagpt/provider/base_llm.py",
+      "start": 179,
+      "end": 209,
+      "claim": "Provider request formatting logs masked debug prompt, applies configured truncation and awaits completion; debug logging is not raw immutable request audit."
+    },
+    {
+      "id": "compress",
+      "path": "quarantine/metagpt/metagpt/provider/base_llm.py",
+      "start": 340,
+      "end": 412,
+      "claim": "Configurable pre/post token/message cuts retain system prefix and earliest/latest content; token allowance becomes character slicing at cutoff, no compaction event/repair revision."
+    },
+    {
+      "id": "private",
+      "path": "quarantine/metagpt/metagpt/context_mixin.py",
+      "start": 27,
+      "end": 96,
+      "claim": "Role/action private configuration and provider override shared context; lazy private model permits different peer models but configuration changes do not automatically replace cached provider."
+    },
+    {
+      "id": "recover",
+      "path": "quarantine/metagpt/metagpt/utils/common.py",
+      "start": 675,
+      "end": 714,
+      "claim": "Team exception wrapper logs then serializes; role exceptions delete latest observed message so it can be reobserved. No external-effect receipt or idempotency prevents repeated action effects."
+    },
+    {
+      "id": "memory",
+      "path": "quarantine/metagpt/metagpt/memory/memory.py",
+      "start": 27,
+      "end": 91,
+      "claim": "Memory supports mutable add/delete/clear and content/role/cause lookup; transcript is in-memory mutable state, not complete audit."
+    },
+    {
+      "id": "rag",
+      "path": "quarantine/metagpt/metagpt/memory/role_zero_memory.py",
+      "start": 31,
+      "end": 129,
+      "claim": "Optional RoleZero Chroma memory stores selected older messages and retrieves related messages for a new requirement under conditions; not authoritative transcript repair."
+    },
+    {
+      "id": "review",
+      "path": "quarantine/metagpt/metagpt/strategy/planner.py",
+      "start": 119,
+      "end": 153,
+      "claim": "Auto review accepts successful TaskResult; manual confirmation can accept failed code and successful task clears working memory."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/metagpt/tests/metagpt/actions/di/test_execute_nb_code.py",
+      "focus": "Cross-cell state, arithmetic exception, timeout and termination",
+      "oracle": "Source invokes actual notebook kernel: later cell asserts z==3, division fails, timeout prefix and cleared kernel handle asserted; tests unexecuted here, do not prove shared service/refit.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/metagpt/tests/metagpt/serialize_deserialize/test_team.py",
+      "focus": "Role type and count reconstruction",
+      "oracle": "Pydantic dump/validate checks role types; save/recover tests patch Team.serialize to different mock writer. No live process, tool-effect or provider-request recovery oracle.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Model-editable plans and per-role provider overrides support heterogeneous workflow teams.",
+    "Notebook executes model-authored cells with shared variable state and result-driven repair.",
+    "RoleZero re-observes peer/operator messages between actions."
+  ],
+  "limits": [
+    "Local round-based routing reports success even with no recipient; default human reply returns success without transport.",
+    "Terminal background reader omits daemon flag, so advertised queue stays unpopulated on that path; EOF can loop indefinitely.",
+    "Exception recovery reobserves message without external-effect idempotency; live kernel/shell excluded from snapshots.",
+    "Compaction is token/message cutting; memory/snapshot/notebook are mutable selected-state records."
+  ],
+  "arconaut_questions": [
+    "Should collaboration scheduling use independent participants rather than gather barriers?",
+    "How should computation ownership move to shared independent kernels without losing code/result ergonomics?",
+    "What durable effect receipts make role recovery safe when an action partly completed?"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-10-01T07:05:17.299196+00:00",
+  "input": "context/clm-acquisition-input.json",
+  "references": [
+    {
+      "name": "context-language-models",
+      "repository": "https://github.com/facebookresearch/context-language-models",
+      "destination": "quarantine/context-language-models",
+      "revision": "18dc11115f50f261233c5bba7937834491e307e8",
+      "download_url": "https://codeload.github.com/facebookresearch/context-language-models/zip/18dc11115f50f261233c5bba7937834491e307e8",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-context-language-models-2026-10-01/context-language-models-18dc11115f50.zip",
+      "archive_bytes": 1332208,
+      "sha256": "2a98b3cb3abf226f05d7ba878d121949aa569d74248e67be94b7463ad69f6401",
+      "archive_root": "context-language-models-18dc11115f50f261233c5bba7937834491e307e8",
+      "retained_files": 75,
+      "retained_bytes": 1686597,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    }
+  ]
+}

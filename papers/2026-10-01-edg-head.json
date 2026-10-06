@@ -1,0 +1,125 @@
+{
+  "sha": "89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+  "node_id": "C_kwDOUlu8WNoAKDg5ZTY3ZTA3YzdmNmQwZmMzODYyMmY5Nzc4ZDhlNzlmNDBkZWFhMGY",
+  "commit": {
+    "author": {
+      "name": "Matt Borland",
+      "email": "matt@mattborland.com",
+      "date": "2026-09-30T17:49:05Z"
+    },
+    "committer": {
+      "name": "Wyatt Childers",
+      "email": "wcc@edg.com",
+      "date": "2026-09-30T22:39:09Z"
+    },
+    "message": "Update GitHub Actions Workflow Versions []",
+    "tree": {
+      "sha": "2c7596371debca3aebaa8a3b5d5774c03a28de5e",
+      "url": "https://api.github.com/repos/edgcpp/compiler/git/trees/2c7596371debca3aebaa8a3b5d5774c03a28de5e"
+    },
+    "url": "https://api.github.com/repos/edgcpp/compiler/git/commits/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+    "comment_count": 0,
+    "verification": {
+      "verified": false,
+      "reason": "unsigned",
+      "signature": null,
+      "payload": null,
+      "verified_at": null
+    }
+  },
+  "url": "https://api.github.com/repos/edgcpp/compiler/commits/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+  "html_url": "https://github.com/edgcpp/compiler/commit/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+  "comments_url": "https://api.github.com/repos/edgcpp/compiler/commits/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/comments",
+  "author": {
+    "login": "mborland",
+    "id": 3745830,
+    "node_id": "MDQ6VXNlcjM3NDU4MzA=",
+    "avatar_url": "https://avatars.githubusercontent.com/u/3745830?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/mborland",
+    "html_url": "https://github.com/mborland",
+    "followers_url": "https://api.github.com/users/mborland/followers",
+    "following_url": "https://api.github.com/users/mborland/following{/other_user}",
+    "gists_url": "https://api.github.com/users/mborland/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/mborland/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/mborland/subscriptions",
+    "organizations_url": "https://api.github.com/users/mborland/orgs",
+    "repos_url": "https://api.github.com/users/mborland/repos",
+    "events_url": "https://api.github.com/users/mborland/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/mborland/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "committer": {
+    "login": "DarkArc",
+    "id": 778012,
+    "node_id": "MDQ6VXNlcjc3ODAxMg==",
+    "avatar_url": "https://avatars.githubusercontent.com/u/778012?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/DarkArc",
+    "html_url": "https://github.com/DarkArc",
+    "followers_url": "https://api.github.com/users/DarkArc/followers",
+    "following_url": "https://api.github.com/users/DarkArc/following{/other_user}",
+    "gists_url": "https://api.github.com/users/DarkArc/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/DarkArc/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/DarkArc/subscriptions",
+    "organizations_url": "https://api.github.com/users/DarkArc/orgs",
+    "repos_url": "https://api.github.com/users/DarkArc/repos",
+    "events_url": "https://api.github.com/users/DarkArc/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/DarkArc/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "parents": [
+    {
+      "sha": "90b66472e090fe97e0bbf90fa025c46e4ea69080",
+      "url": "https://api.github.com/repos/edgcpp/compiler/commits/90b66472e090fe97e0bbf90fa025c46e4ea69080",
+      "html_url": "https://github.com/edgcpp/compiler/commit/90b66472e090fe97e0bbf90fa025c46e4ea69080"
+    }
+  ],
+  "stats": {
+    "total": 40,
+    "additions": 20,
+    "deletions": 20
+  },
+  "files": [
+    {
+      "sha": "246154d97ef2053b001c07396274e0cccb17f3e2",
+      "filename": ".github/workflows/build-and-test-ci.yml",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 12,
+      "changes": 24,
+      "blob_url": "https://github.com/edgcpp/compiler/blob/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Fbuild-and-test-ci.yml",
+      "raw_url": "https://github.com/edgcpp/compiler/raw/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Fbuild-and-test-ci.yml",
+      "contents_url": "https://api.github.com/repos/edgcpp/compiler/contents/.github%2Fworkflows%2Fbuild-and-test-ci.yml?ref=89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "patch": "@@ -53,7 +53,7 @@ jobs:\n \n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-gcc-debug\n         env:\n@@ -69,7 +69,7 @@ jobs:\n       # per-target lib_linux_* / lib_win* dirs (eccp rewrites ECCP_LIBDIR to\n       # lib_<target>). lib_src is build-only and omitted.\n       - name: Upload build products\n-        uses: actions/upload-artifact@v4\n+        uses: actions/upload-artifact@v7\n         with:\n           name: build-linux-gcc-debug\n           path: |\n@@ -94,7 +94,7 @@ jobs:\n \n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-i686-gcc-debug\n         env:\n@@ -107,7 +107,7 @@ jobs:\n         run: cmake --build build/gcc-i686\n \n       - name: Upload build products\n-        uses: actions/upload-artifact@v4\n+        uses: actions/upload-artifact@v7\n         with:\n           name: build-linux-i686-gcc-debug\n           path: |\n@@ -143,10 +143,10 @@ jobs:\n \n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Download linux-gcc-debug build\n-        uses: actions/download-artifact@v4\n+        uses: actions/download-artifact@v7\n         with:\n           name: build-linux-gcc-debug\n           # upload-artifact strips the shared build/gcc/ prefix, leaving\n@@ -178,7 +178,7 @@ jobs:\n \n       - name: Upload partial elist, elog, and .rt.tar.gz results\n         if: ${{ failure() }}\n-        uses: actions/upload-artifact@v4\n+        uses: actions/upload-artifact@v7\n         with:\n           name: test-results-${{ matrix.config }}\n           path: |\n@@ -211,10 +211,10 @@ jobs:\n \n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Download linux-i686-gcc-debug build\n-        uses: actions/download-artifact@v4\n+        uses: actions/download-artifact@v7\n         with:\n           name: build-linux-i686-gcc-debug\n           # upload-artifact strips the shared build/gcc-i686/ prefix, leaving\n@@ -246,7 +246,7 @@ jobs:\n \n       - name: Upload partial elist, elog, and .rt.tar.gz results\n         if: ${{ failure() }}\n-        uses: actions/upload-artifact@v4\n+        uses: actions/upload-artifact@v7\n         with:\n           name: test-results-${{ matrix.config }}\n           path: |\n@@ -271,14 +271,14 @@ jobs:\n     timeout-minutes: 15\n     steps:\n       - name: Download partial test-result artifacts\n-        uses: actions/download-artifact@v4\n+        uses: actions/download-artifact@v7\n         with:\n           pattern: test-results-*\n           path: aggregated-test-results\n           merge-multiple: true\n \n       - name: Upload elist, elog, and .rt.tar.gz results\n-        uses: actions/upload-artifact@v4\n+        uses: actions/upload-artifact@v7\n         with:\n           name: test-results-all\n           path: aggregated-test-results/"
+    },
+    {
+      "sha": "8fe66727b17f869e5014ed268786154e60ea276b",
+      "filename": ".github/workflows/strict-build-check.yml",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "changes": 12,
+      "blob_url": "https://github.com/edgcpp/compiler/blob/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Fstrict-build-check.yml",
+      "raw_url": "https://github.com/edgcpp/compiler/raw/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Fstrict-build-check.yml",
+      "contents_url": "https://api.github.com/repos/edgcpp/compiler/contents/.github%2Fworkflows%2Fstrict-build-check.yml?ref=89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "patch": "@@ -21,7 +21,7 @@ jobs:\n     timeout-minutes: 120\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Install Ninja\n         run: choco install ninja -y\n@@ -35,7 +35,7 @@ jobs:\n \n       - name: Cache SoftFloat\n         id: cache-softfloat\n-        uses: actions/cache@v4\n+        uses: actions/cache@v6\n         with:\n           path: softfloat\n           key: softfloat-msvc-win-${{ steps.softfloat-pin.outputs.commit }}\n@@ -157,7 +157,7 @@ jobs:\n         shell: edg-container-exec \"bash -eo pipefail {0}\"\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-gcc-release\n         env:\n@@ -182,7 +182,7 @@ jobs:\n         shell: edg-container-exec \"bash -eo pipefail {0}\"\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-gcc-debug\n         env:\n@@ -207,7 +207,7 @@ jobs:\n         shell: edg-container-exec \"bash -eo pipefail {0}\"\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-clang-release\n         env:\n@@ -232,7 +232,7 @@ jobs:\n         shell: edg-container-exec \"bash -eo pipefail {0}\"\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Configure linux-clang-debug\n         env:"
+    },
+    {
+      "sha": "263e645543eba096e4b3ee640cd97d47d8c64b79",
+      "filename": ".github/workflows/typecheck-python.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "changes": 4,
+      "blob_url": "https://github.com/edgcpp/compiler/blob/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Ftypecheck-python.yml",
+      "raw_url": "https://github.com/edgcpp/compiler/raw/89e67e07c7f6d0fc38622f9778d8e79f40deaa0f/.github%2Fworkflows%2Ftypecheck-python.yml",
+      "contents_url": "https://api.github.com/repos/edgcpp/compiler/contents/.github%2Fworkflows%2Ftypecheck-python.yml?ref=89e67e07c7f6d0fc38622f9778d8e79f40deaa0f",
+      "patch": "@@ -41,11 +41,11 @@ jobs:\n             pip: pip\n     steps:\n       - name: Check out repository\n-        uses: actions/checkout@v4\n+        uses: actions/checkout@v7\n \n       - name: Set up Python ${{ matrix.python-version }}\n         if: ${{ !matrix.use-docker }}\n-        uses: actions/setup-python@v5\n+        uses: actions/setup-python@v7\n         with:\n           python-version: ${{ matrix.python-version }}\n "
+    }
+  ]
+}

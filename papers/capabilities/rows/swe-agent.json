@@ -1,0 +1,833 @@
+{
+  "id": "swe-agent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Python",
+      "shell command bundles"
+    ],
+    "execution": "Synchronous Python agent loop and LiteLLM requests; asyncio.run adapts SWE-ReX external deployment/runtime calls with one persistent bash session. Benchmarks overlap independent instances through ThreadPoolExecutor.",
+    "service_boundary": "Owns agent history/trajectory/review strategy and deployment client lifecycle; consumes SWE-ReX session/process implementation and model provider. Tool/state JSON is per-environment, not a shared compute/DB governor."
+  },
+  "summary": "Configurable coding agent with one tool action per reply, uploaded command bundles, continuing shell state, history projections, bounded requery/autosubmit and sequential model-reviewed attempt selection. Replay means fresh action execution, and synthetic colleague sampling is not live peer collaboration.",
+  "inspection": {
+    "files": [
+      "quarantine/swe-agent/sweagent/run/run_single.py",
+      "quarantine/swe-agent/sweagent/agent/agents.py",
+      "quarantine/swe-agent/sweagent/agent/models.py",
+      "quarantine/swe-agent/sweagent/tools/parsing.py",
+      "quarantine/swe-agent/sweagent/tools/tools.py",
+      "quarantine/swe-agent/sweagent/tools/bundle.py",
+      "quarantine/swe-agent/sweagent/environment/swe_env.py",
+      "quarantine/swe-agent/sweagent/agent/history_processors.py",
+      "quarantine/swe-agent/config/default.yaml",
+      "quarantine/swe-agent/tools/edit_anthropic/config.yaml",
+      "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "quarantine/swe-agent/tools/review_on_submit_m/bin/submit",
+      "quarantine/swe-agent/sweagent/agent/reviewer.py",
+      "quarantine/swe-agent/sweagent/agent/action_sampler.py",
+      "quarantine/swe-agent/sweagent/agent/hooks/abstract.py",
+      "quarantine/swe-agent/sweagent/run/run_replay.py",
+      "quarantine/swe-agent/sweagent/run/run_batch.py",
+      "quarantine/swe-agent/sweagent/run/hooks/swe_bench_evaluate.py",
+      "quarantine/swe-agent/tests/test_agent.py",
+      "quarantine/swe-agent/tests/test_history_processors.py",
+      "quarantine/swe-agent/tools/search/config.yaml",
+      "quarantine/swe-agent/tools/windowed/config.yaml",
+      "quarantine/swe-agent/tools/web_browser/config.yaml",
+      "quarantine/swe-agent/tools/filemap/config.yaml",
+      "quarantine/swe-agent/tools/image_tools/config.yaml"
+    ],
+    "scope": "CLI\u2192environment setup\u2192model/action-sampler\u2192parser/filter\u2192SWE-ReX command/interrupt\u2192state/history/trajectory\u2192continuation; default editor/submit executors, optional source bundle catalogs, retry/reviewer strategies, history projection, replay, benchmark/evaluation hooks and fault-oracle tests.",
+    "limits": "Source read only, reference not executed. SWE-ReX/LiteLLM/sb-cli dependency internals, full optional browser/windowed executors, OS process-tree semantics and all alternative reviewer implementations are outside trace. Source-inferred editor defect: fresh JSON getter mutations are not written back, so advertised undo history is not established. Single-run exception cleanup lacks a finally stop call."
+  },
+  "actions": [
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "command string translated by function-calling parser",
+      "output": "continuing-shell output and subsequent environment state; timeout/retry/final submission flow",
+      "lifecycle": "one model action at a time; persistent SWE-ReX bash session rather than mini fresh subshell; no exposed resumable process handle",
+      "authority": "model without routine approval prompt; configurable prefix/exact command filter and deployment constraints",
+      "evidence": [
+        "e8",
+        "e9",
+        "e10",
+        "e15",
+        "e16"
+      ]
+    },
+    {
+      "name": "str_replace_editor",
+      "surface": "model tool, default configured bundle",
+      "input": "command=view/create/str_replace/insert/undo_edit; absolute path and operation-specific text/range",
+      "output": "bounded file/directory view or edit result/error; replace rejects ambiguous old text",
+      "lifecycle": "fresh command program stores intended history in registry JSON; source-inferred failure to write it back undermines advertised undo",
+      "authority": "model through same shell dispatch; file path existence/absolute-path and action constraints",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    {
+      "name": "submit / submit -f; exit",
+      "surface": "model tool or shell control",
+      "input": "no args, force used by harness autosubmission; literal exit action",
+      "output": "staged Git patch wrapped in submission token, review-stage prompts or explicit exit",
+      "lifecycle": "configured submit stages return prompts before final submission; agent recognizes sentinel; force bypasses review",
+      "authority": "model default submit; host force on errors; prompts are not an independent correctness gate",
+      "evidence": [
+        "e14",
+        "e16",
+        "e28"
+      ]
+    },
+    {
+      "name": "optional find_file / search_dir / search_file",
+      "surface": "config-defined bundle catalog",
+      "input": "name/pattern or search term and optional directory/file",
+      "output": "configured file-search command output",
+      "lifecycle": "available only when bundle selected/installed; command executors not independently traced here",
+      "authority": "model through generated schema and shell filter; metadata contract source only",
+      "evidence": [
+        "e10",
+        "e11",
+        "e42"
+      ]
+    },
+    {
+      "name": "optional open / create / goto / scroll_up / scroll_down",
+      "surface": "config-defined bundle catalog",
+      "input": "file/line selection or no-argument window movement",
+      "output": "windowed file content and state metadata",
+      "lifecycle": "configured state-command/file window; alternate edit/rewrite/replace bundles can add edit/insert",
+      "authority": "model with selected bundle; catalog semantics, not a full executor trace",
+      "evidence": [
+        "e11",
+        "e43"
+      ]
+    },
+    {
+      "name": "optional open_site / close_site / screenshot_site / click_mouse / double_click_mouse / move_mouse / drag_mouse / type_text / scroll_on_page / execute_script_on_page / navigate_back / navigate_forward / reload_page / wait_time / press_keys_on_page / set_browser_window_size / get_console_output",
+      "surface": "config-defined browser bundle catalog",
+      "input": "URL; mouse coordinates/path/button; text; scroll deltas; JS script; milliseconds; keys; window size; no-arg history/screenshot/console",
+      "output": "declared browser content/screenshot/action/console responses",
+      "lifecycle": "selected browser bundle operates outside default action surface; browser lifecycle implementation beyond this trace",
+      "authority": "model if bundle installed, source catalog contract only",
+      "evidence": [
+        "e11",
+        "e44"
+      ]
+    },
+    {
+      "name": "optional filemap / view_image",
+      "surface": "config-defined bundle catalog",
+      "input": "Python-file path or image-file path",
+      "output": "declared shortened file map or image view",
+      "lifecycle": "selected tool command programs, not default configured tools",
+      "authority": "model through generated bundle surface; detailed execution outside this trace",
+      "evidence": [
+        "e11",
+        "e45",
+        "e46"
+      ]
+    },
+    {
+      "name": "DefaultAgent.setup / step / run; ToolHandler.install/reset; add_hook",
+      "surface": "programmable API",
+      "input": "model/tools/templates/processors, SWEEnv, problem statement and host stage hooks",
+      "output": "StepOutput/trajectory/info and mutation/observation hooks",
+      "lifecycle": "synchronous stages, configuration deep-copied and catalogs cached; programmer can replace/mutate objects",
+      "authority": "host API, not normal model action to redefine the turn",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5",
+        "e10",
+        "e13",
+        "e34"
+      ]
+    },
+    {
+      "name": "RetryAgent / ScoreRetryLoop / ChooserRetryLoop",
+      "surface": "programmable configured workflow",
+      "input": "attempt agent configs, cost/attempt/accept limits and reviewer/chooser model config",
+      "output": "review scores/selection, preserved per-attempt trajectories and final best solution",
+      "lifecycle": "sequential task attempts with hard environment reset and reviewer cost accounting",
+      "authority": "operator/program config governs strategy; no model-driven harness experiment/rebuild protocol",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31"
+      ]
+    },
+    {
+      "name": "AskColleagues action sampler",
+      "surface": "programmable configured strategy",
+      "input": "sample count and one configured model plus current trajectory/history",
+      "output": "combined proposed ideas and one final action selection",
+      "lifecycle": "multiple synchronous completions then comparison; one shared model, no messages to durable peers",
+      "authority": "operator/program selects sampler; model receives synthesized colleague prompt",
+      "evidence": [
+        "e32",
+        "e33"
+      ]
+    },
+    {
+      "name": "save_trajectory / get_trajectory_data",
+      "surface": "programmable API",
+      "input": "current history/steps/info/replay config and trajectory path",
+      "output": "JSON snapshot including successful and failed-step projections",
+      "lifecycle": "whole-file replacement after steps; raw wire/stream and complete process events not captured",
+      "authority": "host/operator; saved data can be inspected or supplied as demos",
+      "evidence": [
+        "e18",
+        "e19"
+      ]
+    },
+    {
+      "name": "sweagent run replay / traj-to-demo / inspector",
+      "surface": "operator utilities",
+      "input": "saved trajectory and optional deployment/config override, demo conversion or trajectory browse",
+      "output": "reexecuted actions/new observations, demo or saved-trajectory view",
+      "lifecycle": "replay creates new agent/environment and ReplayModel; not resume of unresolved work",
+      "authority": "operator, re-execution is an action; only source inspected here",
+      "evidence": [
+        "e35",
+        "e36"
+      ]
+    },
+    {
+      "name": "SWEEnv.start / communicate / interrupt_session / read_file / close",
+      "surface": "programmable environment API",
+      "input": "deployment config; continuing-shell command/timeout/check; filesystem path; interrupt or stop",
+      "output": "shell/file observations or backend errors",
+      "lifecycle": "start creates SWE-ReX session; interrupt is explicit action; close stops owned deployment; runtime external",
+      "authority": "host consumes deployment/runtime API; implementation of session/process isolation is outside source boundary",
+      "evidence": [
+        "e15"
+      ]
+    },
+    {
+      "name": "batch benchmark / SweBenchEvaluate hook",
+      "surface": "operator evaluation support",
+      "input": "instance list/worker count, predictions and supported benchmark subset",
+      "output": "per-instance attempts/patches, external evaluation call and report",
+      "lifecycle": "threaded independent runs; interruption waits for active tasks; evaluation invokes separate sb-cli",
+      "authority": "operator, not live agent-team or self-improvement control plane",
+      "evidence": [
+        "e37",
+        "e38",
+        "e39"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Default editor view/create/replace/insert plus bash files are concrete. Editor outputs clip before harness capture; advertised undo has source-inferred history write-back failure, preserved explicitly.",
+      "evidence": [
+        "e21",
+        "e22",
+        "e23",
+        "e24",
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Consumes a continuing SWE-ReX bash session with command timeout/interrupt, but no normal model ongoing-work handle or source proof of descendant reaping. RunSingle closes deployment only after normal completion, without finally.",
+      "evidence": [
+        "e1",
+        "e15",
+        "e16"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Bash executes scripts/interpreters and optional browser catalog exposes execute_script_on_page. No separate persistent code-cell execution surface traced; browser executor remains outside this study.",
+      "evidence": [
+        "e8",
+        "e15",
+        "e44"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent bash shell retains cwd/env/state across actions via SWE-ReX create_session/run_in_session. This supplies shell continuity, not a general Python/JS kernel or shared compute service.",
+      "evidence": [
+        "e13",
+        "e15"
+      ]
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tool registry/state JSON retain command data within environment; editor intends file-history persistence. No queryable shared standing DB is exposed, and editor getter mutation is not written back in inspected paths.",
+      "evidence": [
+        "e12",
+        "e13",
+        "e24",
+        "e26",
+        "e27"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Configured tool bundles, history processors, stage hooks, action sampling and sequential reviewer/retry loops are actual host strategy composition. Model gets installed commands, not arbitrary new turn/workflow definitions.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e29",
+        "e30",
+        "e31",
+        "e32",
+        "e34"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Retry attempts use distinct copied model configs, plus configured reviewer/chooser models. This is sequential attempt/review routing; AskColleagues itself samples the same configured model.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31",
+        "e32",
+        "e33"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "AskColleagues is synthetic multiple-completion discussion and retry agents run sequentially. No durable child/peer mailbox or busy-colleague steering established in inspected action sampler/agent/environment interfaces.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e32",
+        "e33"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Benchmark thread pool overlaps independent problem/environment instances. Normal agent has exactly one tool action per model reply; no general ongoing workflow/task registry.",
+      "evidence": [
+        "e8",
+        "e37"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "CommandTimeoutError triggers an explicit session interrupt when below consecutive-timeout cap. KeyboardInterrupt is reraised, and batch cancel preserves running instances; no interactive live steering queue or no-active-request guarantee.",
+      "evidence": [
+        "e16",
+        "e19",
+        "e37"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Programmer hooks and copied configurable model/tools/processors/action-sampling/retry stages permit host variation. Completed loop/flow semantics remain fixed Python methods; no model-facing hot turn replacement.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e5",
+        "e29",
+        "e34"
+      ]
+    },
+    "compaction": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "LastNObservations elides selected old observations in a provider-facing projection, with keep/remove tags and cache processors. Original stored history is separate; this is deterministic projection rather than model-managed summary/repair event.",
+      "evidence": [
+        "e3",
+        "e20",
+        "e41"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Unprojected history and full trajectory observations/requeries survive for operator/program inspection or demos/replay. No model-authorized repair/restore/merge operation was traced; bundle-side clipping has already lost data.",
+      "evidence": [
+        "e3",
+        "e17",
+        "e18",
+        "e20",
+        "e23",
+        "e35",
+        "e36"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Trajectory records request history, thought/action/output/observation/state and failed requery steps, with debug provider logs. It replaces JSON after steps; normalized provider fields lose raw response metadata, and bundle clipping precedes capture. This is not original-everything event audit.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e17",
+        "e18",
+        "e19",
+        "e23"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Saved trajectories/history, inspector and replay/demo utilities support manual/program analysis. No model/native event-query service with complete originals/lineage established.",
+      "evidence": [
+        "e18",
+        "e35",
+        "e36"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Agent/tool configs are deep-copied, tool schemas/docs cached and bundles installed during setup. Host hooks can mutate stages but no file watcher or explicit after-turn activation/refit event is established.",
+      "evidence": [
+        "e2",
+        "e10",
+        "e13",
+        "e34"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Replay constructs new environment/config/ReplayModel and reexecutes saved actions. Retry hard reset reconstructs attempts. Neither transfers live provider/session/program state or hands context to an outpost during executable replacement.",
+      "evidence": [
+        "e29",
+        "e35",
+        "e36"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Consumes configured LiteLLM provider/API endpoints/fallbacks and SWE-ReX deployment/runtime; source exposes client lifecycle boundaries rather than adopting provider/deployment internals.",
+      "evidence": [
+        "e6",
+        "e15"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Retry/reviewer/action comparison search alternative task solutions and choose scores under budgets. This can inform autodroit design, but no measured harness change/selection/refit/reinhabitation protocol is traced.",
+      "evidence": [
+        "e29",
+        "e30",
+        "e31",
+        "e32"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model complaint with captured agent state and external DB/bead tracking established in inspected loops/tool catalog/hooks/retry/evaluation/replay.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model commands normally execute without confirmation, constrained by configured prefix/exact/regex filters and environment/tool validation. These coarse filters are not a general sandbox or shell-language authorization proof.",
+      "evidence": [
+        "e9",
+        "e14",
+        "e16"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Source scripted-model tests distinguish trajectory of failed requery from successful provider history. Configurable review scores guide attempt choice; external sb-cli performs benchmark grading when enabled. History-count tests do not prove repair or invariance, and none ran here.",
+      "evidence": [
+        "e31",
+        "e38",
+        "e39",
+        "e40",
+        "e41"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Per-action perf_counter durations and cumulative execution budget are explicit; total budget is checked before the next step and does not interrupt a current command/provider. Synchronous order and backend deadlines are not a global causal clock.",
+      "evidence": [
+        "e4",
+        "e16"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/swe-agent/sweagent/run/run_single.py",
+      "start": 170,
+      "end": 206,
+      "claim": "RunSingle creates model/agent/SWEEnv from config, starts environment, runs agent and closes only after ordinary completion; no finally cleanup wraps the run."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 443,
+      "end": 518,
+      "claim": "Default agent owns model, tool handler, processors, history/trajectory and counters; from_config deep-copies configuration to isolate instances."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 537,
+      "end": 550,
+      "claim": "Provider-facing messages are a filtered history projection chained through processors, preserving a separate original history object."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 1006,
+      "end": 1061,
+      "claim": "Forward deep-copies the query, invokes configured model/action sampler, parses thought/action/tool IDs, then dispatches action; failures retain the partial StepOutput."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 1235,
+      "end": 1294,
+      "claim": "Each step appends model/output/state history and trajectory, updates model stats and hooks; synchronous run saves after steps until done."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/swe-agent/sweagent/agent/models.py",
+      "start": 691,
+      "end": 782,
+      "claim": "Concrete LiteLLM path checks context size, submits configured tools/providers/fallbacks, extracts normalized text/tool/thinking fields and accounts response cost before returning."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/swe-agent/sweagent/agent/models.py",
+      "start": 843,
+      "end": 864,
+      "claim": "History conversion copies data into role/content/tool-call messages; one tool-call identity is associated with each observation."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/swe-agent/sweagent/tools/parsing.py",
+      "start": 438,
+      "end": 459,
+      "claim": "Default function-calling parser requires exactly one tool call and maps its args to one command action."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/swe-agent/sweagent/tools/tools.py",
+      "start": 32,
+      "end": 65,
+      "claim": "Default action filter blocks selected prefixes, bare interactive interpreters and regex-constrained commands; this is configurable filtering, not confirmation."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/swe-agent/sweagent/tools/tools.py",
+      "start": 170,
+      "end": 213,
+      "claim": "Tool catalog combines optional bash and selected bundles, rejects duplicate command names and caches generated schemas/docs."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/swe-agent/sweagent/tools/bundle.py",
+      "start": 18,
+      "end": 57,
+      "claim": "Bundle loads config.yaml metadata, validates hidden names and exposes all configured nonhidden Command objects."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/swe-agent/sweagent/tools/tools.py",
+      "start": 254,
+      "end": 267,
+      "claim": "Reset publishes tool environment variables, registry JSON and state JSON, then executes reset commands in continuing shell state."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/swe-agent/sweagent/tools/tools.py",
+      "start": 292,
+      "end": 335,
+      "claim": "Installation uploads selected bundles, adds bin directories to PATH, sources install.sh and checks availability; state reads JSON from environment."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/swe-agent/sweagent/tools/tools.py",
+      "start": 337,
+      "end": 378,
+      "claim": "State commands update environment state; should_block_action checks configured prefix/exact/regex filters and submission recognizes stdout sentinel."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/swe-agent/sweagent/environment/swe_env.py",
+      "start": 168,
+      "end": 232,
+      "claim": "SWEEnv owns deployment lifecycle and creates a persistent SWE-ReX bash session; commands and explicit BashInterruptAction go through that runtime, whose implementation is external."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 936,
+      "end": 1004,
+      "claim": "Native action dispatch applies filters, executes guarded command, handles timeout with session interrupt, tracks execution duration/state and interprets retry/forfeit/submission tokens."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 714,
+      "end": 755,
+      "claim": "Model history receives rendered/truncated observation; tool identities are preserved and original full observation is a separate trajectory value."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 759,
+      "end": 811,
+      "claim": "Trajectory saves history/steps/info/replay configuration as a replaced JSON file; requery mistakes are kept as trajectory entries while omitted from successful model history."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 1062,
+      "end": 1137,
+      "claim": "Format/blocklist/syntax errors requery boundedly; partial failed steps are saved in trajectory; KeyboardInterrupt is reraised rather than becoming live steering."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/swe-agent/sweagent/agent/history_processors.py",
+      "start": 150,
+      "end": 178,
+      "claim": "LastNObservations replaces old observation content in copied entries with line/image counts; kept entries and original stored history remain distinct."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/swe-agent/config/default.yaml",
+      "start": 32,
+      "end": 69,
+      "claim": "Default selects registry, Anthropic editor and multi-stage submit-review bundles with bash and function-calling; cache-control is a projection processor."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/config.yaml",
+      "start": 1,
+      "end": 56,
+      "claim": "Editor tool schema exposes view/create/str_replace/insert/undo_edit with paths, text and ranges; advertised undo requires implementation verification."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "start": 28,
+      "end": 67,
+      "claim": "Editor clips large output before it reaches the harness, so full trajectory observation is not an original file/content audit."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "start": 350,
+      "end": 401,
+      "claim": "Edit dispatcher branches by operation; file_history getter parses a fresh registry JSON dict on every access, with a separate setter."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "start": 516,
+      "end": 550,
+      "claim": "Replace rejects absent, ambiguous or identical old text before writing the replacement."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "start": 576,
+      "end": 590,
+      "claim": "Replace appends prior content to the temporary history getter result, with no write-back setter invocation in this path."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/swe-agent/tools/edit_anthropic/bin/str_replace_editor",
+      "start": 634,
+      "end": 645,
+      "claim": "Undo reads/pops another temporary history result and writes it if found; no inspected create/replace/insert caller assigns the history property back to registry."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/swe-agent/tools/review_on_submit_m/bin/submit",
+      "start": 12,
+      "end": 54,
+      "claim": "Submit stages a Git patch and returns successive configured review prompts, then emits a submission sentinel; force bypasses stages. Review prompts do not validate changes themselves."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 294,
+      "end": 326,
+      "claim": "Retry agent constructs distinct model/tool configs for attempts and hard-resets deployment/environment before next attempt."
+    },
+    {
+      "id": "e30",
+      "path": "quarantine/swe-agent/sweagent/agent/agents.py",
+      "start": 409,
+      "end": 442,
+      "claim": "Retry runs sequential attempts, sends submissions to score/chooser reviewers, records reviewer stats, and finally selects an attempt."
+    },
+    {
+      "id": "e31",
+      "path": "quarantine/swe-agent/sweagent/agent/reviewer.py",
+      "start": 617,
+      "end": 658,
+      "claim": "Score retry bounds cost/attempts/accepts/remaining budget and chooses max reviewer score with shortest-call tie-break; this is task-solution search."
+    },
+    {
+      "id": "e32",
+      "path": "quarantine/swe-agent/sweagent/agent/action_sampler.py",
+      "start": 40,
+      "end": 94,
+      "claim": "AskColleagues samples several replies using the same model then asks it to compare ideas; names do not establish durable live peers."
+    },
+    {
+      "id": "e33",
+      "path": "quarantine/swe-agent/sweagent/agent/models.py",
+      "start": 783,
+      "end": 798,
+      "claim": "Model multi-sample query invokes the same model repeatedly in a loop rather than exposing independent ongoing colleagues."
+    },
+    {
+      "id": "e34",
+      "path": "quarantine/swe-agent/sweagent/agent/hooks/abstract.py",
+      "start": 10,
+      "end": 54,
+      "claim": "Host hooks observe/mutate agent stages and model-query/message boundaries, supplying programmable composition rather than a model-facing turn language."
+    },
+    {
+      "id": "e35",
+      "path": "quarantine/swe-agent/sweagent/run/run_replay.py",
+      "start": 94,
+      "end": 127,
+      "claim": "Replay reloads saved configuration, applies operator config updates and replaces provider with ReplayModel; no live model/process state is transferred."
+    },
+    {
+      "id": "e36",
+      "path": "quarantine/swe-agent/sweagent/run/run_replay.py",
+      "start": 139,
+      "end": 171,
+      "claim": "Replay extracts saved assistant/tool actions and validates parser compatibility for re-execution."
+    },
+    {
+      "id": "e37",
+      "path": "quarantine/swe-agent/sweagent/run/run_batch.py",
+      "start": 276,
+      "end": 288,
+      "claim": "Benchmark thread pool overlaps independent instances; KeyboardInterrupt cancels pending futures while running instances finish."
+    },
+    {
+      "id": "e38",
+      "path": "quarantine/swe-agent/sweagent/run/hooks/swe_bench_evaluate.py",
+      "start": 39,
+      "end": 65,
+      "claim": "Evaluation hook constructs external sb-cli commands for supported subsets; execution/grading implementation remains outside snapshot."
+    },
+    {
+      "id": "e39",
+      "path": "quarantine/swe-agent/sweagent/run/hooks/swe_bench_evaluate.py",
+      "start": 105,
+      "end": 120,
+      "claim": "On completion evaluation calls sb-cli with predictions and records/relocates resulting reports."
+    },
+    {
+      "id": "e40",
+      "path": "quarantine/swe-agent/tests/test_agent.py",
+      "start": 149,
+      "end": 189,
+      "claim": "Scripted model/dummy runtime test verifies failed requery remains in trajectory but successful history only has action/observation pairs and later budget exit."
+    },
+    {
+      "id": "e41",
+      "path": "quarantine/swe-agent/tests/test_history_processors.py",
+      "start": 26,
+      "end": 40,
+      "claim": "History tests check number of elided observations and tags on edit calls, but not exact original-history immutability or model-directed restoration."
+    },
+    {
+      "id": "e42",
+      "path": "quarantine/swe-agent/tools/search/config.yaml",
+      "start": 1,
+      "end": 37,
+      "claim": "Optional search bundle declares find_file/search_dir/search_file arguments; not selected by default config."
+    },
+    {
+      "id": "e43",
+      "path": "quarantine/swe-agent/tools/windowed/config.yaml",
+      "start": 1,
+      "end": 38,
+      "claim": "Optional windowed bundle declares open/create/goto/scroll_up/scroll_down and persistent state command."
+    },
+    {
+      "id": "e44",
+      "path": "quarantine/swe-agent/tools/web_browser/config.yaml",
+      "start": 1,
+      "end": 155,
+      "claim": "Optional browser bundle declares URL/screenshot/mouse/text/scroll/script/history/wait/key/window/console operations; browser implementation not deeply traced."
+    },
+    {
+      "id": "e45",
+      "path": "quarantine/swe-agent/tools/filemap/config.yaml",
+      "start": 1,
+      "end": 9,
+      "claim": "Optional filemap command declares Python-file map output with lengthy definitions omitted."
+    },
+    {
+      "id": "e46",
+      "path": "quarantine/swe-agent/tools/image_tools/config.yaml",
+      "start": 1,
+      "end": 9,
+      "claim": "Optional view_image command declares file-image view; it is configuration-dependent, not default surface."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/swe-agent/tests/test_agent.py",
+      "focus": "Failed-format retry must remain study data while provider history proceeds correctly.",
+      "oracle": "Scripted model/dummy runtime requires trajectory lengths 2/3/4 for requery and later calls, successful action/observation history lengths 5/7, and budget exit; controlled state oracle, not a real provider/session interrupt.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/swe-agent/tests/test_history_processors.py",
+      "focus": "Last-N omission and tool-call tag selection.",
+      "oracle": "Expected omitted count is derived from total observations minus retained count; edits receive tag. It does not check exact original bytes retained, tagged removal interactions or model-driven repair.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Saved query/trajectory and retained original history are distinct from projected provider context, making recoverability scope explicit.",
+    "Configurable command bundles have duplicate-name detection, hidden-tool validation and generated schemas; client/session boundary is straightforward.",
+    "Retry strategy keeps attempts and reviewer model stats, separating task search from the ordinary action loop."
+  ],
+  "limits": [
+    "SWE-ReX/LiteLLM/sb-cli dependency internals, full optional browser/windowed executors, OS process-tree semantics and all alternative reviewer implementations are outside trace. Source-inferred editor defect: fresh JSON getter mutations are not written back, so advertised undo history is not established. Single-run exception cleanup lacks a finally stop call."
+  ],
+  "arconaut_questions": [
+    "Can command timeout/cancel and KeyboardInterrupt prove owned deployment/session/process cleanup independently of ordinary success paths?",
+    "Should editor undo persist a complete before-image with stable string keys, and can a direct cross-process replace\u2192undo oracle challenge the current temporary getter mutation?",
+    "How can model-controlled context projection/repair preserve original audit while dynamically changing what the next request sees?",
+    "Which parts of budgeted reviewer/attempt search transfer to model-governed harness improvement, and what independent measurement decides improvement?",
+    "What explicit activation operation replaces cached tool catalogs and stage programs after the current turn/affected workflows?"
+  ]
+}

@@ -1,0 +1,71 @@
+#pragma once
+#include "arconaut/json.hpp"
+#include "arconaut/retained_state.hpp"
+#include <map>
+
+namespace arconaut {
+template <class T> T unwrap(Result<T> result) {
+  if (!result.has_value())
+    throw result.error();
+  return std::move(result).value();
+}
+inline void unwrap(Result<void> result) {
+  if (!result.has_value())
+    throw result.error();
+}
+std::string hex_identity(const IdentityBytes &bytes);
+const Json &field(const Json &value, std::string_view name);
+const std::string &string_field(const Json &value, std::string_view name);
+struct OriginalCapture {
+  std::string_view label;
+  std::string_view bytes;
+  Json metadata;
+};
+class AuditLog {
+public:
+  explicit AuditLog(RetainedState &root) : root_(root) {}
+  ApplicationRecordId issue() { return unwrap(root_.issue<ApplicationRecordId>()); }
+  std::string record(ApplicationChannel channel, const Json &packet);
+  void record(ApplicationRecordId identity, ApplicationChannel channel,
+              const Json &packet);
+  std::string original(OriginalCapture capture);
+  RetainedState &root() noexcept { return root_; }
+
+private:
+  RetainedState &root_;
+};
+class ContextStore {
+public:
+  explicit ContextStore(AuditLog &log);
+  const std::string &head() const noexcept { return head_; }
+  Json view() const;
+  Json stats() const;
+  Json::Array items() const;
+  void append(Json::Array items, std::string_view origin);
+  Json edit(const Json &candidate);
+  void restore(std::string_view entry);
+  Json originals() const;
+  Json manage(const Json &proposal);
+  Json inspect(const Json &query) const;
+  void begin_workflow();
+  Json finish_workflow(bool success);
+
+private:
+  AuditLog &log_;
+  std::string head_;
+  Json::Array entries_;
+  std::map<std::string, Json> originals_;
+  Json::Array captured_, history_;
+  bool workflow_ = false;
+  struct Pending {
+    Json proposal;
+    Json::Array snapshot;
+    std::string expected, stage;
+  };
+  std::optional<Pending> pending_;
+  Json publish_managed(const Json &proposal, const Json::Array &basis,
+                       std::string_view stage);
+  Json reject_managed(const Json &proposal, std::string_view reason);
+  bool valid_entries(const Json &entries) const;
+};
+} // namespace arconaut

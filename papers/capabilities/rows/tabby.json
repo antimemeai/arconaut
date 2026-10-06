@@ -1,0 +1,605 @@
+{
+  "id": "tabby",
+  "kind": "inference/retrieval service and editor coding assistant",
+  "runtime": {
+    "languages": [
+      "Rust",
+      "TypeScript",
+      "JavaScript"
+    ],
+    "execution": "Rust Tokio/Axum inference/answer service with Arc trait backends and DB; TypeScript language-server/editor client produces previews under single edit mutex.",
+    "service_boundary": "Server owns inference/retrieval/thread storage and supplies compatible APIs; editor agent consumes it and delegates actual workspace mutations to editor. Pochi link is separate agent, not engine hidden in these paths."
+  },
+  "summary": "Tabby is primarily a reusable inference/retrieval/answer service plus editor completion and preview-edit assistant. Its client named agent does not establish an autonomous model-native shell/tool continuation loop.",
+  "inspection": {
+    "files": [
+      "quarantine/tabby/README.md",
+      "quarantine/tabby/crates/tabby/src/main.rs",
+      "quarantine/tabby/crates/tabby/src/serve.rs",
+      "quarantine/tabby/crates/tabby/src/routes/chat.rs",
+      "quarantine/tabby/crates/tabby-inference/src/chat.rs",
+      "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "quarantine/tabby/ee/tabby-webserver/src/service/thread.rs",
+      "quarantine/tabby/ee/tabby-db/src/threads.rs",
+      "quarantine/tabby/clients/tabby-agent/src/chat/index.ts",
+      "quarantine/tabby/clients/tabby-agent/src/server.ts",
+      "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "quarantine/tabby/clients/tabby-agent/src/chat/smartApply.ts",
+      "quarantine/tabby/clients/tabby-agent/src/protocol.ts",
+      "quarantine/tabby/clients/tabby-agent/src/config/configFile.ts",
+      "quarantine/tabby/crates/tabby/tests/goldentests_chat.rs"
+    ],
+    "scope": "Selected source excerpts trace exposed entry/loop/request/action/result/state boundaries and relevant capability mechanisms; listed tests are read as source only.",
+    "limits": "No acquired code executed, dependencies installed or live providers invoked. Claims concern this pinned snapshot; untraced catalog tools and dependency internals are not inferred."
+  },
+  "actions": [
+    {
+      "name": "serve / download",
+      "surface": "operator CLI",
+      "input": "configured models/device/server arguments or model ID",
+      "output": "running inference/answer service or downloaded model",
+      "lifecycle": "Tokio process; startup config load; download internals untraced",
+      "authority": "operator/service owns resources",
+      "evidence": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "name": "POST /v1/chat/completions / /v1beta/chat/completions",
+      "surface": "service API",
+      "input": "compatible chat request messages/model/user fields",
+      "output": "SSE provider chunks/error",
+      "lifecycle": "forwards to configured backend; connection stream lifecycle, no execution-loop settlement",
+      "authority": "authorized client/user headers; model no OS tool authority",
+      "evidence": [
+        "e3",
+        "e4",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "AnswerService.answer / ThreadService.create_run",
+      "surface": "answer/thread API",
+      "input": "user,thread messages,query/options/attachments/model_name",
+      "output": "thread/user/assistant IDs,reading/attachments/content delta events",
+      "lifecycle": "fixed retrieval/related-question/final-answer pipeline; persists selected state as it streams",
+      "authority": "user source access policy; service performs predetermined retrieval",
+      "evidence": [
+        "e7",
+        "e8",
+        "e9",
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "tabby/chat/edit",
+      "surface": "editor request",
+      "input": "location,command,previewChanges format",
+      "output": "edit token + preview stream or feature/length/mutex error",
+      "lifecycle": "one current edit under global mutex, selected-context template provider request",
+      "authority": "operator/editor client, cancellation aborts request",
+      "evidence": [
+        "e16",
+        "e18",
+        "e19",
+        "e22"
+      ]
+    },
+    {
+      "name": "tabby/chat/edit/resolve",
+      "surface": "editor request",
+      "input": "preview location,accept/discard/cancel",
+      "output": "bool; WorkspaceEdit or controller abort",
+      "lifecycle": "reconstructs desired preview lines then applies via host editor",
+      "authority": "operator/host owns final workspace mutation",
+      "evidence": [
+        "e20",
+        "e23"
+      ]
+    },
+    {
+      "name": "tabby/chat/smartApply",
+      "surface": "editor request",
+      "input": "location,text patch",
+      "output": "bool/edit preview or error",
+      "lifecycle": "range heuristic then possible LLM fallback and edit stream under mutex",
+      "authority": "operator/editor host",
+      "evidence": [
+        "e21",
+        "e24"
+      ]
+    },
+    {
+      "name": "fetchFileContent / ReadFileRequest",
+      "surface": "editor context primitive",
+      "input": "URI and optional range",
+      "output": "synced/delegated/local text or undefined",
+      "lifecycle": "reads context before edit; does not expose general model filesystem tool",
+      "authority": "language-server/editor authority",
+      "evidence": [
+        "e17"
+      ]
+    },
+    {
+      "name": "ConfigFile.watch / updated",
+      "surface": "hot configuration primitive",
+      "input": "client config file change",
+      "output": "new/old configuration event",
+      "lifecycle": "reload on file add/change; active edit already captured config",
+      "authority": "operator/client host; not executable reload",
+      "evidence": [
+        "e18",
+        "e25"
+      ]
+    },
+    {
+      "name": "DbConn.create_thread / list_threads / message updates",
+      "surface": "storage primitive",
+      "input": "user/thread/message IDs,content/attachments",
+      "output": "rows/IDs or DB error",
+      "lifecycle": "durable mutable application records; no general model SQL channel",
+      "authority": "owned service database",
+      "evidence": [
+        "e11",
+        "e12",
+        "e13"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Editor context reads synced/delegated/local files and accepted previews use host WorkspaceEdit; no arbitrary model read/write tool in answer route.",
+      "evidence": [
+        "e17",
+        "e20"
+      ]
+    },
+    "processes": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Inspected inference/answer/editor service supplies no model command-execution lifecycle; local server inference infrastructure is not agent shell authority.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Editor tabby/chat/edit and smartApply generate a preview/token then accept/discard WorkspaceEdit. These are proposed code edits; model-authored executable programs composing native tools are not established by inspected edit/completion/answer paths.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e20",
+        "e21",
+        "e22",
+        "e23",
+        "e24"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Reference inference service/editor assistant has no inspected execution-kernel consumer contract; model inference process is not operator language kernel.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Server persists thread/message/attachment state through DB operations and authorized retrieval context. Internal application storage is not model general database execution.",
+      "evidence": [
+        "e7",
+        "e11",
+        "e12",
+        "e13"
+      ]
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "REST/LSP and trait backend API enable host composition; editor template/preset context plus fixed answer pipeline. Model-authored workflow/turn program not established.",
+      "evidence": [
+        "e4",
+        "e6",
+        "e7",
+        "e8",
+        "e16",
+        "e19"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Configured inference model default/support fallback and answer model_name selection are actual routing; no independent agents or mixed-model conversation authority established.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e8"
+      ]
+    },
+    "live_collaboration": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Thread sharing/application users and separate Pochi link do not establish live agent-to-agent collaboration; inspected component role is inference/retrieval/editor assistance.",
+      "evidence": []
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tokio/Axum service supplies independent request streams and joined document enrichment; editor edits explicitly global-mutex serialized. No multi-agent work scheduler established.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e8",
+        "e18",
+        "e21"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Editor cancellation/stop/cancel maps to request abort; no ongoing model-task steering/queue or all owned inference process quiescence contract traced.",
+      "evidence": [
+        "e18",
+        "e19",
+        "e21"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Fixed answer-request/retrieval and one-shot editor edit paths are service contracts, not an exposed autonomous agent turn scheduler.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No semantic context compaction/projection mechanism established in inspected answer request construction/thread persistence/editor template paths.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Persistent thread data and editor reread context support host reconstruction, but no native model original-context fetch/repair protocol established.",
+      "evidence": [
+        "e10",
+        "e12",
+        "e17"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Thread deltas persist into mutable content/attachments; coarse completion logger records operation event, not original prompts/chunks/tool/OS effects. Edits/debug templates may log locally but no complete immutable audit.",
+      "evidence": [
+        "e4",
+        "e9",
+        "e11",
+        "e13",
+        "e19"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "DB thread listing/message records are queryable application state; not immutable originals or complete event history.",
+      "evidence": [
+        "e12",
+        "e13"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Client config file data refresh and health-based feature registration are wired; server main startup loads config once. No compiled executable handoff or affected-workflow fence established.",
+      "evidence": [
+        "e2",
+        "e14",
+        "e18",
+        "e25"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "Server/editor client lacks inspected agent continuity/refit lifecycle; API clients could compose continuity externally but it is not supplied here.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Compatible service API and remote provider backend trait with reusable Arc inference/retrieval components suit an externally consumed service role. Editor host owns workspace mutation.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e6",
+        "e7",
+        "e20"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "inspection-limit",
+      "detail": "No self-directed coding-agent improvement loop in inspected service/editor role; standalone Pochi is a different reference.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection-limit",
+      "detail": "No native model grievance filing or independently tracked state bundle established in inspected API/editor/thread paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "User policy filters repository/doc retrieval sources; editor host accepts/discards changes and uses synced/delegated files. No provider model command authority inferred.",
+      "evidence": [
+        "e7",
+        "e8",
+        "e17",
+        "e20",
+        "e23"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Fake answer/retrieval test only asserts stream count; local model/SSE goldens snapshot seeded text. Neither proves edit correctness, complete audit or broad agent behavior; not run.",
+      "evidence": [
+        "e26",
+        "e27",
+        "e28",
+        "e29"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Thread IDs/create/update timestamps and per-stream persist-before-yield order provide application sequencing, not global effect/audit causal order.",
+      "evidence": [
+        "e10",
+        "e11",
+        "e12",
+        "e13"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/tabby/README.md",
+      "start": 17,
+      "end": 36,
+      "claim": "Tabby describes self-hosted coding assistant; Pochi task agent is linked separately, not this service engine."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/tabby/crates/tabby/src/main.rs",
+      "start": 53,
+      "end": 73,
+      "claim": "Rust Tokio main loads config once, prepares owned root and dispatches serve/download CLI."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/tabby/crates/tabby/src/serve.rs",
+      "start": 289,
+      "end": 326,
+      "claim": "Axum mounts configured completion and chat SSE endpoints; absent completion has explicit NOT_IMPLEMENTED route."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/tabby/crates/tabby/src/routes/chat.rs",
+      "start": 38,
+      "end": 85,
+      "claim": "Chat endpoint forwards request to trait backend, streams chunks and logs coarse ChatCompletion event; no native tool execution/continuation in this route."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/tabby/crates/tabby-inference/src/chat.rs",
+      "start": 44,
+      "end": 72,
+      "claim": "Configured remote model processing fills default or falls back unsupported models and adapts provider-specific fields."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/tabby/crates/tabby-inference/src/chat.rs",
+      "start": 110,
+      "end": 145,
+      "claim": "Backend ChatCompletionStream invokes configured compatible/Azure chat create/create_stream; provider selection is not peer collaboration."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "start": 67,
+      "end": 133,
+      "claim": "Answer stream reads authorized context, fixed pipeline decides code needs, lists capped files and retrieves snippets."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "start": 135,
+      "end": 214,
+      "claim": "Answer pipeline filters authorized doc sources, concurrently enriches attachments, optionally asks related questions and constructs final chat request with model selection."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "start": 216,
+      "end": 264,
+      "claim": "Answer emits content deltas from one final chat stream and logs coarse completion event; no arbitrary tool-call loop traced."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/thread.rs",
+      "start": 156,
+      "end": 220,
+      "claim": "Thread create_run loads messages, requires last user, creates assistant message ID before answer and emits paired identities."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/thread.rs",
+      "start": 222,
+      "end": 267,
+      "claim": "Stream persists delta text and overwrites selected attachments/relevant questions before yielding each item."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/tabby/ee/tabby-db/src/threads.rs",
+      "start": 23,
+      "end": 101,
+      "claim": "Persistent thread messages have content/attachments/timestamps and DB list/create operations with user filtering."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/tabby/ee/tabby-db/src/threads.rs",
+      "start": 179,
+      "end": 197,
+      "claim": "Attachment updates overwrite current JSON data and updated_at; mutable application data, not immutable original event history."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/index.ts",
+      "start": 29,
+      "end": 54,
+      "claim": "Editor chat capability dynamically registers/unregisters when server health exposes chat model."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/tabby/clients/tabby-agent/src/server.ts",
+      "start": 86,
+      "end": 122,
+      "claim": "Language-server host constructs/registers chat edit, smart apply and command/completion features."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "start": 45,
+      "end": 55,
+      "claim": "LSP requests wire edit command listing, edit creation and edit resolution."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "start": 105,
+      "end": 140,
+      "claim": "Context file read uses synced documents, delegated workspace read or local filesystem fallback."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "start": 143,
+      "end": 186,
+      "claim": "Inline edit requires preview format/synced document and available chat; document length limit and global edit mutex, cancellation requests abort."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "start": 248,
+      "end": 314,
+      "claim": "Template composes context into one chat request, passes mutex abort signal, returns edit token and supports current-edit stop/cancel."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/inlineEdit.ts",
+      "start": 364,
+      "end": 391,
+      "claim": "Accept/discard resolution reconstructs preview text and applies WorkspaceEdit through editor host."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/tabby/clients/tabby-agent/src/chat/smartApply.ts",
+      "start": 38,
+      "end": 131,
+      "claim": "SmartApply exposes separate request, computes range or asks LLM fallback then edit generation under same mutex/abort."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/tabby/clients/tabby-agent/src/protocol.ts",
+      "start": 395,
+      "end": 404,
+      "claim": "Native protocol edit request name is tabby/chat/edit and returns ChatEditToken."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/tabby/clients/tabby-agent/src/protocol.ts",
+      "start": 475,
+      "end": 489,
+      "claim": "Native tabby/chat/edit/resolve supports accept/discard/cancel at preview location."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/tabby/clients/tabby-agent/src/protocol.ts",
+      "start": 549,
+      "end": 558,
+      "claim": "Native SmartApply protocol name tabby/chat/smartApply returns bool or typed feature/document/mutex errors."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/tabby/clients/tabby-agent/src/config/configFile.ts",
+      "start": 137,
+      "end": 149,
+      "claim": "Client config file watcher reloads data and emits update on changed content; no deferred workflow fence."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "start": 629,
+      "end": 704,
+      "claim": "Answer test uses fake chat/code/doc/context/auth and in-memory DB, asserting six streamed items."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/tabby/crates/tabby/tests/goldentests_chat.rs",
+      "start": 49,
+      "end": 69,
+      "claim": "Golden harness would launch real local Tabby inference server/model with kill-on-drop process."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/tabby/crates/tabby/tests/goldentests_chat.rs",
+      "start": 91,
+      "end": 132,
+      "claim": "Golden oracle collects SSE text then snapshot asserts, not coding correctness or full audit."
+    },
+    {
+      "id": "e29",
+      "path": "quarantine/tabby/crates/tabby/tests/goldentests_chat.rs",
+      "start": 136,
+      "end": 161,
+      "claim": "Seeded Metal platform golden examples request generic Python/regex answers; tests not executed."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/tabby/ee/tabby-webserver/src/service/answer.rs",
+      "focus": "Fixed retrieval/answer pipeline shape",
+      "oracle": "Fake auth/chat/code/doc/context and in-memory DB assert six stream events; no live semantic retrieval/edit oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/tabby/crates/tabby/tests/goldentests_chat.rs",
+      "focus": "Local inference SSE response snapshots",
+      "oracle": "Would spawn local model/server and compare collected seeded text; platform-specific and requires inference artifact. Not run; snapshots do not assert coding task success.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Actual compiled Rust service core, with editor client cleanly consuming API and owning UI/preview choices.",
+    "Authorized source retrieval and stored thread attachments expose relevant service/context boundary.",
+    "Explicit edit token, cancellation and accept/discard WorkspaceEdit lifecycle."
+  ],
+  "limits": [
+    "Not an autonomous coding harness in inspected paths; Pochi tasks are another repository.",
+    "Model selection, shareable threads and internal DB must not become multi-agent collaboration or model standing SQL claims.",
+    "Global editor edit mutex limits concurrent preview work.",
+    "Mutable thread state/coarse completion events lack full original audit.",
+    "Client config refresh does not imply server hot compiled refit or active agent continuity."
+  ],
+  "arconaut_questions": [
+    "What inference/retrieval APIs should Arconaut consume from independent services, preserving strong systems implementation without becoming their governor?",
+    "Keep request tokens and UI preview/edit lifecycle separate from model-native execution/workflow authority.",
+    "Retain service request/response provenance in Arconaut audit even when provider/reference stores only mutable thread content."
+  ]
+}

@@ -1,0 +1,304 @@
+{
+  "id": "sly",
+  "kind": "Emacs/Lisp live development client and RPC server",
+  "runtime": {
+    "languages": [
+      "Emacs Lisp",
+      "Common Lisp"
+    ],
+    "execution": "Emacs frontend talks to SLYNK inside a long-lived Lisp; communication can use worker threads or single-thread styles.",
+    "service_boundary": "Client consumes a Lisp runtime; SLYNK evaluates with that runtime authority."
+  },
+  "summary": "Addressed live evaluation, native compile/load, debugger restarts and inspectable recordings offer model-ergonomics ideas; this is not an agent loop.",
+  "inspection": {
+    "files": [
+      "quarantine/sly/slynk/slynk.lisp",
+      "quarantine/sly/contrib/slynk-stickers.lisp",
+      "quarantine/sly/test/sly-stickers-tests.el"
+    ],
+    "scope": "Read RPC dispatch/replies/authentication, eval/compile/load APIs, recordings and sticker tests.",
+    "limits": "No complete backend-specific restart/interrupt review; no model provider, complete audit store or refit coordinator."
+  },
+  "actions": [
+    {
+      "name": "interactive-eval / eval-and-grab-output",
+      "surface": "supplied primitive",
+      "input": "Lisp source string and package",
+      "output": "Printed values, captured output or condition",
+      "lifecycle": "Persistent Lisp process; request continuation settles.",
+      "authority": "RPC client with server authority",
+      "evidence": [
+        "actions",
+        "eval"
+      ]
+    },
+    {
+      "name": "compile-file-for-emacs / compile-string-for-emacs",
+      "surface": "supplied primitive",
+      "input": "Path or source, load flag, source positions and policy",
+      "output": "Compiler notes and compilation/load result",
+      "lifecycle": "In-place development; hook-defined completion.",
+      "authority": "RPC client",
+      "evidence": [
+        "compile"
+      ]
+    },
+    {
+      "name": ":emacs-interrupt / :emacs-channel-send",
+      "surface": "supplied primitive",
+      "input": "Thread or channel ID and message",
+      "output": "Interruption/channel event or invalid-channel/thread reply",
+      "lifecycle": "Independent connection dispatch; backend determines cancellation.",
+      "authority": "Connected client",
+      "evidence": [
+        "dispatch"
+      ]
+    },
+    {
+      "name": "compile-for-stickers",
+      "surface": "supplied primitive",
+      "input": "Instrumented/original source and sticker IDs",
+      "output": "Notes, armed state, later value/condition recordings",
+      "lifecycle": "Live instrumentation; in-memory retention.",
+      "authority": "Connected development client",
+      "evidence": [
+        "record"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "na",
+      "basis": "role",
+      "detail": "filesystem: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "processes": {
+      "status": "na",
+      "basis": "role",
+      "detail": "processes: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Executable Lisp forms with values and output capture over addressed RPC.",
+      "evidence": [
+        "actions"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Evaluation occurs inside the same Lisp process and package environment; no serialization promise for active requests.",
+      "evidence": [
+        "eval"
+      ]
+    },
+    "standing_database": {
+      "status": "na",
+      "basis": "role",
+      "detail": "standing_database: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Configurable evaluation wrappers and compilation hooks supply programmable live-development composition.",
+      "evidence": [
+        "eval"
+      ]
+    },
+    "multi_model": {
+      "status": "na",
+      "basis": "role",
+      "detail": "multi_model: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed RPC/channel/thread messaging provides a primitive; no model conversation or participant lifecycle supplied.",
+      "evidence": [
+        "dispatch"
+      ]
+    },
+    "concurrent_work": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Worker-thread routing is available under the selected communication style; backend and style determine behavior.",
+      "evidence": [
+        "auth"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Thread-targeted interrupt message has a separate dispatch path; backend semantics are not universally established.",
+      "evidence": [
+        "dispatch"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "na",
+      "basis": "role",
+      "detail": "turn_redefinition: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "na",
+      "basis": "role",
+      "detail": "compaction: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "na",
+      "basis": "role",
+      "detail": "context_repair: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Sticker recordings capture instrumented values/conditions in memory, with a noted multiple-client limitation; not a complete provider/program IO audit.",
+      "evidence": [
+        "record"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inspectable in-memory recordings provide a debugging primitive; retention and complete original IO require other machinery.",
+      "evidence": [
+        "record"
+      ]
+    },
+    "hot_change": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compile/load/eval can alter definitions in the existing process; no after-turn activation coordinator.",
+      "evidence": [
+        "compile"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Compile/load replaces Lisp definitions, but no executable rebuild/re-inhabitation handoff was established in inspected RPC and compilation paths.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Host/port Lisp RPC client/server, localhost default and optional shared secret; no transport/reconnect-work continuity inferred.",
+      "evidence": [
+        "server"
+      ]
+    },
+    "self_improvement": {
+      "status": "na",
+      "basis": "role",
+      "detail": "self_improvement: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "na",
+      "basis": "role",
+      "detail": "complaints: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Authenticated or local client can evaluate Lisp with server process authority; per-command agent approval is outside role.",
+      "evidence": [
+        "auth"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Inspected sticker tests distinguish placed/armed states and fail when invalid compilation incorrectly arms a sticker.",
+      "evidence": [
+        "compile"
+      ]
+    },
+    "time_order": {
+      "status": "na",
+      "basis": "role",
+      "detail": "time_order: this reference supplies Emacs/Lisp live development client and RPC server; an agent policy, model interface and context lifecycle are outside its supplied role.",
+      "evidence": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "server",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 935,
+      "end": 950,
+      "claim": "Localhost default listener may accept multiple connections when configured."
+    },
+    {
+      "id": "auth",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 1013,
+      "end": 1055,
+      "claim": "Optional .sly-secret authentication and communication-style selection."
+    },
+    {
+      "id": "dispatch",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 1273,
+      "end": 1323,
+      "claim": "Requests address threads and continuation IDs; interrupts and channel messages dispatch independently."
+    },
+    {
+      "id": "eval",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 1966,
+      "end": 2004,
+      "claim": "Evaluation is wrapped by configurable handlers and replies with ok/abort plus original continuation ID."
+    },
+    {
+      "id": "actions",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 2079,
+      "end": 2124,
+      "claim": "Interactive evaluation and output capture execute in the live Lisp environment."
+    },
+    {
+      "id": "compile",
+      "path": "quarantine/sly/slynk/slynk.lisp",
+      "start": 2852,
+      "end": 2911,
+      "claim": "Compile-file hook dispatch and compile-string return collected diagnostics and can load definitions."
+    },
+    {
+      "id": "record",
+      "path": "quarantine/sly/contrib/slynk-stickers.lisp",
+      "start": 19,
+      "end": 95,
+      "claim": "Stickers record values/conditions/time in in-memory global vectors; source notes multiple-client limitation."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/sly/test/sly-stickers-tests.el",
+      "focus": "Instrumentation lifecycle after valid or invalid live compilation.",
+      "oracle": "Explicit ert-fail if compiled definitions do not arm selected stickers or invalid instrumentation arms any sticker; this is UI/instrumentation state, not raw audit completeness.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Thread and continuation identities make live evaluation/debugging inspectable.",
+    "Evaluation wrappers, diagnostics, object inspectors and restarts are strong ergonomic patterns."
+  ],
+  "limits": [
+    "Runtime process and active stack lifetime remain backend-dependent.",
+    "Recordings are selective and in-memory; multi-client recording state is explicitly unfinished."
+  ],
+  "arconaut_questions": [
+    "Which inspector/restart operations should the model use directly as ordinary programs?",
+    "How do we retain original IO while exposing curated debug recordings without confusing their scopes?"
+  ]
+}

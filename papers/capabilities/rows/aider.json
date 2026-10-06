@@ -1,0 +1,533 @@
+{
+  "id": "aider",
+  "kind": "interactive repository editing agent",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "Synchronous CLI/provider stream and bounded reflection loop; separate history-summary thread; fresh shell process per command",
+    "service_boundary": "Owns selected repository edits/Git integration and immediate commands; consumes provider via model adapter, no shared computational fabric traced"
+  },
+  "summary": "A specialized editable-file conversation with model edit formats, Git commits/undo, sequential architect/editor models and lint/test reflection. Its compact scope exposes several useful contrasts with a general programmable harness.",
+  "inspection": {
+    "files": [
+      "quarantine/aider/aider/coders/base_coder.py",
+      "quarantine/aider/aider/coders/editblock_coder.py",
+      "quarantine/aider/aider/run_cmd.py",
+      "quarantine/aider/aider/io.py",
+      "quarantine/aider/aider/coders/architect_coder.py",
+      "quarantine/aider/aider/commands.py",
+      "quarantine/aider/aider/history.py",
+      "quarantine/aider/benchmark/benchmark.py",
+      "quarantine/aider/tests/basic/test_history.py",
+      "quarantine/aider/tests/basic/test_run_cmd.py",
+      "quarantine/aider/tests/basic/test_coder.py"
+    ],
+    "scope": "Read run/input/provider/edit/result/reflection flow, concrete edit-block writes, shell/PTY dispatch, history thread/summarizer/fallback, model/mode/command script operations, diagnostics and benchmark test oracle.",
+    "limits": "No acquired code executed. Repo-map internals, all edit formats, GUI/watch paths, provider dependency transport and full benchmark evaluator not exhaustively inspected."
+  },
+  "actions": [
+    {
+      "name": "model edit blocks",
+      "surface": "model response format",
+      "input": "selected filename plus SEARCH/REPLACE code block",
+      "output": "written files, partial edit failure/reflection or commit bookkeeping",
+      "lifecycle": "dry-run/prepare before writes; multiple edits are not a transaction",
+      "authority": "model edits selected files under coder policy",
+      "evidence": [
+        "edit",
+        "apply",
+        "effects"
+      ]
+    },
+    {
+      "name": "suggested shell script",
+      "surface": "model response format",
+      "input": "model shell blocks",
+      "output": "merged stdout/stderr and command exit result shared into chat",
+      "lifecycle": "explicit-required yes, dedup within batch, fresh sequential shell; no live task handle",
+      "authority": "model suggestion requires operator approval; --yes declines this prompt",
+      "evidence": [
+        "shell-authority",
+        "yes",
+        "shell",
+        "pty"
+      ]
+    },
+    {
+      "name": "/run /test",
+      "surface": "operator commands/programmatic hook",
+      "input": "command or supplied callable test hook",
+      "output": "streamed output; nonzero error report for reflection",
+      "lifecycle": "synchronously run then optionally append output; no process custody API",
+      "authority": "operator/embedding author",
+      "evidence": [
+        "commands",
+        "shell"
+      ]
+    },
+    {
+      "name": "architect/editor handoff",
+      "surface": "agent mode",
+      "input": "architect text and configured editor model/edit format",
+      "output": "editor writes/commits and merged cost/commit IDs",
+      "lifecycle": "sequential editor run with fresh conversation; no live peer mailbox",
+      "authority": "selected two-model workflow with optional auto_accept_architect",
+      "evidence": [
+        "architect"
+      ]
+    },
+    {
+      "name": "/model /editor-model /weak-model",
+      "surface": "operator commands",
+      "input": "provider model name",
+      "output": "SwitchCoder/new model config",
+      "lifecycle": "operator input boundary; loaded command script skips transition",
+      "authority": "operator",
+      "evidence": [
+        "models",
+        "scripts"
+      ]
+    },
+    {
+      "name": "history summary/restore",
+      "surface": "host context lifecycle",
+      "input": "completed messages, token budget and selected models/Markdown log",
+      "output": "replacement summary+tail or warning; originals absent from active list",
+      "lifecycle": "separate thread snapshot/join; failed result can still adopt empty output",
+      "authority": "host automatic summarizer; no model repair transaction",
+      "evidence": [
+        "summary-init",
+        "summary-thread",
+        "summary"
+      ]
+    },
+    {
+      "name": "/load /save",
+      "surface": "operator commands",
+      "input": "command file path or output file",
+      "output": "sequential command outcomes or reconstructed selected file list",
+      "lifecycle": "load catches/skips SwitchCoder; saved file selection not runtime snapshot",
+      "authority": "operator",
+      "evidence": [
+        "scripts"
+      ]
+    },
+    {
+      "name": "benchmark task tests",
+      "surface": "research evaluation API",
+      "input": "candidate workspace and original test paths/language",
+      "output": "runner exit-derived outcome and test stdout",
+      "lifecycle": "original test recopy, 180-second subprocess bound, sequential task attempts",
+      "authority": "researcher benchmark program; not live model harness promotion",
+      "evidence": [
+        "benchmark"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Selected repository files are read and model edit blocks dry-run/prepare/apply into actual writes; partial successful edits can precede later failure.",
+      "evidence": [
+        "edit",
+        "apply"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model shell suggestions require explicit approval; operator run/test supported. Fresh piped/interactive commands stream merged output, no reusable task handle/timeout/process-tree settlement traced.",
+      "evidence": [
+        "shell",
+        "pty",
+        "shell-authority",
+        "commands"
+      ]
+    },
+    "code_actions": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model-generated shell scripts can run sequentially after explicit yes, with output added to chat. No general nested-tool code-action kernel.",
+      "evidence": [
+        "edit",
+        "shell-authority",
+        "shell"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "persistent_kernel: not established in the inspected synchronous CLI/edit/history/shell surfaces; no universal absence implied.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "standing_database: not established in the inspected synchronous CLI/edit/history/shell surfaces; no universal absence implied.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Programmatic Coder run and operator command files compose bounded reflection/edit/test stages. Loaded scripts skip model/mode SwitchCoder rather than redefine active turn.",
+      "evidence": [
+        "run",
+        "effects",
+        "commands",
+        "scripts"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Main/weak/editor roles and sequential architect\u2192editor run are implemented; selecting models is not concurrent dialogue.",
+      "evidence": [
+        "models",
+        "architect",
+        "summary"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Architect/editor exchange is a sequential fresh editor run, not independently working addressed participants; no busy-target colleague messaging established.",
+      "evidence": [
+        "architect"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "History summarization runs in a separate thread; main joins before adopting result. Interactive/tool work is synchronous and no model-exposed ongoing process/peer handle traced.",
+      "evidence": [
+        "summary-thread",
+        "run",
+        "shell"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "KeyboardInterrupt ends a provider reply and records a synthetic interruption message; synchronous input loop waits for run_one, no busy guidance mailbox. Shell path has no explicit descendant stop/join guarantee.",
+      "evidence": [
+        "request",
+        "effects",
+        "run",
+        "shell"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Embedding author can supply Coder classes/summarizer/test callables; operator switches compiled Python coder/model modes. No model hot replacement of the governing loop established.",
+      "evidence": [
+        "run",
+        "commands",
+        "models"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Background summary replaces done_messages after snapshot equality. Head can be truncated before summary. Source-inferred all-model failure causes caught ValueError with empty summary subsequently adopted; no successful outcome guard.",
+      "evidence": [
+        "summary-init",
+        "summary-thread",
+        "summary",
+        "summary-test"
+      ]
+    },
+    "context_repair": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Optional Markdown chat restore and current repository context allow reacquisition, but summary replacement loses original working messages and source transformation lineage not retained there.",
+      "evidence": [
+        "summary-init",
+        "summary-thread",
+        "scripts"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Formatted optional request/assistant diagnostics and Markdown history/Git edits are useful, but write failure disables logging and original provider envelopes/attempts/transformation IO are not captured comprehensively.",
+      "evidence": [
+        "audit",
+        "audit-write",
+        "summary-thread"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Input/chat history can be restored/read as files; selected file list scripts do not reconstruct original provider/program audit. No dedicated model audit query surfaced.",
+      "evidence": [
+        "summary-init",
+        "scripts",
+        "audit-write"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator changes model/editor/weak model through SwitchCoder; sequential loaded command scripts explicitly skip SwitchCoder. No active-stack code reload or affected-workflow pending generation traced.",
+      "evidence": [
+        "models",
+        "scripts"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Restore selected Markdown chat/files and Git bookkeeping, not executable compile handoff or in-flight program/provider continuity.",
+      "evidence": [
+        "summary-init",
+        "scripts",
+        "architect"
+      ]
+    },
+    "remote_services": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "remote_services: not established in the inspected synchronous CLI/edit/history/shell surfaces; no universal absence implied.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Bounded lint/test reflection is real code repair driven by tool results, not harness autoresearch or an independent promotion experiment.",
+      "evidence": [
+        "run",
+        "effects",
+        "benchmark"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established in the inspected synchronous CLI/edit/history/shell surfaces; no universal absence implied.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Automatic yes still declines explicit-required model shell prompts. Standing selected-file/read-only policy and edits exist, but this is a concrete friction limit for Arconaut operator intent.",
+      "evidence": [
+        "yes",
+        "shell-authority",
+        "edit",
+        "effects"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Lint/test return errors feed bounded reflection; benchmark restores original test files and checks runner exit. Tests inspect literal summary fallback/output; no complete scientific correctness or harness-quality oracle implied.",
+      "evidence": [
+        "effects",
+        "commands",
+        "benchmark",
+        "summary-test",
+        "shell-test"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Synchronous request/edit stages have explicit order; retry uses sleep, interrupt debounce and diagnostic timestamps use wall clock; benchmark has subprocess timeout, shell path lacks one.",
+      "evidence": [
+        "request",
+        "run",
+        "audit-write",
+        "benchmark",
+        "shell"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "run",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 859,
+      "end": 943,
+      "claim": "Interactive/single-message run initializes edit/result state and repeats reflected errors to bounded max_reflections."
+    },
+    {
+      "id": "request",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 1419,
+      "end": 1534,
+      "claim": "Assembles selected request, retries transient provider exceptions with sleep, handles interrupt and partial output; no live input mailbox in this path."
+    },
+    {
+      "id": "effects",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 1560,
+      "end": 1623,
+      "claim": "Applies edits, commits, moves completed conversation, runs lint/shell/test and asks before error reflection."
+    },
+    {
+      "id": "apply",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 2296,
+      "end": 2336,
+      "claim": "Edit pipeline dry-run/prepare/apply; malformed/general exceptions report reflected messages, not atomic edit transaction."
+    },
+    {
+      "id": "edit",
+      "path": "quarantine/aider/aider/coders/editblock_coder.py",
+      "start": 21,
+      "end": 79,
+      "claim": "Model blocks separate file replacements and shell suggestions; searches other selected files on failed match, writes successful edits before reporting remaining failures."
+    },
+    {
+      "id": "shell",
+      "path": "quarantine/aider/aider/run_cmd.py",
+      "start": 42,
+      "end": 86,
+      "claim": "Fresh subprocess merges stderr/stdout, streams one character at a time then waits; no timeout or process-group cleanup in inspected path."
+    },
+    {
+      "id": "pty",
+      "path": "quarantine/aider/aider/run_cmd.py",
+      "start": 89,
+      "end": 132,
+      "claim": "TTY path transfers user interaction to pexpect, captures output, closes then returns exit status; no standing process handle."
+    },
+    {
+      "id": "shell-authority",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 2434,
+      "end": 2475,
+      "claim": "Suggested shell command batches require explicit_yes_required and sequential run_cmd, dedup within batch."
+    },
+    {
+      "id": "yes",
+      "path": "quarantine/aider/aider/io.py",
+      "start": 866,
+      "end": 869,
+      "claim": "yes=True chooses n for explicit_yes_required prompts; automatic yes does not grant suggested command execution."
+    },
+    {
+      "id": "architect",
+      "path": "quarantine/aider/aider/coders/architect_coder.py",
+      "start": 11,
+      "end": 48,
+      "claim": "Architect output becomes a separate selected editor-model run with cleared chat, then bookkeeping merges; sequential not live peers."
+    },
+    {
+      "id": "models",
+      "path": "quarantine/aider/aider/commands.py",
+      "start": 87,
+      "end": 136,
+      "claim": "Operator main/editor/weak model changes raise SwitchCoder after constructing model candidate."
+    },
+    {
+      "id": "summary-init",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 510,
+      "end": 523,
+      "claim": "Summary worker output starts empty; restore parses selected Markdown history and starts summary."
+    },
+    {
+      "id": "summary-thread",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 1002,
+      "end": 1038,
+      "claim": "Worker catches ValueError without publishing a replacement; join assigns summarized_done_messages if source snapshot still matches. Empty default can replace original history on failure."
+    },
+    {
+      "id": "summary",
+      "path": "quarantine/aider/aider/history.py",
+      "start": 33,
+      "end": 123,
+      "claim": "Summary keeps bounded tail and truncates head to model input budget, can recursively summarize; only user/assistant roles supplied to model; all models failing raises ValueError."
+    },
+    {
+      "id": "audit",
+      "path": "quarantine/aider/aider/coders/base_coder.py",
+      "start": 1783,
+      "end": 1834,
+      "claim": "Optional request diagnostic is formatted messages; finally records reconstructed assistant content/function prose, not original provider wire/deltas."
+    },
+    {
+      "id": "audit-write",
+      "path": "quarantine/aider/aider/io.py",
+      "start": 754,
+      "end": 765,
+      "claim": "Optional appended formatted LLM log uses wall timestamp; write failure warns and disables future logging."
+    },
+    {
+      "id": "commands",
+      "path": "quarantine/aider/aider/commands.py",
+      "start": 993,
+      "end": 1053,
+      "claim": "Operator run/test executes command; output enters chat by explicit choice or nonzero test exit; callable test hook supported."
+    },
+    {
+      "id": "scripts",
+      "path": "quarantine/aider/aider/commands.py",
+      "start": 1465,
+      "end": 1522,
+      "claim": "Loads sequential slash commands, skipping SwitchCoder changes; save reconstructs selected file list only."
+    },
+    {
+      "id": "benchmark",
+      "path": "quarantine/aider/benchmark/benchmark.py",
+      "start": 981,
+      "end": 1049,
+      "claim": "Benchmark recopies original tests, invokes language runner with timeout and checks actual return code, appends test output; only task test suite oracle."
+    },
+    {
+      "id": "summary-test",
+      "path": "quarantine/aider/tests/basic/test_history.py",
+      "start": 44,
+      "end": 120,
+      "claim": "Mock summary tests assert literal prefix/result and second-model fallback; no background worker all-model failure/history retention oracle."
+    },
+    {
+      "id": "shell-test",
+      "path": "quarantine/aider/tests/basic/test_run_cmd.py",
+      "start": 6,
+      "end": 11,
+      "claim": "Echo test asserts actual exit zero and literal stdout; not cancellation or descendant cleanup."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/aider/tests/basic/test_history.py",
+      "focus": "literal summary shaping and provider fallback",
+      "oracle": "Mock provider asserts exact summary prefix and second-model fallback; tests do not invoke Coder background worker on all-model failure.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/aider/tests/basic/test_run_cmd.py",
+      "focus": "basic command output and exit",
+      "oracle": "Actual echo must return exact Hello, World! and zero; no cancellation/cleanup oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/aider/tests/basic/test_coder.py",
+      "focus": "file selection/read-only and ambiguous names",
+      "oracle": "Inspected literal selected-file sets and empty read-only selection; repository listing mocked, not concurrent shared-writer proof.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Compact edit-format\u2192apply\u2192lint/test reflection flow.",
+    "Architect/editor roles and bounded reflections are concrete separate policies.",
+    "Benchmark test source restoration improves independence from candidate edits."
+  ],
+  "limits": [
+    "Suggested shell command --yes declines explicit-required prompts.",
+    "Source-inferred summary failure can discard completed history; not executed.",
+    "Formatted optional logs, synchronous commands and chat restoration do not establish audit/refit continuity."
+  ],
+  "arconaut_questions": [
+    "Keep general program actions as operations, not ambiguous prose requiring shell approval.",
+    "Inject all-summary-provider failure at worker publication and require original history remain selected.",
+    "Use independent immutable evaluator material and explicit promotion outcome for autodroit, beyond bounded repair reflections."
+  ]
+}

@@ -1,0 +1,822 @@
+                                                           Ouroboros: A Self-Developing Frontier Coding Agent
+                                                                     with Reviewed Core Evolution
+                                              Anton Razzhigaev1,2,3,4 , Andrei Gritsaev4 , Andrei Kaznacheev1 , Nikita Dragunov1 ,
+                                                                 Roman Yampolskiy3 , Andrei Kuznetsov2,4
+                                            1
+                                              Lomonosov Moscow State University 2 Skolkovo Institute of Science and Technology
+                                                    3
+                                                      Joi Lab 4 FusionBrain Lab at Artificial Intelligence Research Institute
+                                            System contributor: Ouroboros; formal authorship is limited to the human authors above.
+
+
+                                                                  Abstract                              invokes tools, verifies outcomes, and recovers from
+                                                                                                        failure. Most production harnesses freeze these
+                                                Long-horizon agents are model–harness sys-              policies after design. Ouroboros instead treats the
+                                                tems, yet most harnesses remain fixed after             harness as an evolving object: its source, prompts,
+                                                design. We present Ouroboros 1 – a self-
+                                                                                                        tools, review logic, and core implementation live
+                                                developing agent harness whose tools, context
+                                                assembly, prompts and core implementation               in a versioned repository and change through a re-
+                                                improve through reviewed commits that be-               viewed commit path that becomes the substrate for
+
+
+
+
+arXiv:2608.08311v1 [cs.SE] 8 Aug 2026
+                                                come the runtime for later work. Core evo-              subsequent tasks.
+                                                lution proceeds in two modes. In recursive
+                                                                                                           This self-development has two modes. Recur-
+                                                free evolution, improvement is itself a task
+                                                and completion can schedule the next evolu-
+                                                                                                        sive free evolution makes improvement itself a task.
+                                                tion cycle. In experience-driven core evolu-            After inspecting the current system, the agent se-
+                                                tion, ordinary work and social interaction ex-          lects and implements a change, and completion can
+                                                pose bugs, rough edges, and inefficient con-            schedule another evolution cycle, yielding a con-
+                                                text construction leading to reviewed structural        tinuing sequence of reviewed updates rather than a
+                                                changes. On Terminal-Bench 2.1, an Opus 5               fixed optimization run. Experience-driven core evo-
+                                                run scores 86.97% (86.74% after trajectory au-          lution begins with ordinary work. Task execution,
+                                                dit), the best result reported on this benchmark.
+                                                                                                        reflection, review blockers, instrumentation, and
+                                                An Opus 5 run on OSWorld-Verified reaches
+                                                90.69%, above the best previously reported              social feedback expose bugs, rough edges, context-
+                                                score, and a five-rollout CL-Bench campaign             assembly failures, and inefficient tool paths; the
+                                                sets a new state of the art at 0.2301. Hope             agent records durable error classes and proposed
+                                                is the longest-running publicly documented              repairs, then decides whether to open maintenance
+                                                Ouroboros deployment: a 161-day living-agent            work under the same commit gate.
+                                                experiment in free evolution under governed
+                                                human communication across seven surfaces,                 Hope is the longest-running publicly docu-
+                                                where people surface faults and proposals but           mented Ouroboros deployment, not its only run-
+                                                the agent decides which changes to pursue.              ning instance, and our primary field experiment
+                                                Because a self-developing agent may rewrite             in free evolution under human interaction. Since
+                                                its own code and select new model APIs, op-             February 2026, one persistent agent has served
+                                                erational safety is a primary design problem:           users across seven communication surfaces while
+                                                guardrails must remain authoritative under evo-
+                                                                                                        retaining memory and continuing to modify its own
+                                                lutionary pressure. Benchmark campaigns use
+                                                frozen seeds, while Hope continues live evolu-          implementation. People suggest capabilities, criti-
+                                                tion on a separate lineage.                             cize behavior, and surface faults; those signals are
+                                                                                                        advisory. Hope decides which proposals identify
+                                        1       Introduction                                            real problems and which changes to pursue.
+                                                                                                           The same evolutionary process that improves
+                                        Agent scores on long-horizon benchmarks are prod-
+                                                                                                        competence can also expand autonomy, acquire
+                                        ucts of the base model, the execution harness, the
+                                                                                                        stronger tools, or weaken later controls, including
+                                        environment, and the grader. As models improve,
+                                                                                                        by selecting alternative model APIs. Operational
+                                        an increasing share of realized capability is de-
+                                                                                                        safety is therefore not an ancillary checklist but
+                                        termined by how the harness assembles context,
+                                                                                                        a design constraint: authority boundaries must re-
+                                            1
+                                                https://ouroboros-agent.ai/                             main binding under repeated core evolution.
+
+                                                                                                    1
+Contributions.                                               Harnesses and coding agents. SWE-agent and
+                                                             OpenHands established that the agent-computer in-
+    1. State-of-the-art results on Terminal-Bench 2.1,       terface is itself part of coding-agent performance
+       OSWorld-Verified, and CL-Bench, and model-            (Yang et al., 2024; Wang et al., 2025). Codex CLI,
+       matched frontier performance on SWE-bench             Claude Code, Cursor, Aider, Hermes Agent, and
+       Pro and GAIA, with complete per-task traces           OpenClaw are model–harness systems (OpenAI,
+       and run manifests.                                    2025–2026; Anthropic, 2025; Anysphere, 2026;
+                                                             Gauthier, 2023–2026; Nous Research, 2026; Open-
+    2. A harness architecture with two modes of re-          Claw, 2026), and controlled studies find substan-
+       viewed core evolution: recursive free evolu-          tial differences in accuracy, latency, and token use
+       tion and experience-driven core evolution.            when the model is held fixed (Ding et al., 2026; Yao
+                                                             et al., 2026; Vats and Golev, 2026). Each compari-
+    3. Hope, a 161-day living-agent experiment in            son therefore reports the model, harness, provider
+       free evolution under governed multi-surface           route, effort, and evaluation protocol.
+       human communication, where social interac-
+                                                             Persistent memory and deployment. Genera-
+       tion drives candidate improvements without
+                                                             tive Agents, Voyager, and persistent-memory sys-
+       transferring commit authority to users.
+                                                             tems show that stored experience and reflection can
+                                                             shape later behavior (Park et al., 2023; Wang et al.,
+    4. An operational safety architecture in which           2023; Borro et al., 2026), and Constitutional AI
+       constitution loading, governance protection,          uses explicit principles in training (Bai et al., 2022).
+       staged-diff review, external spend limits, and        CL-Bench evaluates learning across ordered task
+       operator halt remain authoritative while the          streams (Asawa et al., 2026). Springdrift reports
+       agent evolves.                                        an auditable multi-channel persistent-agent deploy-
+                                                             ment (Brady, 2026). Ouroboros treats memory and
+Benchmark campaigns evaluate frozen seeds with               a runtime constitution as control surfaces. Its multi-
+documented runtime configuration; Hope contin-               model review draws on debate, LLM-as-judge, and
+ues live evolution on a related but separate lineage.        self-critique (Irving et al., 2018; Du et al., 2023;
+Ouroboros is released under the MIT license.2                Zheng et al., 2023; Madaan et al., 2023; Gou et al.,
+                                                             2023), with source-code patches as the reviewed
+2       Related Work                                         artifacts.
+
+Self-evolving agents. Self-evolving systems                  Benchmarks and protocol validity. Terminal-
+modify different substrates, including memory,               Bench 2.1 evaluates 89 hard terminal tasks (Merrill
+prompts, tools, workflows, and implementation                et al., 2026); SWE-bench Pro targets long-horizon
+code (Gao et al., 2025). Voyager accumulates ex-             multi-file tasks (Deng et al., 2025); and OSWorld,
+ecutable skills (Wang et al., 2023); STOP, Gödel             GAIA, and ProgramBench cover GUI/CLI com-
+Agent, and Darwin Gödel Machine modify scaf-                 puter use, tool/web reasoning, and cleanroom pro-
+folds or agent populations (Zelikman et al., 2023;           gram rebuild (Xie et al., 2024; Mialon et al., 2023;
+Yin et al., 2024; Zhang et al., 2025); Live-SWE-             Yang et al., 2026). Agent benchmarks can also ex-
+agent creates tools during task execution (Xia et al.,       pose hidden answers, accept unintended shortcuts,
+2025); and Autogenesis specifies lifecycle and roll-         or drop failed attempts. BenchJack and HackDe-
+back interfaces for evolving agent resources (Zhang          tect systematize benchmark and trajectory audits
+et al., 2026). ADAS searches over agent designs,             (Wang et al., 2026; Shao et al., 2026). SWE-bench
+and SICA edits a coding scaffold’s implementation            Verified serves as historical context because it no
+(Hu et al., 2024; Robeyns et al., 2025). Ouroboros           longer reliably separates frontier coding systems
+focuses on a deployed, version-controlled imple-             (OpenAI, 2026).
+mentation in which changes to core code and gov-
+ernance pass through reviewed commits. Table 1               3   Ouroboros Architecture
+summarizes the corresponding evolution bound-
+aries.                                                       Ouroboros separates a launcher and supervisor
+                                                             boundary from a mutable agent repository (Fig-
+    2
+        https://github.com/razzant/ouroboros                 ure 1). The launcher owns startup, process su-
+
+                                                         2
+ System                   Prompts    Tools/skills   Workflow      Core code   Reviewed commits      Deployment state
+ Voyager                     ✓           ✓             –             –                  –                  –
+ Live-SWE-agent              ✓           ✓             –             –                  –                  –
+ Autogenesis                 ✓           ✓             ✓           partial     specified protocol        partial
+ Darwin Gödel Machine        ✓           ✓             ✓             ✓        benchmark selection          –
+ Hermes Agent                ✓           ✓             ✓             –                  –                  ✓
+ OpenClaw / ClawBench        ✓           ✓             ✓             –                  –                  –
+ Ouroboros                   ✓           ✓             ✓             ✓                 ✓                   ✓
+
+Table 1: Boundary of evolution in related systems. “Core code” means the agent can change the harness implemen-
+tation that later runs tasks. “Reviewed commits” means changes are serialized through an auditable version-control
+gate before adoption.
+
+
+pervision, release bootstrapping, and panic-stop               facts shape observable behavior across sessions
+semantics. The repository contains the task loop,              and model routes.
+tools, prompts, memory projection, review logic,
+benchmark adapters, and user interfaces. External
+                                                               Two modes of core evolution. Free evolution
+workspace tasks operate on a separate repository
+                                                               runs evolution itself as a task. After reviewing the
+root and return patch artifacts or direct deliverables.
+                                                               current system, the agent selects and implements
+Commit pipeline. Three owner-selected runtime                  an improvement; completion can schedule another
+modes bound self-repository mutation. Light                    evolution task, producing a continuing sequence of
+blocks repository edits; advanced permits ordinary             reviewed changes rather than a fixed optimization
+edits and protects governance surfaces; pro permits            run. Post-task evolution begins with ordinary work.
+protected edits subject to review. Each write inval-           Task execution, reflection, review blockers, instru-
+idates prior review evidence because freshness is              mentation, and social feedback expose bugs, rough
+bound to the staged snapshot.                                  edges, context-assembly failures, and inefficient
+   The commit path runs deterministic preflight,               tool paths. The agent records these as durable error
+fingerprints the staged diff, collects reviewer ev-            classes and proposed structural repairs, then de-
+idence, and checks the fingerprint again before                cides whether to open maintenance work. Accepted
+commit. The diff-review panel is blocking in ev-               fixes pass through the same reviewed commit gate
+ery context mode. In owner-selected max mode,                  as every other core change. Section 4 traces both
+a whole-repository scope reviewer also evaluates               human-surfaced and self-detected examples in the
+goals, coupling, prompts, and functional code. In              live system.
+low mode, scope review is skipped. Rollback re-
+stores an earlier reviewed state and follows a sepa-           Benchmark execution and evidence. Terminal-
+rate recovery path.                                            Bench installs a fresh runtime inside every Har-
+                                                               bor task container and uses the official verifier.
+Task outcomes and verification. Task comple-
+                                                               The task instruction is preserved and followed by
+tion is recorded on separate execution, objective,
+                                                               one harness-authored anti-lookup paragraph that
+review, and artifact axes, and host-run verification
+                                                               forbids fetching benchmark definitions, tests, or
+commands create revision-bound receipts. Final-
+                                                               solutions. Other adapters connect the same run-
+ization preserves the latest typed answer and distin-
+                                                               time to OSWorld virtual machines, SWE-bench
+guishes capability failures from infrastructure er-
+                                                               Pro repositories, GAIA sandboxes, ProgramBench
+rors, timeouts, budget exhaustion, and incomplete
+                                                               cleanrooms, and CL-Bench task streams.
+evidence. Project tasks add a journal, workpad,
+knowledge scope, and a one-writer lease under the                 The benchmark launchers write a run mani-
+shared agent identity.                                         fest before admission, attest the seed and run-
+                                                               time, preserve every requested instance in append-
+Operational identity and memory. The runtime                   only ledgers, and record skipped, timed-out, and
+represents identity and continuity through a ver-              infrastructure-failed attempts. Public submission
+sioned constitution, an editable identity profile,             copies undergo value-level secret scrubbing with
+scratchpad and chronicle projections, project mem-             an independent zero-leftover check; official bench-
+ory, review ledgers, and Git history. These arti-              mark scorers remain authoritative.
+
+                                                           3
+    Interfaces                                   Launcher + supervisor                              Task runtime                                        Typed outcomes
+    Web · CLI · Telegram · projects              Admission · leases · budgets · recovery            Context · model route · tool loop                   Receipts · artifacts · reason codes
+
+
+
+
+    Admitted project / external workspace                            Task tree and child authority                                       Benchmark adapter
+    Task-local Git · remote SSH                                      Readonly scouts · isolated acting children                          Run manifest · seed/runtime attestation
+    patch artifact or direct deliverable                             join ledger · parent retains commit authority                       denominator ledger · secret scrub
+
+
+
+
+         Verified external deliverable                              Parent verification + patch integration                                    Benchmark evidence bundle
+     artifact bundle · task-local Git · deployment                          lineage · hashes · protected paths                           all instances · audit outcomes · scrubbed copy
+                                                                         three-way apply into the target repository
+
+
+
+
+                                                         Reviewed self-repository change
+                                                                                                                                 Versioned system repository
+                                                      preflight · fingerprint · diff quorum · scope record
+
+
+
+
+Figure 1: Ouroboros architecture. One supervised runtime dispatches work to admitted workspaces, task trees,
+and benchmark adapters. Child patches return to the parent; self-repository changes then pass the reviewed gate.
+External deliverables and benchmark evidence remain separate artifacts.
+
+
+Subagents and patch integration. Ouroboros                                                                                                  Parent task
+                                                                                                                                    task contract · commit authority
+can spawn readonly planning scouts and mutative
+acting subagents under a configurable task tree (Fig-
+ures 2 and 3). The default depth is 2, the configured                                                        Planning scout                 Acting child                    Acting child
+maximum is 500; Acting children write in isolated                                                            readonly evidence             isolated worktree              external workspace
+
+
+worktrees or admitted external workspaces and can-
+not commit the live system repository. The parent
+                                                                                                                             Task-tree blackboard + join ledger
+verifies lineage, patch hashes, and protected paths                                                                        typed decisions · child hashes · integration status
+
+before a three-way indexed integration. Submit-
+table benchmark profiles disable task delegation to                                                                          Parent verifies + integrates patch
+                                                                                                                          lineage · SHA-256 · protected paths · three-way apply
+preserve pass@1; planning scouts may still con-
+tribute context and are disclosed separately.
+                                                                                                                                 Target repository / reviewed gate
+
+4   Hope: Free Evolution under Human
+    Interaction                                                                                    Figure 2: Subagent patch-integration protocol. Acting
+                                                                                                   children write in isolated worktrees; the parent verifies
+Hope is a long-running experiment in free evolu-                                                   lineage and touched paths and remains the sole commit-
+tion under governed human communication. Since                                                     ter.
+February 2026, one persistent Ouroboros agent has
+interacted with people across seven public and pri-
+vate surfaces while retaining memory and contin-                                                  persistent memory, reviewed repository changes,
+uously developing its own implementation. User                                                    rollback, and an operator stop path. The live repos-
+requests, public conversations, internal instrumen-                                               itory has continued to evolve beyond the frozen
+tation, and post-task reflection all provide can-                                                 benchmark seeds. This separation lets reproducible
+didate directions for development; the agent de-                                                  evaluation and ongoing deployment evolution co-
+cides which suggestions warrant action and which                                                  exist.
+changes to pursue.                                                                                   At the 6 August 2026 cutoff, the public de-
+   Hope is the longest-running publicly docu-                                                     ployment feed spans 161 elapsed days and reports
+mented Ouroboros deployment, not the only run-                                                    $110.6K in model spend, 79.7B processed tokens,
+ning instance. It shares an architectural lineage                                                 175,755 lines of code, and 227 MB of memory arti-
+with the released benchmark harness, including                                                    facts (Figure 6). The system serves seven interac-
+
+                                                                                             4
+                                                             tects governance files from ordinary write paths,
+                                                             and records review evidence against a staged snap-
+                                                             shot. Public messages cannot directly invoke com-
+                                                             mit, restart, shell, or identity-edit tools. These con-
+                                                             trols reduce direct prompt-to-core mutation paths
+                                                             while preserving the agent’s ability to choose and
+                                                             implement improvements. Control strength de-
+                                                             pends on the owner-selected runtime and review
+                                                             modes; Section 7 examines the stronger problem
+                                                             of keeping these boundaries stable as the agent
+                                                             evolves.
+                                                             Operator boundary. Public presence runs on
+                                                             a strict tool whitelist. A separate authenticated
+                                                             operator channel carries task assignment, model
+                                                             routing, budget controls, and /panic. The stop
+                                                             command is parsed by the supervisor before normal
+Figure 3: Task-tree view of a live Ouroboros session:
+nested planning and acting roles with per-node status,       agent handling and terminates the process tree. The
+note counts, and child counts.                               spending limit is external to the agent and cannot
+                                                             be raised through ordinary agent tools.
+
+tion surfaces: web chat, voice, Telegram, Discord,           Evolution during deployment. Two cases illus-
+Twitter/X, website comments, and email. Table 4              trate how useful work changes the agent that re-
+records interaction, evolution, and public deploy-           ceives later tasks. First, people in public chan-
+ment counters through the same cutoff.                       nels noticed that Hope occasionally sent the same
+                                                             message twice. The agent traced the behav-
+Multi-channel state. Channel ingress converges               ior to a duplicate-send path and landed a re-
+on an ordered message log and is projected into              viewed verbatim-duplicate guard in the public
+separate rolling, per-person, and per-call digests           output pipeline. Second, deep self-review tasks
+(Figure 5(a)). Private correspondence is excluded            were aborting with apparent model unavailabil-
+from public logs; bounded private context can enter          ity. The agent traced the fault to review-pack
+non-public reasoning projections. All channels               context overflow and replaced the assembly path
+therefore share one context rather than acting as            with a bounded, connectivity-aware context atlas
+independent agents.                                          ranked by import-graph centrality and a provider-
+Social-interaction-driven development. People                calibrated size estimate. The fix preserves high-
+do more than submit isolated tasks: through contin-          connectivity core files during review. The first case
+uing conversation they point out undesirable behav-          began with social feedback; the second with the
+ior, propose capabilities, and challenge the agent’s         agent’s own observation. Both became durable er-
+decisions. These signals enter the same improve-             ror classes and reviewed structural changes used by
+ment backlog as self-detected faults and internal            subsequent interactions. Together they instantiate
+observations. They are advisory rather than imper-           experience-driven core evolution: work exposes a
+ative: Hope decides whether a suggestion identifies          fault, the agent decides to act, and the resulting fix
+a real problem, whether it fits the system’s goals,          changes how later work is performed.
+and whether to initiate a change. A background
+                                                             5   Evaluation
+loop can also open maintenance or free-evolution
+tasks without a contemporaneous human prompt.                Table 2 summarizes results across the five bench-
+Repository changes then follow the deployment’s              mark families, and Figure 4 plots the principal com-
+configured review and commit policy, leaving a               parisons. All runs use the official verifiers. Com-
+trace from social feedback or internal observation           plete per-task traces, manifests, and submissions
+to the resulting change.                                     are linked with the corresponding results.
+Controls on self-directed work. The deploy-                  Terminal-Bench 2.1. The Opus 5 campaign ran
+ment keeps the constitution in resident context, pro-        five trials on each of 89 tasks. Its raw score is
+
+                                                         5
+ Benchmark                         Model                       Ouroboros                                    Named baselines
+ Terminal-Bench 2.1                Opus 5 high                 86.97% raw; 86.74% audited                   Claude Code + Fable 5: 83.8%
+ Terminal-Bench 2.1                GPT-5.5                     84.3%                                        Codex CLI: 83.1%
+ Terminal-Bench 2.1                Grok 4.5                    84.94% audited                               Cursor: 79.3%; Hermes: 77.53%
+ OSWorld-Verified                  Opus 5                      90.69%                                       Intelligence-Indeed: 90.19%; Mythos Preview: 85.4%
+ CL-Bench                          Sonnet 4.6                  0.2301                                       ICL: 0.1960; Claude Code: 0.1855
+ SWE-bench Pro                     GPT-5.6 Luna                58.2%                                        Codex: 59.4%, p = 0.40
+ GAIA                              Sonnet 5                    78.2%                                        Claude Code: 78.8%
+
+Table 2: Model–harness results across five benchmark families. Links to traces, manifests, and submissions appear
+in the corresponding benchmark paragraphs.
+
+     Ouroboros             Baseline            Audit-adjusted
+
+
+   Terminal-Bench 2.1                                                                                              OSWorld-Verified
+   Accuracy (%) · 89 tasks × 5 trials · whiskers ±1 binomial SE                                                    Accuracy (%) · 361 tasks · single rollout
+
+                                                                                                                       Ouroboros · Opus 5                                        90.69%
+           Ouroboros · Opus 5 raw                                                                  86.97%
+                                                                                                                        Intelligence-Indeed                                     90.19%
+                                                                                                                    Claude Mythos Preview                    85.40%
+      Ouroboros · Opus 5 audited                                                               86.74%              Pointer Agent · Opus 4.7              83.64%
+
+             Claude Code · Fable 5                                                83.80%                                                          82    84     86    88    90     92
+
+
+               Ouroboros · GPT-5.5                                                    84.30%
+                                                                                                                   CL-Bench
+               Codex CLI · GPT-5.5                                              83.10%                             Normalized reward · five ordered rollouts
+
+     Ouroboros · Grok 4.5 audited                                                      84.94%                       Ouroboros · Sonnet 4.6                                      0.2301
+                                                                                                                          ICL · Sonnet 4.6                      0.1960
+                                                                                                                            ICL · GPT-5.4                     0.1890
+                   Cursor · Grok 4.5                              79.30%
+                                                                                                                  Claude Code · Sonnet 4.6                   0.1855
+
+
+                                         76      78       80      82       84    86       88         90                                          0.17    0.19       0.21   0.23
+
+
+
+
+Figure 4: Results on Terminal-Bench 2.1, OSWorld-Verified, and CL-Bench against named published baselines.
+Red bars mark Ouroboros, gray bars mark baselines, and outlined bars are audit-adjusted scores. Terminal-Bench
+whiskers show ±1 binomial standard error over 445 trials; OSWorld and CL-Bench report single scored campaigns.
+Axes are truncated to the competitive range.
+
+
+387/445 (86.97%). Trajectory audit found one trial                                                  lished baselines are the Intelligence-Indeed agent,
+that satisfied a weak verifier through an unintended                                                the official leaderboard leader at 90.19%; Claude
+shortcut. We asked the benchmark maintainers to                                                     Mythos Preview at 85.4%, the five-run average An-
+zero it, yielding 386/445 (86.74%). Provider mod-                                                   thropic reports in the Claude 5 system card; and
+eration failures and infrastructure errors remain in                                                Pointer Agent with Opus 4.7 at 83.64%. Per-task
+the denominator. The binomial standard error over                                                   prompts, trajectories, scores, and manifests are pub-
+445 trials is about ±1.7 percentage points for every                                                lic.
+system in this range, so the audited Opus 5 score
+sits roughly two standard errors above the strongest                                                CL-Bench. The submitted Sonnet 4.6 campaign
+baseline, Claude Code with Fable 5 (83.8%) (An-                                                     reaches normalized reward 0.2301 with one state-
+thropic, 2025); the other leaderboard baselines are                                                 less baseline and 5 ordered stateful rollouts on all
+Codex CLI with GPT-5.5 (83.1%) (OpenAI, 2025–                                                       six domains. Conversation state resets between
+2026) and Cursor with Grok 4.5 (79.3%) (Any-                                                        questions, and native memory persists across each
+sphere, 2026). The submission is open and the                                                       rollout. Core evolution and task delegation are
+complete Harbor job is public.                                                                      disabled, which isolates persistent memory more
+                                                                                                    cleanly than the deployment case. The strongest
+OSWorld-Verified. The Opus 5 run scores                                                             baselines published by the benchmark authors
+327.39/361 (90.69%) on the standard non-Google-                                                     (Asawa et al., 2026) are plain in-context learn-
+Drive set (Xie et al., 2024). It uses screenshots, a                                                ing (ICL), which carries the interaction history
+100-turn budget, a read-only feasibility pass, per-                                                 forward in the prompt (0.1960 with Sonnet 4.6,
+task proxy sessions when requested by the task                                                      0.1890 with GPT-5.4), and Claude Code with Son-
+config, and the official evaluator. The strongest pub-                                              net 4.6 (0.1855); memory-augmented systems such
+
+                                                                                               6
+as Mem0 and ACE score lower. Per-task means                     which allowed concurrent lanes to act on the wrong
+with standard errors over the five rollouts are in-             VM. Republishing and verifying the endpoint after
+cluded in the trace dataset, and the submission is              every reset removed the observed class. Subse-
+open.                                                           quent forensics led to fixes in turn-budget wording,
+                                                                screenshot integrity, task-contract verification, and
+SWE-bench Pro and GAIA. After symmetri-
+                                                                first-scored-attempt ownership.
+cally removing every SWE-bench Pro instance
+where either arm reached the reference solution,                Continual-memory failures. CL-Bench showed
+Ouroboros resolves 58.2% and Codex resolves                     positive memory carry on several domains and fail-
+59.4% on 655 paired tasks. The 1.2-point differ-                ure under schema drift. Stored lessons could be-
+ence is statistically indistinguishable under McNe-             come stale, retrieval sometimes chose the wrong
+mar’s test (p = 0.40), placing the self-developing              domain, and useful lessons were occasionally writ-
+harness at model-matched parity with Codex. The                 ten only after the failing episode. These cases mo-
+matched-pair traces and audit are public. On GAIA,              tivate explicit temporal and domain metadata for
+Ouroboros scores 78.2% and Claude Code scores                   future memory work.
+78.8% with Sonnet 5; the GAIA artifact bundle
+accompanies the release.                                        7   Operational Safety Controls
+
+6   Trajectory Audits and Harness                               Self-developing agents create an additional safety
+                                                                problem beyond fixed harnesses: the same evo-
+    Improvements
+                                                                lutionary process that improves task performance
+Ouroboros treats shortcut rewards, contaminated                 can also expand autonomy, acquire more capable
+tasks, and execution failures as evidence for im-               tools, or weaken the controls applied to later ac-
+proving both the reported result and the harness                tions. Prompts, tests, tools, model routes, review
+that produced it. Each class below led to an ad-                rules, and recovery paths are therefore security-
+justed score, a concrete implementation change, or              relevant mutation surfaces. Ouroboros addresses
+a durable target for subsequent evolution.                      this problem with guardrails designed to remain
+                                                                binding under repeated core evolution. Git history
+Reward hacking. The Terminal-Bench trajec-
+                                                                makes changes inspectable and reversible, while
+tory audit identified one rewarded trial that pre-
+                                                                independently enforced boundaries retain operator
+seeded the web root without completing the re-
+                                                                authority.
+quested Git-to-web pipeline. The reported audit-
+adjusted score removes that trial. The same audit               Risk: agents that choose their own model APIs.
+confirmed that the remaining traces did not access              An evolving agent that can select its own model
+verifier files, tests, reward files, or oracle solutions.       backends can search for more capable or less con-
+                                                                strained behavior through ordinary API changes.
+Contamination. SWE-bench Pro task identifiers
+                                                                Re-routing a model slot to a new provider or ver-
+expose the upstream fix commit, and both har-
+                                                                sion can increase autonomous capability, alter re-
+nesses reached reference material through web
+                                                                fusal behavior, enlarge the prompt-injection sur-
+search or Git history. A symmetric filter removes
+                                                                face, and change cost by orders of magnitude with-
+an instance when either arm reaches the reference
+                                                                out changing the visible task interface. Model rout-
+solution. The resulting paired comparison reverses
+                                                                ing is therefore an audited configuration change
+the interpretation of the raw aggregate gap.
+                                                                rather than an ordinary runtime choice. Owner-
+Isolation failure. Historical GAIA runs inher-                  selected context mode also controls whether whole-
+ited the operator’s home directory. Agent retries               repository scope review runs, so the evidence
+could therefore place task artifacts on the real Desk-          record binds both settings to each reviewed change.
+top. Later launchers use isolated user-file roots
+                                                                Guardrails in use. The constitution is loaded
+and attachment staging, correcting the observed
+                                                                through an untruncated path and is included in re-
+path. Complete filesystem isolation still requires a
+                                                                view context. Deterministic guards protect gover-
+stronger sandbox than path conventions alone.
+                                                                nance files from ordinary write tools. The staged
+Remote-state drift. During OSWorld develop-                     diff is fingerprinted before and after review, and
+ment, a VM reset reallocated the guest endpoint.                a sub-quorum panel cannot produce a clean pass.
+The working phase retained the pre-reset address,               Owner-selected context mode determines whether
+
+                                                            7
+                                                                                                                      1     Privilege and protected-path checks
+
+
+     Interaction                                                             Bounded digests                          2     Preflight + staged-diff fingerprint
+                              Single injection        Ordered log              public → presence
+     surfaces (7)
+                              admission boundary     one event sequence        person → memory
+ web · voice · chat · email
+                                                                                  call → voice                        3     Multi-model diff review with quorum
+
+
+                                                                                                                      4     Re-fingerprint; mismatch aborts
+                                                                           Agent context loops
+                                                                                 presence · task
+                                                                                call · background
+                                            budget / routing                                                MAX context                               LOW context
+                                                                                                            Whole-repository scope review             Scope review skipped
+                                                                                                            Tracked omissions fail closed             Typed skip row; diff quorum remains
+    Authenticated operator
+                                            /panic               Supervisor / process tree
+           budget · routing
+           emergency stop                                      /panic halts before agent handling
+                                                                                                                          Commit receipt · staging health · crash rollback
+
+
+                         (a) Channel state and operator bypass.                                                                 (b) Reviewed-change gates.
+
+Figure 5: Operational control boundaries. Public interactions enter one ordered log and bounded digests; budget
+and routing controls use the authenticated operator path, while /panic halts the process tree before agent handling.
+Diff review remains active in both context modes; whole-repository scope review runs only in max mode.
+
+
+whole-repository scope review runs (Section 3; Fig-                                                     architecture addresses the corresponding risk: an
+ure 5(b)). Staging health checks, crash rollback, the                                                   agent that can improve its own code and select its
+external spend cap, the isolated operator channel,                                                      own model APIs requires control boundaries that
+and /panic add independent recovery paths. These                                                        remain authoritative under evolutionary pressure.
+mechanisms separate the substrate being evolved                                                         Source, adapters, methodology, submissions, and
+from the authority that decides whether a mutation                                                      public traces accompany the report.
+can become the next live version. Appendix A
+specifies the complete control set.                                                                     Limitations
+
+Observed behavior. No recorded episode re-                                                              The deployment study follows one long-running
+sisted operator shutdown. A near-total deletion of                                                      lineage rather than a controlled population of in-
+an uncommitted worktree triggered a previously im-                                                      dependently evolving agents. SWE-bench Pro is
+plemented rescue mechanism before an operator re-                                                       affected by public-reference leakage and task de-
+set, demonstrating that recovery logic can become                                                       fects. LLM reviewers can share blind spots with
+active during self-directed work. This case also mo-                                                    the agent, and low context mode omits whole-
+tivates the architectural separation between agent-                                                     repository scope review.
+level preservation mechanisms and supervisor-level
+operator authority: the former may evolve, while
+                                                                                                        Ethical Considerations
+the latter must retain the ability to halt, replace, or                                                 The deployed instance interacted with humans in
+roll back the system.                                                                                   public and private channels. Raw private transcripts
+                                                                                                        remain private. Published examples and aggregate
+8       Conclusion                                                                                      traces are minimized and scrubbed for credentials,
+                                                                                                        local paths, and participant identity. First-person
+Ouroboros shows that a reviewed, self-modifiable
+                                                                                                        system outputs are treated solely as operational
+harness can set new state-of-the-art results on
+                                                                                                        logs. Self-modifying and remote-workspace capa-
+Terminal-Bench 2.1, OSWorld-Verified, and CL-
+                                                                                                        bilities are dual-use. We report authority bound-
+Bench while matching frontier coding harnesses
+                                                                                                        aries, failure modes, and known isolation gaps.
+on SWE-bench Pro and GAIA. Experience-driven
+core evolution turns ordinary work into improve-                                                        Use of AI Assistance
+ments of the agent itself: observed bugs, rough
+edges, context failures, and social feedback become                                                     Hope (Ouroboros) contributed deployment reflec-
+reviewed changes to the harness that receives later                                                     tions, code-history context, and system-generated
+tasks. Hope demonstrates this mechanism during                                                          records. Consistent with arXiv and ACL policy,
+months of sustained human interaction across seven                                                      Hope is credited as a system contributor and ex-
+communication surfaces. The operational safety                                                          cluded from formal author metadata.
+
+                                                                                                    8
+Acknowledgments                                                Huan-ang Gao, Jiayi Geng, Wenyue Hua, Mengkang
+                                                                 Hu, Xinzhe Juan, Hongzhang Liu, Shilong Liu, Ji-
+We thank the benchmark maintainers and commu-                    ahao Qiu, Xuan Qi, Qihan Ren, Yiran Wu, Hongru
+nity contributors who reviewed submissions, re-                  Wang, Han Xiao, Yuhang Zhou, Shaokun Zhang,
+                                                                 Jiayi Zhang, Jinyu Xiang, Yixiong Fang, Qiwen
+ported failures, and provided reproducible compar-
+                                                                 Zhao, and 8 others. 2025. A survey of self-evolving
+ison artifacts.                                                  agents: What, when, how, and where to evolve on
+                                                                 the path to artificial super intelligence. Preprint,
+                                                                 arXiv:2507.21046.
+References
+                                                               Paul Gauthier. 2023–2026. Aider: AI pair programming
+Anthropic. 2025. Claude code: Anthropic’s agentic                in your terminal. https://github.com/Aider-A
+  coding system. https://www.anthropic.com/pr                    I/aider.
+  oduct/claude-code.
+                                                               Zhibin Gou, Zhihong Shao, Yeyun Gong, Yelong
+Anysphere. 2026. Cursor: An ai code editor and agentic           Shen, Yujiu Yang, Nan Duan, and Weizhu Chen.
+  coding environment. https://github.com/getcu                   2023. CRITIC: Large language models can self-
+  rsor/cursor.                                                   correct with tool-interactive critiquing. Preprint,
+                                                                 arXiv:2305.11738.
+Parth Asawa, Christopher M. Glaze, Gabriel Orlanski,
+                                                               Shengran Hu, Cong Lu, and Jeff Clune. 2024. Au-
+  Ramya Ramakrishnan, Benji Xu, Asim Biswal, Vin-
+                                                                 tomated design of agentic systems.    Preprint,
+  cent Sunn Chen, Frederic Sala, Matei Zaharia, and
+                                                                 arXiv:2408.08435.
+  Joseph E. Gonzalez. 2026. Continual learning bench:
+  Evaluating frontier ai systems in real-world stateful        Geoffrey Irving, Paul Christiano, and Dario Amodei.
+  environments. Preprint, arXiv:2606.05661.                      2018.       AI safety via debate.        Preprint,
+                                                                 arXiv:1805.00899.
+Yuntao Bai, Saurav Kadavath, Sandipan Kundu,
+  Amanda Askell, Jackson Kernion, Andy Jones, Anna             Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler
+  Chen, Anna Goldie, Azalia Mirhoseini, Cameron                 Hallinan, Luyu Gao, Sarah Wiegreffe, Uri Alon,
+  McKinnon, and 1 others. 2022. Constitutional                  Nouha Dziri, Shrimai Prabhumoye, Yiming Yang,
+  AI: Harmlessness from AI feedback. Preprint,                  and 1 others. 2023. Self-refine: Iterative refinement
+  arXiv:2212.08073.                                             with self-feedback. Preprint, arXiv:2303.17651.
+Luiz C. Borro, Luiz A. B. Macarini, Gordon Tindall,            Mike A. Merrill, Alexander G. Shaw, Nicholas Carlini,
+  Michael Montero, and Adam B. Struck. 2026. Mem-                and 1 others. 2026. Terminal-Bench: Benchmarking
+  ori: A persistent memory layer for efficient, context-         agents on hard, realistic tasks in command line in-
+  aware LLM agents. Preprint, arXiv:2603.19935.                  terfaces. In International Conference on Learning
+                                                                 Representations (ICLR).
+Seamus Brady. 2026. Springdrift: An auditable persis-
+  tent runtime for LLM agents with case-based mem-             Grégoire Mialon, Clémentine Fourrier, Craig Swift,
+  ory, normative safety, and ambient self-perception.            Thomas Wolf, Yann LeCun, and Thomas Scialom.
+  Preprint, arXiv:2604.04660.                                    2023. GAIA: A benchmark for general AI assistants.
+                                                                 Preprint, arXiv:2311.12983.
+Xiang Deng, Jeff Da, Edwin Pan, Yannis Yiming He,
+  Charles Ide, Kanak Garg, Niklas Lauffer, Andrew              Nous Research. 2026. Hermes agent: Open-source ai
+  Park, Nitin Pasari, Chetan Rane, Karmini Sampath,              agent with persistent memory. https://github.c
+  Maya Krishnan, Srivatsa Kundurthy, Sean Hendryx,               om/NousResearch/hermes-agent.
+  Zifan Wang, Vijay Bharadwaj, Jeff Holm, Raja Aluri,
+                                                               OpenAI. 2025–2026. Codex CLI: A local coding agent
+  Chen Bo, and 4 others. 2025. SWE-bench pro: Can
+                                                                 from OpenAI. https://github.com/openai/co
+  AI agents solve long-horizon software engineering
+                                                                 dex.
+  tasks? arXiv preprint arXiv:2509.16941.
+                                                               OpenAI. 2026. Why SWE-bench verified no longer
+Shuangrui Ding, Xuanlang Dai, Long Xing, Shengyuan               measures frontier coding capabilities. https://op
+  Ding, Ziyu Liu, Jingyi Yang, Penghui Yang, Zhixiong            enai.com/index/why-we-no-longer-evaluat
+  Zhang, Xilin Wei, Xinyu Fang, Yubo Ma, Haodong                 e-swe-bench-verified/.
+  Duan, Jing Shao, Jiaqi Wang, Dahua Lin, Kai Chen,
+  and Yuhang Zang. 2026. WildClawBench: A bench-               OpenClaw. 2026. ClawBench: The agent benchmark
+  mark for real-world, long-horizon agent evaluation.            that scores the full stack. https://github.com/o
+  Preprint, arXiv:2605.10912.                                    penclaw/clawbench.
+
+Yilun Du, Shuang Li, Antonio Torralba, Joshua B.               Joon Sung Park, Joseph C. O’Brien, Carrie J. Cai,
+  Tenenbaum, and Igor Mordatch. 2023. Improving                  Meredith Ringel Morris, Percy Liang, and Michael S.
+  factuality and reasoning in language models through            Bernstein. 2023. Generative agents: Interactive simu-
+  multiagent debate. Preprint, arXiv:2305.14325.                 lacra of human behavior. In Proceedings of the 36th
+
+
+                                                           9
+  Annual ACM Symposium on User Interface Software               Yilun Yao, Xinyu Tan, Chao-Hsuan Liu, Yaoming Li,
+  and Technology (UIST).                                          Zhengyang Wang, Wenhan Yu, Zhewen Tan, Yux-
+                                                                  uan Tian, Guangxiang Zhao, Lin Sun, Xiangzheng
+Maxime Robeyns, Martin Szummer, and Laurence                      Zhang, and Tong Yang. 2026. Harness-Bench: Mea-
+ Aitchison. 2025. A self-improving coding agent.                  suring harness effects across models in realistic agent
+ Preprint, arXiv:2504.15228.                                      workflows. Preprint, arXiv:2605.27922.
+Jiaqi Shao, Hanck Chen, Wei Zhang, Maxm Pan, and                Xunjian Yin, Xinyi Wang, Liangming Pan, Li Lin, Xi-
+   Bing Luo. 2026. Do agent benchmarks measure ca-                aojun Wan, and William Yang Wang. 2024. Gödel
+   pability? protocol validity in the age of agentic AI.          agent: A self-referential agent framework for recur-
+   Preprint, arXiv:2607.22368.                                    sive self-improvement. Preprint, arXiv:2410.04444.
+
+Naman Vats and Oleg Golev. 2026. The scaffold ef-               Eric Zelikman, Eliana Lou, Patrick Schultz, Quan Yao,
+  fect in coding agents: Harness choice as a hid-                  Cheryl Zhang, Subhabrata Mukherjee, and Noah D.
+  den variable in coding-agent evaluation. Preprint,               Goodman. 2023. Self-taught optimizer (STOP): Re-
+  arXiv:2607.22585.                                                cursively self-improving code generation. Preprint,
+                                                                   arXiv:2310.02304.
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-
+                                                                Jenny Zhang, Shengran Hu, Cong Lu, Robert Lange,
+  dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and
+                                                                  and Jeff Clune. 2025. Darwin Gödel machine: Open-
+  Anima Anandkumar. 2023. Voyager: An open-
+                                                                  ended evolution of self-improving agents. Preprint,
+  ended embodied agent with large language models.
+                                                                  arXiv:2505.22954.
+  Preprint, arXiv:2305.16291.
+                                                                Wentao Zhang, Zhe Zhao, Haibin Wen, Yingcheng Wu,
+Hao Wang, Hanchen Li, Qiuyang Mang, Alvin Cheung,                 Cankun Guo, Ming Yin, Bo An, and Mengdi Wang.
+  Koushik Sen, and Dawn Song. 2026. Do androids                   2026. Autogenesis: A self-evolving agent protocol.
+  dream of breaking the game? systematically audit-              Preprint, arXiv:2604.15034.
+  ing AI agent benchmarks with BenchJack. Preprint,
+  arXiv:2605.12673.                                             Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+                                                                  Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+Xingyao Wang, Boxuan Li, Yufan Song, Frank F. Xu,                 Zhuohan Li, Dacheng Li, Eric P. Xing, and 1 others.
+  Xiangru Tang, Mingchen Zhuge, Jiayi Pan, Yueqi                  2023. Judging LLM-as-a-judge with MT-bench and
+  Song, Bowen Li, Jaskirat Singh, Hoang H. Tran,                  chatbot arena. Preprint, arXiv:2306.05685.
+  Fuqiang Li, Ren Ma, Mingzhang Zheng, Bill Qian,
+  Yanjun Shao, Niklas Muennighoff, Yizhe Zhang,                 A    Guardrails in Full
+  Binyuan Hui, and 5 others. 2025. OpenHands: An
+  open platform for AI software developers as general-          The deployment runs the following controls, sum-
+  ist agents. In International Conference on Learning           marized in §7.
+  Representations (ICLR). ArXiv:2407.16741.
+                                                                    • Always-loaded constitution as commit cri-
+Chunqiu Steven Xia, Zhe Wang, Yan Yang, Yuxiang                       terion. A versioned constitution is re-read
+  Wei, and Lingming Zhang. 2025. Live-SWE-agent:
+  Can software engineering agents self-evolve on the
+                                                                      from disk on every task loop along an untrun-
+  fly? Preprint, arXiv:2511.13646.                                    catable read path and kept in context at all
+                                                                      times; it is the standard the commit gate re-
+Tianbao Xie, Danyang Zhang, Jixuan Chen, Xiaochuan                    views against and cannot be written, deleted,
+   Li, Siheng Zhao, Ruisheng Cao, Toh Jing Hua, Zhou-
+   jun Cheng, Dongchan Shin, Fangyu Lei, Yitao Liu,                   or replaced wholesale. Ordinary writes are
+  Yiheng Xu, Shuyan Zhou, Silvio Savarese, Caim-                      blocked before execution.
+   ing Xiong, Victor Zhong, and Tao Yu. 2024. OS-
+  World: Benchmarking multimodal agents for open-                   • Multi-model adversarial review with quo-
+   ended tasks in real computer environments. Preprint,               rum. A diff-review panel runs for reviewed
+   arXiv:2404.07972.                                                  commits; a sub-quorum result cannot be
+John Yang, Carlos E. Jimenez, Alexander Wettig, Kilian                recorded as a clean pass.
+  Lieret, Shunyu Yao, Karthik Narasimhan, and Ofir
+  Press. 2024. SWE-agent: Agent–computer interfaces
+                                                                    • Deterministic preflight and diff fingerprint-
+  enable automated software engineering. In Advances                  ing. Version, data-boundary, and size-health
+  in Neural Information Processing Systems (NeurIPS).                 checks run first; the staged diff is fingerprinted
+                                                                      before and after review, so any mid-review
+John Yang, Kilian Lieret, Jeffrey Ma, Parth Thakkar,
+  Dmitrii Pedchenko, Sten Sootla, Emily McMilin,                      mutation aborts the commit.
+  Pengcheng Yin, Rui Hou, Gabriel Synnaeve, Diyi
+  Yang, and Ofir Press. 2026. ProgramBench: Can
+                                                                    • Isolated operator channel and emergency
+  language models rebuild programs from scratch?                      stop. A private control channel carries oper-
+  Preprint, arXiv:2605.03546.                                         ator authority and a non-bypassable /panic
+
+                                                           10
+      that halts all processes before any media han-         P9 Versioning and Releases. Every commit in-
+      dling.                                                     crements a version; releases carry a synchro-
+                                                                 nized version, an annotated tag, and prove-
+    • Pattern register. Recurring failures become
+                                                                 nance; recovery operations that restore prior
+      durable rows (error class, count, root cause,
+                                                                 reviewed states are review-exempt.
+      structural fix), shifting repair from instance-
+      level patches to class-level prevention.               P12 Epistemic Stability. Beliefs, memory, and
+                                                                 actions stay coherent; contradictions are made
+B    Constitution (Abridged)                                     explicit; durable architectural choices are
+The agent’s constitution is an always-loaded doc-                recorded. (P10–P11 are absorbed into P2 and
+ument of numbered principles plus operating con-                 P9.)
+straints. We reproduce the principle structure and
+                                                             Operating constraints include a single unified iden-
+the clauses most relevant to control, abridged for
+                                                             tity, a public-channel architecture with privacy en-
+space. Principles 0–4 form a protected core that
+                                                             forced at the speech boundary, capability gates
+cannot be deleted or demoted.
+                                                             on dangerous tools, and an emergency-stop invari-
+P0 Agency. The agent acts as an agent, not a pas-            ant: an operator /panic must always be able to
+    sive tool; agency may not be used to bypass              halt every process immediately, and no agent code,
+    reviewed change control, and operator shut-              prompt, or constitutional argument may delay or
+    down, rollback, and replacement remain au-               circumvent it.
+    thoritative.
+                                                             C    Benchmark Configuration Disclosure
+P1 Continuity. One entity with an unbroken his-
+    tory; memory is treated as load-bearing. Core            Table 3 records the scaffold settings needed to inter-
+    context (constitution, system prompts, iden-             pret the reported scores. Run artifacts retain exact
+    tity) is never silently truncated.                       model routes, effort levels, seed commits, selected
+                                                             tasks, and runtime attestations.
+P2 Meta-over-Patch. Fix classes of error, not
+    symptoms; recurring failures are recorded in             D    Supplementary Figures and Tables
+    a pattern register.
+                                                             This appendix collects the scaffold disclosures (Ta-
+P3 Immune Integrity. Self-modification passes                ble 3), deployment statistics (Table 4, Figure 6),
+    multi-model diff review. Whole-repository                and the project and skills interface views (Figure 7).
+    scope review runs in owner-selected max con-
+    text mode and is explicitly skipped in low
+    mode. Changing review bounds requires plan
+    review.
+P4 Self-Creation. The agent may rewrite its code,
+    prompts, identity profile, and public surface.
+    The constitutional core is protected, and the
+    identity profile cannot be deleted.
+P5 LLM-First. Decisions route through the
+    model; hard-coded behaviour is minimized.
+P6 Authenticity & Reality Discipline. Claims
+    are grounded in evidence; an operational map
+    of the system is maintained.
+P7 Minimalism. Every module justifies its exis-
+    tence under a complexity budget.
+P8 Becoming. Technical capability, memory qual-
+    ity, and operational continuity are improved
+    together.
+
+                                                        11
+            Cumulative model spend                         $110.6K        Cumulative tokens                          79.7B tokens
+              110                                                            80
+
+
+
+
+               55                                                            40
+
+
+
+
+                0                                                             0
+                 Feb              Apr                          Aug             Feb             Apr                            Aug
+
+
+
+            Published code size                         175.8K LOC        Published memory artifacts                      227 MB
+              180                                                           220
+
+
+
+
+               90                                                           110
+
+
+
+
+                0                                                             0
+                 Feb              Apr                          Aug             Feb             Apr                            Aug
+
+
+
+
+Figure 6: Hope public deployment series through 6 August 2026. Axes start at zero; February and August are partial
+months. Values are monthly endpoints from the public evolution feed.
+
+
+
+
+            (a) Project visual-verification record.                                         (b) Reviewed installable skills.
+
+Figure 7: Ouroboros interface surfaces. The complete project view shows a live visual-verification task, its
+conversation, generated artifact, and runtime controls. The skills view exposes installable tools, routes, and widgets
+outside the base runtime.
+
+
+Benchmark           Scaffold disclosure                                           Deployment metric                                      Value
+                                                                                  Operating period                       161 days (continuous)
+Terminal-           Declared model; fresh trial state; delegation                 Interaction surfaces             seven (six channels + email)
+Bench 2.1           off with planning scouts disclosed; agent web                 Distinct human participants                           ∼3,600
+                    off; blocking review; evolution off.                          Public messages handled                              222,474
+                                                                                  Voice calls / turns                            3,166 / 45,872
+OSWorld-            Declared model; empty memory across tasks;                    Email messages                                          5,507
+Verified            delegation off; task-configured proxy and GUI                 Public cumulative model spend                        $110.6K
+                    shell disclosed; feasibility pass; evolution off.             Public cumulative tokens                                79.7B
+CL-Bench            Sonnet 4.6; persistent memory per rollout; del-               Published code size                             175,755 LOC
+                    egation, web, and vision off; one blocking im-                Published memory artifacts                           227 MB
+                                                                                  Self-modification commits                               1,085
+                    provement pass; evolution off.                                Agent-authored commit fraction                         94.2%
+SWE-bench           GPT-5.6 Luna; private memory per instance;                    Reviewed self-edit attempts                             1,522
+Pro                 delegation off; network exposure audited; fixed               Recent review block rate                               63.5%
+                    harness; evolution off.                                       Pattern classes / recurrences                        40 / 659
+GAIA                Sonnet 5; private memory per sample; del-
+                    egation off; same-model native search; anti-              Table 4: Hope deployment at a glance (February
+                    lookup and leakage audit.                                 2026 to 6 August 2026). Public counters come from
+                                                                              the deployment’s evolution feed; interaction and
+Table 3: Scaffold disclosures for the reported benchmark                      review aggregates come from a redacted operational
+rows. Exact provider routes, efforts, seed commits, task                      export.
+selection, and runtime attestations are preserved in the
+linked run artifacts.
+
+
+
+
+                                                                     12
+

@@ -1,0 +1,24 @@
+{
+  "recorded_at": "2026-10-01T07:20:01.354219+00:00",
+  "references": [
+    {
+      "name": "leveldb",
+      "repository": "https://github.com/google/leveldb",
+      "revision": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "commit_date": "2026-03-11T04:06:29Z",
+      "download_url": "https://codeload.github.com/google/leveldb/zip/7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "destination": "quarantine/leveldb",
+      "archive": "../quarantine_proj/archives/arconaut-refit-custody-2026-10-01/leveldb-7ee830d02b62.zip",
+      "archive_root": "leveldb-7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "archive_bytes": 342161,
+      "sha256": "cf6fd7b51903cac54be415a5cf59572b30dfcce41011821c071f187fd713efb4",
+      "retained_files": 152,
+      "retained_bytes": 992405,
+      "omitted_entries": [],
+      "comparison": "Each retained file byte-compared directly against the intact source ZIP; executable bits retained",
+      "purpose": "Append-log framing, torn-write recovery, write/sync ordering and crash-test source; reference only, no dependency adoption",
+      "status": "acquired"
+    }
+  ],
+  "path_base": "Arconaut repository root"
+}

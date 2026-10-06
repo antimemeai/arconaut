@@ -1,0 +1,429 @@
+{
+  "id": "OxideAgent",
+  "kind": "coding agent",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Tokio TUI/orchestrator plus per-agent bounded mpsc task and broadcast output; native file/shell calls use blocking std APIs inside async methods.",
+    "service_boundary": "Owns local sessions/tool permissions and child MCP processes; consumes Ollama and MCP endpoints."
+  },
+  "summary": "Early Rust multi-agent manager with three native tools, shared operator focus and persisted chat; several claimed control paths are incomplete.",
+  "inspection": {
+    "files": [
+      "quarantine/OxideAgent/src/main.rs",
+      "quarantine/OxideAgent/src/core/container.rs",
+      "quarantine/OxideAgent/src/core/orchestrator.rs",
+      "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "quarantine/OxideAgent/src/core/agents/mod.rs",
+      "quarantine/OxideAgent/src/core/tools.rs",
+      "quarantine/OxideAgent/src/core/llm/client.rs",
+      "quarantine/OxideAgent/src/core/llm/mod.rs",
+      "quarantine/OxideAgent/src/core/llm/ollama.rs",
+      "quarantine/OxideAgent/src/core/session.rs",
+      "quarantine/OxideAgent/src/core/tool_permissions.rs",
+      "quarantine/OxideAgent/src/core/events.rs",
+      "quarantine/OxideAgent/src/core/mcp_manager.rs",
+      "quarantine/OxideAgent/src/core/mcp/manager.rs",
+      "quarantine/OxideAgent/tests/unit/core/test_tools.rs",
+      "quarantine/OxideAgent/tests/test_concurrent_directory_changes.rs",
+      "quarantine/OxideAgent/tests/direct_tool_test.rs"
+    ],
+    "scope": "Entry\u2192per-agent mailbox\u2192Ollama streaming\u2192approval/tool dispatch\u2192message state and continuation; session/model switch, event routing, MCP connection registry and tests.",
+    "limits": "Source read only, reference not executed. No runtime execution. Model-switch announcement does not update captured agent_model; automatically preapproved tool execution does not schedule its own continuation. Model-to-model messaging/cancellation/refit not established in exposed registry."
+  },
+  "actions": [
+    {
+      "name": "write_file",
+      "surface": "model tool",
+      "input": "path, content",
+      "output": "Success text/errors",
+      "lifecycle": "Blocking fs::write, awaited registry dispatch",
+      "authority": "Named permission; host filesystem access",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "read_file",
+      "surface": "model tool",
+      "input": "path",
+      "output": "Entire UTF-8 text/errors",
+      "lifecycle": "Blocking fs::read_to_string",
+      "authority": "Named permission; host filesystem",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "run_shell_command",
+      "surface": "model tool",
+      "input": "command",
+      "output": "Success stdout; failure stdout/stderr message",
+      "lifecycle": "Blocking sh -c output; no timeout/PTY/process handle",
+      "authority": "Named approval; host process identity",
+      "evidence": [
+        "e2",
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "McpToolAdapter::<discovered name>",
+      "surface": "model tool",
+      "input": "Discovered input_schema JSON",
+      "output": "Remote/stdio result/error text",
+      "lifecycle": "Awaited registry connection call; shared connection ID",
+      "authority": "Same named-tool permission; operator configures startup endpoint",
+      "evidence": [
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "name": "SwitchAgent; SwitchSession; SwitchModel; ListSessions",
+      "surface": "operator command",
+      "input": "AppEvent agent/session/model names",
+      "output": "UI status/history/models/session listing",
+      "lifecycle": "Queued per-agent session operations; model switch announcement incomplete",
+      "authority": "Operator TUI event channel",
+      "evidence": [
+        "e7",
+        "e14"
+      ]
+    },
+    {
+      "name": "MultiAgentManager::create_agent; send_event_to_agent",
+      "surface": "programmable API",
+      "input": "Name/model/session; AgentId + AppEvent",
+      "output": "AgentId/queued send error",
+      "lifecycle": "Own task + bounded100 mailbox; busy target processes message after awaited chat/tool",
+      "authority": "Harness code API; not exposed to model",
+      "evidence": [
+        "e3",
+        "e4",
+        "e15"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Whole UTF-8 reads and overwrite writes on host; no intrinsic search/patch tool.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "sh -c capture waits synchronously; no PTY, background handle or cancellation; success stderr lost.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "code_actions": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Multiple Ollama-model worker tasks; only Ollama provider. SwitchModel path does not change worker captured model.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e12"
+      ]
+    },
+    "live_collaboration": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Addressed worker mailbox exists as program API; no exposed model peer-message tool; busy worker consumes after chat completes.",
+      "evidence": [
+        "e3",
+        "e4",
+        "e15"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Independent per-agent Tokio tasks can be active; each worker serially awaits its chat and tool batch; std shell may block runtime threads.",
+      "evidence": [
+        "e2",
+        "e3",
+        "e4"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Operator can queue input/select another agent; active worker serially awaits operations without cancellation branch in inspected mailbox.",
+      "evidence": [
+        "e4",
+        "e14"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "compaction": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "context_repair": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persisted chat/settings and diagnostic log overwritten at startup; tool result rephrased into user message, not original complete IO.",
+      "evidence": [
+        "e1",
+        "e5",
+        "e8"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Session and worker selection are live events; model-change UI notification is not active request configuration replacement.",
+      "evidence": [
+        "e7",
+        "e14"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Ollama HTTP/model discovery and discovered MCP adapters consume services; startup manager launches owned MCP children.",
+      "evidence": [
+        "e1",
+        "e10",
+        "e11",
+        "e12"
+      ]
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source-inspection",
+      "detail": "Not established in the inspected entry, model loop, action dispatch and state paths; no universal absence claim.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Native and discovered tools require name approval unless session/global allowlisted; global allow decisions saved.",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Registry/tools mostly mocks; separate-directory permission roundtrip oracle does not prove contested shared writes.",
+      "evidence": [
+        "e13"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Event carries SystemTime/source/destination; no durable causal clock or pending-request cancellation deadline.",
+      "evidence": [
+        "e9"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/OxideAgent/src/main.rs",
+      "start": 18,
+      "end": 52,
+      "claim": "Tokio entry uses Ollama and truncates diagnostic log at startup."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/OxideAgent/src/core/tools.rs",
+      "start": 89,
+      "end": 228,
+      "claim": "write_file/read_file/run_shell_command; shell waits for output without PTY or handle, successful stderr omitted."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "start": 89,
+      "end": 173,
+      "claim": "Creates per-agent task/mailbox, restores session/model, forwards output separately."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "start": 250,
+      "end": 342,
+      "claim": "Mailbox serially awaits model chat/approval; continue event invokes another chat."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "start": 404,
+      "end": 554,
+      "claim": "Preapproved tools execute serially; outputs added as user text; no automatic continuation event on this branch."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "start": 556,
+      "end": 695,
+      "claim": "Approval can be once/session/global; allowed branch enqueues ContinueConversation; denial writes user text."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/OxideAgent/src/core/orchestrator.rs",
+      "start": 239,
+      "end": 250,
+      "claim": "SwitchModel changes orchestrator field and announces success but not captured worker agent_model."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/OxideAgent/src/core/session.rs",
+      "start": 145,
+      "end": 202,
+      "claim": "Serializes session state via pid temporary file then rename; this is chat/settings persistence."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/OxideAgent/src/core/events.rs",
+      "start": 53,
+      "end": 121,
+      "claim": "Events carry source/destination/SystemTime and ephemeral bounded broadcast bus."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/OxideAgent/src/core/mcp_manager.rs",
+      "start": 34,
+      "end": 121,
+      "claim": "MCP command discovery registers tool adapters using named connection IDs."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/OxideAgent/src/core/mcp/manager.rs",
+      "start": 145,
+      "end": 196,
+      "claim": "MCP tool adapter forwards registered names/args to shared connection registry."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/OxideAgent/src/core/llm/mod.rs",
+      "start": 1,
+      "end": 15,
+      "claim": "Only Ollama factory implemented; future provider comment is not provider support."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/OxideAgent/tests/test_concurrent_directory_changes.rs",
+      "start": 8,
+      "end": 60,
+      "claim": "Permission save/reload in two separate temporary directories; does not attack concurrent shared-file writes."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/OxideAgent/src/core/orchestrator.rs",
+      "start": 105,
+      "end": 193,
+      "claim": "Operator input/approval routes to active agent and agent switch selects/creates tasks."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/OxideAgent/src/core/multi_agent_manager.rs",
+      "start": 698,
+      "end": 722,
+      "claim": "Program API can address a worker ID via send_event_to_agent; not itself a model tool."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/OxideAgent/tests/unit/core/test_tools.rs",
+      "focus": "Registry schema/profile and mocked file/shell calls",
+      "oracle": "Tool names/profiles/results compared to mocks; tests do not establish real process cancellation or filesystem boundaries.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/OxideAgent/tests/test_concurrent_directory_changes.rs",
+      "focus": "Permission persistence test isolation",
+      "oracle": "Save/reload exact allowset under independent TempDirs, not shared concurrent writers.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/OxideAgent/tests/direct_tool_test.rs",
+      "focus": "Ollama tool payload exploratory probe",
+      "oracle": "Program prints live provider response; no assertion of agent loop correctness and not executed here.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Per-worker mailbox and output forwarding make lifecycle ownership visible.",
+    "Session/global standing named authority can eliminate repeated prompts."
+  ],
+  "limits": [
+    "No runtime execution. Model-switch announcement does not update captured agent_model; automatically preapproved tool execution does not schedule its own continuation. Model-to-model messaging/cancellation/refit not established in exposed registry."
+  ],
+  "arconaut_questions": [
+    "What oracle catches the preapproved-tool continuation branch diverging from approved-once execution?",
+    "How should addressed model messages and cancellation bypass a worker awaiting its provider request?"
+  ]
+}

@@ -1,0 +1,557 @@
+{
+  "id": "zeroclaw",
+  "kind": "native persistent Rust agent with control plane",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "Current split crates runtime: Tokio turn engine with mutable request hooks, concurrent tools, named agent/delegate tasks, WASM tool plugins and configurable memory.",
+    "service_boundary": "Owns task control plane, sessions/processes and runtime workspace; consumes providers/MCP/plugins/remote channels. This fabric ownership exceeds Arconaut role."
+  },
+  "summary": "Real model pipeline tool and peer-directed recipient turns; config-generation boundaries and live plugin config are useful, while terminal cancellation can precede worker shutdown.",
+  "inspection": {
+    "files": [
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/shell.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/mod.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-tools/src/pipeline.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/send_message_to_peer.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/loop_.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/mod.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/hooks/runner.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/tool_execution.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/agent.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/plugin_live_config.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/context_recovery.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/history.rs",
+      "quarantine/zeroclaw/crates/zeroclaw-tools/src/knowledge_tool.rs"
+    ],
+    "scope": "Traced current crate paths (src reexports): shell/drains/kill guard, turn hooks/steering, pipelines, peer admission/delivery, delegate cancellation, live config and persistence/overflow.",
+    "limits": "Source only; no acquired code executed. SOP full lifecycle, all memory/provider/plugin backends, every RPC refresh and archive retention not exhaustively traced."
+  },
+  "actions": [
+    {
+      "name": "shell",
+      "surface": "model tool",
+      "input": "command/cwd",
+      "output": "capped stdout/stderr, status/error",
+      "lifecycle": "own process group, root wait success; timeout KILL request/drop rather than awaited settlement",
+      "authority": "configured security/runtime workspace",
+      "evidence": [
+        "shell",
+        "guard"
+      ]
+    },
+    {
+      "name": "execute_pipeline",
+      "surface": "model tool",
+      "input": "ordered tool/args, interpolation, parallel, all/last",
+      "output": "ordered step outputs or first failure",
+      "lifecycle": "full prevalidation, serial dependence or parallel task set; no effect rollback",
+      "authority": "unrestricted principal and global/caller allowlists",
+      "evidence": [
+        "pipeline",
+        "parallel",
+        "surface"
+      ]
+    },
+    {
+      "name": "send_message_to_peer",
+      "surface": "model tool",
+      "input": "configured target/channel/message",
+      "output": "accepted inbox task ID or external delivery result",
+      "lifecycle": "durable admission precedes separate recipient turn; not resident room injection",
+      "authority": "resolved peer set, sender principal and target admission",
+      "evidence": [
+        "tools",
+        "peer-admit",
+        "peer-turn",
+        "oneshot"
+      ]
+    },
+    {
+      "name": "delegate check/await/list/cancel",
+      "surface": "model tool",
+      "input": "named target/prompt/task ID",
+      "output": "provider result or visible task status/output",
+      "lifecycle": "sync/parallel/background configured branches; terminal cancellation may precede shutdown",
+      "authority": "originator-chain visibility; target model/profile/authority",
+      "evidence": [
+        "delegate",
+        "terminal-before-cancel",
+        "visibility",
+        "legacy-cancel"
+      ]
+    },
+    {
+      "name": "Model/prompt/request/tool hooks",
+      "surface": "extension API",
+      "input": "native handler and mutable messages/model/name/arguments",
+      "output": "rewritten request or cancel",
+      "lifecycle": "per request hooks; panic retains prior values, no arbitrary whole-loop replacement",
+      "authority": "registered host extension handlers",
+      "evidence": [
+        "hook",
+        "prompt-hook"
+      ]
+    },
+    {
+      "name": "Live generation/plugin configuration",
+      "surface": "operator/host API",
+      "input": "canonical supported config change",
+      "output": "next-turn route/limits generation, per-call plugin values",
+      "lifecycle": "turn generation stable; plugin live value can change per action; ACP/WS may stay construction-pinned",
+      "authority": "host live config authority, feature-gated component registration",
+      "evidence": [
+        "generation",
+        "plugin-wire",
+        "plugin-test"
+      ]
+    },
+    {
+      "name": "Knowledge graph action family",
+      "surface": "model tool",
+      "input": "capture/search/relate/lessons/graph metadata",
+      "output": "stored/retrieved expertise and graph data",
+      "lifecycle": "standing service tool dispatcher; backend persistence not established here",
+      "authority": "model knowledge tool scope",
+      "evidence": [
+        "knowledge"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Shell ordinary programs and runtime tool registration; file operations not all traced.",
+      "evidence": [
+        "shell",
+        "tools"
+      ]
+    },
+    "processes": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Own process groups and concurrent bounded pipe drains; root-success wait distinct from destructive timeout.",
+      "evidence": [
+        "shell",
+        "guard"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Model declarative pipeline combines registered tools and shell programs; not persistent Python namespace.",
+      "evidence": [
+        "pipeline",
+        "parallel",
+        "shell"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established beyond inspected turn, shell, pipeline, peer, config, delegate and persistence paths.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model knowledge graph capture/search dispatcher and durable task control plane; general model SQL DB/complete storage backend not traced.",
+      "evidence": [
+        "knowledge",
+        "peer-admit"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Actual sequential interpolation/parallel pipeline and mutable request hooks; unrestricted principal required for pipeline.",
+      "evidence": [
+        "pipeline",
+        "parallel",
+        "surface",
+        "hook"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Named target model/provider calls and request-hook model choice; live route/limit generation coupled.",
+      "evidence": [
+        "delegate",
+        "hook",
+        "generation"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Actual configured peer messages launch separate attributed recipient turns; one-shot history differs from resident multi-peer room/busy delivery.",
+      "evidence": [
+        "peer-admit",
+        "peer-turn",
+        "oneshot"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Pipeline parallel task set, detached recipient turns and configured background delegates.",
+      "evidence": [
+        "parallel",
+        "peer-turn",
+        "terminal-before-cancel"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Between-iteration steering and token select; durable terminal status can be written before token cancellation and no worker join, shell timeout reports killed before confirmed reap.",
+      "evidence": [
+        "steer",
+        "tool-cancel",
+        "terminal-before-cancel",
+        "shell"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Complete model-request messages/model mutable and structured tool pipelines; host compiled loop still fixed, no proven model-owned hot turn replacement.",
+      "evidence": [
+        "hook",
+        "pipeline",
+        "prompt-hook"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Reactive overflow drops whole turns preserving structural pairing and breadcrumb; request accounting limitations explicit.",
+      "evidence": [
+        "trim"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Current projection saved and discarded output not duplicated; no retained-original repair operation established in these inspected paths.",
+      "evidence": [
+        "save",
+        "truncate",
+        "trim"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Provider failure event explicitly omits prompt/completion; current history overwritten and tool truncation discards originals. Task terminal ledger not full original IO audit.",
+      "evidence": [
+        "failure-audit",
+        "save",
+        "truncate",
+        "peer-turn"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model task checks expose visible durable lifecycle and output; raw originals lacking, knowledge search separate.",
+      "evidence": [
+        "visibility",
+        "terminal-before-cancel",
+        "knowledge"
+      ]
+    },
+    "hot_change": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Supported live sessions adopt coupled config generation at turn boundary; WASM tool live config tested per invocation; ACP/WS construction-pinned caveat.",
+      "evidence": [
+        "generation",
+        "plugin-wire",
+        "plugin-test"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Task/control-plane identities and projection files do not establish compiled outpost refit with settled programs/provider calls.",
+      "evidence": [
+        "peer-admit",
+        "terminal-before-cancel",
+        "save"
+      ]
+    },
+    "remote_services": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model provider/peer external channel consumers; full external standing-compute namespace service not established.",
+      "evidence": [
+        "delegate",
+        "peer-turn"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Knowledge lessons extraction, mutable program hooks/pipelines can support learning; independent autoresearch promotion oracle not traced.",
+      "evidence": [
+        "knowledge",
+        "hook",
+        "pipeline"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Not established beyond inspected turn, shell, pipeline, peer, config, delegate and persistence paths.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Principal/allowlist pipeline preflight and originator-chain task control; actual model agency configurable and policies broader than blanket command approval.",
+      "evidence": [
+        "surface",
+        "pipeline",
+        "visibility",
+        "tools"
+      ]
+    },
+    "evaluation": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Real constructor/component before/after literal config oracle and exact durable-write-before-cancel token tests; neither full process/provider settlement proof.",
+      "evidence": [
+        "plugin-test",
+        "cancel-test"
+      ]
+    },
+    "time_order": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Tokio elapsed deadlines and durable admitted task identity, turn config-generation boundaries; paused logical time not established.",
+      "evidence": [
+        "shell",
+        "generation",
+        "peer-admit"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "guard",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/shell.rs",
+      "start": 18,
+      "end": 59,
+      "claim": "Drop sends process group KILL best-effort; disarmed after root wait."
+    },
+    {
+      "id": "shell",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/shell.rs",
+      "start": 339,
+      "end": 417,
+      "claim": "Concurrent capped stdout/stderr drains; timeout start_kill then drains abort, no awaited root death in timeout branch."
+    },
+    {
+      "id": "tools",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/mod.rs",
+      "start": 1412,
+      "end": 1432,
+      "claim": "Actual model spawn/peer/model routing/switch tool registration."
+    },
+    {
+      "id": "pipeline",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-tools/src/pipeline.rs",
+      "start": 124,
+      "end": 185,
+      "claim": "Validates every step allowlist/registry before effects; sequential outputs interpolate into later arguments."
+    },
+    {
+      "id": "parallel",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-tools/src/pipeline.rs",
+      "start": 188,
+      "end": 254,
+      "claim": "Parallel JoinSet tools sorted by input index; early failure drops pending tasks, not foreign effects rollback."
+    },
+    {
+      "id": "surface",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-tools/src/pipeline.rs",
+      "start": 257,
+      "end": 272,
+      "claim": "Model pipeline requires unrestricted principal; all/last output modes."
+    },
+    {
+      "id": "peer-admit",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/send_message_to_peer.rs",
+      "start": 240,
+      "end": 307,
+      "claim": "Durable inbox task registration required before success/admitted recipient execution."
+    },
+    {
+      "id": "peer-turn",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/send_message_to_peer.rs",
+      "start": 318,
+      "end": 380,
+      "claim": "Spawn separate recipient turn with sender principal, capture cost context, settle task; success reports acceptance."
+    },
+    {
+      "id": "oneshot",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/loop_.rs",
+      "start": 3937,
+      "end": 3952,
+      "claim": "Recipient process_message builds one-shot system+user history, not shared resident IRC context."
+    },
+    {
+      "id": "steer",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/mod.rs",
+      "start": 1292,
+      "end": 1319,
+      "claim": "Steering drained between iterations and appended; cancellation boundary check. Gate/Annotate policy branches still TODO."
+    },
+    {
+      "id": "hook",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/mod.rs",
+      "start": 1458,
+      "end": 1490,
+      "claim": "Actual pre-LLM hook mutates complete request messages/model; suffix cannot be assumed for arbitrary transforms."
+    },
+    {
+      "id": "prompt-hook",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/hooks/runner.rs",
+      "start": 294,
+      "end": 350,
+      "claim": "Model/profile/prompt hooks return replacement or cancel; panic retains prior values."
+    },
+    {
+      "id": "tool-cancel",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/tool_execution.rs",
+      "start": 279,
+      "end": 299,
+      "claim": "Token select drops active tool future; no universal external-effect settlement contract."
+    },
+    {
+      "id": "delegate",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "start": 2880,
+      "end": 2908,
+      "claim": "Named non-agentic provider/model call bounded by await timeout, not provider-side termination."
+    },
+    {
+      "id": "terminal-before-cancel",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "start": 2213,
+      "end": 2231,
+      "claim": "Durable terminal transition wins BEFORE cancellation token signalled; returned aborted means token existed, not completed worker."
+    },
+    {
+      "id": "visibility",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "start": 2234,
+      "end": 2256,
+      "claim": "Delegate task visibility bound to originator chain; legacy terminal artifacts readable but not mutable."
+    },
+    {
+      "id": "legacy-cancel",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "start": 4266,
+      "end": 4285,
+      "claim": "Legacy token.cancel then file status Cancelled and claims aborted, without task join."
+    },
+    {
+      "id": "cancel-test",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "start": 5996,
+      "end": 6045,
+      "claim": "Exact token remains active on store failure and cancelled only after terminal write; does not prove worker termination."
+    },
+    {
+      "id": "generation",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/agent.rs",
+      "start": 1664,
+      "end": 1688,
+      "claim": "Turn boundary config generation stable for route/limits; direct ACP/WS construction stays pinned until reconnect."
+    },
+    {
+      "id": "plugin-wire",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/mod.rs",
+      "start": 2429,
+      "end": 2458,
+      "claim": "Actual feature-gated WASM plugin host receives live config handle."
+    },
+    {
+      "id": "plugin-test",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/plugin_live_config.rs",
+      "start": 258,
+      "end": 315,
+      "claim": "Real Agent construction and plugin execution observe changed config via same tool instance, literal before/after oracle."
+    },
+    {
+      "id": "trim",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/context_recovery.rs",
+      "start": 85,
+      "end": 125,
+      "claim": "Context overflow drops oldest whole turns, token count excludes schemas/images in reactive path; inserts breadcrumb."
+    },
+    {
+      "id": "failure-audit",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/turn/context_recovery.rs",
+      "start": 21,
+      "end": 55,
+      "claim": "Provider failure events sanitize error, explicitly capture no prompt/completion content."
+    },
+    {
+      "id": "save",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/history.rs",
+      "start": 599,
+      "end": 612,
+      "claim": "Interactive JSON writes current projection directly, not append-only original archive."
+    },
+    {
+      "id": "truncate",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/history.rs",
+      "start": 100,
+      "end": 141,
+      "claim": "Truncation reports loss without retaining second original copy."
+    },
+    {
+      "id": "knowledge",
+      "path": "quarantine/zeroclaw/crates/zeroclaw-tools/src/knowledge_tool.rs",
+      "start": 138,
+      "end": 153,
+      "claim": "Model knowledge capture/search/relate/lessons/graph/interaction actions dispatcher; storage backend not traced."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/agent/plugin_live_config.rs",
+      "focus": "live plugin config wiring",
+      "oracle": "Actual Agent constructor/component execution exact before/after values without registry rebuild; not run.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/zeroclaw/crates/zeroclaw-runtime/src/tools/delegate.rs",
+      "focus": "durable cancellation transition",
+      "oracle": "Token remains uncancelled if store fails, changes only after terminal write; no actual worker liveness oracle; not run.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Coupled route/limits config generations adopted at supported turn boundary.",
+    "Actual model pipeline interpreter with complete step preflight.",
+    "Peer acceptance and task registration accurately distinguished from delivered final output."
+  ],
+  "limits": [
+    "Durable Cancelled transition can precede cancellation signal and confirmed worker settlement.",
+    "Peer tool recipient path is a fresh one-shot turn, not live resident room context.",
+    "Trimming/current-history overwrites and bounded failure events cannot supply original audit."
+  ],
+  "arconaut_questions": [
+    "Retain config-generation coherence while applying changes after affected workflows conclude.",
+    "Keep cancellation requested/draining/settled state separate from terminal result visibility.",
+    "Let workflows hide intermediate blobs from active context while retaining originals for audit."
+  ]
+}

@@ -1,0 +1,473 @@
+{
+  "id": "arconaut",
+  "kind": "historical coding-agent prototype",
+  "runtime": {
+    "languages": [
+      "Rust"
+    ],
+    "execution": "CLI/TUI uses old Soul sequential provider/tool loop under Tokio; newer reactor turn method is a separate stub.",
+    "service_boundary": "Inherited local shell/tool ownership and compiled policies; historical reference only, no current reconstruction authority."
+  },
+  "summary": "Useful small interfaces and fault counterexamples; exposed implementation does not establish a working coding harness or current baseline.",
+  "inspection": {
+    "files": [
+      "quarantine/arconaut/crates/arconaut-cli/src/main.rs",
+      "quarantine/arconaut/crates/arconaut-agent/src/soul.rs",
+      "quarantine/arconaut/crates/arconaut-machine/src/providers/anthropic.rs",
+      "quarantine/arconaut/crates/arconaut-machine/src/providers/openai_compat.rs",
+      "quarantine/arconaut/crates/arconaut-machine/src/tools.rs",
+      "quarantine/arconaut/crates/arconaut-cli/src/terminal_bridge.rs",
+      "quarantine/arconaut/crates/arconaut-agent/src/bus_tool.rs",
+      "quarantine/arconaut/crates/arconaut-agent/src/hooks.rs",
+      "quarantine/arconaut/crates/arconaut-audit/src/logger.rs",
+      "quarantine/arconaut/crates/arconaut-core/src/context.rs",
+      "quarantine/arconaut/crates/arconaut-agent/src/compaction.rs",
+      "quarantine/arconaut/crates/arconaut-reactor/src/logic.rs",
+      "quarantine/arconaut/crates/arconaut-cli/src/utils.rs"
+    ],
+    "scope": "Re-read wired CLI/Soul/provider conversion/tool paths, bus/hooks/context/compactor/logger/utility time and selected tests; consulted prior independent assessment.",
+    "limits": "No inherited code executed this study. Earlier 2026-09-29 build/70 selected tests/probes are historical evidence in the separate oracle report; no live provider conformance established."
+  },
+  "actions": [
+    {
+      "name": "read / write / edit / grep",
+      "surface": "model tools",
+      "input": "Path, text/range or pattern",
+      "output": "File text/edit confirmation/matches/errors",
+      "lifecycle": "Awaited fixed tools; turn-wide identical-call cache can stale results.",
+      "authority": "Model under host filesystem authority",
+      "evidence": [
+        "wiring",
+        "files",
+        "write",
+        "edit",
+        "dedup"
+      ]
+    },
+    {
+      "name": "bash",
+      "surface": "model tool",
+      "input": "Single command string and timeout_ms",
+      "output": "Captured lossy stdout/stderr and exit code",
+      "lifecycle": "Awaited; timeout returns error without established child termination.",
+      "authority": "Model; composition syntax blanket forbidden",
+      "evidence": [
+        "bash"
+      ]
+    },
+    {
+      "name": "terminal_send",
+      "surface": "model tool",
+      "input": "Terminal input string",
+      "output": "Shared shell buffer via reply channel",
+      "lifecycle": "Owner wait cycle in wired TUI; 200ms treated as completion.",
+      "authority": "Model TUI tool",
+      "evidence": [
+        "bridge",
+        "tui"
+      ]
+    },
+    {
+      "name": "bus broadcast / whisper / presence",
+      "surface": "model tool",
+      "input": "Topic/recipient/message or presence name",
+      "output": "Send/presence text",
+      "lifecycle": "No traced incoming-message continuation path in main turn.",
+      "authority": "Model send surface",
+      "evidence": [
+        "bus",
+        "tui"
+      ]
+    },
+    {
+      "name": "uuid / timestamp / hash / base64 / JSON utility family",
+      "surface": "model tools",
+      "input": "No-arg ID/time or input data",
+      "output": "Text values",
+      "lifecycle": "Fixed registered tools; cached within turn by name/args.",
+      "authority": "Model utility calls",
+      "evidence": [
+        "time",
+        "dedup"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Read/write/edit implementations are exposed, but unconditional turn-wide dedup makes read after write and identical retries stale; no purity contract.",
+      "evidence": [
+        "wiring",
+        "files",
+        "write",
+        "edit",
+        "dedup"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Bash capture is exposed with timeout/composition blacklist; terminal bridge has actual owner wait cycle and 200ms fake completion boundary.",
+      "evidence": [
+        "bash",
+        "bridge",
+        "tui"
+      ]
+    },
+    "code_actions": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model can author shell command string, but banned operators prevent ordinary multi-command/pipeline composition; no wired general persistent code action kernel.",
+      "evidence": [
+        "bash"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Persistent piped shell exists for TUI, but terminal_send waits on its own blocked turn owner; not an established usable language kernel.",
+      "evidence": [
+        "tui",
+        "bridge"
+      ]
+    },
+    "standing_database": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "standing_database: not established in re-read CLI/Soul/provider/tool/context/audit paths; other compiled historical proposals do not establish active capability.",
+      "evidence": []
+    },
+    "workflow_programming": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Compiled Hook/old Soul APIs are useful small orchestration interfaces; model cannot redefine its turn programs through these exposed tools.",
+      "evidence": [
+        "hook",
+        "loop"
+      ]
+    },
+    "multi_model": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Selectable adapters exist, but compatible tool response is TODO and Anthropic request loses tool protocol/endpoint slash; no working multi-provider coding conversation established.",
+      "evidence": [
+        "anthropic",
+        "endpoint",
+        "compat"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Bus has addressed send/presence surface, but wired TUI does not consume peer messages into active/queued turns; separate inbox proposals do not establish one collaboration lifecycle.",
+      "evidence": [
+        "bus",
+        "tui"
+      ]
+    },
+    "concurrent_work": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Whole turn serially awaits tools and blocks select servicing bridge/user commands; runtime tasks alone do not establish useful concurrent agent work.",
+      "evidence": [
+        "loop",
+        "tui"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Interrupt only posts Interrupted status in select command handler; that handler cannot run while awaited Soul turn is active.",
+      "evidence": [
+        "tui"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Fixed compiled old loop is wired; newer reactor continuation remains a stub, no model-authored hot turn policy.",
+      "evidence": [
+        "loop",
+        "reactor"
+      ]
+    },
+    "compaction": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "An unconfigured compactor replaces old content with counts only, clears checkpoints and slices by message count; no semantic preservation or pairing guarantee.",
+      "evidence": [
+        "compact",
+        "wiring",
+        "tui"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Checkpoints store lengths/counts; revert cannot reconstruct deleted originals, and clear leaves checkpoints permitting inconsistent token count.",
+      "evidence": [
+        "context",
+        "compact"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Hook logger omits provider requests/failures, transforms error output to brief, dedup skips hooks and logger errors are swallowed; not comprehensive originals.",
+      "evidence": [
+        "audit",
+        "logger",
+        "dedup",
+        "loop"
+      ]
+    },
+    "audit_query": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "Append files exist, but no model-facing original audit query/retrieval tool established in wired registry/hook paths.",
+      "evidence": []
+    },
+    "hot_change": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "No active-program generation/activation protocol established in wired CLI/fixed Hook/Soul paths; source editing alone is not hot change.",
+      "evidence": []
+    },
+    "rebuild_continuity": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "No outpost/quiescence/build/activation/re-inhabitation path established; historical runtime stubs confer no continuity.",
+      "evidence": []
+    },
+    "remote_services": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "remote_services: not established in re-read CLI/Soul/provider/tool/context/audit paths; other compiled historical proposals do not establish active capability.",
+      "evidence": []
+    },
+    "self_improvement": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "No dedicated live harness experiment/evaluation/governance loop established; legacy source-edit tools are insufficient.",
+      "evidence": []
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "inspection scope",
+      "detail": "complaints: not established in re-read CLI/Soul/provider/tool/context/audit paths; other compiled historical proposals do not establish active capability.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "No routine command approval loop shown, but blanket forbidden shell syntax and fixed exposed tools materially limit expert/model programming.",
+      "evidence": [
+        "bash",
+        "wiring"
+      ]
+    },
+    "evaluation": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Local mock checks ID pairing, while compaction recent-window test never triggers and endpoint test checks only string trimming; earlier passing selected tests do not validate broken boundaries.",
+      "evidence": [
+        "test",
+        "compact",
+        "endpoint"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "UTC timestamp/UUID utilities exposed, but no-argument timestamp is deduplicated within turn, returning stale time; checkpoint wall timestamps do not establish monotonic/refit ordering.",
+      "evidence": [
+        "time",
+        "dedup",
+        "context"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "wiring",
+      "path": "quarantine/arconaut/crates/arconaut-cli/src/main.rs",
+      "start": 431,
+      "end": 458,
+      "claim": "CLI registers fixed file/shell/skill/utility tools and Soul limits/intervention; no compactor or injector configured."
+    },
+    {
+      "id": "tui",
+      "path": "quarantine/arconaut/crates/arconaut-cli/src/main.rs",
+      "start": 592,
+      "end": 679,
+      "claim": "TUI registers bridge/bus and awaits whole turn in same select that must service bridge; interrupt only sends status after this await."
+    },
+    {
+      "id": "loop",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/soul.rs",
+      "start": 127,
+      "end": 224,
+      "claim": "Old loop calls provider, appends result, sequentially dispatches tools and continues until no calls or step limit."
+    },
+    {
+      "id": "dedup",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/soul.rs",
+      "start": 282,
+      "end": 299,
+      "claim": "All matching name/argument results reuse turn cache before hooks or actual execution, without purity/freshness contract."
+    },
+    {
+      "id": "anthropic",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/providers/anthropic.rs",
+      "start": 292,
+      "end": 329,
+      "claim": "Outbound conversion drops tool calls and flattens tool-result identity/error to user text."
+    },
+    {
+      "id": "endpoint",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/providers/anthropic.rs",
+      "start": 91,
+      "end": 104,
+      "claim": "Messages endpoint concatenates after stripping slash, yielding v1messages for default base."
+    },
+    {
+      "id": "compat",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/providers/openai_compat.rs",
+      "start": 180,
+      "end": 192,
+      "claim": "Compatible response parser handles text and leaves tool_calls parsing TODO."
+    },
+    {
+      "id": "files",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/tools.rs",
+      "start": 14,
+      "end": 76,
+      "claim": "Read tool loads text then returns line subset."
+    },
+    {
+      "id": "write",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/tools.rs",
+      "start": 122,
+      "end": 154,
+      "claim": "Write creates parent directories and writes exact content."
+    },
+    {
+      "id": "edit",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/tools.rs",
+      "start": 201,
+      "end": 263,
+      "claim": "Edit rejects no/ambiguous matches then replaces and writes text."
+    },
+    {
+      "id": "bash",
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/tools.rs",
+      "start": 298,
+      "end": 381,
+      "claim": "Bash forbids composition syntax then captures output under await timeout without kill_on_drop handling."
+    },
+    {
+      "id": "bridge",
+      "path": "quarantine/arconaut/crates/arconaut-cli/src/terminal_bridge.rs",
+      "start": 51,
+      "end": 69,
+      "claim": "terminal_send sends channel request then awaits oneshot reply."
+    },
+    {
+      "id": "bus",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/bus_tool.rs",
+      "start": 15,
+      "end": 101,
+      "claim": "Model can broadcast/whisper/query presence; delivery-to-turn consumption not wired in these paths."
+    },
+    {
+      "id": "hook",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/hooks.rs",
+      "start": 1,
+      "end": 54,
+      "claim": "Compiled Hook trait registers turn/tool callbacks, not model-defined continuation program."
+    },
+    {
+      "id": "audit",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/hooks.rs",
+      "start": 112,
+      "end": 156,
+      "claim": "Audit observes hooks; tool errors retain brief, no provider originals; dedup bypasses hooks."
+    },
+    {
+      "id": "logger",
+      "path": "quarantine/arconaut/crates/arconaut-audit/src/logger.rs",
+      "start": 15,
+      "end": 63,
+      "claim": "Append logger flushes but returns void after printing IO/serialization errors; not all-outcome completeness."
+    },
+    {
+      "id": "context",
+      "path": "quarantine/arconaut/crates/arconaut-core/src/context.rs",
+      "start": 55,
+      "end": 109,
+      "claim": "Checkpoints retain lengths/counts only; revert truncates and top-level text-only estimation omits nested outputs."
+    },
+    {
+      "id": "compact",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/compaction.rs",
+      "start": 36,
+      "end": 77,
+      "claim": "Compactor deletes old messages and inserts only message/token count, not semantic summary; CLI path does not install it."
+    },
+    {
+      "id": "reactor",
+      "path": "quarantine/arconaut/crates/arconaut-reactor/src/logic.rs",
+      "start": 59,
+      "end": 78,
+      "claim": "New reactor run_turn is explicitly unimplemented."
+    },
+    {
+      "id": "time",
+      "path": "quarantine/arconaut/crates/arconaut-cli/src/utils.rs",
+      "start": 12,
+      "end": 75,
+      "claim": "Registered timestamp returns current UTC and uuid returns random ID; these fixed no-arg actions meet the turn cache."
+    },
+    {
+      "id": "test",
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/soul.rs",
+      "start": 394,
+      "end": 438,
+      "claim": "Local mock tool test asserts call/result ID pairing, not actual provider second request."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/soul.rs",
+      "focus": "Sequential tool-call/result identity under mock provider.",
+      "oracle": "Asserts two steps and matching call-1 result, while MockProvider ignores actual outbound request; not provider roundtrip oracle.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/arconaut/crates/arconaut-agent/src/compaction.rs",
+      "focus": "Recent-window preservation.",
+      "oracle": "Fixture ten msgN messages gives 10 estimated tokens against 50 threshold; compact return ignored, so expected msg7 can pass without transformation.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/arconaut/crates/arconaut-machine/src/providers/anthropic.rs",
+      "focus": "Endpoint slash construction.",
+      "oracle": "Inspected test checks trimmed base property rather than actual generated request URL and notes defective concatenation; cannot find endpoint failure.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Small explicit tool/message/context interfaces and local byte-edit tests provide bounded research examples.",
+    "Broken ownership, stale dedup and inert oracle cases are useful discriminating counterexamples."
+  ],
+  "limits": [
+    "Historical implementation remains quarantined, not adopted baseline.",
+    "A build and green local suites do not establish a usable whole harness, complete audit or native rebuild continuity."
+  ],
+  "arconaut_questions": [
+    "Which tool effects may ever be reused, and what explicit purity/freshness policy would justify it?",
+    "Actual wired-loop tests must observe cancellation, tool settlement, provider roundtrip bytes and original audit across failure paths.",
+    "Should all time observations bypass result reuse, and how does refit preserve time-domain identity?"
+  ]
+}

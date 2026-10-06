@@ -1,0 +1,646 @@
+{
+  "id": "deepagents",
+  "kind": "agent framework and SDK",
+  "runtime": {
+    "languages": [
+      "Python"
+    ],
+    "execution": "DeepAgents SDK assembles LangChain/LangGraph compiled graph and middleware; provider transport/tool-node scheduling external; optional LangGraph-hosted async colleagues",
+    "service_boundary": "Default state files, owned optional LocalShell; caller-supplied StoreBackend/checkpointer/sandbox and remote colleagues consumed. Talon/Code/ACP are separate repository products."
+  },
+  "summary": "Programmable graph/middleware agent SDK with backend files/execute, local/forked and remote asynchronous subagents, event-based compaction and recovery paths.",
+  "inspection": {
+    "files": [
+      "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/backends/local_shell.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/backends/store.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/memory.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/middleware/patch_tool_calls.py",
+      "quarantine/deepagents/libs/deepagents/tests/unit_tests/middleware/test_compaction_recovery.py",
+      "quarantine/deepagents/libs/deepagents/tests/unit_tests/middleware/test_compaction_recovery.py",
+      "quarantine/deepagents/libs/deepagents/tests/unit_tests/test_async_subagents.py",
+      "quarantine/deepagents/libs/deepagents/deepagents/graph.py"
+    ],
+    "scope": "Primary SDK graph, model request wrappers, native actions/backend dispatch, local/fork/hosted child lifecycle, store/memory, automatic/manual compaction, large-result capture, interruption patch and tests.",
+    "limits": "Source read only, reference not executed. Unvendored LangChain/LangGraph/provider SDK loop and scheduler not implementation-audited; separate Code/ACP/Talon products and examples not comprehensively traced. Claims scoped to primary SDK. No reference executed."
+  },
+  "actions": [
+    {
+      "name": "ls | read_file | glob | grep",
+      "surface": "model tools",
+      "input": "absolute paths; offset/limit; glob/literal pattern/path and search output options",
+      "output": "directory/files/matching lines or backend errors",
+      "lifecycle": "sync/async backend adapter and projection",
+      "authority": "backend and optional filesystem permissions",
+      "evidence": [
+        "e5",
+        "e6"
+      ]
+    },
+    {
+      "name": "write_file | edit_file | delete",
+      "surface": "model tools",
+      "input": "file_path/content; old/new/replace_all; file_path",
+      "output": "updated path/occurrences/error",
+      "lifecycle": "backend operation; call-ID paired messages",
+      "authority": "rules allow/deny/ask composed by middleware",
+      "evidence": [
+        "e5",
+        "e7",
+        "e8",
+        "e3"
+      ]
+    },
+    {
+      "name": "execute",
+      "surface": "model tool conditional on backend",
+      "input": "shell command, optional timeout",
+      "output": "content plus exit_code/truncated artifact, possible capture file pointer",
+      "lifecycle": "awaited backend operation; no native persistent process handle",
+      "authority": "execution backend controls host/sandbox authority",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    {
+      "name": "task",
+      "surface": "model tool",
+      "input": "description/subagent_type from configured specs",
+      "output": "last AI text and selected state updates",
+      "lifecycle": "await child; isolated or effective-history fork; recursion guard",
+      "authority": "child model/tools/permissions supplied or inherited",
+      "evidence": [
+        "e2",
+        "e12",
+        "e13"
+      ]
+    },
+    {
+      "name": "start_async_task",
+      "surface": "optional model tool",
+      "input": "description/subagent_type mapped to hosted graph",
+      "output": "stable task/thread ID, run ID in state",
+      "lifecycle": "remote independent run; host caller consumes service",
+      "authority": "configured LangGraph deployment/auth",
+      "evidence": [
+        "e14"
+      ]
+    },
+    {
+      "name": "check_async_task | list_async_tasks",
+      "surface": "optional model tools",
+      "input": "task ID or status filter",
+      "output": "live status and successful thread result, tracked list",
+      "lifecycle": "poll current remote status",
+      "authority": "configured hosted client; only tracked tasks",
+      "evidence": [
+        "e15",
+        "e18"
+      ]
+    },
+    {
+      "name": "update_async_task",
+      "surface": "optional model tool",
+      "input": "task_id/message",
+      "output": "same task ID/new run ID",
+      "lifecycle": "interrupt existing remote run and start follow-up on same thread",
+      "authority": "model steering of configured hosted colleague",
+      "evidence": [
+        "e16"
+      ]
+    },
+    {
+      "name": "cancel_async_task",
+      "surface": "optional model tool",
+      "input": "task_id",
+      "output": "local cancelled state after remote cancel API",
+      "lifecycle": "request acceptance not independently verified quiescence",
+      "authority": "model can request remote task stop",
+      "evidence": [
+        "e17"
+      ]
+    },
+    {
+      "name": "compact_conversation",
+      "surface": "optional middleware model tool",
+      "input": "no args",
+      "output": "summary event and paired confirmation",
+      "lifecycle": "explicit summarization middleware must be configured; main graph uses automatic compactor",
+      "authority": "model-initiated if caller adds tool middleware",
+      "evidence": [
+        "e21",
+        "e3"
+      ]
+    },
+    {
+      "name": "create_deep_agent / custom AgentMiddleware / CompiledSubAgent",
+      "surface": "programmatic API",
+      "input": "model/tools/graph specs/backends/context/state schema/checkpointer/store",
+      "output": "compiled graph invoking external LangChain loop",
+      "lifecycle": "construction-time composition; mutable request hooks possible",
+      "authority": "operator/program authors expressive workflow",
+      "evidence": [
+        "e1",
+        "e4",
+        "e28"
+      ]
+    },
+    {
+      "name": "StoreBackend / LocalShellBackend",
+      "surface": "supplied backend APIs",
+      "input": "runtime namespace/store or cwd/env/command",
+      "output": "persistent files or command response",
+      "lifecycle": "cross-thread consumed store versus own local child process",
+      "authority": "host chooses storage/execution ownership",
+      "evidence": [
+        "e11",
+        "e10"
+      ]
+    },
+    {
+      "name": "read_file conversation_history paths",
+      "surface": "model recovery primitive",
+      "input": "summary-supplied file path",
+      "output": "rendered earlier history if backend offload succeeded",
+      "lifecycle": "ordinary file read, not automatic restoration of original context",
+      "authority": "model may rehydrate selected detail",
+      "evidence": [
+        "e20",
+        "e7"
+      ]
+    }
+  ],
+  "capabilities": {
+    "filesystem": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Backend-routed native list/read/write/edit/delete/glob/grep with permissions and standard results.",
+      "evidence": [
+        "e5",
+        "e6",
+        "e7",
+        "e8"
+      ]
+    },
+    "processes": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Conditional execute uses backend; LocalShell one subprocess per action, clipped output and lost timeout partials; no stable job lifecycle.",
+      "evidence": [
+        "e9",
+        "e10"
+      ]
+    },
+    "code_actions": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Command execution plus native file tools; exact authority and execution supplied backend.",
+      "evidence": [
+        "e9",
+        "e10",
+        "e7"
+      ]
+    },
+    "persistent_kernel": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No resident interpreter in primary SDK/LocalShell paths; external backend may supply services but not traced.",
+      "evidence": []
+    },
+    "standing_database": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "StoreBackend consumes supplied BaseStore with runtime namespaces persistent across threads; native file abstraction, not model SQL/query API.",
+      "evidence": [
+        "e11"
+      ]
+    },
+    "workflow_programming": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Program authors compose graph/middleware/runnables, custom tool and per-child specs; loop delegated to LangChain/LangGraph.",
+      "evidence": [
+        "e1",
+        "e2",
+        "e4",
+        "e28"
+      ]
+    },
+    "multi_model": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Each declarative subagent may specify distinct model/profile and inherits defaults otherwise.",
+      "evidence": [
+        "e2"
+      ]
+    },
+    "live_collaboration": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Hosted async tasks allow model check/update/cancel while running; parent-to-child interrupting follow-up, no peer-to-peer IRC bus traced. Local task awaited.",
+      "evidence": [
+        "e14",
+        "e15",
+        "e16",
+        "e17",
+        "e12"
+      ]
+    },
+    "concurrent_work": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Hosted runs execute independently with stable thread/task and run identity; local graph concurrency depends on unvendored tool scheduler.",
+      "evidence": [
+        "e14",
+        "e16",
+        "e4"
+      ]
+    },
+    "steering_interrupt": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Remote update interrupt strategy and cancel API implemented; local cancelled status is not observed termination. Host HITL optional.",
+      "evidence": [
+        "e16",
+        "e17",
+        "e3"
+      ]
+    },
+    "turn_redefinition": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Middleware can alter request/response and graph built from supplied programs; model editing does not hot-install new turn graph.",
+      "evidence": [
+        "e28",
+        "e19",
+        "e4"
+      ]
+    },
+    "compaction": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Automatic summary events select effective history while retaining message channel; argument truncation, overflow recovery and optional model compact tool.",
+      "evidence": [
+        "e19",
+        "e21",
+        "e25",
+        "e26"
+      ]
+    },
+    "context_repair": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Model can reopen rendered offloaded conversation path; unmatched tool calls repaired. Offload nonfatal failures/media placeholders and pre-state tool eviction bound original recoverability.",
+      "evidence": [
+        "e20",
+        "e22",
+        "e24",
+        "e19"
+      ]
+    },
+    "original_audit": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Message channel preservation through summary is real but not raw provider audit; pre-state result eviction, backend clipping, rendered history, optional checkpoints/callbacks.",
+      "evidence": [
+        "e19",
+        "e20",
+        "e22",
+        "e10",
+        "e4"
+      ]
+    },
+    "audit_query": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Native read_file enables offloaded rendered-history retrieval; checkpoint/store query semantics depend on host.",
+      "evidence": [
+        "e20",
+        "e11"
+      ]
+    },
+    "hot_change": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Graph/middleware composition construction-time; memory caches initial loaded files. No default whole-turn/workflow activation transaction.",
+      "evidence": [
+        "e23",
+        "e28"
+      ]
+    },
+    "rebuild_continuity": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Supplied checkpointer/store and external thread IDs can reconstitute graph data, but no quiescent executable handoff with owned process/provider custody.",
+      "evidence": [
+        "e1",
+        "e4",
+        "e14"
+      ]
+    },
+    "remote_services": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Configurable model clients and hosted async deployments plus supplied storage/sandbox backends consumed.",
+      "evidence": [
+        "e2",
+        "e4",
+        "e11",
+        "e14"
+      ]
+    },
+    "self_improvement": {
+      "status": "mechanism",
+      "basis": "source",
+      "detail": "Model can edit memory/program files, framework can compose evaluation hooks, but no governed harness autoresearch loop in primary paths.",
+      "evidence": [
+        "e7",
+        "e23",
+        "e1"
+      ]
+    },
+    "complaints": {
+      "status": "unknown",
+      "basis": "source",
+      "detail": "No model state-capturing complaint operation in inspected SDK native action set.",
+      "evidence": []
+    },
+    "authority": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Filesystem permissions and optional HITL merge; local shell explicitly full host authority, supplied backend decides isolation.",
+      "evidence": [
+        "e3",
+        "e7",
+        "e9",
+        "e10"
+      ]
+    },
+    "evaluation": {
+      "status": "implemented",
+      "basis": "source",
+      "detail": "Strong mocked compaction budgets/reduced-retry/request-immutability and remote ID/strategy tests; no live remote custody verified.",
+      "evidence": [
+        "e25",
+        "e26",
+        "e27"
+      ]
+    },
+    "time_order": {
+      "status": "limited",
+      "basis": "source",
+      "detail": "Summary cutoff/message identities, graph checkpoint channels and remote run IDs structure history; remote cancel and backend audit timing not total-order custody.",
+      "evidence": [
+        "e19",
+        "e14",
+        "e16",
+        "e17"
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "start": 272,
+      "end": 292,
+      "claim": "create_deep_agent configurable model/tools/middleware/subagents/backend/checkpointer/store returns graph."
+    },
+    {
+      "id": "e2",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "start": 639,
+      "end": 700,
+      "claim": "Default StateBackend and per-child model/permission/default middleware resolution."
+    },
+    {
+      "id": "e3",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "start": 863,
+      "end": 923,
+      "claim": "Main filesystem/task/summarization/patch middleware and optional hosted async subagents, memory and HITL."
+    },
+    {
+      "id": "e4",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "start": 961,
+      "end": 983,
+      "claim": "LangChain create_agent delegated loop/provider dispatch, supplied stores/checkpointer and graph state; dependencies not vendored."
+    },
+    {
+      "id": "e5",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 1238,
+      "end": 1345,
+      "claim": "Native file/search schema inputs including offsets, unique edits, deletion, literal grep."
+    },
+    {
+      "id": "e6",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 1890,
+      "end": 1906,
+      "claim": "Built-in file and execute tool factories."
+    },
+    {
+      "id": "e7",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 2177,
+      "end": 2218,
+      "claim": "Write path validation/permissions and backend delegation with ToolMessage."
+    },
+    {
+      "id": "e8",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 2268,
+      "end": 2312,
+      "claim": "Edit backend API and replace_all; results/errors paired to call ID."
+    },
+    {
+      "id": "e9",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 3001,
+      "end": 3095,
+      "claim": "Execute capability check/timeouts, optional offloaded capture or backend execute; artifact exit status with message success even nonzero command."
+    },
+    {
+      "id": "e10",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/backends/local_shell.py",
+      "start": 298,
+      "end": 360,
+      "claim": "LocalShell fresh subprocess, explicit cwd/env, timeout, stdout/stderr combine then clip; timeout discards partial output."
+    },
+    {
+      "id": "e11",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/backends/store.py",
+      "start": 91,
+      "end": 150,
+      "claim": "Persistent StoreBackend consumes supplied or execution-context BaseStore, caller namespaces across threads."
+    },
+    {
+      "id": "e12",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/subagents.py",
+      "start": 772,
+      "end": 876,
+      "claim": "Task isolated/fork contexts, awaited runnable invocation, recursion refusal and standardized return."
+    },
+    {
+      "id": "e13",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/subagents.py",
+      "start": 742,
+      "end": 755,
+      "claim": "Child final nonempty AI text projected to parent plus state updates, not complete child transcript."
+    },
+    {
+      "id": "e14",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "start": 245,
+      "end": 339,
+      "claim": "Hosted start creates thread/run and task record only after successful calls; partial-start cleanup not present."
+    },
+    {
+      "id": "e15",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "start": 407,
+      "end": 473,
+      "claim": "Check remote run, success thread values and paired status update."
+    },
+    {
+      "id": "e16",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "start": 482,
+      "end": 567,
+      "claim": "Update same task/thread, new run with multitask_strategy interrupt; stable task ID."
+    },
+    {
+      "id": "e17",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "start": 580,
+      "end": 654,
+      "claim": "Cancel remote request then local cancelled status; remote termination not acknowledged by observation."
+    },
+    {
+      "id": "e18",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/async_subagents.py",
+      "start": 729,
+      "end": 804,
+      "claim": "List tracked tasks including refreshed nonterminal status and filtering."
+    },
+    {
+      "id": "e19",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "start": 1487,
+      "end": 1619,
+      "claim": "Effective history/argument truncation/summary event updates without destructive summary rewrite; one reduced overflow retry."
+    },
+    {
+      "id": "e20",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "start": 1227,
+      "end": 1302,
+      "claim": "Offload rendered history to backend, warn/fail None nonfatal; not original wire audit."
+    },
+    {
+      "id": "e21",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/summarization.py",
+      "start": 2017,
+      "end": 2100,
+      "claim": "Optional compact_conversation tool emits summary event, not automatically added in main graph."
+    },
+    {
+      "id": "e22",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/filesystem.py",
+      "start": 3591,
+      "end": 3637,
+      "claim": "Large tool content is processed/offloaded before addition to state; raw-state preservation has this boundary."
+    },
+    {
+      "id": "e23",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/memory.py",
+      "start": 279,
+      "end": 311,
+      "claim": "Memory files read once when memory_contents absent, cached in state."
+    },
+    {
+      "id": "e24",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/middleware/patch_tool_calls.py",
+      "start": 33,
+      "end": 52,
+      "claim": "Adds paired error results for unmatched/invalid calls and rewrites message list; cancellation factual status uncertain."
+    },
+    {
+      "id": "e25",
+      "path": "quarantine/deepagents/libs/deepagents/tests/unit_tests/middleware/test_compaction_recovery.py",
+      "start": 60,
+      "end": 78,
+      "claim": "Mocked input budget, offloaded full result bytes and original request unchanged oracle."
+    },
+    {
+      "id": "e26",
+      "path": "quarantine/deepagents/libs/deepagents/tests/unit_tests/middleware/test_compaction_recovery.py",
+      "start": 114,
+      "end": 163,
+      "claim": "Overflow retries smaller once; no-cutoff unchanged retry prohibited."
+    },
+    {
+      "id": "e27",
+      "path": "quarantine/deepagents/libs/deepagents/tests/unit_tests/test_async_subagents.py",
+      "start": 370,
+      "end": 424,
+      "claim": "Mock remote update asserts same task ID/new run/interruption strategy; no actual remote concurrency/custody."
+    },
+    {
+      "id": "e28",
+      "path": "quarantine/deepagents/libs/deepagents/deepagents/graph.py",
+      "start": 205,
+      "end": 239,
+      "claim": "Name-based custom middleware replacement at graph construction, not runtime hot replacement."
+    }
+  ],
+  "tests": [
+    {
+      "path": "quarantine/deepagents/libs/deepagents/tests/unit_tests/middleware/test_compaction_recovery.py",
+      "focus": "Overflow reduction and persistence",
+      "oracle": "Handler enforces budget, full bytes offloaded, original request unchanged, retry strictly smaller and bounded; mock counter/backend do not prove full vendor fidelity.",
+      "executed": false
+    },
+    {
+      "path": "quarantine/deepagents/libs/deepagents/tests/unit_tests/test_async_subagents.py",
+      "focus": "Stable colleague identity and update strategy",
+      "oracle": "Mock asserts same thread/task, new run, multitask_strategy interrupt; remote resource termination/races remain external.",
+      "executed": false
+    }
+  ],
+  "strengths": [
+    "Compaction as an event/projection rather than destructive rewriting of every original message.",
+    "Consumed persistent store and hosted work boundaries fit Arconaut consumer intent better than agent-owned shared services.",
+    "Model-accessible hosted work has explicit IDs and follow-up/cancel operations."
+  ],
+  "limits": [
+    "Unvendored LangChain/LangGraph/provider SDK loop and scheduler not implementation-audited; separate Code/ACP/Talon products and examples not comprehensively traced. Claims scoped to primary SDK. No reference executed."
+  ],
+  "arconaut_questions": [
+    "Can capture be independent of model projection, backend clipping and nonfatal offload failures?",
+    "Can restart preserve caller task IDs while proving own activity quiescent and leaving shared deployments running?",
+    "How should a model install altered workflows at the end of affected workflow rather than only constructing a new graph?"
+  ]
+}

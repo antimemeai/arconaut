@@ -1,0 +1,165 @@
+{
+  "acquired": "2026-10-06",
+  "scope": "source-only, no execution or dependency adoption",
+  "sources": [
+    {
+      "name": "mail-rust",
+      "repository": "https://github.com/Dicklesworthstone/mcp_agent_mail_rust",
+      "pin": "840b72ff1366b2746a9958c43c0ba00d9311d47c",
+      "url": "https://codeload.github.com/Dicklesworthstone/mcp_agent_mail_rust/zip/840b72ff1366b2746a9958c43c0ba00d9311d47c",
+      "archive": "arconaut/quarantine/evo-orchestration/archives/mail-rust-840b72ff1366.zip",
+      "sha256": "431417afcbd1120deef989652bd4ff3977d6c3772b469fcca15f3af02b4fef09",
+      "extracted": "arconaut/quarantine/evo-orchestration/mail-rust",
+      "restoration": "curl -L https://codeload.github.com/Dicklesworthstone/mcp_agent_mail_rust/zip/840b72ff1366b2746a9958c43c0ba00d9311d47c -o arconaut/quarantine/evo-orchestration/archives/mail-rust-840b72ff1366.zip; unzip arconaut/quarantine/evo-orchestration/archives/mail-rust-840b72ff1366.zip # move single archive root to arconaut/quarantine/evo-orchestration/mail-rust; remove .git/.DS_Store/__MACOSX"
+    },
+    {
+      "name": "inspect-ai",
+      "repository": "https://github.com/UKGovernmentBEIS/inspect_ai",
+      "pin": "38779d1e38fe210124c20680d57e0fde20d86590",
+      "url": "https://codeload.github.com/UKGovernmentBEIS/inspect_ai/zip/38779d1e38fe210124c20680d57e0fde20d86590",
+      "archive": "arconaut/quarantine/evo-orchestration/archives/inspect-ai-38779d1e38fe.zip",
+      "sha256": "cded9ec722ce82e425df4614a20ee3a945f6001d03e22908e03aaecb9dbc962f",
+      "extracted": "arconaut/quarantine/evo-orchestration/inspect-ai",
+      "restoration": "curl -L https://codeload.github.com/UKGovernmentBEIS/inspect_ai/zip/38779d1e38fe210124c20680d57e0fde20d86590 -o arconaut/quarantine/evo-orchestration/archives/inspect-ai-38779d1e38fe.zip; unzip arconaut/quarantine/evo-orchestration/archives/inspect-ai-38779d1e38fe.zip # move single archive root to arconaut/quarantine/evo-orchestration/inspect-ai; remove .git/.DS_Store/__MACOSX"
+    },
+    {
+      "name": "compiler-teams",
+      "repository": "https://github.com/anthropics/claudes-c-compiler",
+      "pin": "6f1b99acb2f4ec2414592136c2009fe7713deec3",
+      "url": "https://codeload.github.com/anthropics/claudes-c-compiler/zip/6f1b99acb2f4ec2414592136c2009fe7713deec3",
+      "archive": "arconaut/quarantine/evo-orchestration/archives/compiler-teams-6f1b99acb2f4.zip",
+      "sha256": "9b6e1987626f4ce90856d36cd1c3930c5835be909d6691839ee0d2faeabeb4fc",
+      "extracted": "arconaut/quarantine/evo-orchestration/compiler-teams",
+      "restoration": "curl -L https://codeload.github.com/anthropics/claudes-c-compiler/zip/6f1b99acb2f4ec2414592136c2009fe7713deec3 -o arconaut/quarantine/evo-orchestration/archives/compiler-teams-6f1b99acb2f4.zip; unzip arconaut/quarantine/evo-orchestration/archives/compiler-teams-6f1b99acb2f4.zip # move single archive root to arconaut/quarantine/evo-orchestration/compiler-teams; remove .git/.DS_Store/__MACOSX"
+    },
+    {
+      "name": "metr-late2025",
+      "repository": "https://github.com/METR/Measuring-Late-2025-AI-on-OSS-Devs",
+      "pin": "55f007216a26493f0a9b7650ab3191cad7fb9e7f",
+      "url": "https://codeload.github.com/METR/Measuring-Late-2025-AI-on-OSS-Devs/zip/55f007216a26493f0a9b7650ab3191cad7fb9e7f",
+      "archive": "arconaut/quarantine/evo-orchestration/archives/metr-late2025-55f007216a26.zip",
+      "sha256": "6f1d6d22f27cd915e89185ded434a361a8cd8a232aaba0cbf8dcb0c47840c81e",
+      "extracted": "arconaut/quarantine/evo-orchestration/metr-late2025",
+      "restoration": "curl -L https://codeload.github.com/METR/Measuring-Late-2025-AI-on-OSS-Devs/zip/55f007216a26493f0a9b7650ab3191cad7fb9e7f -o arconaut/quarantine/evo-orchestration/archives/metr-late2025-55f007216a26.zip; unzip arconaut/quarantine/evo-orchestration/archives/metr-late2025-55f007216a26.zip # move single archive root to arconaut/quarantine/evo-orchestration/metr-late2025; remove .git/.DS_Store/__MACOSX"
+    },
+    {
+      "name": "adamast",
+      "repository": "https://github.com/multi-agent-systems-failure-taxonomy/AdaMAST",
+      "pin": "3c83d81c85937f5e8911fd96daa2ca38c1ad2585",
+      "url": "https://codeload.github.com/multi-agent-systems-failure-taxonomy/AdaMAST/zip/3c83d81c85937f5e8911fd96daa2ca38c1ad2585",
+      "archive": "arconaut/quarantine/evo-orchestration/archives/adamast-3c83d81c8593.zip",
+      "sha256": "01b9dc68d61751e2c7ef30a483b6efba5149db1627741d377aacb7ac2a108fd6",
+      "extracted": "arconaut/quarantine/evo-orchestration/adamast",
+      "restoration": "Download https://codeload.github.com/multi-agent-systems-failure-taxonomy/AdaMAST/zip/3c83d81c85937f5e8911fd96daa2ca38c1ad2585; unzip retained archive and rename single root to arconaut/quarantine/evo-orchestration/adamast; remove .git/.DS_Store/__MACOSX"
+    }
+  ],
+  "literature": [
+    {
+      "file": "scaling-agent-systems.pdf",
+      "url": "https://arxiv.org/pdf/2512.08296v1",
+      "sha256": "185122525d91812857b9bf52fae46bb85eb9cb70e964a3ca5850cba94aded660",
+      "bytes": 2605518
+    },
+    {
+      "file": "mast.pdf",
+      "url": "https://arxiv.org/pdf/2503.13657v2",
+      "sha256": "d4b1a7ceafc3049a47dab73ae680e47fff0194aaa72cc096fd8cca4ad27d7897",
+      "bytes": 1785517
+    },
+    {
+      "file": "metr-early2025.pdf",
+      "url": "https://arxiv.org/pdf/2507.09089",
+      "sha256": "3e18d9e097a3163dbae662e8b7c68ace0510be433891994b136ae7730beab25c",
+      "bytes": 5668559
+    },
+    {
+      "file": "metr-update.html",
+      "url": "https://metr.org/blog/2026-02-24-uplift-update/",
+      "sha256": "dcdb724b147eb060c38631b914977d1a6b40541f2cf01ddbe5a2933c15517a40",
+      "bytes": 61349
+    },
+    {
+      "file": "compiler-teams.html",
+      "url": "https://www.anthropic.com/engineering/building-c-compiler",
+      "sha256": "aebddd9da9124f565470c0b0a26aa063890290a4fcf06d1e30ebd02d859219af",
+      "bytes": 149871
+    },
+    {
+      "file": "infrastructure-noise.html",
+      "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+      "sha256": "02a22102950c1c3581724f081bf9d5d68e23ee98b5931da0a4a2dc44af62935e",
+      "bytes": 128646
+    }
+  ],
+  "reused_sources": [
+    {
+      "name": "gptme",
+      "repository": "https://github.com/gptme/gptme",
+      "category": "coding-agent",
+      "research_use": "Persistent autonomous workspaces, Python/shell tools and cross-harness memory",
+      "discovery_source": "https://github.com/gptme/gptme",
+      "destination": "quarantine/gptme",
+      "revision": "1f8d73638a25253fd0e1824c3d0a72ec93007582",
+      "download_url": "https://codeload.github.com/gptme/gptme/zip/1f8d73638a25253fd0e1824c3d0a72ec93007582",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-agent-discovery-2026-09-30/gptme-1f8d73638a25.zip",
+      "archive_bytes": 10948646,
+      "sha256": "0116d06913c00bf042b1e5eb891660a0fa617e3a96bcce1ae9678da3dd2d6c75",
+      "archive_root": "gptme-1f8d73638a25253fd0e1824c3d0a72ec93007582",
+      "retained_files": 1763,
+      "retained_bytes": 26902109,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    },
+    {
+      "name": "mcp-agent-mail",
+      "repository": "https://github.com/Dicklesworthstone/mcp_agent_mail",
+      "category": "collaboration-service",
+      "research_use": "Durable identities/messages and advisory file reservation for coding agents",
+      "discovery_source": "https://github.com/Dicklesworthstone/mcp_agent_mail",
+      "destination": "quarantine/mcp-agent-mail",
+      "revision": "3fad5ec672869f81d2ca0a4c525dde004ac96f45",
+      "download_url": "https://codeload.github.com/Dicklesworthstone/mcp_agent_mail/zip/3fad5ec672869f81d2ca0a4c525dde004ac96f45",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-agent-discovery-2026-09-30/mcp-agent-mail-3fad5ec67286.zip",
+      "archive_bytes": 8658058,
+      "sha256": "4b450572cbb3d9c493e08f5142930c7abfeeab6546994821418956ef276807f0",
+      "archive_root": "mcp_agent_mail-3fad5ec672869f81d2ca0a4c525dde004ac96f45",
+      "retained_files": 299,
+      "retained_bytes": 13907826,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    },
+    {
+      "name": "station",
+      "repository": "https://github.com/dualverse-ai/station",
+      "category": "scientific-collaboration",
+      "research_use": "Open scientific multi-agent environment with shared literature and scored research",
+      "discovery_source": "https://github.com/dualverse-ai/station",
+      "destination": "quarantine/station",
+      "revision": "782088e561998bf357d95a838a0566a8229425d9",
+      "download_url": "https://codeload.github.com/dualverse-ai/station/zip/782088e561998bf357d95a838a0566a8229425d9",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-agent-discovery-2026-09-30/station-782088e56199.zip",
+      "archive_bytes": 8962859,
+      "sha256": "6fbd732c958e07f9306390b1196ed09a1ae1b7a54265faba44602685b3192f23",
+      "archive_root": "station-782088e561998bf357d95a838a0566a8229425d9",
+      "retained_files": 511,
+      "retained_bytes": 19435154,
+      "omitted_entries": [
+        "station-782088e561998bf357d95a838a0566a8229425d9/CLAUDE.md",
+        "station-782088e561998bf357d95a838a0566a8229425d9/GEMINI.md"
+      ],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    }
+  ],
+  "study_actions": [
+    "Read instructions and existing autodroit/campaign corpus",
+    "Read pinned source functions and direct test oracles listed in report.md",
+    "Download literature intact; read MAST PDF with pdftotext and primary scaling setup/limitations via arXiv HTML",
+    "No source execution, dependency adoption, authentication, product edits, tests or Git mutations"
+  ]
+}

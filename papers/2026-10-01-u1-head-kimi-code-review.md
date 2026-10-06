@@ -1,0 +1,32 @@
+## Independent review: U1 environment authority/head
+
+**Scope inspected:** `docs/U1_ENVIRONMENT_HEAD_SUBPLAN.md`, `include/arconaut/environment_head.hpp`, `src/environment_head.cpp` (full), the `replace_file` seam in `include/arconaut/journal_storage.hpp:23-25,57` and `src/journal_storage.cpp:207-244` plus its helpers (`native_error`, `restricted_descriptor`, `valid_component`, `open_file`), and `tests/environment_head_test.cpp` (full). Cross-checked `Error` equality (`foundation.hpp:41-45`). Read-only inspection; no execution.
+
+### Component logic — verified sound against the protocol
+
+- **Lock/custody lifecycle:** authority created exclusively, locked before any read of either file (`environment_head.cpp:197-216`, `239-247`); selector FD never locked; `authority_` declared after `directory_` so it is destroyed first (hpp:48-50). Competing-process busy before/after rename and SIGKILL before/after rename are genuinely exercised natively (`tests:415-489`).
+- **Fail-closed ordering:** create probes `head` after authority lock and only `Error{io, ENOENT}` permits publication (cpp:204-209) — full `Error` equality including `detail` is correct here since `native_error` yields `{io, errno}` (`journal_storage.cpp:21`).
+- **Generation/CAS:** expected-vs-cache checked before disk reread (cpp:287, 301); overflow refused with no I/O before any mutation (cpp:291; test:373-382 confirms zero calls and intact health); temp-name collision returns conflict with `attempted=false` so health survives (cpp:169-173, dtor 90-94; test:354-360 verifies preexisting temp bytes untouched — evidence preserved).
+- **Unwind/reentry:** `Transaction` dtor closes health exactly when `attempted && !published`; pre-write `bad_alloc` keeps health (cpp:82-95, 294-315; heap-cut loop test:304-326). Reentry during write returns busy (test:295-303).
+- **Crash/error ordering:** fault at each of write/sync/rename/dirsync boundaries preserves the old acknowledged cache, closes transitions, and reopen observes old (cuts 1-3) or new (cut 4) identity — never a manufactured root default (test:263-283).
+- **Short/EINTR I/O:** accumulation loops with impossible-count→corrupt, premature-zero→incomplete, 8-retry bound resetting after progress (cpp:28-69).
+- **Native seam:** no-follow `fstatat` on both ends, euid/0700-style restriction, same-inode rejection, renameat on the dir FD, no copy/unlink fallback, default `unsupported` for fakes — all as specified.
+
+### Findings
+
+**F1 (medium — oracle gap, CRC masks semantic decode checks).** `decode_head_selector` rejects on size/reserved/CRC *before* magic, ID-validity, and generation/active rules (`environment_head.cpp:116-134`). Every negative codec oracle (`tests/environment_head_test.cpp:70-79`) only truncates or bit-flips the golden vector, which invalidates the CRC — so the CRC check alone rejects them. **Deleting the reserved-zero check (line 116), the `from_bytes` validity check (129-130), or the `valid_selector` check (133) would leave the entire suite green.** Red cases needed: hand-built 72-byte buffers with recomputed CRC32C over (a) reserved≠0, (b) all-zero environment/root/active ID, (c) generation 1 with active≠root, (d) generation 2 with active==root. Note `encode_head_selector` refuses to mint these (99-101), so the test must compute CRC directly.
+
+**F2 (low — promised native oracles absent).** Doc step 4 (subplan:100-101) and the line-141 resolution commit to native permissions/symlink and same-inode rejection checks for the new seam, but `native_cases` (`tests:455-490`) contains no symlink destination/source, no permissive-mode file, and no same-inode rename case. The checks at `journal_storage.cpp:218-235` are currently covered only by review, not by any test in this file. If journal_native's suite does not target `replace_file` specifically, these branches are unoracled.
+
+**F3 (low — dead read-side fault branches).** The premature-zero→`incomplete` and impossible-count→`corrupt` branches in `read_exact` (`environment_head.cpp:62-65`) are unreachable in the scripted fake: `MemoryFile::read_at` (`tests:130-144`) ignores `zero`/`impossible` (write-only flags) and never returns interrupted from `extent()`. Write-side equivalents are covered (test:284-294); read-side and extent-EINTR paths are not. Low risk because native `pread` short-of-extent is near-impossible, but the branches are unverified.
+
+**F4 (informational — accepted TOCTOU).** `replace_file` validates source/destination via `fstatat(NOFOLLOW)` then calls `renameat` non-atomically (`journal_storage.cpp:215-236`); an operator-owned process could swap entries between check and rename. The documented profile explicitly excludes concurrent operator modification (subplan:17-19), so this is a stated limitation, not a defect.
+
+**F5 (nit — ordering).** `replace` checks `expected`/IDs (conflict) before `valid_strength` (invalid_range) (`environment_head.cpp:287-290`), so a call with both wrong expectation and bad strength reports conflict. Harmless; no I/O occurs either way, matching "wrong expectations and invalid IDs cause no I/O."
+
+**F6 (nit — durability gap on failed create, out of profile).** If `create` fails after writing authority but before the post-rename directory sync (e.g., temp collision), the retained partial authority's directory entry is never synced. Correct under the SIGKILL-only crash model; a power-loss claim would need a dirsync on this path. Documented profile makes no power-loss claim.
+
+### Limitations
+I did not inspect `journal.hpp` codec internals (`encode_journal_header`, `crc32c`, `IdentityBytes::from_bytes` zero rejection) beyond signatures, prior ledger/journal code, or the Mac/Linux run outputs claimed in the task; concurrent profile runs may add oracles (notably for F1/F2) after this reading. No files were modified and nothing was executed.
+
+**Bottom line:** the implementation matches the reviewed protocol on lock-before-read, exclusive custody, CAS ordering, post-first-write health closure, temp-collision evidence preservation, bounded EINTR/short I/O, and the no-fallback native rename seam. The one substantive exposure is test-side: F1's CRC-valid crafted negatives are missing, leaving three decode-layer rejection rules without a red oracle; F2/F3 are smaller uncovered-branch gaps against promises the subplan itself makes.

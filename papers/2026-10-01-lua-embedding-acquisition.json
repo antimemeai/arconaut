@@ -1,0 +1,59 @@
+{
+  "recorded_date": "2026-10-01",
+  "references": [
+    {
+      "name": "lua-5.5.1",
+      "status": "acquired",
+      "source_url": "https://www.lua.org/ftp/lua-5.5.1.tar.gz",
+      "release": "5.5.1",
+      "original_archive": "../quarantine_proj/archives/arconaut-lua-embedding-2026-10-01/lua-5.5.1.tar.gz",
+      "original_sha256": "1c4b4068d67061f2a2231ad2b5422e77acea1487ea9890f6320af614f4373dce",
+      "published_sha256": "1c4b4068d67061f2a2231ad2b5422e77acea1487ea9890f6320af614f4373dce",
+      "archive": "../quarantine_proj/archives/arconaut-lua-embedding-2026-10-01/lua-5.5.1-ingest.zip",
+      "sha256": "fcba58a5267269d516d7a616ace1bb060d0367c109e34b62e7ac6c00562d2378",
+      "destination": "quarantine/lua-5.5.1",
+      "original_comparison": "Exact retained file set, bytes and executable bits compared directly with original tar archive",
+      "archive_root": "lua-5.5.1",
+      "retained_files": 75,
+      "retained_bytes": 1416954,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP"
+    },
+    {
+      "name": "lua-5.5.1-tests",
+      "status": "acquired",
+      "source_url": "https://www.lua.org/tests/lua-5.5.1-tests.tar.gz",
+      "release": "5.5.1",
+      "original_archive": "../quarantine_proj/archives/arconaut-lua-embedding-2026-10-01/lua-5.5.1-tests.tar.gz",
+      "original_sha256": "da07b543872dc0bb2ff12aabd0c248578d78df3eb6b67efdc537a46d455c7f31",
+      "published_sha256": "da07b543872dc0bb2ff12aabd0c248578d78df3eb6b67efdc537a46d455c7f31",
+      "archive": "../quarantine_proj/archives/arconaut-lua-embedding-2026-10-01/lua-5.5.1-tests-ingest.zip",
+      "sha256": "55893b9f4786b9c28e3ac265a8c408d92a0099b3156e7456ea2063cc42271ba1",
+      "destination": "quarantine/lua-5.5.1-tests",
+      "original_comparison": "Exact retained file set, bytes and executable bits compared directly with original tar archive",
+      "archive_root": "lua-5.5.1-tests",
+      "retained_files": 42,
+      "retained_bytes": 553984,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP"
+    },
+    {
+      "name": "sol2",
+      "repository": "https://github.com/ThePhD/sol2",
+      "destination": "quarantine/sol2",
+      "revision": "c1f95a773c6f8f4fde8ca3efe872e7286afe4444",
+      "download_url": "https://codeload.github.com/ThePhD/sol2/zip/c1f95a773c6f8f4fde8ca3efe872e7286afe4444",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/arconaut-lua-embedding-2026-10-01/sol2-c1f95a773c6f.zip",
+      "archive_bytes": 8994635,
+      "sha256": "d429c2289c4749235c3fd2f0cfe6ca38b95d164ebae345f6cb95dd2c1d589957",
+      "archive_root": "sol2-c1f95a773c6f8f4fde8ca3efe872e7286afe4444",
+      "retained_files": 669,
+      "retained_bytes": 21616278,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    }
+  ],
+  "no_reference_code_executed": true
+}
