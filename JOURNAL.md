@@ -2929,3 +2929,25 @@ constant margin/request-only guard is inadequate. Next implementation owns norma
 write floor and bounded protected settlement at retained write seam, with prospective
 context requirement and unknown partial overflow handling; no cap increase. Current
 seed/headroom do not solve sustained exhaustion, and live handoff/old resolver remain.
+
+## 2026-10-06 — README for reconstruction promotion
+
+Operator requests a substantial README with promotion to master after the current
+capacity unit. Root owns this documentation unit; Arco continues .14.3 and has
+been told not to edit README or promote/delete branches itself. Plan: replace
+accumulated status fragments with purpose, runnable entry points, architecture,
+CLM/audit/programmability, actual self-development, measured evolution, limits,
+future integrations/multiplayer and source/research map. Ground commands and
+claims in current source, USING_ARCO, tooling and actual campaign reports; mark
+unfinished contracts explicitly. Verify local links and command names; no product
+retesting for a prose change. Promotion waits for actual capacity completion.
+
+README replaced with3700word guide, operator image, actual build/launch and Lua
+interfaces, doctrine/CLM/audit/RRC/evolution/results, integration and multiplayer
+direction, source map and reconstruction history. Thirty-two link targets checked
+(local existence, external links not network-revalidated), fenced blocks balanced,
+diff whitespace clean. Commands checked against operating guide and current source;
+no product tests for prose. Promotion task arconaut-5x7 depends on .14.3 and includes
+status refresh and preservation of candidate identities before redundant retirement.
+Root resumed capacity implementation supervisor49116 after prior successful workflow
+boundary; new request retains the session and explicitly reserves README to root.
