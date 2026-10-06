@@ -43,6 +43,8 @@ public:
   Json stats() const;
   Json::Array items() const;
   void append(Json::Array items, std::string_view origin);
+  static void validate_successor_seed(const Json &seed);
+  void seed_successor(const Json &seed);
   Json edit(const Json &candidate);
   void restore(std::string_view entry);
   Json originals() const;
@@ -68,5 +70,6 @@ private:
                        std::string_view stage);
   Json reject_managed(const Json &proposal, std::string_view reason);
   bool valid_entries(const Json &entries) const;
+  void append_impl(Json::Array items, std::string_view origin, const Json *lineage);
 };
 } // namespace arconaut

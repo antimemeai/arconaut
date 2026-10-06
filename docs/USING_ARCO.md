@@ -281,3 +281,37 @@ the actual exec output reference before any explicit new delivery attempt. Never
 automatically replay an unknown side effect. An external DB sink is unconfigured;
 a separately configured consumer can inspect these records without Arco provisioning
 or governing a database. Keep raw audit/context ignored, not in commits or pushes.
+
+### Explicit capacity successor (declared lineage)
+
+`arco --session NEW_DIRECTORY --seed-session SEED.json --plain` initializes a
+fresh audit with selected context; `/quit` exits without a provider request.
+Do not combine seeding with inspection, discovery or restart-resume switches.
+Existing audits are refused, not overwritten. Input is bounded to1MiB/4096 entries.
+Example shape (replace IDs/observations with actual source locators):
+
+```json
+{"version":1,"source":{"session":"/absolute/source/session",
+ "environment":"11000000000000000000000000000000",
+ "journal":"22000000000000000000000000000000",
+ "prefix_sequence":17,"prefix_end":8192,
+ "context_revision":"33000000000000000000000000000000",
+ "status":"unsettled","reason":"explicit capacity successor; no settlement established"},
+ "entries":[{"id":"33000000000000000000000000000000.0",
+ "item":{"role":"developer","content":"Retain current instructions and working state"}}]}
+```
+
+The author selects context and is responsible for including governing instructions
+and honest source observations/unknowns. Native validation checks manifest shapes,
+current text-message/self-contained encrypted-reasoning/tool-pair schemas, complete
+ordered call/output pairs and unique original-entry locators. Non-text modalities
+are not supported by this seed schema. Seeding does not read or verify the source,
+claim settlement, dispatch imported calls, or inherit admissions. New session and
+entry identities are fresh. One context packet atomically retains new originals
+and declared lineage; its `lineage.source_entries` order maps to new `originals`.
+Use bounded context history inspection to recover that packet. Old paths/journals/
+entry IDs remain old locators; original bytes have not been copied wholesale or
+moved. A failed write can leave allocator reservation facts but cannot publish
+selected context without lineage. Inspect such a destination; do not silently retry
+seeding into it. Live model-managed handoff, reserved settlement/output capacity
+and bounded old-entry resolution without full parent replay remain unimplemented.

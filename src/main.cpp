@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     std::filesystem::path session =
         std::filesystem::path{home} / ".local/state/arconaut/default";
     std::filesystem::path workflow = ARCONAUT_WORKFLOW;
-    std::string model = "gpt-6.1-sol", once;
+    std::string model = "gpt-6.1-sol", once, seed_path;
     bool one = false, inspect = false, plain = false;
     std::string effort = "medium";
     bool model_option = false, effort_option = false, workflow_option = false;
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
         std::cout
             << "arco [--session DIRECTORY] [--model NAME] [--workflow FILE] [--once "
                "PROMPT] [--audit-last] [--effort low|medium|high|xhigh] "
-               "[--plain] [--list-sessions [ROOT]] "
+               "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
                "[--resume-continue|--resume-once]\nInteractive: /context, "
                "/originals, /restore "
                "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
@@ -95,7 +95,9 @@ int main(int argc, char **argv) {
       }
       if (i + 1 == argc)
         throw Error{ErrorCode::invalid_range};
-      if (arg == "--session")
+      if (arg == "--seed-session")
+        seed_path = argv[++i];
+      else if (arg == "--session")
         session = argv[++i];
       else if (arg == "--effort") {
         effort = argv[++i];
@@ -112,9 +114,19 @@ int main(int argc, char **argv) {
       } else
         throw Error{ErrorCode::invalid_range};
     }
+    if (discovery && !seed_path.empty())
+      throw Error{ErrorCode::conflict};
     if (discovery) {
       std::cout << unwrap(dump_json(list_sessions(discovery_root))) << '\n';
       return 0;
+    }
+    Json seed;
+    if (!seed_path.empty()) {
+      if (inspect || discovery || resume_requested ||
+          std::filesystem::exists(session / "audit"))
+        throw Error{ErrorCode::conflict};
+      seed = unwrap(parse_json(read_file(seed_path, 1024 * 1024)));
+      ContextStore::validate_successor_seed(seed);
     }
     std::filesystem::create_directories(session);
     if (::chmod(session.c_str(), 0700) != 0)
@@ -125,6 +137,8 @@ int main(int argc, char **argv) {
     auto directory = std::make_unique<NativeJournalDirectory>(
         unwrap(NativeJournalDirectory::open(session.string())));
     if (std::filesystem::exists(path)) {
+      if (!seed_path.empty())
+        throw Error{ErrorCode::conflict};
       std::array<std::byte, journal_header_size> bytes{};
       std::ifstream file{path, std::ios::binary};
       file.read(reinterpret_cast<char *>(bytes.data()),
@@ -203,6 +217,8 @@ int main(int argc, char **argv) {
     }
     AuditLog log{*root};
     ContextStore context{log};
+    if (!seed_path.empty())
+      context.seed_successor(seed);
     SessionStore session_store{log};
     auto settings = session_store.settings();
     if (model_option)

@@ -1,6 +1,7 @@
 #include "arconaut/context.hpp"
 #include <algorithm>
 #include <charconv>
+#include <filesystem>
 #include <limits>
 #include <set>
 
@@ -152,7 +153,156 @@ Json::Array ContextStore::items() const {
     items.push_back(field(entry, "item"));
   return items;
 }
+namespace {
+void seed_hex(std::string_view value) {
+  if (value.size() != 32 || value == std::string(32, '0') ||
+      value.find_first_not_of("0123456789abcdef") != std::string_view::npos)
+    throw Error{ErrorCode::invalid_range};
+}
+std::uint64_t seed_number(const Json &value) {
+  const auto *n = std::get_if<JsonNumber>(&value.value());
+  if (!n || n->text.empty())
+    throw Error{ErrorCode::invalid_range};
+  std::uint64_t number = 0;
+  const auto r =
+      std::from_chars(n->text.data(), n->text.data() + n->text.size(), number);
+  if (r.ec != std::errc{} || r.ptr != n->text.data() + n->text.size())
+    throw Error{ErrorCode::invalid_range};
+  return number;
+}
+} // namespace
+void ContextStore::validate_successor_seed(const Json &seed) {
+  if (unwrap(dump_json(seed)).size() > 1024 * 1024 ||
+      seed_number(field(seed, "version")) != 1)
+    throw Error{ErrorCode::invalid_range};
+  const auto &source = field(seed, "source");
+  const auto &path = string_field(source, "session");
+  if (path.size() > 65536 || path.find('\0') != std::string::npos ||
+      !std::filesystem::path{path}.is_absolute())
+    throw Error{ErrorCode::invalid_range};
+  for (const auto key : {"environment", "journal", "context_revision"})
+    seed_hex(string_field(source, key));
+  (void)seed_number(field(source, "prefix_sequence"));
+  if (seed_number(field(source, "prefix_end")) < journal_header_size)
+    throw Error{ErrorCode::invalid_range};
+  const auto &state = string_field(source, "status");
+  if (state != "settled" && state != "unsettled" && state != "unknown")
+    throw Error{ErrorCode::invalid_range};
+  const auto &reason = string_field(source, "reason");
+  if (reason.empty() || reason.size() > 65536)
+    throw Error{ErrorCode::invalid_range};
+  const auto &selected = field(seed, "entries");
+  if (!std::holds_alternative<Json::Array>(selected.value()))
+    throw Error{ErrorCode::invalid_range};
+  const auto &entries = selected.array();
+  if (entries.empty() || entries.size() > 4096)
+    throw Error{ErrorCode::invalid_range};
+  std::set<std::string> locators, seen, pending;
+  for (const auto &entry : entries) {
+    const auto &id = string_field(entry, "id");
+    if (id.size() < 34 || id.size() > 53 || id[32] != '.' ||
+        !locators.insert(id).second)
+      throw Error{ErrorCode::invalid_range};
+    seed_hex(std::string_view{id}.substr(0, 32));
+    (void)seed_number(Json{JsonNumber{id.substr(33)}});
+    const auto &item = field(entry, "item");
+    if (!std::holds_alternative<Json::Object>(item.value()))
+      throw Error{ErrorCode::invalid_range};
+    const auto *role = item.find("role");
+    const auto *type = item.find("type");
+    if (role) {
+      if (!std::holds_alternative<std::string>(role->value()))
+        throw Error{ErrorCode::invalid_range};
+      const auto &r = role->string();
+      if (r != "user" && r != "system" && r != "developer" && r != "assistant")
+        throw Error{ErrorCode::invalid_range};
+    }
+    if (!type && !role)
+      throw Error{ErrorCode::invalid_range};
+    if (!type || (std::holds_alternative<std::string>(type->value()) &&
+                  type->string() == "message")) {
+      if (!role)
+        throw Error{ErrorCode::invalid_range};
+      const auto &content = field(item, "content");
+      if (const auto *parts = std::get_if<Json::Array>(&content.value())) {
+        for (const auto &part : *parts) {
+          const auto &kind = string_field(part, "type");
+          if (kind == "input_text" || kind == "output_text")
+            (void)string_field(part, "text");
+          else if (kind == "refusal")
+            (void)string_field(part, "refusal");
+          else
+            throw Error{ErrorCode::invalid_range};
+        }
+      } else if (!std::holds_alternative<std::string>(content.value()))
+        throw Error{ErrorCode::invalid_range};
+      if (!type)
+        continue;
+    }
+    if (!std::holds_alternative<std::string>(type->value()))
+      throw Error{ErrorCode::invalid_range};
+    const auto &t = type->string();
+    if (t != "message" && t != "reasoning" && t != "function_call" &&
+        t != "function_call_output")
+      throw Error{ErrorCode::invalid_range};
+    if (t != "message" && role)
+      throw Error{ErrorCode::invalid_range};
+    if (t == "reasoning") {
+      // store:false requires self-contained encrypted reasoning, not an old ID.
+      if (string_field(item, "encrypted_content").empty())
+        throw Error{ErrorCode::invalid_range};
+      const auto &summary = field(item, "summary");
+      if (!std::holds_alternative<Json::Array>(summary.value()))
+        throw Error{ErrorCode::invalid_range};
+      for (const auto &part : summary.array()) {
+        if (string_field(part, "type") != "summary_text")
+          throw Error{ErrorCode::invalid_range};
+        (void)string_field(part, "text");
+      }
+    }
+    if (t == "function_call") {
+      if (string_field(item, "name").empty())
+        throw Error{ErrorCode::invalid_range};
+      (void)string_field(item, "arguments");
+      const auto &call = string_field(item, "call_id");
+      if (call.empty() || !seen.insert(call).second)
+        throw Error{ErrorCode::conflict};
+      pending.insert(call);
+    } else if (t == "function_call_output") {
+      (void)string_field(item, "output");
+      if (pending.erase(string_field(item, "call_id")) != 1)
+        throw Error{ErrorCode::conflict};
+    }
+  }
+  if (!pending.empty())
+    throw Error{ErrorCode::conflict};
+}
+void ContextStore::seed_successor(const Json &seed) {
+  validate_successor_seed(seed);
+  if (workflow_ || pending_ || !entries_.empty() ||
+      !log_.root().committed_facts().empty() ||
+      log_.root().state() != JournalWriterState::live ||
+      string_field(field(seed, "source"), "journal") ==
+          hex_identity(log_.root().cursor().journal.bytes()))
+    throw Error{ErrorCode::conflict};
+  Json::Array items, locators;
+  for (const auto &entry : field(seed, "entries").array()) {
+    items.push_back(field(entry, "item"));
+    locators.push_back(Json{string_field(entry, "id")});
+  }
+  const auto lineage = Json::object(
+      {{"version", Json{JsonNumber{"1"}}},
+       {"scope",
+        Json{"declared source; no inherited admissions or settlement verification"}},
+       {"source", field(seed, "source")},
+       {"source_entries", Json{std::move(locators)}}});
+  append_impl(std::move(items), "session.successor", &lineage);
+}
 void ContextStore::append(Json::Array items, std::string_view origin) {
+  append_impl(std::move(items), origin, nullptr);
+}
+void ContextStore::append_impl(Json::Array items, std::string_view origin,
+                               const Json *lineage) {
   for (const auto &item : items)
     if (!std::holds_alternative<Json::Object>(item.value()))
       throw Error{ErrorCode::corrupt};
@@ -176,6 +326,8 @@ void ContextStore::append(Json::Array items, std::string_view origin) {
                               {"origin", Json{std::string{origin}}},
                               {"originals", Json{std::move(fresh)}},
                               {"entries", Json{next}}});
+  if (lineage)
+    packet.object().emplace_back("lineage", *lineage);
   auto history = history_;
   history.push_back(packet);
   auto captured = captured_;

@@ -87,6 +87,35 @@ coding assertion used wrong fixture cap and corrected to its actual64MiB/10000;
 mechanical prefix rename caught by compiler and corrected. Mac release/debug/ASan
 and Linux debug/release/ASan affected4/4 then final changed coding/batch2/2 each.
 Private captures context/resilience/capacity-*; no new full-suite qualification.
-Native release/arco built; checkpoint and actual quiet RRC pending. .14.3 remains
+Native release/arco built; checkpoint72d7116 pushed and actual quiet RRC
+continued. context_stats.audit observed237635772extent/299235140byte headroom
+in fresh journal7d62dd99e41e86aafbafb29cb3a3014b, proving gauge activation. .14.3 remains
 active: this makes approach visible, DOES NOT solve arbitrary-turn exhaustion or
 provide clean-handoff reservation/cross-session transfer. No capacity increase.
+
+## Next dependency: atomic declared successor seed
+
+Before admission reservation, implement a usable *explicit* destination, not an
+automatic physical chain. Add --seed-session JSON for a genuinely empty new audit,
+validated before journal creation. Bounded1MiB input/4096 selected entries. Manifest
+version1 contains source session absolute path, environment/journal IDs, observed
+prefix sequence/end, context revision, status (settled/unsettled/unknown), reason,
+and selected {id,item} entries. This is model/operator DECLARED lineage, not source
+verification, custody or proof of settlement. No old file is opened or mutated.
+Validate identity/locator shapes, object entries and complete ordered call/output
+linkage; reject duplicate calls/locators, incomplete groups and invalid roles.
+Protected instruction selection is the author’s responsibility; native seeding
+must not invent omitted source material or secretly read/replay predecessors.
+
+Publish new originals/entries AND declared lineage+old-entry-to-new-entry order in
+ONE context packet/batch. Failure cannot publish context without its lineage.
+New originals get fresh IDs; old locators remain recorded, not overwritten.
+Reject a nonempty destination at CLI and API boundaries; do not seed into recovery
+or inherit old admissions. No provider/tool executes during seeding. Ordinary
+interactive startup may subsequently run new chosen work; not automatic continuation.
+History inspection exposes lineage with bounded current-store pages. Stable old
+entry resolution without full parent replay, managed live handoff, admission reserve
+and output bounds remain follow-on scope. Test invalid seeds before mutation,
+exact selected context/mapping, replay reconstruction, destination refusal and
+unsettled declaration, plus native CLI no-provider/nonempty refusal. Build/activate
+native changes only after affected checks. No cap/configuration changes.

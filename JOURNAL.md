@@ -2873,3 +2873,40 @@ inspection remain. No cap increase, truncation, moving originals or unknown repl
 Managed summary now includes opaque reasoning as well as complete old tool groups;
 first summary had left reasoning presentations, causing avoidable growth. Originals
 remain retained, not policy-efficacy claim. No B1/pilot recertification/giga.
+
+## 2026-10-06 — headroom activated; declared successor seed implemented
+
+72d7116 pushed reconstruction/candidate/history-headroom; actual quiet RRC continued.
+context_stats.audit fresh journal7d62dd99e41e86aafbafb29cb3a3014b reports
+237635772extent/299235140remaining bytes,35338indexed records; gauges activated.
+Old namespace still untouched536870704bytes, no old boundary settlement established.
+
+Chose explicit successor destination before reservation so a stop has a usable
+exit. Written subplan before editing; --seed-session bounded JSON validates before
+fresh destination creation. ContextStore.seed_successor requires empty live audit,
+records selected context/new originals and declared source lineage/order mapping in
+one context packet. Fresh identities, no inherited admissions, no source file access,
+verification, replay or settlement claim. Author owns instruction/context selection.
+
+Independent ChatGPT separate native one-request read-only workflow found missing
+message/tool required fields and invalid role/type accepted: fixed and direct
+negative oracles added. Paper records actual capture/scope, not approval rhetoric.
+Initial test single-fact assumption omitted issuer reservation, corrected;128byte
+fixture failed journal minimum,512byte fixture establishes capacity refusal without
+context publication (allocator facts may remain). Header typo and broad schema
+replacement compile failures corrected; unrelated protocol_complete restored.
+Mac/Linux three profiles affected4/4 then final changed2/2 each. CLI smoke fresh seed
++quit no provider, existing audit unchanged on refusal, invalid seed creates no dir.
+No repeated full suite/B1/pilot campaigns. Release/arco built; next backup/checkpoint
+push and actual native quiet replacement. .14.3 remains active: reserved admission/
+settlement and output bounds, live handoff, honest export/old-entry resolution remain.
+This is NOT a sustained-capacity fix closure. Native caps unchanged, no giga.
+
+Working-context maintenance: two large Lua managed proposals returned
+external_unknown; no successful compaction is claimed or blindly replayed. A
+distinct minimal proposal under pcall returned staged for one old summary, proving
+no pending overlap from those failures. That small replacement remains staged until
+this workflow succeeds; it is not evidence of useful large compaction. Remaining
+large presentations need direct diagnosis/compaction after native activation; raw
+originals stay retained. Fresh audit observed301708783bytes,235162129headroom before
+these diagnostics (not a growth-rate claim). Capacity scope remains urgent.
