@@ -89,3 +89,19 @@ context/linux/run-4k4nl3e3. First Linux pass run-nea3pi_d applies to pre-followu
 source, retained separately. No further reviews requested. All local review/build
 programs stopped; release/arco rebuilt. Quiet RRC/live tool and real bead delivery
 verification next; executable activation is not implied by this source checkpoint.
+
+## Inhabited replacement / real delivery
+
+Actual quiet RRC continuation: ordinary audit_inspect returns live prefix14564,
+program source record14503/generation fcd112e14cf4a954c41b000000000000 and provider
+request14514/attempt fcd112e14cf4a954c91b000000000000 with real lineage. Lua initially
+failed before effects: `end` is a reserved keyword, not a runtime/native failure.
+Exact lua.error source15023 decodes `unexpected symbol near 'end'`. Using
+`['end']=14564` returns exact program original prefix (712total bytes), beginning
+`-- Effective source is retained each turn. Edit this program; ne`. This is actual
+successful/failed trace input for the next ergonomics workflow, not B1 reopening.
+Real advisory rageshake complaint fcd112e14cf4a954e21d000000000000 delivered via
+attempt fcd112e14cf4a954e51d000000000000 exit0 to bead arconaut-pvl. Only constant
+local locators in bead description; no observation/private history published.
+No effect replay, immediate repair gate or configured external DB sink. Common
+observability now exists before assigning pilot arms.

@@ -2691,3 +2691,10 @@ commit/push then quiet RRC; live replacement + actual bead delivery verification
 next. No B1 recertification, .14 closure or acceleration claim. Report
 papers/2026-10-06-useful-work-observability.md. Next Lua contrast/experiments and
 bounded branch/worktree leases, then common-instrumented matched pilot/transfer.
+
+Unit1 a5f2ac4 pushed. Inhabited native replacement exposes actual audit prefix,
+program/request/attempt lineage and exact program source. Lua failed parse from
+reserved `end` key; exact lua.error original recovered, corrected ['end'] succeeds.
+Real rageshake captured this useful contrast and created arconaut-pvl with only
+local locators; private observation stays local. Unit1 complete, no B1 reopening.
+Next small owned candidate CLI + editable Lua diagnosis/experiment workflow.
