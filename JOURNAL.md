@@ -2756,3 +2756,16 @@ object/string schema request rejected before effect, corrected explicitly.
 No native/B1 recertification. Next: boundary steer survives quiet RRC, retire
 observed stopped checkout with branch/artifact survival, child closure; parent
 finite paired economy pilot still pending.
+
+### Candidate child complete; bounded economy pilot declared
+
+Persistent operator boundary marker/direction observed again after real quiet RRC.
+Actual slot retired, candidate source7cbc088 local+origin and copied artifact remain;
+activation/archival separate. .14.1 scoped completion, .14 pilot active.
+Pre-dispatch docs/ECONOMY_PILOT_MANIFEST.md freezes12runs (8development+4fresh
+transfer), two useful families, counterbalanced paired repeats, source/task/edit
+surface/independent acceptance/resource caps. Editable common Lua instrumentation
+captures all-provider each-request usage (missing unavailable), bounded audit
+locators,1s phase clocks and unknowns without replay; direct mock behavior checks
+pass. No assignments/results/uplift yet. Next commit manifest then actual isolated
+serial runs with fresh sessions and recorded artifacts, no endless significance.

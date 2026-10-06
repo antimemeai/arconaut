@@ -110,3 +110,15 @@ corrected separately with serialized evidence and observed success.
 Persistent steer marker `unit2-live-698ff4a` read at the ordinary Lua boundary;
 next quiet RRC observation and actual checkout retirement remain before child
 closure. Pilot is not yet dispatched and no uplift is claimed.
+
+## Scoped child completion
+
+After the subsequent quiet RRC, ordinary Lua boundary read the same persisted
+`unit2-live-698ff4a` marker/direction. Conversation retained; default workflow
+selection still unchanged. Retired actual serial slot only after observed stopped
+state and retained artifact declaration. Observed checkout absent, local candidate
+branch7cbc088 intact, artifact content5e4bc8d4640471a9338a1f810c82b43bb8fe6ea2 still
+present; actual `git ls-remote` confirms origin candidate/useful-work-tools7cbc088.
+Candidate archived state retains its separate activation. Scoped .14.1 complete;
+parent .14 remains active for the finite matched useful-work pilot. Qualification
+was not reopened after closure.
