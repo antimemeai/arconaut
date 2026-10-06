@@ -2985,3 +2985,10 @@ atomic triple admissions, managed live handoff/targeted old resolver remain. Phy
 fresh audit observed414634569/536870912bytes122236343headroom, nearing threshold;
 observation not reserve. Old536870704 audit untouched/unsettled. No promotion-ready
 or total capacity completion claim. Root will review actual completion before promotion.
+
+Protected-credit primitive checkpoint41b505c pushed reconstruction and
+candidate/protected-settlement-credit. Final expanded/formatted Linux retained_state
+passed all3 profiles fresh run-zg12q130, initial other affected checks remain settled.
+Native release/arco built; next quiet replacement is for these compiled changes only.
+Primitive checks complete; .14.3 remains active and live workflow protection NOT
+claimed. Working context compaction109 selected is still staged until boundary.

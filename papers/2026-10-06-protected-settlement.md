@@ -65,3 +65,10 @@ uses the ordinary qualified runner filtered to retained_state, not a repeated ef
 with unknown outcome. Initial checks remain settled; only changed test unit repeated.
 Native quiet replacement will follow committed build; successful activation is not
 yet claimed. No live workflow exhaustion recovery/promotion readiness implied.
+
+Final expanded/formatted Linux retained_state passed in debug/release/ASan+UBSan,
+fresh capture `context/linux/run-zg12q130` (each1/1;0.08/0.02/0.32 seconds, single
+observations not performance claims). This completes the primitive's affected checks,
+not the remaining workflow protection. Source checkpoint41b505c pushed to
+reconstruction/cpp-lua-2026-10-06 and candidate/protected-settlement-credit. Activation
+will be observed after actual quiet replacement, not inferred from build success.
