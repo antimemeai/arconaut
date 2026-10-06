@@ -220,6 +220,7 @@ public:
   bool settle = false;
   bool fail_recording_allocation = false;
   StorageState *fail_recording_sync = nullptr;
+  StorageState *fail_recording_write = nullptr;
   RetainedState *reenter = nullptr;
   Result<void> dispatch(const EffectIntent &intent) override {
     ++calls;
@@ -242,6 +243,8 @@ public:
                                      AttemptDisposition::success, original}}));
       }
     }
+    if (fail_recording_write)
+      fail_recording_write->fail_after = fail_recording_write->bytes.size() + 7;
     if (fail_recording_sync) {
       fail_recording_sync->fail_sync = true;
     }
@@ -1195,9 +1198,193 @@ void retry_and_in_batch_conflict() {
   const auto writes = storage->writes;
   CHECK(require(state->submit(first_retry)).existing && storage->writes == writes);
 }
+
+std::uint64_t transaction_cost(const RetainedEvent &event) {
+  return 56 + journal_frame_header_size +
+         require(encode_retained_event(event, header().limits.max_payload)).size();
+}
+void protected_settlement_faults() {
+  const RetainedEvent terminal{
+      {},
+      AttemptObservationEvent{id<OperationAttemptId>(11), AttemptPhase::terminal,
+                              AttemptDisposition::unknown, original}};
+  const RetainedEvent receipt{
+      {}, AdapterReceiptEvent{id<OperationAttemptId>(11), Error{ErrorCode::capacity}}};
+  const JournalCapacity credit{transaction_cost(receipt) + transaction_cost(terminal),
+                               2};
+  // Independent byte and record limits, through real dispatch/callback/receipt.
+  for (bool records : {false, true}) {
+    auto storage = std::make_shared<StorageState>();
+    auto state = require(RetainedState::create(
+        std::make_unique<MemoryDirectory>(storage), "journal", header(),
+        {records ? 65536U : 4096U, records ? 7U : 128U}));
+    prepare(*state);
+    auto scope = require(state->protect_settlement(credit));
+    error_is(state->protect_settlement(credit), ErrorCode::busy);
+    error_is(state->submit_settlement({{}, admission(12)}), ErrorCode::invalid_range);
+    error_is(
+        state->submit_settlement(
+            {{},
+             AttemptObservationEvent{id<OperationAttemptId>(11), AttemptPhase::running,
+                                     AttemptDisposition::unknown, original}}),
+        ErrorCode::invalid_range);
+    struct Capture final : EffectBoundary {
+      RetainedState &state;
+      StorageState &storage;
+      std::vector<SourceReference> retained;
+      unsigned calls = 0;
+      Capture(RetainedState &s, StorageState &f) : state(s), storage(f) {}
+      Result<void> dispatch(const EffectIntent &) override {
+        ++calls;
+        error_is(state.protect_settlement({1, 1}), ErrorCode::busy);
+        for (;;) {
+          const auto usage = state.journal_usage();
+          const auto floor = *state.protected_settlement();
+          const auto normal = *usage.remaining_bytes() - floor.max_file_bytes;
+          const auto overhead = 56 + journal_frame_header_size;
+          // Exactly fill available bytes, unless record room runs out first.
+          const auto length =
+              normal > overhead ? std::min<std::uint64_t>(1024, normal - overhead) : 1;
+          const std::vector<std::byte> chunk(length, std::byte{0x5a});
+          const std::array<ByteView, 1> sources{chunk};
+          const auto before = state.cursor();
+          const auto extent = storage.bytes.size();
+          const auto result = state.append(before, sources, {});
+          if (!result.has_value()) {
+            error_is(result, ErrorCode::capacity);
+            CHECK(state.cursor().end_offset == before.end_offset);
+            CHECK(storage.bytes.size() == extent);
+            CHECK(!state.pending_proposal());
+            // Earlier originals remain addressable; rejected chunk isn't claimed
+            // retained.
+            for (auto reference : retained) {
+              auto bytes = require(state.source(reference));
+              CHECK(!bytes.empty() && bytes.front() == std::byte{0x5a});
+            }
+            return Result<void>::failure({ErrorCode::capacity});
+          }
+          retained.push_back({before.journal, before.sequence + 1});
+        }
+      }
+    } capture{*state, *storage};
+    const auto report = require(state->dispatch(id<OperationAttemptId>(11), capture));
+    CHECK(report.dispatched && capture.calls == 1 && !capture.retained.empty());
+    error_is(report.effect, ErrorCode::capacity);
+    require(report.recording);
+    CHECK(state->protected_settlement()->max_file_bytes == transaction_cost(terminal));
+    CHECK(state->protected_settlement()->max_records == 1);
+    require(state->submit_settlement(terminal));
+    CHECK(state->protected_settlement()->max_file_bytes == 0);
+    CHECK(state->protected_settlement()->max_records == 0);
+    const auto before = state->cursor().end_offset;
+    CHECK(require(state->submit_settlement(terminal)).existing);
+    CHECK(state->cursor().end_offset == before);
+    const auto attempt = require(state->attempt(id<OperationAttemptId>(11)));
+    CHECK(attempt.receipt && attempt.observation &&
+          attempt.observation->disposition == AttemptDisposition::unknown);
+    CHECK(!require(state->dispatch(id<OperationAttemptId>(11), capture)).dispatched);
+    CHECK(capture.calls == 1);
+    scope.reset();
+    CHECK(!state->protected_settlement());
+  }
+  // Holding all remaining room refuses open BEFORE effect; releasing only drops RAM
+  // floor.
+  {
+    auto storage = std::make_shared<StorageState>();
+    auto state = create(storage);
+    prepare(*state);
+    const auto usage = state->journal_usage();
+    auto scope = require(state->protect_settlement(
+        {*usage.remaining_bytes(), usage.remaining_records()}));
+    Counter counter;
+    const auto before = storage->bytes;
+    error_is(state->dispatch(id<OperationAttemptId>(11), counter), ErrorCode::capacity);
+    CHECK(counter.calls == 0 && storage->bytes == before);
+    CHECK(require(state->submit({{}, decision()})).existing);
+    const std::array duplicate{RetainedEvent{{}, decision()}};
+    error_is(state->append(state->cursor(), {}, duplicate), ErrorCode::capacity);
+    // Issuer allocation and rejected-proposal diagnostics cannot steal credits.
+    error_is(state->issue<DecisionId>(), ErrorCode::capacity);
+    auto stale = state->cursor();
+    --stale.sequence;
+    const std::array events{RetainedEvent{{}, decision(24)}};
+    error_is(state->append(stale, {}, events), ErrorCode::capacity);
+    CHECK(storage->bytes == before);
+    scope.reset();
+    CHECK(storage->bytes == before);
+    require(require(state->dispatch(id<OperationAttemptId>(11), counter)).recording);
+    CHECK(counter.calls == 1);
+  }
+  // Grant failure is pre-mutation, including extent errors and allocation failure.
+  {
+    auto storage = std::make_shared<StorageState>();
+    auto state = create(storage);
+    storage->fail_extent = true;
+    CHECK(!state->protect_settlement(credit).has_value());
+    CHECK(!state->protected_settlement());
+    storage->fail_extent = false;
+    allocation_cut.store(0);
+    const auto failed = state->protect_settlement(credit);
+    allocation_cut.store(-1);
+    error_is(failed, ErrorCode::allocation);
+    CHECK(!state->protected_settlement());
+    prepare(*state);
+    Counter counter;
+    require(require(state->dispatch(id<OperationAttemptId>(11), counter)).recording);
+    auto scope = require(state->protect_settlement({1, 1}));
+    const auto before = storage->bytes;
+    error_is(state->submit_settlement(terminal), ErrorCode::capacity);
+    CHECK(storage->bytes == before && state->state() == JournalWriterState::live);
+    CHECK(state->protected_settlement()->max_file_bytes == 1);
+    scope.reset();
+    require(state->submit_settlement(terminal));
+  }
+  // Allowance itself and oversized terminal are rejected prewrite, no credit consumed.
+  {
+    auto storage = std::make_shared<StorageState>();
+    auto state = create(storage);
+    prepare(*state);
+    error_is(state->protect_settlement({UINT64_MAX, SIZE_MAX}), ErrorCode::capacity);
+    error_is(state->protect_settlement({0, 1}), ErrorCode::invalid_range);
+    auto scope = require(state->protect_settlement({1, 1}));
+    Counter counter;
+    const auto report = require(state->dispatch(id<OperationAttemptId>(11), counter));
+    CHECK(report.dispatched && counter.calls == 1);
+    error_is(report.recording, ErrorCode::capacity);
+    CHECK(state->state() == JournalWriterState::blocked);
+    CHECK(state->protected_settlement()->max_file_bytes == 1);
+    error_is(state->submit_settlement(terminal), ErrorCode::audit_unavailable);
+  }
+  // Write and sync failures in reserved receipt remain unknown/unpublished/poisoned.
+  for (bool sync : {false, true}) {
+    auto storage = std::make_shared<StorageState>();
+    auto state = create(storage);
+    prepare(*state);
+    auto scope = require(state->protect_settlement(credit));
+    Counter counter;
+    if (sync)
+      counter.fail_recording_sync = storage.get();
+    else
+      counter.fail_recording_write = storage.get();
+    const auto report = require(state->dispatch(id<OperationAttemptId>(11), counter));
+    CHECK(report.dispatched && counter.calls == 1 && report.effect.has_value());
+    CHECK(!report.recording.has_value());
+    CHECK(state->state() == JournalWriterState::poisoned);
+    CHECK(state->protected_settlement()->max_file_bytes == credit.max_file_bytes);
+    CHECK(state->pending_proposal().has_value());
+    CHECK(require(state->attempt(id<OperationAttemptId>(11))).evidence ==
+          RetainedEvidence::uncertain);
+    for (const auto &fact : state->committed_facts())
+      CHECK(!std::holds_alternative<AdapterReceiptEvent>(fact.event.body));
+    error_is(state->protect_settlement(credit), ErrorCode::busy);
+    scope.reset();
+    error_is(state->protect_settlement(credit), ErrorCode::audit_unavailable);
+  }
+}
 } // namespace
 int main() {
   try {
+    protected_settlement_faults();
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();

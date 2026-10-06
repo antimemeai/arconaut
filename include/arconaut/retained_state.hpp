@@ -62,6 +62,27 @@ public:
        JournalHeader header, JournalCapacity capacity);
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
+  // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.
+  class SettlementScope {
+  public:
+    SettlementScope(const SettlementScope &) = delete;
+    SettlementScope &operator=(const SettlementScope &) = delete;
+    ~SettlementScope();
+
+  private:
+    friend class RetainedState;
+    explicit SettlementScope(RetainedState &owner) : owner_(owner) {}
+    RetainedState &owner_;
+  };
+  Result<std::unique_ptr<SettlementScope>> protect_settlement(JournalCapacity credit);
+  std::optional<JournalCapacity> protected_settlement() const noexcept {
+    return settlement_credit_;
+  }
+  // Only receipts and terminal observations. Exact successful cost consumes credit.
+  // Without a scope this is an ordinary submission, never extra physical capacity.
+  Result<Submission> submit_settlement(const RetainedEvent &event);
+  // Exact submit duplicates are zero-cost; append is a physical batch, including
+  // repeated events. Removing drafts would invalidate caller source sequences.
   Result<Submission> submit(const RetainedEvent &event);
   Result<JournalCursor> append(JournalCursor expected,
                                std::span<const ByteView> sources,
@@ -135,7 +156,8 @@ private:
   Result<JournalCursor> append_impl(JournalCursor expected,
                                     std::span<const ByteView> sources,
                                     std::span<const RetainedEvent> events,
-                                    bool diagnostic);
+                                    bool diagnostic, bool settlement = false);
+  Result<Submission> submit_impl(const RetainedEvent &event, bool settlement);
   Result<void> retain_rejection(JournalCursor expected,
                                 std::span<const ByteView> sources,
                                 std::span<const std::vector<std::byte>> events,
@@ -153,6 +175,7 @@ private:
   std::vector<std::unique_ptr<FramedJournal>> historical_;
   std::unique_ptr<FramedJournal> journal_;
   JournalCapacity capacity_;
+  std::optional<JournalCapacity> settlement_credit_;
   std::size_t max_history_entries_;
   Snapshot committed_;
   std::optional<Snapshot> prepared_;

@@ -62,3 +62,20 @@ attempts; full-context/pending-management cancellation; exact last permitted nor
 batch; insufficient reserve/refused oversized mutation; native write/sync failure
 remaining unknown. Independent review after one coherent implementation, then only
 affected Mac/Linux checks and native replacement. .14.3 remains active meanwhile.
+
+### Implementation slice chosen (before editing)
+
+Implement the native retained-owner budget primitive first, NOT enable an guessed
+workflow allowance. A nonnestable RAII scope holds byte/physical-record credits.
+Every append path (including issuer and rejected-proposal diagnostics) leaves these
+credits untouched. Only validated adapter receipts and terminal observations can
+spend them, within their exact physical cost; dispatch automatically routes receipts
+through this seam. Successful publication debits credits; uncertain write/sync
+failures retain existing poisoned/pending semantics. Scope release only removes a
+RAM constraint, never edits originals or grants recovered effects permission.
+Caller must size/replenish obligations before admissions; this primitive alone does
+not guarantee context cancellation or all admitted attempts fit. Direct simulation
+will exhaust normal source writes inside an actual dispatch and settle its unknown
+receipt/terminal within held room. Byte/record floor, nesting, oversize, duplicate,
+rejection diagnostic and sync-unknown cases are the bounded claims of this slice.
+Workflow policy, atomic triple admission and context/capture integration follow.

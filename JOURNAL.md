@@ -2951,3 +2951,37 @@ no product tests for prose. Promotion task arconaut-5x7 depends on .14.3 and inc
 status refresh and preservation of candidate identities before redundant retirement.
 Root resumed capacity implementation supervisor49116 after prior successful workflow
 boundary; new request retains the session and explicitly reserves README to root.
+
+## 2026-10-06 — native protected settlement credit checkpoint (.14.3)
+
+Read current AGENTS/BLACKBIRD/operator steer and CAPACITY_SETTLEMENT_SUBPLAN before
+editing. README, promotion and redundant branch retirement belong to Root; did not
+edit README or merge/delete branches. Implemented the native retained-owner credit
+primitive, not a guessed workflow reserve: nonnested RAII byte+physical-record floor
+on normal append paths, receipt/terminal-only exact acknowledged spending, dispatch
+receipt routing, unchanged pending/poisoned semantics on uncertain writes. Existing
+originals/caps unchanged. Scope is volatile/caller-sized, owner must outlive it.
+
+Direct simulation forces byte vs record normal-source exhaustion inside actual
+dispatch, retains earlier originals, settles receipt/unknown terminal, no second
+adapter call; preopen refusal, issuer/diagnostic floor, nested callback grant refusal,
+undersized terminal/receipt, extent/allocation grant failures, partialwrite+syncunknown.
+Initial optional CHECK compile mistake and incorrect no-provisional-receipt oracle
+fixed; uncertain RAM is allowed, committed receipt absent. Independent ChatGPT
+review8259input2277output62465ms no demonstrated accounting/publication defect;
+correct duplicate-contract ambiguity clarified/tested (submit dedup, append physical).
+See papers/2026-10-06-protected-settlement.md and private protect-* captures.
+
+Mac affected5/5 all3 then final expanded/formatted retained_state1/1 all3; release/arco
+built final no work. Linux initial same5/5 all3 run-owzojrhf passed. Remote fixture reuse
+refused ENOENT (runner cleans); no tests claimed from failed attempt. Distinct final
+fresh filtered run-zg12q130 in progress at this checkpoint. No pilot/B1 rerun. Native
+quiet replacement still required/activation unclaimed. Large managed context proposal
+selected109 entries STAGED for normal boundary; publication not yet established.
+
+.14.3/parent remain active: this primitive does NOT make live workflows capacity-safe.
+Caller obligations/context+pends/calllinkage, output loss accounting/unknown/cancel,
+atomic triple admissions, managed live handoff/targeted old resolver remain. Physical
+fresh audit observed414634569/536870912bytes122236343headroom, nearing threshold;
+observation not reserve. Old536870704 audit untouched/unsettled. No promotion-ready
+or total capacity completion claim. Root will review actual completion before promotion.
