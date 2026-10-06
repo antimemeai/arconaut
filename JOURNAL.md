@@ -2698,3 +2698,22 @@ reserved `end` key; exact lua.error original recovered, corrected ['end'] succee
 Real rageshake captured this useful contrast and created arconaut-pvl with only
 local locators; private observation stays local. Unit1 complete, no B1 reopening.
 Next small owned candidate CLI + editable Lua diagnosis/experiment workflow.
+
+### Context-economy intervention after common instrumentation
+
+Operator authorized monitoring/intervention and distinguished external steer
+from Arco choosing leaner work itself. Common instrumentation source and actual
+inhabited-bead result are pushed a5f2ac4/c0a4a22. Request grew623633 JSON bytes.
+First pause guard deferred because a child existed; inspection identified only
+provider curl transport, not tool work. Exact native process then received
+graceful SIGINT during provider request; exit1, local provider outcome unknown,
+original context/audit retained. No source changes or tool side effects replayed.
+
+Same-session continuation brief directs actual managed-summary activation through
+quiet RRC, bounded source/original reads and one continuity check, without
+recertifying B1/common instrumentation. Economy should be visible/actionable
+within the programmable campaign as useful-work/continuity tradeoffs; not blind
+token minimization, weakened checks, dropped originals or an intrinsic preference
+claim. Lean-workflow behavior belongs to the scoped Lua unit and fresh transfer
+evidence, not another approval/judge platform. Audit inspection and resume
+metadata/captures stay in context/evolution-pilot.
