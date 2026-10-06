@@ -2769,3 +2769,23 @@ captures all-provider each-request usage (missing unavailable), bounded audit
 locators,1s phase clocks and unknowns without replay; direct mock behavior checks
 pass. No assignments/results/uplift yet. Next commit manifest then actual isolated
 serial runs with fresh sessions and recorded artifacts, no endless significance.
+
+### Finite pilot completed; useful products ship without speedup claim
+
+Predeclared12runs completed63provider requests,12independently accepted artifacts.
+Assignments448828input/20445output tokens cached0, native680.02s wall, batch706.58s;
+CPUuser9.46/sys9.40s. Mixed paired outcomes: bounded-first slower both feedback
+repeats; recovery task ranges opposite; fresh transfer reduces input but one slower.
+Disposition REVISE unconditional policy, no significance/acceleration claim.
+Actual six mixed-range read errors recovered from originals (initial pcall-based
+ledger missed returned errors),31tool deadline settings120s vs declared30s deviation
+(no actual operation>30s),61missing request locators recovered boundedly; all63
+exact request/attempt/program identities published without raw provider history.
+Supervisor aggregate/attention time unavailable, last request90000input at538807JSON
+shows orchestration economy not solved. Direct archive works, nested summaries
+inconclusive; no hidden lean success. Reports preserve these consequential limitations.
+Shipped stronger Lua feedback/record tests and source-grounded recovery recipes.
+Post-pilot typed line/byte helpers avoid actual errors; direct ordinary reads exact,
+release4/4 and Neuroses all3profiles4/4 context/linux/run-bf7c9f7q. No native source
+change or B1/unit1 recertification. Remaining: publish source/report checkpoint,
+quiet replacement with persistent revised steer, final parent outcome+backup/push.

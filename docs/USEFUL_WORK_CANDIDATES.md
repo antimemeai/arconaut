@@ -82,3 +82,10 @@ Explicit interruption remains native cancellation. Boundary feedback is advisory
 no forced read budget, universal utility metric, judge or approval gate. Both
 arms of any pilot retain common audit/original/complaint instrumentation. Read
 CONTEXT_ECONOMY_EXPERIMENT before declaring a finite matched experiment.
+
+The finite matched pilot is complete: see papers/2026-10-06-useful-work-pilot.md
+and docs/USEFUL_WORK_RECOVERY_RECIPES.md. Results are mixed; bounded-first is not
+an unconditional default or demonstrated acceleration. Post-pilot `M.lines(path,
+first,last)` and `M.bytes(path,first,last)` send exactly one read range mode,
+addressing the six actual invalid_range failures. Model chooses ranges versus
+small known complete files; checks/constraints/original capture are not weakened.

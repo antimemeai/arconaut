@@ -43,3 +43,13 @@ end
 local before=executions
 local rejected=M.record('pool','absent/request',{question='write failure',action='persist',outcome='unknown',references={}})
 assert(executions==before and rejected.error,'failed write must stop CLI dispatch')
+local ranges={}
+arco.call=function(name,args)
+ assert(name=='read_file');ranges[#ranges+1]=args;return {content='exact range'}
+end
+assert(M.lines('file',{'2'},4).content=='exact range')
+assert(ranges[1].line_start==2 and ranges[1].line_end==4 and ranges[1].byte_start==nil and ranges[1].byte_end==nil)
+assert(M.bytes('file',0,10).content=='exact range')
+assert(ranges[2].byte_start==0 and ranges[2].byte_end==10 and ranges[2].line_start==nil and ranges[2].line_end==nil)
+assert(not pcall(M.lines,'file',0,2) and not pcall(M.bytes,'file',2,1))
+assert(not pcall(M.lines,'file',1.5,2) and not pcall(M.bytes,'file',nil,1))

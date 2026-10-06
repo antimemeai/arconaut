@@ -8,6 +8,17 @@ function M.number(v)
   end
   error('number unavailable, not zero')
 end
+-- Select exactly one range mode. Actual pilot calls mixing both were rejected.
+function M.lines(path, first, last)
+  first, last = M.number(first), M.number(last)
+  assert(first>=1 and last>=first and first%1==0 and last%1==0, 'inclusive line range')
+  return arco.call('read_file',{path=path,line_start=first,line_end=last})
+end
+function M.bytes(path, first, last)
+  first, last = M.number(first), M.number(last)
+  assert(first>=0 and last>=first and first%1==0 and last%1==0, 'half-open byte range')
+  return arco.call('read_file',{path=path,byte_start=first,byte_end=last})
+end
 -- Positional watermark avoids the real reserved-key `end` parser failure.
 function M.page(cursor, count, watermark)
   local q = {cursor=cursor, count=count or 32}

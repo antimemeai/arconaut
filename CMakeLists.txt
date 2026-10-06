@@ -189,3 +189,9 @@ add_executable(useful_work_test tests/useful_work_test.cpp)
 target_include_directories(useful_work_test SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
 target_link_libraries(useful_work_test PRIVATE arconaut_build ${LUA_LIBRARIES})
 add_test(NAME useful_work COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_work_test.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
+
+# Useful products from the finite economy pilot; exercise real Lua helpers.
+add_test(NAME useful_feedback_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_feedback_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
+add_test(NAME useful_record_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_record_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
+add_test(NAME economy_pilot COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/economy_pilot_test.lua ${CMAKE_SOURCE_DIR}/programs/economy_pilot.lua)
+set_tests_properties(economy_pilot PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
