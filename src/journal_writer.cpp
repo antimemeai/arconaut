@@ -56,6 +56,16 @@ FramedJournal::FramedJournal(JournalDirectory &directory, JournalHeader header,
       cursor_{header.journal, 0, journal_header_size},
       recovery_{std::nullopt, journal_header_size, journal_header_size} {}
 
+JournalUsage FramedJournal::usage() const {
+  const auto extent = file_->extent();
+  return {capacity_,
+          cursor_,
+          extent.has_value() ? std::optional{extent.value()} : std::nullopt,
+          extent.has_value() ? std::nullopt : std::optional{extent.error()},
+          std::max(records_.size(), staged_.size() + pending_.size()),
+          state_};
+}
+
 Result<std::unique_ptr<FramedJournal>>
 FramedJournal::allocate(JournalDirectory &directory, JournalHeader header,
                         JournalCapacity capacity, SyncStrength strength) {

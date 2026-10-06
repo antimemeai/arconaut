@@ -86,6 +86,11 @@ public:
     return T::from_bytes(std::move(reserved).value());
   }
   JournalCursor cursor() const noexcept { return journal_->cursor(); }
+  JournalUsage journal_usage() const {
+    auto result = journal_->usage();
+    result.state = state();
+    return result;
+  }
   JournalWriterState state() const noexcept {
     return recording_failed_ && journal_->state() == JournalWriterState::live
                ? JournalWriterState::blocked

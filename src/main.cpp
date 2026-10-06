@@ -151,6 +151,13 @@ int main(int argc, char **argv) {
           RetainedState::create(std::move(directory), "audit", header, capacity));
     }
     if (inspect) {
+      const auto usage = root->journal_usage();
+      const auto remaining = usage.remaining_bytes();
+      std::cout << "Audit observed headroom: "
+                << (remaining ? std::to_string(*remaining) + " bytes"
+                              : "bytes unavailable")
+                << ", " << usage.remaining_records()
+                << " indexed records; no admission permission or handoff reserve\n";
       for (const auto &fact : root->committed_facts()) {
         const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
         if (!admission ||

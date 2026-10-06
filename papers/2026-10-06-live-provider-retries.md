@@ -82,3 +82,16 @@ history growth/replay cost, visible approach to capacity, reserved clean handoff
 headroom, immutable old journals and explicit successor lineage. Old audit has
 not been truncated, moved or enlarged; successful final settlement remains
 unestablished. Parent active. Do not raise its cap to disguise exhaustion.
+
+## Activation follow-up
+
+Checkpoint87e06e6 pushed on reconstruction/cpp-lua-2026-10-06 and
+candidate/live-provider-retries. Actual quiet replacement continued in this fresh
+session: running release/arco PID39590 start16:38:51 after binary16:33:33 build.
+Ordinary provider request raw original in fresh journal
+7d62dd99e41e86aafbafb29cb3a3014b record12711/sequence31033 includes ordinal1,
+retry_group9c814082f6003dff1018000000000000 and new generation
+9c814082f6003dff3b17000000000000. Structured explorer drops extra metadata keys;
+raw retained hex establishes activation. .14.2 now CLOSED. This is not evidence
+of a spontaneous live outage/recovery, which was tested with direct fault fixtures.
+The prior old exhausted namespace is not thereby settled.

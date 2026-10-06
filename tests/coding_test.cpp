@@ -394,6 +394,36 @@ public:
                                                    {"arguments", Json{"{}"}}})}}}});
   }
 };
+void capacity_warning_test(const std::string &path) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  JournalHeader h{id<EnvironmentId>(41),
+                  id<AuditStreamId>(42),
+                  4,
+                  {1024 * 1024, 2 * 1024 * 1024},
+                  std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {256 * 1024, 1000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  FlakyProvider provider;
+  provider.failures = 0;
+  CodingEngine engine{log, context, provider, "test"};
+  const std::string filler(200 * 1024, 'x');
+  log.original({"capacity diagnostic filler", filler, Json::object({})});
+  unsigned warnings = 0;
+  engine.status = [&](std::string_view s) {
+    if (s.starts_with("audit headroom:") &&
+        s.find("no handoff reserve") != std::string_view::npos)
+      ++warnings;
+  };
+  engine.turn({"warning", R"(arco.request())"});
+  if (warnings != 1 || provider.calls != 1 ||
+      !std::get<bool>(field(field(engine.stats(), "audit"), "approaching").value()))
+    throw Error{ErrorCode::corrupt};
+}
 void retry_tests(const std::string &path) {
   std::filesystem::create_directory(path);
   std::filesystem::permissions(path, std::filesystem::perms::owner_all);
@@ -409,6 +439,17 @@ void retry_tests(const std::string &path) {
   AuditLog log{*root};
   const char *program =
       R"(local r=arco.request({retry_policy={max_attempts=3,base_ms=0,cap_ms=0}}); for _,v in ipairs(r.output) do local out=arco.call(v.name, {}); arco.append({{type="function_call_output",call_id=v.call_id,output=arco.json.encode(out)}}) end)";
+  {
+    ContextStore context{log};
+    FlakyProvider provider;
+    CodingEngine engine{log, context, provider, "test"};
+    const auto stats = engine.stats();
+    const auto &audit = field(stats, "audit");
+    if (field(audit, "max_file_bytes").number().text != "67108864" ||
+        field(audit, "max_records").number().text != "10000" ||
+        field(audit, "remaining_bytes").number().text.empty())
+      throw Error{ErrorCode::corrupt};
+  }
   {
     ContextStore context{log};
     FlakyProvider provider;
@@ -550,6 +591,7 @@ int main() {
   if (!path)
     return 2;
   try {
+    capacity_warning_test(std::string{path} + "/capacity");
     retry_tests(std::string{path} + "/retries");
     retained_output_test(std::string{path} + "/output");
     JournalHeader h{id<EnvironmentId>(1),

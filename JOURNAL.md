@@ -2838,3 +2838,38 @@ Release/arco built. Next: source checkpoint+backup/push then actual quiet native
 and ordinary activation evidence; .14.2 remains in_progress until that observation.
 .14.3 remains open: measure history growth/replay, visible headroom and explicit
 successor lineage; no blind cap increase or old audit continuity claim.
+
+## 2026-10-06 — retries activated; measured history headroom slice
+
+87e06e6 pushed reconstruction and candidate/live-provider-retries; actual quiet
+native replacement continued (PID39590/new generation ordinary request raw
+retry_group+ordinal observed, paper activation follow-up). .14.2 CLOSED, not a
+claim of spontaneous live outage recovery or settlement of the old namespace.
+Parent remains active; .14.3 in_progress. Old audit remains536870704bytes, untouched.
+
+Measured bounded old/fresh frame census and isolated native8/32MiB copied-prefix
+replay before capacity design. docs/HISTORY_CAPACITY_SUBPLAN.md holds actual numbers,
+source consequences and Codex explicit logical-fork/physical-base pattern. Context
+snapshots and triple semantic operation request bodies dominate byte growth, not
+SSE envelopes alone. Per-batch Snapshot copies and ContextStore full history mean
+cap increase/linked root chain would worsen replay/memory without fixing the seam.
+No full512MiB recovery benchmark, rate extrapolation or significance claim.
+
+Implemented first native visibility slice: physical observation/optional errors,
+indexed-data-record counts, state, saturating byte/record headroom; prefix_end
+acknowledged/live or staged/recovery. Overlapping restage indexes count once.
+Lua/context_stats audit object and pre-provider <=25percent remaining warning;
+existing offline --audit-last prints headroom. Observation, NOT admission permission
+or handoff reserve. Direct extent failure, overflow unindexed tail, nonlive restage,
+record/byte thresholds, model stats and actual small-budget warning tests passed.
+Fixture-cap assertion and mechanical rename compile error fixed, not relaxed code.
+Mac/Linux three profiles affected4/4 then final2/2; copied-prefix CLI smoke actual
+--audit-last (initial nonexistent --inspect rejected). Release/arco built.
+
+Next native gauge checkpoint+backup/push and actual quiet RRC. .14.3 remains active:
+reserved settlement allowance before workflow admission, bounded output/stream
+handling and explicit successor session lineage/context-selection/old-original
+inspection remain. No cap increase, truncation, moving originals or unknown replay.
+Managed summary now includes opaque reasoning as well as complete old tool groups;
+first summary had left reasoning presentations, causing avoidable growth. Originals
+remain retained, not policy-efficacy claim. No B1/pilot recertification/giga.

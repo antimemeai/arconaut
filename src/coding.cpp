@@ -727,6 +727,20 @@ Json CodingEngine::request(Json options) {
   for (unsigned ordinal = 1;; ++ordinal) {
     if (cancelled && cancelled())
       throw Error{ErrorCode::interrupted};
+    const auto journal = log_.root().journal_usage();
+    if (journal.approaching() || journal.extent_error) {
+      const auto remaining = journal.remaining_bytes();
+      const auto warning =
+          "audit headroom: " +
+          (remaining ? std::to_string(*remaining) + " bytes" : "bytes unavailable") +
+          ", " + std::to_string(journal.remaining_records()) +
+          " indexed records remaining; observation only, no handoff reserve; "
+          "context compaction does not reclaim audit history";
+      if (status)
+        status(warning);
+      if (display)
+        display("\n[" + warning + "]\n");
+    }
     ResponsePreview preview;
     previewed_.clear();
     try {
@@ -981,6 +995,33 @@ Json CodingEngine::call(std::string name, Json arguments) {
 }
 Json CodingEngine::stats() const {
   auto result = context_.stats();
+  const auto journal = log_.root().journal_usage();
+  auto number = [](std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; };
+  result.object().emplace_back(
+      "audit",
+      Json::object(
+          {{"scope",
+            Json{
+                "physical observation; not admission permission or reserved headroom"}},
+           {"journal", Json{hex_identity(journal.prefix.journal.bytes())}},
+           {"prefix_end", number(journal.prefix.end_offset)},
+           {"observed_extent",
+            journal.observed_extent ? number(*journal.observed_extent) : Json{}},
+           {"max_file_bytes", number(journal.limit.max_file_bytes)},
+           {"remaining_bytes",
+            journal.remaining_bytes() ? number(*journal.remaining_bytes()) : Json{}},
+           {"max_records", number(journal.limit.max_records)},
+           {"indexed_records", number(journal.indexed_records)},
+           {"remaining_records", number(journal.remaining_records())},
+           {"writer_state", number(static_cast<unsigned>(journal.state))},
+           {"approaching", Json{journal.approaching()}},
+           {"extent_error",
+            journal.extent_error
+                ? Json::object({{"code", Json{std::string{
+                                             error_name(journal.extent_error->code)}}},
+                                {"detail", Json{JsonNumber{std::to_string(
+                                               journal.extent_error->detail)}}}})
+                : Json{}}}));
   result.object().emplace_back("last_request_bytes", last_request_bytes_);
   result.object().emplace_back("usage", usage_);
   result.object().emplace_back(

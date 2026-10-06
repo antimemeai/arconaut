@@ -2,6 +2,7 @@
 
 #include "arconaut/journal.hpp"
 #include "arconaut/journal_storage.hpp"
+#include <algorithm>
 
 namespace arconaut {
 
@@ -35,6 +36,31 @@ enum class JournalWriterState : std::uint8_t {
   recovered,
   blocked,
   poisoned
+};
+// Physical observation only, never admission permission or reserved allowance.
+struct JournalUsage {
+  JournalCapacity limit;
+  // Acknowledged while live, structurally/semantically staged during recovery.
+  JournalCursor prefix;
+  std::optional<std::uint64_t> observed_extent;
+  std::optional<Error> extent_error;
+  std::size_t indexed_records;
+  JournalWriterState state;
+  std::optional<std::uint64_t> remaining_bytes() const noexcept {
+    if (!observed_extent)
+      return std::nullopt;
+    const auto used = std::max(*observed_extent, prefix.end_offset);
+    return used >= limit.max_file_bytes ? 0 : limit.max_file_bytes - used;
+  }
+  std::size_t remaining_records() const noexcept {
+    return indexed_records >= limit.max_records ? 0
+                                                : limit.max_records - indexed_records;
+  }
+  bool approaching() const noexcept {
+    const auto bytes = remaining_bytes();
+    return (bytes && *bytes <= limit.max_file_bytes / 4) ||
+           remaining_records() <= limit.max_records / 4;
+  }
 };
 struct JournalRecoveryReport {
   std::optional<Error> problem;
@@ -83,6 +109,7 @@ public:
   const JournalHeader &header() const noexcept { return header_; }
   JournalWriterState state() const noexcept { return state_; }
   JournalCursor cursor() const noexcept { return cursor_; }
+  JournalUsage usage() const;
   const JournalRecoveryReport &recovery_report() const noexcept { return recovery_; }
   std::span<const PhysicalJournalRecord> physical_records() const noexcept {
     return records_;

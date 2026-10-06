@@ -930,10 +930,44 @@ void restage_failures_and_reentrancy() {
   CHECK(writer->state() == JournalWriterState::recovery_pending);
   CHECK(directory.state->locks == 1 && directory.state->submitted == before);
 }
+void usage_observation() {
+  MemoryDirectory directory;
+  auto writer =
+      require(FramedJournal::create(directory, "journal", header(), capacity));
+  auto usage = writer->usage();
+  CHECK(usage.prefix.end_offset == 112 && usage.observed_extent == 112);
+  CHECK(usage.remaining_bytes() == 4096 - 112 && usage.remaining_records() == 32);
+  CHECK(!usage.approaching());
+  require(writer->append(drafts));
+  usage = writer->usage();
+  CHECK(usage.indexed_records == drafts.size());
+  CHECK(usage.remaining_records() == 32 - drafts.size());
+  CHECK(usage.remaining_bytes() == 4096 - directory.state->submitted.size());
+  auto smaller = usage;
+  smaller.limit.max_records = drafts.size();
+  CHECK(smaller.remaining_records() == 0 && smaller.approaching());
+  directory.state->extent_failure = true;
+  auto unknown = writer->usage();
+  CHECK(!unknown.observed_extent && unknown.extent_error && !unknown.remaining_bytes());
+  CHECK(writer->state() == JournalWriterState::live);
+  directory.state->extent_failure = false;
+  // Unindexed tail remains a physical observation, not acknowledged history.
+  const auto committed = usage.prefix.end_offset;
+  directory.state->submitted.resize(4097);
+  usage = writer->usage();
+  CHECK(usage.prefix.end_offset == committed && usage.observed_extent == 4097);
+  CHECK(usage.remaining_bytes() == 0 && usage.approaching());
+  directory.state->submitted.resize(committed);
+  require(writer->restage());
+  usage = writer->usage();
+  CHECK(usage.state == JournalWriterState::recovery_pending);
+  CHECK(usage.indexed_records == drafts.size()); // overlapping indexes count once
+}
 } // namespace
 
 int main() {
   try {
+    usage_observation();
     commitment();
     failures_and_cuts();
     publication_and_capacity();
