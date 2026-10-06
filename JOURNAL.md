@@ -2650,3 +2650,18 @@ clean immediately after push. Captured archive whitespace is preserved as source
 material; changed product/config/document files outside papers pass Git whitespace
 checks. No ignored context/quarantine/PDF/build paths included. External board
 commit c470ca8 retained locally in codex-tools; destination question pending.
+
+### Launch useful-work evolution interstitial
+
+Operator explicitly launches post-B1 interstitial. Fresh Arco gpt-6.1-sol medium
+session at context/evolution-pilot/session with durable output/child/result
+captures. .14 marked in_progress; .14.1 remains queued child. Mission covers
+common audit/rageshake observability, contrastive Lua workflow, branch-based
+candidates/bounded worktrees, bounded useful-work comparison and fresh transfer.
+Requires actual primary source use, direct checks, occasional scoped colleagues,
+quiet RRC, meaningful commit/push checkpoints and certification-loop guards.
+No new libraries/services or all integrations/multiplayer prerequisites.
+
+External board corrected in codex-tools: closed issues show closure outcome;
+completed dependencies no longer imply waiting; live per-issue activity supplements
+the separate historical backups. Old board process needs restart to load code.

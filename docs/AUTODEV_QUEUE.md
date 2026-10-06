@@ -247,3 +247,12 @@ or activation. No force-push, implicit main merge, credential/audit-secret uploa
 or ignored context/quarantine/build publication. Bounded worktree management
 and checkout quiescence remain unchanged. Missing remotes need a concrete
 destination; failed pushes remain visible and local history retained.
+
+## Interstitial launched — 2026-10-06
+
+Arconaut-uaa.14 is in_progress, fresh context/evolution-pilot/session using
+gpt-6.1-sol medium. Audit/rageshake, programmable diagnosis/measurement, then
+branch-based candidates with bounded worktree leases (.14.1) and bounded
+comparison/transfer work. Earlier B1-incomplete checkpoints above are historical;
+B1 is closed. Read current live beads and final compaction report. Use and update
+the actual per-unit plan/status as work proceeds; no giga launch implied.
