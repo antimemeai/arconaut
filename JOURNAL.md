@@ -2743,3 +2743,16 @@ unit1 closed. Source archive not yet activation: release/arco built, quiet RRC a
 ordinary live candidate/Lua observation next, then finite matched economy pilot.
 Context-size check exposed accumulated implementation trace (367951 requestJSON);
 compact at this meaningful boundary before more work, not native replay claim.
+
+### Useful-work unit2 live activation and narrow fault correction
+
+Actual native quiet RRC plus ordinary Lua helper load recovered exact original
+source/error712/55 and made context/cost choices visible. One bounded isolated
+serial candidate checkpoint7cbc088 pushed, relevant artifact retained, activation
+separate from source and contrast record persisted. Live absent-parent request
+write exposed missing confirmation gate: direct red then affected release Lua1/1
+green; helper now refuses CLI dispatch without written=true. Failed activation
+object/string schema request rejected before effect, corrected explicitly.
+No native/B1 recertification. Next: boundary steer survives quiet RRC, retire
+observed stopped checkout with branch/artifact survival, child closure; parent
+finite paired economy pilot still pending.

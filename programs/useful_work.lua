@@ -57,7 +57,8 @@ function M.record(pool, request_path, r, executable)
     assert(r[key]~=nil, 'missing '..key)
   end
   r.resources=r.resources or M.feedback()
-  arco.call('write_file',{path=request_path,content=arco.json.encode(r)})
+  local persisted=arco.call('write_file',{path=request_path,content=arco.json.encode(r)})
+  if persisted.written~=true then return {error='request write not confirmed',write_result=persisted} end
   return arco.call('exec',{argv={executable or 'build/release/arco-candidate',pool,'record',request_path},
                          timeout_seconds=30,output_max_bytes=4096})
 end

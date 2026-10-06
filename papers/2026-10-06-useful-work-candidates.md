@@ -78,3 +78,35 @@ No speedup evidence claimed yet: actual finite matched repeated tasks across two
 families and fresh transfer, separately recorded correctness/resources/task-level
 uncertainty are remaining .14 work. All-provider review usage absent from capture
 is unavailable (not zero). Raw private captures stay ignored.
+
+## Actual activation checkpoint (post-source qualification)
+
+Quiet RRC inhabited the qualified native implementation; ordinary audited Lua
+loaded `programs/useful_work.lua` and recovered source14503/source0/end14564
+(712 bytes) and actual error15023/source0/end15200 (55 bytes), journal
+`1f2246cd83c933dffc5c44c18c4b4d2f`. Feedback exposed actual request bytes/usage.
+No default workflow selection is claimed: `turn.lua` remains unchanged.
+
+Allocated the one-slot ignored serial pool, dispatched
+`candidate/useful-work-tools`, retained evidence outside the checkout, checkpoint
+`7cbc088a0bae3c2971d3caaf0098c2f2cf845d4c`, pushed candidate branch. Native/Lua
+activation recorded separately with actual provider request40814,
+id `fcd112e14cf4a954bc4d000000000000`, attempt
+`fcd112e14cf4a954bb4d000000000000`, effective generation
+`fcd112e14cf4a954c147000000000000`. Ordinary Lua contrast persisted immutable local
+record `event-dTvTV7`; no raw private trace published.
+
+Live interaction found unconfirmed request writes were not gated before CLI
+invocation. Initial init request was absent (parent directory did not yet exist);
+CLI failed without effects, later enqueue/dispatch explicitly refused uninitialized
+pool. Observed absence allowed a distinct init request, not unknown-effect replay.
+This motivated a meaningful Lua safety correction: `record` now dispatches only
+on `written=true`. A direct failing-write oracle was red before the fix and green
+in affected release Lua test1/1 afterward. Candidate contains this correction;
+original qualification is not rerun for unchanged native code. Initial activation
+request used object evidence where CLI expects strings: rejected before save;
+corrected separately with serialized evidence and observed success.
+
+Persistent steer marker `unit2-live-698ff4a` read at the ordinary Lua boundary;
+next quiet RRC observation and actual checkout retirement remain before child
+closure. Pilot is not yet dispatched and no uplift is claimed.

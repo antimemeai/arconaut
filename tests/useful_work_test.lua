@@ -10,7 +10,7 @@ arco={json={encode=function() return '{}' end,decode=function(v) return {directi
       cursor=cursor or 0
       local next_cursor=math.min(cursor+64,130)
       return {['end']=watermark,next={tostring(next_cursor)},records={{label='lua.error',record={tostring(cursor)}}}}
-    elseif name=='write_file' then writes=writes+1; return {}
+    elseif name=='write_file' then writes=writes+1; return {written=true}
     elseif name=='exec' then executions=executions+1; return {timed_out=true,effect_outcome='unknown'}
     elseif name=='read_file' then return {content='next boundary steer'} end
     error('unexpected call')
@@ -34,3 +34,12 @@ local r=M.contrast('pool','request',{hypothesis='actual parser trace',discrimina
   measurement={correct=true},disposition='keep',references={record=15023}})
 assert(r.effect_outcome=='unknown' and executions==1 and writes==1,'no unknown delivery replay')
 print('useful Lua fault checks passed')
+-- A failed request write must not execute a stale/missing request file.
+local prior=arco.call
+arco.call=function(name,args)
+  if name=='write_file' then return {error='parent absent'} end
+  return prior(name,args)
+end
+local before=executions
+local rejected=M.record('pool','absent/request',{question='write failure',action='persist',outcome='unknown',references={}})
+assert(executions==before and rejected.error,'failed write must stop CLI dispatch')
