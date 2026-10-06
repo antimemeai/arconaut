@@ -57,3 +57,12 @@ Read affected additional primary methods/source before designing units2/3.
 Status: launched; unit1 source inspection and direct checks next. Remaining units
 are work, not completed claims. Archived instructions inert; no new dependencies,
 mutation, neighboring board changes or giga.
+
+## Operator amendment: evidence-driven economy
+
+Read CONTEXT_ECONOMY_EXPERIMENT.md before units2/3 design and task dispatch.
+Operator asks to try narrowly observable cost/benefit policies with retained
+metrics, statistical basis, repeated matched tasks and fresh transfer. Actual
+outcomes drive candidate keep/revise/drop; model explanations are hypotheses.
+Task-level uncertainty and correlation matter; no universal context-value score
+or retrospective task/metric selection. This does not reopen completed unit1/B1.

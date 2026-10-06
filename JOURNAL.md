@@ -2717,3 +2717,15 @@ token minimization, weakened checks, dropped originals or an intrinsic preferenc
 claim. Lean-workflow behavior belongs to the scoped Lua unit and fresh transfer
 evidence, not another approval/judge platform. Audit inspection and resume
 metadata/captures stay in context/evolution-pilot.
+
+### Statistical basis for economical information gathering
+
+Operator authorized trial and clarified that the interstitial should provide
+statistical basis and retain/adapt to metrics. Added CONTEXT_ECONOMY_EXPERIMENT
+and scoped subplan amendment: declared policy/task/oracle/resource manifest,
+matched repeated runs, common instrumentation, task-level uncertainty, failures
+in denominator, fresh transfer and explicit keep/revise/drop. No universal
+utility score or attribution from model self-explanation. Candidate modifications
+and adaptive reused tasks remain explicit; bounded batch cannot expand forever
+to obtain significance. Live Arco is now staging compaction after lean steer;
+amendment is queued in its design notes, not yet claimed read/implemented.
