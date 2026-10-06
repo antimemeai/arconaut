@@ -2789,3 +2789,18 @@ Post-pilot typed line/byte helpers avoid actual errors; direct ordinary reads ex
 release4/4 and Neuroses all3profiles4/4 context/linux/run-bf7c9f7q. No native source
 change or B1/unit1 recertification. Remaining: publish source/report checkpoint,
 quiet replacement with persistent revised steer, final parent outcome+backup/push.
+
+### Capacity recovery after completed interstitial pilot
+
+Root verified d2b89d7 and candidate/useful-range-revision published. Original
+interstitial session exhausted its512MiB audit after Lua completion; final
+boundary settlement/replacement is not established. No pilot rerun or audit
+truncation. Original session/audit remains at existing locators. Old control
+metadata copied under context/evolution-pilot/capacity-control-20261006T201808Z.
+External supervisor gained explicit --session selection (evotools418be2f pushed);
+direct fake-native test verifies argument, child locator, exit and lock cleanup.
+Fresh session-capacity-continuation launched supervisor34633, same model/medium;
+actual first provider request observed and board shows supervised/running.
+Handoff names source/report and unknown final settlement; urgent .14.2 native
+transport retries and .14.3 sustained-history capacity handling follow, without
+B1 recertification or another pilot. Parent remains active, giga not launched.
