@@ -2729,3 +2729,17 @@ utility score or attribution from model self-explanation. Candidate modification
 and adaptive reused tasks remain explicit; bounded batch cannot expand forever
 to obtain significance. Live Arco is now staging compaction after lean steer;
 amendment is queued in its design notes, not yet claimed read/implemented.
+
+## 2026-10-06 — useful-work candidate/Lua source checkpoint
+Implemented C++ bounded branch/checkpoint/lease tooling and Lua bounded audit,
+contrast records, actual economy feedback, persistent boundary steer. Concrete
+symlink-primary-alias red in disposable test fixed; Kimi consequential recovery
+finding fixed with observed clean-prior reconciliation/partial-byte quarantine.
+Unknown programs never replay; leader exit never certifies all checkout users
+stopped. Actual two-slot concurrency + fixed overflow and serial retirement/archive
+survival checked. Final Mac and Neuroses debug/release/ASan affected2/2 each;
+Linux run-9ebbnvcz. Full report/review dispositions in candidate unit paper. B1 and
+unit1 closed. Source archive not yet activation: release/arco built, quiet RRC and
+ordinary live candidate/Lua observation next, then finite matched economy pilot.
+Context-size check exposed accumulated implementation trace (367951 requestJSON);
+compact at this meaningful boundary before more work, not native replay claim.

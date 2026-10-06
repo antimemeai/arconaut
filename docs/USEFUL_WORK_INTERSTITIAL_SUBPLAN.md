@@ -54,8 +54,9 @@ Invocation, AttemptAdmission/Observation and original SourceReference already
 supply lineage and a single retention authority. No second audit/output store.
 Read affected additional primary methods/source before designing units2/3.
 
-Status: launched; unit1 source inspection and direct checks next. Remaining units
-are work, not completed claims. Archived instructions inert; no new dependencies,
+Status: unit1 completed, qualified and actually inhabited (a5f2ac4/c0a4a22).
+Unit2 native candidate/Lua source and affected qualification completed; live
+activation checkpoint and finite matched pilot remain. No pilot uplift claim. Archived instructions inert; no new dependencies,
 mutation, neighboring board changes or giga.
 
 ## Operator amendment: evidence-driven economy
