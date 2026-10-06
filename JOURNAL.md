@@ -2910,3 +2910,22 @@ this workflow succeeds; it is not evidence of useful large compaction. Remaining
 large presentations need direct diagnosis/compaction after native activation; raw
 originals stay retained. Fresh audit observed301708783bytes,235162129headroom before
 these diagnostics (not a growth-rate claim). Capacity scope remains urgent.
+
+## 2026-10-06 — successor native activation; normal context boundary
+
+10a8de4 pushed and actual quiet replacement continued, PID47430 start17:15:26 after
+binary17:08:12 build; ordinary provider resume works. .14.3 remains active. Large
+managed context proposal on this continuation under pcall returned staged (unlike
+prior two failed proposals). Success/publication waits for ordinary workflow end;
+do not claim it already compacted or rerun failed effects. No native change this
+continuation, hence no ceremonial RRC. Finish ordinary workflow so the large source/
+check/opaque-reasoning presentations can leave the working view while originals stay.
+
+Read actual write/admission/dispatch, source and child capture and context cancellation
+seams. docs/CAPACITY_SETTLEMENT_SUBPLAN.md records consequences: exact frame costs,
+triple input admissions, receipt after callback, process16MiB capture/callback unwind,
+full context and pending proposal maintenance, nested outstanding attempts. A small
+constant margin/request-only guard is inadequate. Next implementation owns normal
+write floor and bounded protected settlement at retained write seam, with prospective
+context requirement and unknown partial overflow handling; no cap increase. Current
+seed/headroom do not solve sustained exhaustion, and live handoff/old resolver remain.

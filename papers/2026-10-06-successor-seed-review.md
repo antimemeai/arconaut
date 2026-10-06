@@ -36,3 +36,10 @@ without creating destination; subsequent tightened-schema cases covered directly
 Remaining .14.3: workflow/output reservation, live handoff, honest selected source
 export and original-entry resolution without replaying full parent history. Seed
 alone does not prevent ongoing exhaustion. No significance/economy generalization.
+
+## Activation follow-up
+
+10a8de4 pushed reconstruction/cpp-lua-2026-10-06 and
+candidate/session-successor-seed. Actual quiet replacement continued: running
+release/arco PID47430 started17:15:26 after binary17:08:12 build, ordinary resumed
+request successful. No live current-session seeding/handoff or old settlement claim.
