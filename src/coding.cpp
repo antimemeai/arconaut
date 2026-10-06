@@ -10,6 +10,7 @@ extern "C" {
 #include <chrono>
 #include <cstring>
 #include <set>
+#include <thread>
 
 namespace arconaut {
 namespace {
@@ -606,7 +607,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       (boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
        boundary.error->code == ErrorCode::incomplete ||
-       boundary.error->code == ErrorCode::external_unknown))
+       boundary.error->code == ErrorCode::external_unknown ||
+       boundary.error->code == ErrorCode::provider_transport))
     disposition = AttemptDisposition::unknown;
   if (!boundary.error && name == "exec" &&
       field(result, "exit_code").number().text != "0")
@@ -670,7 +672,33 @@ Json CodingEngine::request(Json options) {
        {"stream", Json{true}}});
   if (!std::holds_alternative<Json::Object>(options.value()))
     throw Error{ErrorCode::invalid_range};
+  unsigned max_attempts = 5;
+  unsigned base_ms = 1000;
+  unsigned cap_ms = 16000;
+  if (const auto *policy = options.find("retry_policy")) {
+    if (!std::holds_alternative<Json::Object>(policy->value()))
+      throw Error{ErrorCode::invalid_range};
+    for (const auto &[key, value] : policy->object()) {
+      if (!std::holds_alternative<JsonNumber>(value.value()))
+        throw Error{ErrorCode::invalid_range};
+      unsigned n = 0;
+      const auto &text = value.number().text;
+      const auto parsed = std::from_chars(text.data(), text.data() + text.size(), n);
+      if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size())
+        throw Error{ErrorCode::invalid_range};
+      if (key == "max_attempts" && n >= 1 && n <= 100)
+        max_attempts = n;
+      else if (key == "base_ms" && n <= 60000)
+        base_ms = n;
+      else if (key == "cap_ms" && n <= 60000)
+        cap_ms = n;
+      else
+        throw Error{ErrorCode::invalid_range};
+    }
+  }
   for (auto &[key, value] : options.object()) {
+    if (key == "retry_policy")
+      continue;
     auto &fields = request.object();
     auto found = std::find_if(fields.begin(), fields.end(),
                               [&](const auto &f) { return f.first == key; });
@@ -690,26 +718,72 @@ Json CodingEngine::request(Json options) {
   if (display)
     display("\n[request " + last_request_bytes_.number().text + " JSON bytes]\n");
   const auto origin = context_.head();
-  ResponsePreview preview;
-  previewed_.clear();
+  // One live request group; each failed attempt stays independently recorded.
+  const auto retry_group =
+      hex_identity(unwrap(log_.root().issue<OperationAttemptId>()).bytes());
   provider_.cancelled = cancelled;
-  auto response = operation("provider", request, [&](OperationAttemptId attempt) {
-    log_.original(
-        {"provider.request", unwrap(dump_json(request)),
-         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                       {"revision", Json{origin}},
-                       {"generation", Json{hex_identity(generation_.bytes())}}})});
-    return provider_.respond(request, [&](std::string_view raw) {
-      log_.original({"provider.stream", raw,
-                     Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                                   {"revision", Json{origin}}})});
-      for (const auto &delta : preview.feed(raw)) {
-        previewed_[delta.item_id] += delta.text;
-        if (display)
-          display(delta.text);
+  Json response;
+  unsigned delay_ms = std::min(base_ms, cap_ms);
+  for (unsigned ordinal = 1;; ++ordinal) {
+    if (cancelled && cancelled())
+      throw Error{ErrorCode::interrupted};
+    ResponsePreview preview;
+    previewed_.clear();
+    try {
+      response = operation("provider", request, [&](OperationAttemptId attempt) {
+        log_.original(
+            {"provider.request", unwrap(dump_json(request)),
+             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                           {"revision", Json{origin}},
+                           {"generation", Json{hex_identity(generation_.bytes())}},
+                           {"retry_group", Json{retry_group}},
+                           {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})});
+        return provider_.respond(request, [&](std::string_view raw) {
+          log_.original({"provider.stream", raw,
+                         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                                       {"revision", Json{origin}}})});
+          for (const auto &delta : preview.feed(raw)) {
+            previewed_[delta.item_id] += delta.text;
+            if (display)
+              display(delta.text);
+          }
+        });
+      });
+      break;
+    } catch (const Error &e) {
+      const bool transient_http =
+          e.code == ErrorCode::external_unknown &&
+          (e.detail == 408 || e.detail == 429 || e.detail == 500 || e.detail == 502 ||
+           e.detail == 503 || e.detail == 504);
+      const bool transient_curl =
+          e.code == ErrorCode::provider_transport &&
+          (e.detail == 5 || e.detail == 6 || e.detail == 7 || e.detail == 16 ||
+           e.detail == 18 || e.detail == 28 || e.detail == 52 || e.detail == 55 ||
+           e.detail == 56 || e.detail == 92 || e.detail == 95 || e.detail == 96);
+      if (ordinal >= max_attempts || !(transient_http || transient_curl) ||
+          log_.root().state() != JournalWriterState::live)
+        throw;
+      const auto message =
+          "provider attempt " + std::to_string(ordinal) + " stopped (" +
+          error_name(e.code) + ":" + std::to_string(e.detail) +
+          "); partial output not accepted; retry " + std::to_string(ordinal + 1) + "/" +
+          std::to_string(max_attempts) + " in " + std::to_string(delay_ms) + "ms";
+      log_.original({"provider.retry", message,
+                     Json::object({{"retry_group", Json{retry_group}}})});
+      if (status)
+        status(message);
+      if (display)
+        display("\n[" + message + "]\n");
+      const auto until =
+          std::chrono::steady_clock::now() + std::chrono::milliseconds{delay_ms};
+      while (std::chrono::steady_clock::now() < until) {
+        if (cancelled && cancelled())
+          throw Error{ErrorCode::interrupted};
+        std::this_thread::sleep_for(std::chrono::milliseconds{25});
       }
-    });
-  });
+      delay_ms = std::min(cap_ms, delay_ms * 2);
+    }
+  }
   if (const auto *usage = response.find("usage");
       usage && std::holds_alternative<Json::Object>(usage->value())) {
     Json::Object selected;

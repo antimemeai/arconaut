@@ -193,6 +193,7 @@ Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &l
       input += "data-binary = " + config_quote(encoded.value()) + "\n";
     }
     Child child;
+    child.deadline_error = {ErrorCode::provider_transport, 28};
     child.output_observer = config.response_observer;
     child.cancelled = config.cancelled;
     // --disable is first: do not load curlrc; no redirects, retries or verbose secret
@@ -203,7 +204,10 @@ Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &l
     const auto deadline = Clock::now() + std::chrono::seconds{config.timeout_seconds};
     child.send(input, deadline);
     child.close_input();
-    auto output = child.collect(deadline, config.response_limit);
+    int curl_exit = 0;
+    auto output = child.collect(deadline, config.response_limit, &curl_exit);
+    if (curl_exit != 0)
+      fail(ErrorCode::provider_transport, curl_exit);
     const auto separator = output.rfind('\n');
     if (separator == std::string::npos || output.size() - separator != 4)
       fail(ErrorCode::corrupt);

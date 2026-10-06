@@ -66,6 +66,15 @@ int curl_helper(int argc, char **argv) {
     return 8;
   if (config.find("https://chatgpt.com/backend-api/codex/") == std::string::npos)
     return 9;
+  if (config.find("triggerTimeout") != std::string::npos) {
+    std::cout << "data: before timeout\n" << std::flush;
+    ::sleep(3);
+    return 0;
+  }
+  if (config.find("trigger92") != std::string::npos) {
+    std::cout << "data: partial stream\n" << std::flush;
+    return 92;
+  }
   if (config.find("trigger401") != std::string::npos) {
     std::cout << "{\"error\":{\"message\":\"PRIVATE_BODY_MUST_NOT_ESCAPE\"}}\n401";
     return 0;
@@ -119,6 +128,23 @@ int main(int argc, char **argv) {
     auto stream = openai_http(config, login.value(), "responses", &request);
     check(stream.has_value() && completed_response(stream.value()).has_value());
     check(!openai_http(config, login.value(), "https://other.invalid/").has_value());
+    std::string partial;
+    config.response_observer = [&](std::string_view bytes) { partial += bytes; };
+    auto dropped_request = Json::object({{"trigger92", Json{true}}});
+    auto dropped = openai_http(config, login.value(), "responses", &dropped_request);
+    check(!dropped.has_value() &&
+          dropped.error().code == ErrorCode::provider_transport &&
+          dropped.error().detail == 92 && partial == "data: partial stream\n");
+    config.timeout_seconds = 1;
+    auto deadline_request = Json::object({{"triggerTimeout", Json{true}}});
+    auto deadline_failure =
+        openai_http(config, login.value(), "responses", &deadline_request);
+    check(!deadline_failure.has_value() &&
+          deadline_failure.error().code == ErrorCode::provider_transport &&
+          deadline_failure.error().detail == 28 &&
+          partial.ends_with("data: before timeout\n"));
+    config.timeout_seconds = 120;
+    config.response_observer = {};
     auto failure = Json::object({{"trigger401", Json{true}}});
     auto refused = openai_http(config, login.value(), "responses", &failure);
     check(!refused.has_value() &&

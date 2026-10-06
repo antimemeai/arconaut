@@ -150,7 +150,7 @@ bool capture_less(const ProvisionalCaptureEvent &left,
 }
 bool valid_choice(const RecoveryChoiceEvent &event) noexcept {
   if (event.problem && static_cast<std::uint8_t>(event.problem->code) >
-                           static_cast<std::uint8_t>(ErrorCode::audit_unavailable)) {
+                           static_cast<std::uint8_t>(ErrorCode::provider_transport)) {
     return false;
   }
   for (std::size_t index = 0; index < event.checked_attempts.size(); ++index) {
@@ -311,11 +311,11 @@ bool valid_body(const RetainedBody &body) {
           return valid_conflict(event);
         } else if constexpr (std::is_same_v<T, RejectedSubmissionEvent>) {
           return static_cast<std::uint8_t>(event.reason.code) <=
-                 static_cast<std::uint8_t>(ErrorCode::audit_unavailable);
+                 static_cast<std::uint8_t>(ErrorCode::provider_transport);
         } else if constexpr (std::is_same_v<T, AdapterReceiptEvent>) {
           return !event.failure ||
                  static_cast<std::uint8_t>(event.failure->code) <=
-                     static_cast<std::uint8_t>(ErrorCode::audit_unavailable);
+                     static_cast<std::uint8_t>(ErrorCode::provider_transport);
         } else if constexpr (std::is_same_v<T, RecoveryChoiceEvent>) {
           return valid_choice(event);
         } else if constexpr (std::is_same_v<T, ProvisionalCaptureEvent>) {
@@ -547,7 +547,7 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
       const auto reason = decoder.number(2);
       const auto reserved = decoder.number(2);
       const auto detail = decoder.number(8);
-      if (reason > static_cast<std::uint8_t>(ErrorCode::audit_unavailable) ||
+      if (reason > static_cast<std::uint8_t>(ErrorCode::provider_transport) ||
           reserved != 0) {
         return Result<RetainedEvent>::failure({ErrorCode::corrupt});
       }
@@ -561,7 +561,7 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
       const auto reason = decoder.number(2);
       const auto detail = decoder.number(8);
       if (!attempt.has_value() || success > 1 ||
-          reason > static_cast<std::uint8_t>(ErrorCode::audit_unavailable) ||
+          reason > static_cast<std::uint8_t>(ErrorCode::provider_transport) ||
           (success == 1 && (reason != 0 || detail != 0))) {
         return Result<RetainedEvent>::failure({ErrorCode::corrupt});
       }
@@ -590,7 +590,7 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
       // Reserve only after both count framing and the remaining capture count
       // have been bounded against bytes actually present, not declared policy.
       if (!journal.has_value() || decoder.failed() || present > 1 ||
-          reason > static_cast<std::uint8_t>(ErrorCode::audit_unavailable) ||
+          reason > static_cast<std::uint8_t>(ErrorCode::provider_transport) ||
           (present == 0 && (reason != 0 || detail != 0)) || decoder.remaining() < 4 ||
           checked_count > (decoder.remaining() - 4) / 20) {
         return Result<RetainedEvent>::failure({ErrorCode::corrupt});

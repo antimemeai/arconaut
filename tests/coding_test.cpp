@@ -1,5 +1,8 @@
 #include "arconaut/coding.hpp"
+#include <cerrno>
+#include <chrono>
 #include <iostream>
+#include <set>
 #include <unistd.h>
 using namespace arconaut;
 template <class T> T id(unsigned char n) {
@@ -362,12 +365,192 @@ void retained_output_test(const std::string &path) {
       throw Error{ErrorCode::corrupt};
   }
 }
+
+class FlakyProvider final : public CodingProvider {
+public:
+  unsigned calls = 0, failures = 1;
+  Error fault{ErrorCode::provider_transport, 92};
+  Json first_request;
+  Json respond(const Json &request,
+               const std::function<void(std::string_view)> &capture) override {
+    ++calls;
+    if (calls == 1)
+      first_request = request;
+    if (request != first_request || request.find("retry_policy"))
+      throw Error{ErrorCode::corrupt};
+    if (calls <= failures) {
+      capture("data: "
+              "{\"type\":\"response.output_text.delta\",\"item_id\":\"partial\","
+              "\"delta\":\"UNACCEPTED\"}\n\n");
+      capture("data: "
+              "{\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_"
+              "call\",\"name\":\"write_file\",\"arguments\":\"{}\"}}\n\n");
+      throw fault;
+    }
+    return Json::object(
+        {{"output", Json{Json::Array{Json::object({{"type", Json{"function_call"}},
+                                                   {"call_id", Json{"accepted"}},
+                                                   {"name", Json{"context_stats"}},
+                                                   {"arguments", Json{"{}"}}})}}}});
+  }
+};
+void retry_tests(const std::string &path) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  JournalHeader h{id<EnvironmentId>(31),
+                  id<AuditStreamId>(32),
+                  3,
+                  {4 * 1024 * 1024, 16 * 1024 * 1024},
+                  std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {64 * 1024 * 1024, 10000}));
+  AuditLog log{*root};
+  const char *program =
+      R"(local r=arco.request({retry_policy={max_attempts=3,base_ms=0,cap_ms=0}}); for _,v in ipairs(r.output) do local out=arco.call(v.name, {}); arco.append({{type="function_call_output",call_id=v.call_id,output=arco.json.encode(out)}}) end)";
+  {
+    ContextStore context{log};
+    FlakyProvider provider;
+    CodingEngine engine{log, context, provider, "test"};
+    unsigned tool_count = 0;
+    engine.operation_completed = [&](std::string_view event) {
+      if (event.starts_with("context_stats completed"))
+        ++tool_count;
+    };
+    engine.turn({"retry test", program});
+    if (provider.calls != 2 || tool_count != 1 ||
+        unwrap(dump_json(Json{context.items()})).find("UNACCEPTED") !=
+            std::string::npos)
+      throw Error{ErrorCode::corrupt};
+    std::set<std::string> attempts;
+    std::string group;
+    unsigned streams = 0, requests = 0;
+    for (const auto &fact : root->committed_facts()) {
+      const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+      if (!record || record->channel != ApplicationChannel::log)
+        continue;
+      const auto original = unwrap(parse_json(
+          std::string_view{reinterpret_cast<const char *>(record->payload.data()),
+                           record->payload.size()}));
+      if (!original.find("label"))
+        continue;
+      const auto &metadata = field(original, "metadata");
+      if (string_field(original, "label") == "provider.request") {
+        ++requests;
+        attempts.insert(string_field(metadata, "attempt"));
+        const auto current = string_field(metadata, "retry_group");
+        if (!group.empty() && group != current)
+          throw Error{ErrorCode::corrupt};
+        group = current;
+        if (field(metadata, "ordinal").number().text != std::to_string(requests))
+          throw Error{ErrorCode::corrupt};
+      }
+      if (string_field(original, "label") == "provider.stream")
+        ++streams;
+    }
+    if (attempts.size() != 2 || requests != 2 || streams != 2)
+      throw Error{ErrorCode::corrupt};
+  }
+  for (const auto fault :
+       {Error{ErrorCode::provider_transport, 92},
+        Error{ErrorCode::external_unknown, 429},
+        Error{ErrorCode::external_unknown, 401},
+        Error{ErrorCode::provider_transport, 60}, Error{ErrorCode::interrupted},
+        Error{ErrorCode::corrupt}, Error{ErrorCode::capacity}, Error{ErrorCode::io, 92},
+        Error{ErrorCode::io, ETIMEDOUT}}) {
+    ContextStore context{log};
+    FlakyProvider provider;
+    provider.failures = 10;
+    provider.fault = fault;
+    CodingEngine engine{log, context, provider, "test"};
+    bool failed = false;
+    try {
+      engine.turn({"outage", program});
+    } catch (const Error &e) {
+      failed = e.code == fault.code && e.detail == fault.detail;
+    }
+    const unsigned expected =
+        (fault.code == ErrorCode::provider_transport && fault.detail == 92) ||
+                (fault.code == ErrorCode::external_unknown && fault.detail == 429)
+            ? 3U
+            : 1U;
+    if (!failed || provider.calls != expected)
+      throw Error{ErrorCode::corrupt};
+  }
+  {
+    ContextStore context{log};
+    FlakyProvider provider;
+    provider.failures = 10;
+    CodingEngine engine{log, context, provider, "test"};
+    std::vector<std::string> waits;
+    engine.status = [&](std::string_view event) {
+      if (event.find("partial output not accepted") != std::string_view::npos)
+        waits.emplace_back(event);
+    };
+    bool failed = false;
+    try {
+      engine.turn(
+          {"bounded backoff",
+           R"(arco.request({retry_policy={max_attempts=3,base_ms=2,cap_ms=3}}))"});
+    } catch (const Error &e) {
+      failed = e.code == ErrorCode::provider_transport;
+    }
+    if (!failed || provider.calls != 3 || waits.size() != 2 ||
+        !waits[0].ends_with("in 2ms") || !waits[1].ends_with("in 3ms"))
+      throw Error{ErrorCode::corrupt};
+  }
+  {
+    ContextStore context{log};
+    FlakyProvider provider;
+    CodingEngine engine{log, context, provider, "test"};
+    bool failed = false;
+    try {
+      engine.turn(
+          {"invalid policy", R"(arco.request({retry_policy={max_attempts=0}}))"});
+    } catch (const Error &e) {
+      failed = e.code == ErrorCode::invalid_range;
+    }
+    if (!failed || provider.calls != 0)
+      throw Error{ErrorCode::corrupt};
+    engine.cancelled = [] { return true; };
+    failed = false;
+    try {
+      engine.turn({"cancel before dispatch", R"(arco.request())"});
+    } catch (const Error &e) {
+      failed = e.code == ErrorCode::interrupted;
+    }
+    if (!failed || provider.calls != 0)
+      throw Error{ErrorCode::corrupt};
+  }
+  {
+    ContextStore context{log};
+    FlakyProvider provider;
+    CodingEngine engine{log, context, provider, "test"};
+    bool cancel = false, failed = false;
+    engine.status = [&](std::string_view event) {
+      if (event.find("retry 2/") != std::string_view::npos)
+        cancel = true;
+    };
+    engine.cancelled = [&] { return cancel; };
+    const auto began = std::chrono::steady_clock::now();
+    try {
+      engine.turn({"cancel wait", R"(arco.request({retry_policy={base_ms=5000}}))"});
+    } catch (const Error &e) {
+      failed = e.code == ErrorCode::interrupted;
+    }
+    if (!failed || provider.calls != 1 ||
+        std::chrono::steady_clock::now() - began > std::chrono::seconds{1})
+      throw Error{ErrorCode::corrupt};
+  }
+}
 int main() {
   char name[] = "/tmp/arco-coding-XXXXXX";
   auto path = mkdtemp(name);
   if (!path)
     return 2;
   try {
+    retry_tests(std::string{path} + "/retries");
     retained_output_test(std::string{path} + "/output");
     JournalHeader h{id<EnvironmentId>(1),
                     id<AuditStreamId>(2),
@@ -614,7 +797,7 @@ int main() {
       throw Error{ErrorCode::corrupt};
 
   } catch (const Error &e) {
-    std::cerr << error_name(e.code) << '\n';
+    std::cerr << error_name(e.code) << ':' << e.detail << '\n';
     std::filesystem::remove_all(path);
     return 1;
   } catch (const std::exception &e) {

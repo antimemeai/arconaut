@@ -35,7 +35,8 @@ enum class ErrorCode : std::uint8_t {
   corrupt,
   conflict,
   busy,
-  audit_unavailable
+  audit_unavailable,
+  provider_transport
 };
 
 struct Error {

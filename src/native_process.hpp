@@ -59,6 +59,7 @@ class Child {
 public:
   std::function<void(std::string_view)> output_observer;
   std::function<bool()> cancelled;
+  Error deadline_error{ErrorCode::io, ETIMEDOUT};
   Child() = default;
   Child(const Child &) = delete;
   Child &operator=(const Child &) = delete;
@@ -208,7 +209,7 @@ public:
       if (done < 0 && errno != EINTR)
         fail(ErrorCode::io, errno);
       if (Clock::now() >= deadline)
-        fail(ErrorCode::io, ETIMEDOUT);
+        throw deadline_error;
       (void)::poll(nullptr, 0, 10);
     }
     if (exit_code != nullptr) {
@@ -233,7 +234,7 @@ private:
         std::chrono::duration_cast<std::chrono::milliseconds>(deadline - Clock::now())
             .count();
     if (remaining <= 0)
-      fail(ErrorCode::io, ETIMEDOUT);
+      throw deadline_error;
     pollfd descriptor{fd, events, 0};
     const int rc = ::poll(&descriptor, 1,
                           static_cast<int>(std::min<std::int64_t>(remaining, 100)));

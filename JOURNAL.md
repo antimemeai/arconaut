@@ -2804,3 +2804,37 @@ actual first provider request observed and board shows supervised/running.
 Handoff names source/report and unknown final settlement; urgent .14.2 native
 transport retries and .14.3 sustained-history capacity handling follow, without
 B1 recertification or another pilot. Parent remains active, giga not launched.
+
+## 2026-10-06 — fresh session after audit admission exhaustion; live retries
+
+Pilot source/report d2b89d7 and candidate/useful-range-revision already pushed;
+all12 accepted, mixed results REVISE unconditional bounded-first, disclosed errors/
+deadline instrumentation and unavailable supervisor totals. B1/.14.1 stay CLOSED.
+Old final turn exhausted admission after Lua; successful boundary settlement/quiet
+replacement NOT established. Old audit left untouched (bounded stat536870704 vs
+configured536870912;208bytes headroom), old locators valid. This is a fresh namespace,
+not replay. Parent .14 notes corrected; active urgent P0 .14.2/.14.3, giga not launched.
+
+Read current provider/session/journal sources and acquired Codex retry patterns;
+short written docs/PROVIDER_RESILIENCE_SUBPLAN.md before implementation. Retries
+first since extra attempts consume audit and must propagate recording failure.
+Native request-local bounded retry policy now retains separate admitted unknown
+attempts/raw chunks, frozen request/group/ordinal, resets preview, never repeats
+Lua/tools; visible exponential backoff with25ms cancellation. Curl errors typed
+separately from errno; error enum appended and retained bounds updated. Independent
+ChatGPT review found auth RPC timeout wrongly eligible under generic ioETIMEDOUT;
+fixed HTTP Child deadline labeling at source, auth stays permanent local error.
+Kimi timeout/Claude auth failure produced no reviews; no invented approval.
+Direct partial/recovery/no double dispatch, exhaustion, permanent/classification,
+invalid policy, capped nonzero waits and before/during wait cancellation checked.
+Native fake curl92/HTTP deadline retain partial bytes. Actual review costs retained,
+not a lean-effect claim. Report papers/2026-10-06-live-provider-retries.md.
+
+Affected Mac debug/release4/4, ASan initial4/4 plus final coding/auth2/2; Linux all
+three profiles initial4/4 plus changed coding/auth2/2 each. Initial Linux wrapper
+120s deadline during ASan: inspected retained output/stopped users, continued only
+remaining stopped build, not repeated uncertain effects. No full-suite/B1 recital.
+Release/arco built. Next: source checkpoint+backup/push then actual quiet native RRC
+and ordinary activation evidence; .14.2 remains in_progress until that observation.
+.14.3 remains open: measure history growth/replay, visible headroom and explicit
+successor lineage; no blind cap increase or old audit continuity claim.
