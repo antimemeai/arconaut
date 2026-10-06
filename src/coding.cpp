@@ -546,20 +546,21 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   const auto continuation = unwrap(dump_json(meta));
   const auto continuation_bytes =
       std::as_bytes(std::span{continuation.data(), continuation.size()});
-  (void)unwrap(root.submit(
-      {{},
-       DecisionEvent{decision,
-                     identity_.actor,
-                     identity_.conversation,
-                     identity_.workflow,
-                     generation_,
-                     context,
-                     {invocation},
-                     {continuation_bytes.begin(), continuation_bytes.end()}}}));
-  (void)unwrap(
-      root.submit({{}, InvocationEvent{invocation, decision, generation_, bytes}}));
-  (void)unwrap(
-      root.submit({{}, AttemptAdmissionEvent{attempt, invocation, decision, bytes}}));
+  // Fresh identities: one ordered batch, no authoritative partial admission.
+  const std::array<RetainedEvent, 3> admitted{
+      RetainedEvent{
+          {},
+          DecisionEvent{decision,
+                        identity_.actor,
+                        identity_.conversation,
+                        identity_.workflow,
+                        generation_,
+                        context,
+                        {invocation},
+                        {continuation_bytes.begin(), continuation_bytes.end()}}},
+      RetainedEvent{{}, InvocationEvent{invocation, decision, generation_, bytes}},
+      RetainedEvent{{}, AttemptAdmissionEvent{attempt, invocation, decision, bytes}}};
+  (void)unwrap(root.append(root.cursor(), {}, admitted));
   struct Boundary final : EffectBoundary {
     const std::function<Json(OperationAttemptId)> &fn;
     Json result;

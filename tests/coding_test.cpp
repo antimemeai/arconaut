@@ -206,6 +206,177 @@ Json invoke(CodingEngine &engine, std::string_view name, const Json &args) {
   engine.display = {};
   return unwrap(parse_json(shown));
 }
+void atomic_admission_test(const std::string &path, int mode) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(31),
+                        id<AuditStreamId>(32),
+                        3,
+                        {8192, mode == 2 ? 16384U : 65536U},
+                        std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {64 * 1024 * 1024, 10000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  UsageProvider provider;
+  CodingEngine engine{log, context, provider, "test"};
+  engine.turn({"", "arco.call('context_stats', {})"});
+  const auto counts = [&] {
+    std::array<std::size_t, 3> result{};
+    for (const auto &fact : root->committed_facts()) {
+      result[0] += std::holds_alternative<DecisionEvent>(fact.event.body);
+      result[1] += std::holds_alternative<InvocationEvent>(fact.event.body);
+      result[2] += std::holds_alternative<AttemptAdmissionEvent>(fact.event.body);
+    }
+    return result;
+  };
+  std::array<std::size_t, 3> before{};
+  const auto marker = path + "/effect";
+  const auto args =
+      Json::object({{"path", Json{marker}},
+                    {"content", Json{std::string(mode == 2 ? 7000 : 2048, 'x')}}});
+  std::unique_ptr<RetainedState::SettlementScope> hold;
+  std::optional<JournalCapacity> saved_credit;
+  engine.status = [&](std::string_view description) {
+    if (!description.starts_with("write_file"))
+      return;
+    before = counts();
+    if (mode != 2) {
+      const auto usage = root->journal_usage();
+      JournalCapacity credit{1, usage.remaining_records() - 5};
+      if (mode == 0) {
+        std::optional<DecisionEvent> prior;
+        for (const auto &fact : root->committed_facts())
+          if (const auto *d = std::get_if<DecisionEvent>(&fact.event.body))
+            prior = *d;
+        if (!prior)
+          throw Error{ErrorCode::corrupt};
+        const auto input = unwrap(dump_json(args));
+        const auto metadata = unwrap(dump_json(Json::object(
+            {{"operation", Json{"write_file"}},
+             {"input", args},
+             {"revision", Json{context.head()}},
+             {"generation", Json{hex_identity(prior->definition.bytes())}}})));
+        const auto raw = std::as_bytes(std::span{metadata.data(), metadata.size()});
+        const auto in = std::as_bytes(std::span{input.data(), input.size()});
+        const auto encoded_size = [&](const RetainedEvent &event) {
+          return unwrap(encode_retained_event(event, h.limits.max_payload)).size();
+        };
+        const auto issuer = 56 + journal_frame_header_size +
+                            encoded_size({{}, IssuerReservationEvent{1}});
+        const auto decision = encoded_size({{},
+                                            DecisionEvent{id<DecisionId>(51),
+                                                          prior->actor,
+                                                          prior->conversation,
+                                                          prior->workflow,
+                                                          prior->definition,
+                                                          prior->context,
+                                                          {id<InvocationId>(52)},
+                                                          {raw.begin(), raw.end()}}});
+        const auto invocation = encoded_size({{},
+                                              InvocationEvent{id<InvocationId>(52),
+                                                              id<DecisionId>(51),
+                                                              prior->definition,
+                                                              {in.begin(), in.end()}}});
+        // Exactly enough for three issuer reservations and two old transactions.
+        const auto room =
+            3 * issuer + 2 * (56 + journal_frame_header_size) + decision + invocation;
+        if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
+          throw Error{ErrorCode::corrupt};
+        credit = {*usage.remaining_bytes() - room, 1};
+      }
+      hold = unwrap(root->protect_settlement(credit));
+    }
+    saved_credit = root->protected_settlement();
+  };
+
+  bool refused = false;
+  try {
+    engine.turn({"", "arco.call('write_file', arco.json.decode([==[" +
+                         unwrap(dump_json(args)) + "]==]))"});
+  } catch (const Error &error) {
+    refused = error.code == ErrorCode::capacity;
+  }
+  const auto after_credit = root->protected_settlement();
+  if (!refused || counts() != before || std::filesystem::exists(marker) ||
+      provider.bytes != 0 || root->state() != JournalWriterState::live ||
+      saved_credit.has_value() != after_credit.has_value() ||
+      (saved_credit && (saved_credit->max_file_bytes != after_credit->max_file_bytes ||
+                        saved_credit->max_records != after_credit->max_records))) {
+    const auto actual = counts();
+    std::cerr << "admission refusal mode=" << mode << " refused=" << refused
+              << " committed deltas=" << actual[0] - before[0] << ','
+              << actual[1] - before[1] << ',' << actual[2] - before[2] << '\n';
+    throw Error{ErrorCode::corrupt};
+  }
+  hold.reset();
+  engine.status = {};
+  auto expected = counts();
+  std::set<IdentityBytes> prior_ids;
+  for (const auto &fact : root->committed_facts()) {
+    if (const auto *d = std::get_if<DecisionEvent>(&fact.event.body))
+      prior_ids.insert(d->decision.bytes());
+    if (const auto *v = std::get_if<InvocationEvent>(&fact.event.body))
+      prior_ids.insert(v->invocation.bytes());
+    if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body))
+      prior_ids.insert(a->attempt.bytes());
+  }
+  (void)invoke(engine, "write_file",
+               Json::object({{"path", Json{marker}}, {"content", Json{"accepted"}}}));
+  for (auto &value : expected)
+    ++value;
+  if (counts() != expected || read_file(marker) != "accepted")
+    throw Error{ErrorCode::corrupt};
+  const DecisionEvent *decision = nullptr;
+  const InvocationEvent *invocation = nullptr;
+  const AttemptAdmissionEvent *admission = nullptr;
+  std::array<std::uint64_t, 3> sequence{};
+  for (const auto &fact : root->committed_facts()) {
+    if (const auto *d = std::get_if<DecisionEvent>(&fact.event.body)) {
+      decision = d;
+      sequence[0] = fact.record.sequence;
+    }
+    if (const auto *v = std::get_if<InvocationEvent>(&fact.event.body)) {
+      invocation = v;
+      sequence[1] = fact.record.sequence;
+    }
+    if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body)) {
+      admission = a;
+      sequence[2] = fact.record.sequence;
+    }
+  }
+  if (!decision || !invocation || !admission ||
+      invocation->decision != decision->decision ||
+      admission->decision != decision->decision ||
+      admission->invocation != invocation->invocation ||
+      invocation->definition != decision->definition ||
+      decision->planned_invocations != std::vector{invocation->invocation} ||
+      prior_ids.contains(decision->decision.bytes()) ||
+      prior_ids.contains(invocation->invocation.bytes()) ||
+      prior_ids.contains(admission->attempt.bytes()) ||
+      sequence[1] != sequence[0] + 1 || sequence[2] != sequence[1] + 1)
+    throw Error{ErrorCode::corrupt};
+  // Read only this small fixture; do not contend with the live journal lease.
+  const auto retained = read_file(path + "/audit");
+  const auto raw = std::as_bytes(std::span{retained.data(), retained.size()});
+  std::array<bool, 3> found{};
+  for (std::size_t offset = journal_header_size; offset != raw.size();) {
+    const auto frame = unwrap(decode_journal_frame(raw.subspan(offset), h.limits));
+    for (std::size_t i = 0; i != sequence.size(); ++i)
+      if (frame.kind == FrameKind::semantic && frame.sequence == sequence[i]) {
+        found[i] = true;
+        if (frame.batch_first != sequence[0])
+          throw Error{ErrorCode::corrupt};
+      }
+    offset += frame.encoded_size;
+  }
+  for (const auto present : found)
+    if (!present)
+      throw Error{ErrorCode::corrupt};
+}
+
 void retained_output_test(const std::string &path) {
   std::filesystem::create_directory(path);
   std::filesystem::permissions(path, std::filesystem::perms::owner_all);
@@ -591,6 +762,9 @@ int main() {
   if (!path)
     return 2;
   try {
+    for (int mode = 0; mode != 3; ++mode)
+      atomic_admission_test(std::string{path} + "/admission-" + std::to_string(mode),
+                            mode);
     capacity_warning_test(std::string{path} + "/capacity");
     retry_tests(std::string{path} + "/retries");
     retained_output_test(std::string{path} + "/output");

@@ -79,3 +79,44 @@ will exhaust normal source writes inside an actual dispatch and settle its unkno
 receipt/terminal within held room. Byte/record floor, nesting, oversize, duplicate,
 rejection diagnostic and sync-unknown cases are the bounded claims of this slice.
 Workflow policy, atomic triple admission and context/capture integration follow.
+
+## Next dependency: atomic operation admission (2026-10-06)
+
+Protected-credit native activation actually observed: PID55593 start17:59:52 after
+release/arco17:52:09, ordinary resumed provider request and local tool successful.
+Managed revision9c814082f6003dff7d59000000000000 replaced the selected109 presentations;
+current56 entries vs prior115, input177839 vs346305 bytes (different boundaries, not
+performance/policy efficacy). Immutable originals remain, physical audit449447243
+bytes87423669 remaining. Old536870704 audit unchanged; settlement still unestablished.
+
+Choose atomic operation admission before broad protected-maintenance policy because
+operation currently publishes Decision, Invocation and Admission in three independent
+transactions. Prewrite refusal can leave a committed decision/invocation but no attempt.
+This violates the intended new-admission unit even with the native normal-write floor.
+Existing FramedJournal multi-draft transactions and RetainedState append already apply
+ordered dependencies to one candidate and publish only acknowledged complete batches;
+use that owned seam, no new library or journal format. Acquired Codex logical fork vs
+physical base and measured growth/replay findings remain in HISTORY_CAPACITY_SUBPLAN;
+this slice addresses admission, not segmentation or speculative reserve configuration.
+
+Change only CodingEngine::operation to one ordered three-event append with fresh
+issuer identities, same continuation/input bytes and relationships. Issuer reservations
+remain individually durable (unused identity is allowed), not rolled back or replayed.
+Batch refusal happens before dispatch; physical failure preserves uncertain originals
+and prevents dispatch via existing append failure propagation. Per-journal batch limit
+now applies to their sum; smaller custom max_batch settings may reject a formerly
+individually fitting operation. Do not raise limits or dispatch partially. Bootstrap
+32MiB payload/96MiB batch accommodates these three payloads under existing limits.
+
+Direct native engine faults: hold byte room for issuers plus two old event transactions,
+independently hold record room for issuers plus two facts, and impose a small batch
+limit where each input event fits but their sum does not. Require zero new committed
+Decision/Invocation/Admission and no file effect/provider call; budget unchanged and
+writer live on prewrite refusal. Release hold/use smaller input: one real file write,
+one related triple in the same physical batch. Establish failing old-code oracle
+before edit. Existing journal partialwrite/sync tests stay settled: batch machinery
+itself is unchanged. Consequential independent review of actual delta and affected
+coding/native retry consumer checks, release build/actual replacement follow.
+
+Not completion of .14.3: workflow obligations, protected context maintenance, bounded
+output/cancellation loss accounting, live handoff and old-original resolver remain.

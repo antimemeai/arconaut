@@ -2992,3 +2992,33 @@ passed all3 profiles fresh run-zg12q130, initial other affected checks remain se
 Native release/arco built; next quiet replacement is for these compiled changes only.
 Primitive checks complete; .14.3 remains active and live workflow protection NOT
 claimed. Working context compaction109 selected is still staged until boundary.
+
+## 2026-10-06 — atomic operation admission dependency, .14.3 still active
+
+Observed protected-credit e0dcbe2 actual replacement PID55593 start17:59:52 after
+binary17:52:09 and ordinary request/localtool. Previous selected109 managed compaction
+published9c814082f6003dff7d59000000000000, originals retained. New short subplan BEFORE
+edits in CAPACITY_SETTLEMENT_SUBPLAN chose atomic triple before full maintenance.
+CodingEngine now one ordered native append Decision/Invocation/Admission; same fresh
+IDs/bytes/links, unused issuer reservations allowed. No format/library/cap changes.
+Real old-code corrected oracle RED capacity committed deltas1,1,0; new code GREEN
+byte floor, record floor, small aggregate batch limit; no new triple/effect/provider,
+writer live/credits unchanged, then actual file write same-batch accepted triple.
+Prototype compile/privateAPI/permissions/busy-second-lease mistakes fixed and NOT
+claimed behavioral red; no private API made public. Independent ChatGPT fresh
+read-only one-request no tools5350input2011output50229ms no demonstrated code defect;
+accepted-oracle omissions in links/freshness/order fixed with direct assertions.
+Mac coding1/1 all3 initial/final; Linux initial run-v_n2hk1o and final expanded fresh
+runner coding1/1 all3 passed. Existing batch failure checks settled; no fullsuite/B1/
+pilot reruns. Release/arco built; compiled activation pending actual quiet replacement.
+Paper papers/2026-10-06-atomic-operation-admission.md, private admission-* captures.
+
+Runtime.failed ordinary error-original capture can fail at floor before Lua error
+is delivered; nativecatch used here, future protected maintenance must cover it.
+No full workflow/stream overflow/cancel/context linkage/handoff capacity claim.
+Parent .14/.14.3 active. Last physical fresh observed516365868/536870912bytes20505044
+remain and later requests grew: urgent explicit preserved-original successor before
+another long unit; do not increase cap/replay uncertain effects. Old536870704 audit
+untouched/unsettled. Current managed explicit-base proposal STAGED306300.. after
+known missing-base rejection, only applies normal boundary. Root owns README and
+promotion/branch retirement; did not edit README, merge/delete/promote. bd backup.
