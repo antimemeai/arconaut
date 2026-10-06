@@ -2643,3 +2643,10 @@ qualified compaction, research/design and issue backup will be preserved on
 reconstruction/cpp-lua-2026-10-06 and pushed to existing origin; master unchanged.
 External board committed separately in codex-tools; remote destination pending
 operator response because that repository has no configured remote.
+
+Checkpoint017e671 committed and pushed successfully to
+origin/reconstruction/cpp-lua-2026-10-06 with upstream tracking; working tree
+clean immediately after push. Captured archive whitespace is preserved as source
+material; changed product/config/document files outside papers pass Git whitespace
+checks. No ignored context/quarantine/PDF/build paths included. External board
+commit c470ca8 retained locally in codex-tools; destination question pending.
