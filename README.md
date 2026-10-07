@@ -30,7 +30,8 @@ In a terminal this opens the conversation view and composer. Piped input and `--
 ./scripts/arco --list-sessions
 ```
 
-**phux is the officially supported external multiplexer.** It keeps Arco's terminal
+**Supported partner tool: [phux](https://github.com/no-phux/phux)**, by phall,
+is the officially supported external multiplexer. It keeps Arco's terminal
 running across detach/reattach and gives humans and models access to the same panes.
 Start a named phux session with:
 

@@ -3710,3 +3710,9 @@ Separate shell run10s timed out, retained unresolved rather than broad hardening
 Private profile/socket/server stopped, operator default and dev loop untouched.
 No C++/Lua core dependency or native lifecycle projection delivered. Source grounding
 and actual support limits in papers/docs, no phux runtime qualification inference.
+
+## Supported partner tool link (2026-10-07)
+
+Operator requested a direct phux repository link in README as a supported partner
+tool. Added the link and attribution beside the existing launch instructions.
+Documentation-only change; checked the diff and whitespace.
