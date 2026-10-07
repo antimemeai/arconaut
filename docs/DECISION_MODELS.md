@@ -72,5 +72,5 @@ retain the provider's string legend with exact level keys.
 
 The first adapter is Jev only. Configured credential_file precedes
 BLACKBIRD_JEV_ENV_FILE after environment key resolution. Credentials never become
-model arguments. This implementation is a candidate until explicitly integrated;
-it does not replace the workspace development client.
+model arguments. This implementation is integrated on master; it does not replace the workspace
+development client.

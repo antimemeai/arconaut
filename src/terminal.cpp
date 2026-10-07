@@ -2,6 +2,7 @@
 #include "blackbird/terminal.hpp"
 #include "blackbird/sprite.hpp"
 #include "blackbird/tools.hpp"
+#include "blackbird/workflows.hpp"
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -13,6 +14,7 @@
 #include <cwchar>
 #include <fcntl.h>
 #include <iostream>
+#include <limits>
 #include <poll.h>
 #include <spawn.h>
 #include <stdexcept>
@@ -35,9 +37,9 @@ void resize_signal(int) {
   errno = saved;
 }
 struct ChatCommand {
-  std::string_view name, arguments, description, group;
+  std::string name, arguments, description, group;
 };
-constexpr std::array commands{
+const std::array builtin_commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
     ChatCommand{"/commands", "",
@@ -73,6 +75,24 @@ constexpr std::array commands{
     ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)", "Tools"},
     ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};
 
+std::shared_ptr<const std::vector<ChatCommand>> command_catalog() {
+  thread_local std::shared_ptr<const WorkflowRegistry> previous;
+  thread_local std::shared_ptr<const std::vector<ChatCommand>> cached;
+  const auto registry = displayed_workflows();
+  if (!cached || previous != registry) {
+    auto next = std::make_shared<std::vector<ChatCommand>>(builtin_commands.begin(),
+                                                           builtin_commands.end());
+    if (registry)
+      for (const auto &d : registry->definitions().array())
+        for (const auto &alias : field(d, "aliases").array())
+          next->push_back({"/" + registry->prefix() + alias.string(), "ARGS",
+                           field(d, "description").string(), "Workflows"});
+    cached = std::move(next);
+    previous = registry;
+  }
+  return cached;
+}
+
 std::string search_text(std::string_view text) {
   std::string out{text};
   for (auto &c : out)
@@ -80,7 +100,8 @@ std::string search_text(std::string_view text) {
       c = static_cast<char>(c + ('a' - 'A'));
   return out;
 }
-std::vector<std::size_t> palette_matches(std::string_view query) {
+std::vector<std::size_t> palette_matches(std::string_view query,
+                                         const std::vector<ChatCommand> &commands) {
   std::vector<std::size_t> matches;
   const auto needle = search_text(query);
   for (std::size_t n = 0; n < commands.size(); ++n) {
@@ -112,7 +133,8 @@ bool command_token(std::string_view text) {
   return text.starts_with("/") &&
          text.find_first_of(" \t\r\n") == std::string_view::npos;
 }
-std::string complete_command(std::string_view text) {
+std::string complete_command(std::string_view text,
+                             const std::vector<ChatCommand> &commands) {
   if (!command_token(text))
     return std::string{text};
   // An exact command wins over longer names (/draft versus /drafts).
@@ -245,7 +267,8 @@ public:
   void suspend() {
     if (!active_)
       return;
-    terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
+    terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?"
+                     "2004l\x1b[?1049l\x1b[?25h");
     if (tcsetattr(STDIN_FILENO, TCSANOW, &before_) != 0)
       throw std::runtime_error("Cannot restore terminal for editor");
     active_ = false;
@@ -253,7 +276,8 @@ public:
   ~TerminalMode() {
     if (active_) {
       try {
-        terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
+        terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?"
+                         "2004l\x1b[?1049l\x1b[?25h");
       } catch (...) {
       }
       (void)tcsetattr(STDIN_FILENO, TCSANOW, &before_);
@@ -373,7 +397,15 @@ std::string terminal_key_help() {
          "  PgUp / PgDn  Scroll transcript\n"
          "  Paste        Multiline text stays literal; Enter sends explicitly\n";
 }
+std::vector<std::string> terminal_builtin_names() {
+  std::vector<std::string> names;
+  for (const auto &c : builtin_commands)
+    names.push_back(c.name);
+  return names;
+}
 std::string terminal_help() {
+  const auto catalog = command_catalog();
+  const auto &commands = *catalog;
   std::string out = "Blackbird command guide\n";
   std::string_view group;
   for (const auto &command : commands) {
@@ -393,6 +425,8 @@ std::string terminal_help() {
          "Keyboard: /keys · Tab completes commands · PgUp/PgDn browse this guide\n";
 }
 std::string terminal_command_hint(std::string_view draft) {
+  const auto catalog = command_catalog();
+  const auto &commands = *catalog;
   if (!draft.starts_with("/") || draft.find_first_of("\r\n") != std::string_view::npos)
     return {};
   const auto token = draft.substr(0, draft.find_first_of(" \t"));
@@ -574,11 +608,14 @@ void Composer::draft(std::string text) {
   goal_column_.reset();
 }
 void Composer::palette_move(bool up) {
-  const auto matches = palette_matches(palette_query_);
+  const auto catalog = command_catalog();
+  const auto &commands = *catalog;
+  const auto matches = palette_matches(palette_query_, commands);
   if (matches.empty()) {
     palette_selected_ = 0;
     return;
   }
+  palette_selected_ = std::min(palette_selected_, matches.size() - 1);
   if (up)
     palette_selected_ -= palette_selected_ > 0 ? 1U : 0U;
   else
@@ -594,9 +631,11 @@ bool Composer::flush_escape() {
   return false;
 }
 std::vector<std::string> Composer::palette_lines(std::size_t rows) const {
+  const auto catalog = command_catalog();
+  const auto &commands = *catalog;
   if ((!palette_open_ && !slash_open_) || rows == 0)
     return {};
-  const auto matches = palette_matches(palette_query_);
+  const auto matches = palette_matches(palette_query_, commands);
   std::vector<std::string> out{slash_open_ ? "Commands"
                                            : "Commands / " + palette_query_ + "_"};
   if (rows == 1)
@@ -605,11 +644,12 @@ std::vector<std::string> Composer::palette_lines(std::size_t rows) const {
   if (matches.empty())
     out.emplace_back("  No matching commands");
   else {
-    const auto first = palette_selected_ >= count ? palette_selected_ - count + 1 : 0;
+    const auto selected = std::min(palette_selected_, matches.size() - 1);
+    const auto first = selected >= count ? selected - count + 1 : 0;
     for (std::size_t n = first; n < matches.size() && n - first < count; ++n) {
       const auto &command = commands[matches[n]];
       out.push_back(
-          (n == palette_selected_ ? "> " : "  ") + std::string{command.name} +
+          (n == selected ? "> " : "  ") + std::string{command.name} +
           (command.arguments.empty() ? "" : " " + std::string{command.arguments}) +
           " — " + std::string{command.description});
     }
@@ -675,6 +715,8 @@ void Composer::kill(std::size_t begin, std::size_t end) {
   goal_column_.reset();
 }
 InputResult Composer::feed(char byte) {
+  const auto catalog = command_catalog();
+  const auto &commands = *catalog;
   const auto c = static_cast<unsigned char>(byte);
   if (!escape_.empty()) {
     escape_ += byte;
@@ -785,9 +827,9 @@ InputResult Composer::feed(char byte) {
       return {c == 17 ? InputAction::quit : InputAction::none, {}};
     }
     if (c == 13) {
-      const auto matches = palette_matches(palette_query_);
+      const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[palette_selected_]];
+        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         palette_open_ = false;
         return {InputAction::choose_command,
                 std::string{command.name} + (command.arguments.empty() ? "" : " ")};
@@ -828,15 +870,15 @@ InputResult Composer::feed(char byte) {
   }
   if (c == 9) {
     if (slash_open_) {
-      const auto matches = palette_matches(palette_query_);
+      const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[palette_selected_]];
+        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         draft(std::string{command.name} + (command.arguments.empty() ? "" : " "));
       }
       return {};
     }
     if (cursor_ == text_.size()) {
-      text_ = complete_command(text_);
+      text_ = complete_command(text_, commands);
       cursor_ = text_.size();
       goal_column_.reset();
     }
@@ -850,9 +892,9 @@ InputResult Composer::feed(char byte) {
     return {InputAction::quit, {}};
   if (c == 13) {
     if (slash_open_) {
-      const auto matches = palette_matches(palette_query_);
+      const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[palette_selected_]];
+        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         const bool arguments = !command.arguments.empty();
         draft(std::string{command.name} + (arguments ? " " : ""));
         if (arguments)
@@ -960,6 +1002,44 @@ std::vector<std::string> terminal_lines(std::string_view text, std::size_t colum
     text.remove_prefix(count);
   }
   return lines;
+}
+std::vector<ChatRow> terminal_powerword_lines(std::string_view text,
+                                              std::size_t columns) {
+  const auto registry = displayed_workflows();
+  std::vector<ChatRow> result;
+  do {
+    const auto end = text.find('\n');
+    const auto raw = text.substr(0, end);
+    auto spans =
+        registry ? registry->color(raw) : ChatRow{{std::string{raw}, Ink::normal}};
+    std::string safe;
+    for (auto &span : spans) {
+      span.text =
+          terminal_lines(span.text, std::numeric_limits<std::size_t>::max()).front();
+      safe += span.text;
+    }
+    std::size_t index = 0, offset = 0;
+    for (const auto &line : terminal_lines(safe, columns)) {
+      ChatRow row;
+      std::size_t remaining = line.size();
+      while (remaining && index < spans.size()) {
+        const auto count = std::min(remaining, spans[index].text.size() - offset);
+        if (count)
+          row.push_back({spans[index].text.substr(offset, count), spans[index].ink});
+        remaining -= count;
+        offset += count;
+        if (offset == spans[index].text.size()) {
+          ++index;
+          offset = 0;
+        }
+      }
+      result.push_back(std::move(row));
+    }
+    if (end == std::string_view::npos)
+      break;
+    text.remove_prefix(end + 1);
+  } while (true);
+  return result;
 }
 void TerminalUI::post(Kind kind, std::string_view text) {
   const std::lock_guard lock{mutex_};
@@ -1304,7 +1384,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         continue;
       }
       const auto inner_width = width - 4;
-      const auto composed = terminal_lines("> " + composer.text(), inner_width);
+      const auto composed =
+          terminal_powerword_lines("> " + composer.text(), inner_width);
       const auto prefix = terminal_lines(
           "> " + composer.text().substr(0, composer.cursor()), inner_width);
       const auto draft_height = std::min<std::size_t>(
@@ -1322,8 +1403,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       // Wrap into the remaining columns so a sprite can never overwrite content.
       const auto &lines = transcript.rows(header_width);
       if (welcoming && (geometry_changed || welcome_lines.empty()))
-        welcome_lines = blackbird_startup(width - 4, height > 2 ? height - 2 : 0,
-                                         mascot_enabled);
+        welcome_lines =
+            blackbird_startup(width - 4, height > 2 ? height - 2 : 0, mascot_enabled);
       if (display_generation != transcript.generation()) {
         scroll =
             0; // Evicted display history: return to live tail, never a false anchor.
@@ -1382,10 +1463,10 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       grid.line(1, {{status_text, busy ? Ink::user : Ink::muted}, {rule, Ink::border}});
       if (show_sprite) {
         const auto &sprite = blackbird_sprite(busy, phase / 2);
-        const auto ink = turn_failed ? Ink::failure
-                        : tool_active ? Ink::user
-                        : busy        ? Ink::assistant
-                                      : Ink::muted;
+        const auto ink = turn_failed   ? Ink::failure
+                         : tool_active ? Ink::user
+                         : busy        ? Ink::assistant
+                                       : Ink::muted;
         for (std::size_t row = 0; row < sprite.size(); ++row)
           if (graphics_enabled)
             grid.line(row, {{"│", ink}}, width - blackbird_sprite_width - 1);
@@ -1401,7 +1482,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
             lettering_width = std::max(lettering_width, display_width(line));
           const auto lettering_height = welcome_lines.size();
           const auto reserved = lettering_width + 6;
-          if (width >= reserved + 24 && height >= std::max<std::size_t>(12, lettering_height)) {
+          if (width >= reserved + 24 &&
+              height >= std::max<std::size_t>(12, lettering_height)) {
             const auto side = std::min(height, (width - reserved) / 2);
             placement = {2, 2, side * 2, side};
             lettering_column = side * 2 + 6;
@@ -1412,11 +1494,12 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           }
         }
         for (std::size_t row = 0; row < std::min(height, welcome_lines.size()); ++row)
-          grid.line(row + lettering_row,
-                    {{welcome_lines[row], Ink::assistant}}, lettering_column);
+          grid.line(row + lettering_row, {{welcome_lines[row], Ink::assistant}},
+                    lettering_column);
         if (!graphics_enabled && welcome_lines.size() + 1 < height)
           grid.line(welcome_lines.size() + 3,
-                    {{"  Enter continues · / commands · Workflow reloads each turn.", Ink::muted}});
+                    {{"  Enter continues · / commands · Workflow reloads each turn.",
+                      Ink::muted}});
       } else
         for (std::size_t row = 0; row < height; ++row)
           if (begin + row < end)
@@ -1447,15 +1530,20 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       const auto draft_begin =
           cursor_row >= draft_height ? cursor_row - draft_height + 1 : 0;
       for (std::size_t row = 0; row < draft_height; ++row) {
-        const auto line =
-            draft_begin + row < composed.size() ? composed[draft_begin + row] : "";
-        grid.line(menu_row++,
-                  {{"│ ", Ink::border},
-                   {line, Ink::normal},
-                   {std::string(
-                        inner_width - std::min(inner_width, display_width(line)), ' ') +
-                        " │",
-                    Ink::border}});
+        const auto line = draft_begin + row < composed.size()
+                              ? chat_plain(composed[draft_begin + row])
+                              : "";
+        ChatRow content{{"│ ", Ink::border}};
+        if (draft_begin + row < composed.size()) {
+          const auto &colored = composed[draft_begin + row];
+          content.insert(content.end(), colored.begin(), colored.end());
+        }
+        content.push_back(
+            {std::string(inner_width - std::min(inner_width, display_width(line)),
+                         ' ') +
+                 " │",
+             Ink::border});
+        grid.line(menu_row++, content);
       }
       grid.line(menu_row, {{border({"╰", "╯"}, ""), Ink::border}});
       const auto cursor_line = height + palette.size() + 4 + cursor_row - draft_begin;
@@ -1484,7 +1572,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         if (graphics_enabled && placement != image_placement) {
           image_frame.assign(packet);
           // Insert image commands before the existing synchronized-update close.
-          image_frame.resize(image_frame.size() - std::string_view{"\x1b[?2026l"}.size());
+          image_frame.resize(image_frame.size() -
+                             std::string_view{"\x1b[?2026l"}.size());
           image_frame += blackbird_graphics_erase();
           if (placement[2] && placement[3]) {
             if (!image_loaded) {

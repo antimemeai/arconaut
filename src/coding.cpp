@@ -590,8 +590,12 @@ Json CodingEngine::program_config(const Json &arguments) {
     if (const auto *base = arguments.find("base");
         base && base->string() != program_revision_)
       throw Error{ErrorCode::conflict};
-    if (proposal->object().size() != 3)
-      throw Error{ErrorCode::invalid_range};
+    for (const auto &[key, value] : proposal->object()) {
+      (void)value;
+      if (key != "modules" && key != "model" && key != "effort" && key != "workflows" &&
+          key != "workflow_prefix")
+        throw Error{ErrorCode::invalid_range};
+    }
     const auto &model = string_field(*proposal, "model");
     const auto &effort = string_field(*proposal, "effort");
     if (model.size() > 256 ||
@@ -616,10 +620,16 @@ Json CodingEngine::program_config(const Json &arguments) {
           !runtime_->valid_module_source(source))
         throw Error{ErrorCode::invalid_range};
     }
+    auto candidate_registry =
+        std::make_shared<WorkflowRegistry>(*proposal, "candidate");
+    for (const auto &d : candidate_registry->definitions().array())
+      if (!runtime_->valid_tool_source(string_field(d, "source")))
+        throw Error{ErrorCode::invalid_range};
     // Copy/issue before publication; validation never executes candidate code.
     auto next = *proposal;
     auto revision =
         hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
+    pending_workflows_ = std::make_shared<WorkflowRegistry>(next, revision);
     pending_program_config_ = std::move(next);
     pending_program_revision_ = std::move(revision);
   }
@@ -786,6 +796,9 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
     : log_(log), context_(context), provider_(provider), model_(std::move(model)),
       decision_models_(std::move(decisions)), identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
+  program_config_.object().emplace_back("workflows", default_workflows());
+  program_config_.object().emplace_back("workflow_prefix", Json{""});
+  program_revision_ = "builtin-ultracode-v1";
   budget_ = default_context_budget();
   for (const auto &fact : log_.root().committed_facts()) {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
@@ -812,6 +825,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
     budget_ = std::move(policy);
     budget_revision_ = string_field(packet, "revision");
   }
+  workflows_ = std::make_shared<WorkflowRegistry>(program_config_, program_revision_);
   if (context_.head().empty())
     context_.append({}, "initial");
 }
@@ -999,6 +1013,18 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     throw Error{ErrorCode::conflict};
   Json result =
       boundary.error ? error_json(*boundary.error) : std::move(boundary.result);
+  if (name == "program_config" && boundary.error) {
+    result.object().emplace_back(
+        "message",
+        Json{boundary.error->code == ErrorCode::conflict
+                 ? "Registration conflict: duplicate workflow name, alias, bare name "
+                   "or powerword, built-in command collision, or stale base revision. "
+                   "No candidate was staged."
+                 : "Invalid program configuration: require modules/model/effort and "
+                   "optional workflows/workflow_prefix. Workflow definitions require "
+                   "name, description, source (Lua body with args), aliases, bare and "
+                   "powerwords. No candidate was staged."});
+  }
   if (name == "read_file" && boundary.error &&
       boundary.error->code == ErrorCode::invalid_range) {
     result.object().emplace_back(
@@ -1118,10 +1144,10 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   if (boundary.error && name != "provider" && process_output)
     process_output("\n[" + std::string{name} + ": " + error_name(boundary.error->code) +
                    "]\n");
-  if (boundary.error &&
-      (boundary.error->code == ErrorCode::capacity ||
-       boundary.error->code == ErrorCode::interrupted || name == "provider" ||
-       root.state() != JournalWriterState::live))
+  if (boundary.error && (boundary.error->code == ErrorCode::capacity ||
+                         boundary.error->code == ErrorCode::interrupted ||
+                         (name == "provider" || name == "workflow_execute") ||
+                         root.state() != JournalWriterState::live))
     throw *boundary.error;
   if (name == "beads") {
     const auto *stopped = result.find("interrupted");
@@ -1129,10 +1155,68 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   }
   return result;
 }
+Json CodingEngine::execute_workflow(const WorkflowContinuation &invocation) {
+  try {
+    if (workflow_depth_ >= 8 || ++workflow_invocations_ > 64)
+      throw Error{ErrorCode::capacity};
+    return operation(
+        "workflow_execute", invocation.arguments, [&](OperationAttemptId attempt) {
+          const auto metadata =
+              Json::object({{"name", field(invocation.definition, "name")},
+                            {"revision", Json{invocation.revision}},
+                            {"definition", invocation.definition},
+                            {"invocation", invocation.arguments},
+                            {"generation", Json{hex_identity(generation_.bytes())}},
+                            {"attempt", Json{hex_identity(attempt.bytes())}},
+                            {"selection_attempt", Json{invocation.selection_attempt}}});
+          log_.original({"workflow.source",
+                         string_field(invocation.definition, "source"), metadata});
+          log_.record(ApplicationChannel::program, metadata);
+          ++workflow_depth_;
+          struct Depth {
+            unsigned &n;
+            ~Depth() { --n; }
+          } depth{workflow_depth_};
+          Runtime child{*this};
+          return child.invoke_tool(invocation.definition, invocation.arguments);
+        });
+  } catch (const Error &e) {
+    workflow_failure_ = e;
+    throw;
+  }
+}
+void CodingEngine::drain_workflows() {
+  if (draining_workflows_ || workflow_continuations_.empty())
+    return;
+  validate_protocol(context_.items());
+  draining_workflows_ = true;
+  struct Drain {
+    bool &flag;
+    ~Drain() { flag = false; }
+  } drain{draining_workflows_};
+  while (!workflow_continuations_.empty()) {
+    if (restart_note_)
+      throw Error{ErrorCode::busy};
+    if (cancelled && cancelled())
+      throw Error{ErrorCode::interrupted};
+    auto next = std::move(workflow_continuations_.front());
+    workflow_continuations_.erase(workflow_continuations_.begin());
+    const auto result = execute_workflow(next);
+    context_.append(
+        {Json::object(
+            {{"role", Json{"developer"}},
+             {"content",
+              Json{"Registered workflow " + string_field(next.definition, "name") +
+                   " completed in this turn: " + unwrap(dump_json(result))}}})},
+        "workflow-continuation");
+  }
+}
 Json CodingEngine::request(Json options) {
   LocalSpan preparation{"provider.prepare", "src/coding.cpp:request"};
   if (restart_note_)
     throw Error{ErrorCode::busy};
+  validate_protocol(context_.items());
+  drain_workflows();
   auto items = context_.items();
   validate_protocol(items);
   auto request = Json::object(
@@ -1404,6 +1488,37 @@ Json CodingEngine::call(std::string name, Json arguments) {
       auto result = beads_.run(arguments);
       result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
       return result;
+    }
+
+    if (name == "workflow_registry")
+      return workflows_->discover();
+    if (name == "workflow_invoke") {
+      const auto &definition = workflows_->named(string_field(arguments, "name"));
+      WorkflowContinuation invocation{definition, arguments, workflows_->revision(),
+                                      hex_identity(attempt.bytes())};
+      const auto selection =
+          Json::object({{"name", field(definition, "name")},
+                        {"revision", Json{workflows_->revision()}},
+                        {"definition", definition},
+                        {"invocation", arguments},
+                        {"selection_attempt", Json{invocation.selection_attempt}}});
+      log_.original(
+          {"workflow.selection", string_field(definition, "source"), selection});
+      log_.record(ApplicationChannel::program, selection);
+      const auto unanswered =
+          ContextStore::stop_outputs(field(context_.view(), "entries").array(), false);
+      if (!unanswered.empty()) {
+        if (workflow_continuations_.size() >= 8)
+          throw Error{ErrorCode::capacity};
+        workflow_continuations_.push_back(std::move(invocation));
+        return Json::object(
+            {{"status", Json{"accepted"}},
+             {"name", field(definition, "name")},
+             {"revision", Json{workflows_->revision()}},
+             {"execution", Json{"same-turn after tool outputs, before next request or "
+                                "successful boundary"}}});
+      }
+      return execute_workflow(invocation);
     }
     if (name == "program_config")
       return program_config(arguments);
@@ -1699,17 +1814,56 @@ Error CodingEngine::claim_backstop() {
   backstop_claimed_ = true;
   return *failed_turn_;
 }
+bool CodingEngine::operator_turn(std::string_view prompt, std::string_view fallback) {
+  if (prompt.empty())
+    return false;
+  const auto selected = workflows_->select(prompt);
+  if (!selected) {
+    if (prompt.starts_with("/"))
+      return false;
+    turn({prompt, fallback});
+    return true;
+  }
+  const auto invocation = Json::object({{"name", field(selected->definition, "name")},
+                                        {"arguments", Json{selected->arguments}},
+                                        {"prompt", Json{std::string{prompt}}},
+                                        {"trigger", Json{selected->trigger}},
+                                        {"origin", Json{"operator"}}});
+  // Use the established decimal-byte JSON literal encoder, without interpolation.
+  const auto encoded = unwrap(dump_json(invocation));
+  std::string literal = "\"";
+  for (char ch : encoded) {
+    const auto c = static_cast<unsigned char>(ch);
+    literal += "\\";
+    literal += static_cast<char>('0' + c / 100);
+    literal += static_cast<char>('0' + (c / 10) % 10);
+    literal += static_cast<char>('0' + c % 10);
+  }
+  literal += "\"";
+  const auto program =
+      "return blackbird.call('workflow_invoke',blackbird.json.decode(" + literal + "))";
+  turn({prompt, program});
+  return true;
+}
 void CodingEngine::turn(TurnInput input) {
   if (backstop_claimed_ || turn_running_)
     throw Error{ErrorCode::conflict};
   turn_running_ = true;
   struct Running {
     bool &value;
-    ~Running() { value = false; }
-  } running{turn_running_};
+    std::vector<WorkflowContinuation> &continuations;
+    ~Running() {
+      value = false;
+      continuations.clear();
+    }
+  } running{turn_running_, workflow_continuations_};
   failed_turn_.reset();
   workflow_result_ = Json{};
+  workflow_continuations_.clear();
+  workflow_invocations_ = 0;
+  workflow_failure_.reset();
   pending_budget_ = Json{};
+  pending_workflows_.reset();
   pending_program_config_ = Json{};
   pending_program_revision_.clear();
   pending_lua_tools_ = Json{};
@@ -1750,6 +1904,9 @@ void CodingEngine::turn(TurnInput input) {
                       "operator");
     runtime_ = std::make_unique<Runtime>(*this);
     workflow_result_ = runtime_->eval(workflow);
+    drain_workflows();
+    if (workflow_failure_)
+      throw *workflow_failure_;
     if (capacity_stopped_)
       throw Error{ErrorCode::capacity};
     if (cancelled && cancelled())
@@ -1784,6 +1941,8 @@ void CodingEngine::turn(TurnInput input) {
     if (pending_program_config_ != Json{}) {
       std::swap(program_config_, pending_program_config_);
       program_revision_.swap(pending_program_revision_);
+      workflows_.swap(pending_workflows_);
+      pending_workflows_.reset();
       pending_program_config_ = Json{};
       pending_program_revision_.clear();
     }
@@ -1809,6 +1968,7 @@ void CodingEngine::turn(TurnInput input) {
   } catch (const Error &e) {
     failed_turn_ = e;
     pending_budget_ = Json{};
+    pending_workflows_.reset();
     pending_program_config_ = Json{};
     pending_program_revision_.clear();
     pending_lua_tools_ = Json{};
@@ -1829,6 +1989,7 @@ void CodingEngine::turn(TurnInput input) {
   } catch (...) {
     failed_turn_ = Error{ErrorCode::external_unknown};
     pending_budget_ = Json{};
+    pending_workflows_.reset();
     pending_program_config_ = Json{};
     pending_program_revision_.clear();
     pending_lua_tools_ = Json{};
