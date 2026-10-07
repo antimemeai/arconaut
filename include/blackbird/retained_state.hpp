@@ -59,7 +59,14 @@ public:
          JournalHeader header, JournalCapacity capacity);
   static Result<std::unique_ptr<RetainedState>>
   open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
-       JournalHeader header, JournalCapacity capacity);
+       JournalHeader header, JournalCapacity capacity,
+       bool use_scan_checkpoint = false);
+  Result<void> publish_scan_checkpoint() {
+    if (state() != JournalWriterState::live || in_transaction_ || prepared_ || !reconciled_)
+      return Result<void>::failure({ErrorCode::audit_unavailable});
+    return journal_->publish_scan_checkpoint();
+  }
+  bool used_scan_checkpoint() const noexcept { return journal_->used_scan_checkpoint(); }
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
   // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.

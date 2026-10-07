@@ -154,7 +154,8 @@ RetainedState::create(std::unique_ptr<JournalDirectory> directory,
 }
 Result<std::unique_ptr<RetainedState>>
 RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
-                    JournalHeader header, JournalCapacity capacity) {
+                    JournalHeader header, JournalCapacity capacity,
+                    bool use_scan_checkpoint) {
   if (header.predecessor) {
     return Result<std::unique_ptr<RetainedState>>::failure({ErrorCode::unsupported});
   }
@@ -163,7 +164,8 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return allocated;
   }
   auto owner = std::move(allocated).value();
-  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity);
+  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity,
+                                     SyncStrength::full, use_scan_checkpoint);
   if (!journal.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
