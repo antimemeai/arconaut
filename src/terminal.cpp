@@ -38,6 +38,7 @@ struct ChatCommand {
 };
 constexpr std::array commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
+    ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
     ChatCommand{"/commands", "",
                 "Search command palette; Ctrl-Space or Ctrl-T (TUI only)", "Chat"},

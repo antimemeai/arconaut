@@ -1,0 +1,130 @@
+{
+  "units": "microseconds and actual stdout/stderr UTF-8 bytes; local native fixture, not provider timing",
+  "binding": [
+    {
+      "elapsed_us": 3471,
+      "stdout_bytes": 20,
+      "stderr_bytes": 18,
+      "exit_code": 0
+    },
+    {
+      "elapsed_us": 2342,
+      "stdout_bytes": 221,
+      "stderr_bytes": 18,
+      "exit_code": 0
+    },
+    {
+      "elapsed_us": 2600,
+      "stdout_bytes": 20,
+      "stderr_bytes": 18,
+      "exit_code": 0
+    },
+    {
+      "elapsed_us": 2963,
+      "stdout_bytes": 221,
+      "stderr_bytes": 18,
+      "exit_code": 0
+    }
+  ],
+  "queries": [
+    {
+      "op": "ready",
+      "status": "ok",
+      "elapsed_us": 2190,
+      "stdout_bytes": 51,
+      "stderr_bytes": 18
+    },
+    {
+      "op": "ready",
+      "status": "rejected",
+      "elapsed_us": 2767,
+      "stdout_bytes": 35,
+      "stderr_bytes": 18
+    },
+    {
+      "op": "ready",
+      "status": "rejected",
+      "elapsed_us": 2797,
+      "stdout_bytes": 49,
+      "stderr_bytes": 18
+    },
+    {
+      "op": "claim",
+      "status": "ok",
+      "elapsed_us": 3002,
+      "stdout_bytes": 87,
+      "stderr_bytes": 18
+    },
+    {
+      "op": "create",
+      "status": "ok",
+      "elapsed_us": 3148,
+      "stdout_bytes": 47,
+      "stderr_bytes": 18
+    }
+  ],
+  "fake_mutations": [
+    {
+      "case": "nonzero",
+      "wall_elapsed_us": 78381,
+      "child_elapsed_us": 17324,
+      "stdout_bytes": 33,
+      "stderr_bytes": 0,
+      "retained_unknown": true
+    },
+    {
+      "case": "malformed",
+      "wall_elapsed_us": 78883,
+      "child_elapsed_us": 18387,
+      "stdout_bytes": 6,
+      "stderr_bytes": 0,
+      "retained_unknown": true
+    },
+    {
+      "case": "overflow",
+      "wall_elapsed_us": 655147,
+      "child_elapsed_us": 593598,
+      "stdout_bytes": 65536,
+      "stderr_bytes": 0,
+      "retained_unknown": true
+    },
+    {
+      "case": "nulid",
+      "wall_elapsed_us": 104023,
+      "child_elapsed_us": 22911,
+      "stdout_bytes": 53,
+      "stderr_bytes": 18,
+      "retained_unknown": true
+    },
+    {
+      "case": "longid",
+      "wall_elapsed_us": 115876,
+      "child_elapsed_us": 31748,
+      "stdout_bytes": 9042,
+      "stderr_bytes": 18,
+      "retained_unknown": true
+    },
+    {
+      "case": "timeout",
+      "wall_elapsed_us": 5063540,
+      "child_elapsed_us": 5001384,
+      "stdout_bytes": 7,
+      "stderr_bytes": 0,
+      "retained_unknown": true
+    },
+    {
+      "case": "cancel",
+      "wall_elapsed_us": 173304,
+      "child_elapsed_us": null,
+      "stdout_bytes": null,
+      "stderr_bytes": null,
+      "retained_unknown": true
+    }
+  ],
+  "coverage_limits": [
+    "Cancellation stops the turn after retained settlement: child envelope/byte counters unavailable in workflow result for that case; wall timing retained.",
+    "No operator DB mutations or live diagnostic calls.",
+    "One read-only static reviewer pass; no second review.",
+    "Allocation uncertainty marker checked with observer bad_alloc; no end-to-end allocator failure injection."
+  ]
+}
