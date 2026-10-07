@@ -3167,3 +3167,13 @@ activation still pending, no completion claim yet. B1/pilot/fullsuite not rerun.
 Source/report contain no private provider/audit content. Existing explicit successor
 suffices scoped continuation; automatic backstop/old resolver separately queued per
 ROOT, not promotion blockers. Root owns README/merge/promotion/retirement. bd backup.
+
+Final changed native-owner/pcall Linux coding1/1 all3 passed run-6vzxt08r,
+completed03:42:36Z, after previous run-bxpj48ls finished. Final Mac coding1/1 all3
+also green. No third review or unchanged context/retained primitive rerun.
+19a067e source pushed. Main managed compaction132 completed tool entries is STAGED
+until current normal boundary; full originals remain, no physical-byte reclaim.
+release/arco built23:37:51-0400 (=03:37:51Z) with final native/policy changes.
+One native replacement next; activation requires observing resumed process/request,
+not inferred from binary build or staged proposal. ROOT's shortened disk allowance
+25min total ends03:53:55Z; remediation/recheck complete inside it. bd backup done.

@@ -176,3 +176,5 @@ this repair; claimed Lua escape was not reproduced. Still centralize the sticky
 catch over the entire native calculation so the owner does not rely on bridge
 propagation. Same oracle rerun, no layer3 review. Layer2 done subject to final affected
 coding checks and activation. No consensus/review of recheck sought.
+Final affected coding all3 Mac and Linux(run-6vzxt08r) passed; existing other affected
+passes stay settled. Source19a067e pushed. One native activation pending observation.
