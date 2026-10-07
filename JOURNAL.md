@@ -3092,3 +3092,14 @@ actual promotion; branch cleanup separately arconaut-suv, preserving all refs.
 Original .14 pilot scope closed delivered; .14.3/scs retained priority2 backlog,
 current finite candidate allowance unchanged. No claim unfinished capacity fixes
 were accepted, no new assurance gate before giga.
+
+## GitHub language statistics reflect documentation bytes
+
+Operator observed77percent HTML after master promotion. Tracked HTML totals
+3981640bytes: capabilities/index.html2036078 and saved Godot docs1304147 dominate,
+versus929407bytes .cpp/.hpp. GitHub Linguist counts detectable source by size,
+including these research pages. Official Linguist override docs confirm recursive
+linguist-documentation excludes paths from stats without hiding diffs. Added
+.gitattributes for papers/docs/bead backups; native sources remain unspecified.
+Direct git check-attr verifies classifications. No runtime change or product
+checks; exact updated GitHub percentages await server-side recalculation.

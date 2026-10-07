@@ -1,0 +1,5 @@
+# Research, reports and issue backups are documentation, not implementation.
+# Keep them visible in diffs while excluding them from GitHub language statistics.
+papers/** linguist-documentation
+docs/** linguist-documentation
+.beads/** linguist-documentation
