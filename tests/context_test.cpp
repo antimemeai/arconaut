@@ -288,6 +288,14 @@ int main() {
     auto suffix_repair = restored.view();
     suffix_repair.object()[1].second.array().pop_back();
     check(ok(restored.edit(suffix_repair)));
+    // Root-only projection must not remove application data named candidate.
+    restored.append({Json::object({{"role", Json{"user"}},
+                                  {"content", Json{"projection live"}},
+                                  {"candidate", Json{"nested survives"}}})}, "projection");
+    const auto rejected = restored.edit(Json::object({
+        {"base", Json{"stale"}}, {"entries", Json{Json::Array{}}},
+        {"candidate", Json{std::string(65536, 'x')}}}));
+    check(!ok(rejected));
     const auto final_head = restored.head();
 
     ContextStore replay_managed{replay};
@@ -314,6 +322,25 @@ int main() {
           expected_index);
     check(native_restored.finish_workflow(true) == Json{}); // orphan never executes
     check(native_restored.items().back() == restored.items().back());
+    check(string_field(native_restored.items().back(), "candidate") == "nested survives");
+    check(native_restored.originals() == restored.originals());
+    // Compare every page, including the newly added large rejected candidate.
+    std::size_t history_offset = 0;
+    std::string history_revision;
+    for (;;) {
+      auto query = Json::object({{"kind", Json{"history"}},
+          {"offset", Json{JsonNumber{std::to_string(history_offset)}}},
+          {"limit", Json{JsonNumber{"65536"}}}});
+      if (!history_revision.empty()) query.object().emplace_back("revision", Json{history_revision});
+      const auto page = restored.inspect(query);
+      check(native_restored.inspect(query) == page);
+      history_revision = string_field(page, "revision");
+      const auto next = static_cast<std::size_t>(std::stoull(field(page, "next").number().text));
+      const auto total = static_cast<std::size_t>(std::stoull(field(page, "total_bytes").number().text));
+      check(next > history_offset || next == total);
+      if (next == total) break;
+      history_offset = next;
+    }
   } catch (const Error &e) {
     std::cerr << error_name(e.code) << '\n';
     std::filesystem::remove_all(path);

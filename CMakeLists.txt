@@ -282,3 +282,6 @@ add_executable(issuer_ranges_test tests/issuer_ranges_test.cpp)
 target_link_libraries(issuer_ranges_test PRIVATE blackbird_foundation)
 add_test(NAME issuer_ranges COMMAND issuer_ranges_test)
 set_tests_properties(issuer_ranges PROPERTIES TIMEOUT 30)
+# Scoped native startup oracle; not installed or part of the default build.
+add_executable(startup_loading_probe EXCLUDE_FROM_ALL tooling/probes/startup_loading.cpp)
+target_link_libraries(startup_loading_probe PRIVATE blackbird_coding)
