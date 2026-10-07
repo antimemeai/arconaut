@@ -3517,3 +3517,34 @@ once keeps development release, explicit executable override wins. Actual operat
 session reopened successfully to prompt in12.0578s; startup still has measured work
 remaining, not called instantaneous. Original audit unchanged except normal appended
 session/identity facts. Native/profile source locators retained in context/startup-replay.
+
+## Remaining operator startup latency (2026-10-07)
+
+Operator explicitly reopens optimization scope:12s unacceptable. Same-session12.1236s
+reproduced; sampled2041/2127 frames in bit-serial CRC. Studied quarantined LevelDB
+CRC design and qualified compiler arm_acle intrinsics; implemented generated portable
+slicing-by-8 plus compile-target-guaranteed ARM CRC acceleration, no library. Also
+replaced payload handle linear membership scans with binary sequence search and full
+handle comparison; record sequence gaps remain allowed. All checksum/recovery/unknown
+fences retained, no audit copying/cache/history deletion. Initial table generation
+ordering bug directly caught by RFC/fixed-wire oracles and corrected before activation.
+Exact bit-serial/seed/offset/split oracle covers both hardware and forced portable
+builds; forged physical handles rejected. Five affected release/ASan checks pass.
+Measured315MB retained operator session1.3661s to prompt, previously4.4377s portable
+and12.1236s original. Ordinary cache/load uncontrolled, not cold-start guarantee.
+Published checked UI archive binary atomically to arco-ui; real TUI reopened preserved
+conversation and /quit works. Live G7 dev loop observed independently, executable
+untouched. Publish scoped source on candidate and master excluding G7 candidate code.
+
+G7 actual source-trigger delivery: native PID87484, fresh g7-worker-run1, one
+admission for duplicated source event, ordinary OpenAI tools wrote useful
+G7_NATIVE_STATION_MAP.md in112.995s. Operator pause retained PID/actor/context head;
+explicit stop exit0. Initial background PID87080 did not reach admission (112byte
+header only); original path/unknown final boundary preserved. No replay claim.
+Final affected Linux source2a34415 checks passed; ASan command-cap oracle390.15s.
+Combined independently accepted startup0f01f2c into5e58d51, preserved journal;
+Mac affected integration cases passed06:55:43, no blanket Linux recertification.
+Read new waste audit; repeated full snapshot capture/status serialization deferred
+visibly, not fixed under a third hardening layer. Clean release5e58d51 installed
+SHA8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9.
+Same-unit native RRC next; source5e58d51 candidate pushed, acceptance/master pending.
