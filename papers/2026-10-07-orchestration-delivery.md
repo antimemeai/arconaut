@@ -82,3 +82,23 @@ activation and actual retained import remain next before scoped acceptance.
 No native change/build/RRC necessary for this Lua-only unit. Parallel scheduling,
 first-class native participant cancellation/messaging and durable admissions remain
 unavailable; bounded synchronous tool/colleague composition is the delivered slice.
+
+## Actual boundary activation and scoped acceptance
+
+06:24:40UTC effective program_config revision
+c7d34276b2ed4987ad0b000000000000 observed, pending null. Ordinary retained
+arco.module("orchestration") then performed useful bounded native ownership-map
+work: read three actual paths, selected publication branch, wrote
+ docs/G6_NATIVE_OWNERSHIP_MAP.md (41 matches), joined completed. Retained observation
+context/g6/retained-module-use.json. No extra inference request or settled checks
+rerun. This supplies actual Lua activation, not merely staged source.
+
+Scoped C3 accepted: synchronous sequential/branch/explicit-safe-retry/selected-join
+composition with native tool/colleague calls, truthful uncertainty and local pause.
+No parallel scheduler/native participant cancel/addressed-message framework or
+persistent admission claim. Native cancellation remains the owning tool/runtime's
+existing behavior; unknown remote work never becomes stopped because Lua returns.
+G5 heterogeneous-access blocker remains independently blocked. No native compiled
+changes therefore no replacement/RRC requested. Candidate685ed31 already pushed;
+checked non-force master promotion follows acceptance checkpoint. Original deadline
+07:46:52.385066UTC and finished two-layer hardening unchanged.

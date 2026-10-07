@@ -51,6 +51,20 @@ Checked non-force master promotion70575f2 -> d52c40f completed06:16:03UTC withou
 switching the active dirty checkout. Independent startup-replay changes excluded.
 Original07:24:28.679526UTC deadline and completed two-layer hardening unchanged.
 
+G6 `arconaut-7iy.6` scoped accepted: candidate685ed31 implements synchronous Lua
+owned-ID sequential/conditional-branch/explicit-safe-retry/selected-join composition,
+immutable snapshots, finite counts and persistent local pause. Direct Mac/Linux
+Lua5.4.8 checks passed; hardening06:20:42..06:21:52UTC layers1+2 complete/no third.
+Actual selected native source -> G5 independent OpenAI context-only colleague ->
+completed join -> useful [operating map](G6_ORCHESTRATION_MAP.md),5085 reported tokens.
+Successful-boundary effective revision c7d34276b2ed4987ad0b000000000000 observed
+06:24:40UTC; actual retained import generated [native ownership map](G6_NATIVE_OWNERSHIP_MAP.md)
+with41 anchors/3 files. Lua-only activation, no native RRC. No parallel scheduler,
+remote cancellation, persistent admissions or native participant messaging claim.
+G5 remains blocked on heterogeneous account/service access; G6 did not retry those
+accounts or integrate its standalone candidate by implication. See
+[orchestration delivery](../papers/2026-10-07-orchestration-delivery.md).
+
 ## Ordered whole units
 
 | Unit | Delivery and direct observation | Source/design starting point |

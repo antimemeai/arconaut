@@ -3451,3 +3451,14 @@ docs/G6_ORCHESTRATION_MAP.md; reported5085 tokens, billing unavailable. G5 exter
 heterogeneous account blockers unchanged/not retried. Named module staged revision
 c7d34276b2ed4987ad0b000000000000; ordinary boundary then actual retained import/use
 next, not accepted yet. Lua-only boundary activation; no native harness replacement.
+
+G6 scoped accepted after successful-boundary retained activation: effective revision
+c7d34276b2ed4987ad0b000000000000 observed06:24:40UTC, no pending candidate. Actual
+arco.module import composed bounded reads of3 native/Lua ownership paths, selected
+publication, completed join and useful G6_NATIVE_OWNERSHIP_MAP.md (41 anchors).
+No provider replay or extra check layer. C3 synchronous composition accepted; async
+scheduler/native participant messaging/persistent admissions remain unavailable,
+not hidden delivered scope. G5 heterogeneous auth blocker unchanged. Lua-only
+activation observed, no native rebuild/RRC. Remote/master b5c750a freshly fetched
+and ancestor685ed31; selected G6 accepted-source publication/promotion next.
+Other-owner startup-replay dirty paths still excluded. Unit deadline unchanged.

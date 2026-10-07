@@ -439,3 +439,33 @@ This slice does not stage a governing workflow selector or implement an atomic
 interrupt-and-apply UI. `--workflow`/`/workflow` still select the file read at turn
 admission. Cancel stays cancelled; it does not publish pending configuration.
 Native code still activates by build/restart/resume, not by module publication.
+
+### Bounded synchronous orchestration (G6)
+
+`programs/orchestration.lua` supplies a reusable named-module source. Publish it
+through a complete `program_config` proposal, preserving other desired modules,
+then use `arco.module("orchestration")` after the successful boundary. There is no
+auto-installed module or inherited participant authority in a fresh session.
+
+`new{owner=...,max_participants=N,max_attempts=M}` creates one workflow-local
+synchronous scope. `run(id,callback)`, boolean `branch`, explicit `retry` and selected
+`join{ids...}` compose ordinary native tool/colleague calls. IDs are unique per
+scope, results/history are copied, and finite positive limits count participants
+and callback attempts. Callbacks must bound their own tool/request counts and
+native timeouts. A callback reports `status` and `remote_disposition`; these are
+caller assertions grounded in actual native results, not containment evidence.
+Exceptions/malformed results remain unknown. Only explicit `refused` plus
+`not_dispatched` permits retry; there is no automatic retry/reconciliation/replay.
+
+`pause(reason)` prevents subsequent callback dispatch and has no resume operation.
+It does not interrupt an active native call or establish remote cancellation;
+use the owning runtime's existing native cancellation paths for in-flight work.
+Join is a snapshot, not a wait: all selected rows must be completed or it reports
+unsettled. No parallel workers, detached children, persistent admissions, native
+participant messaging or new provider pairing restrictions are introduced.
+
+See [G6_ORCHESTRATION_MAP](G6_ORCHESTRATION_MAP.md) for API example and actual
+context-only colleague usage, and [G6_NATIVE_OWNERSHIP_MAP](G6_NATIVE_OWNERSHIP_MAP.md)
+for current stop/cancellation anchors. Direct checks: `lua tests/orchestration_test.lua`
+with Lua5.4.8. G5's independent colleague candidate is not automatically integrated
+by importing this module; select an actually configured adapter/call path explicitly.
