@@ -72,3 +72,10 @@ Native instructions activate when that executable is built and inhabited; this
 note does not pretend an old process changed its prompt. Automatic semantic
 classification of test/review purposes is not implemented. Today's enforcement
 is model/operator direction and the bounded campaign, not a new certifier.
+
+## Immediate integration correction
+
+Operator subsequently directs master promotion NOW and accepts unfinished work
+as backlog. The committed baseline is published on master; this note's bounded
+current candidate remains independent work, not an integration or giga gate.
+No unsafe candidate acceptance or extension of its existing allowance is implied.

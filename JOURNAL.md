@@ -3079,3 +3079,16 @@ links official source and Steam/itch purchase pages. README credit follows openi
 purpose paragraphs, before current implementation introduction. Local targets and
 whitespace checked; no product tests for prose. Bounded capacity campaign continues
 with two-layer instruction; no extra certification work from this attribution.
+
+## Master promoted; remaining hardening is backlog
+
+Operator explicitly directs integration now and accepts remaining work as backlog.
+Fetched remote; origin/master76ddf00 ancestor with no divergence. Non-force
+fast-forward pushed master to fa2d10a (41commits), verified exact remote master and
+reconstruction tips. Local inactive master ref advanced without checkout; Arco's
+dirty integrated-capacity source and running session remain intact. README and Qud
+attribution included. Removed capacity dependency from promotion task and closed
+actual promotion; branch cleanup separately arconaut-suv, preserving all refs.
+Original .14 pilot scope closed delivered; .14.3/scs retained priority2 backlog,
+current finite candidate allowance unchanged. No claim unfinished capacity fixes
+were accepted, no new assurance gate before giga.
