@@ -1,8 +1,8 @@
 #pragma once
-#include "arconaut/context.hpp"
+#include "blackbird/context.hpp"
 #include <filesystem>
 #include <functional>
-namespace arconaut {
+namespace blackbird {
 struct CapturedOutput {
   std::string label;
   std::string bytes;
@@ -25,4 +25,4 @@ std::string read_file(const std::filesystem::path &path,
 void write_file(const std::filesystem::path &path, std::string_view bytes);
 Json process_output_presentation(const std::string &raw, const Json &args);
 Json tool_definitions();
-} // namespace arconaut
+} // namespace blackbird

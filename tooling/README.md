@@ -143,3 +143,10 @@ The Linux runner builds the selected Lua5.4.8 from the digest-pinned source arch
 listed in QUARANTINE.md inside each disposable remote workspace. It changes no
 server system package. Current session/RRC/coding/recovery/terminal checks passed
 in Neuroses debug/release/ASan+UBSan profiles on 2026-10-03.
+
+## Native performance
+
+`../scripts/profile build` creates optimized symbols/frame-pointer binaries and
+macOS dSYM bundles. CPU, allocation and system captures use installed Instruments;
+readable sample stacks and Linux perf are also wired. See [Profiling](../docs/PROFILING.md).
+No profiler library is linked into the normal runtime.

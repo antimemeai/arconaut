@@ -1,9 +1,9 @@
 #pragma once
-#include "arconaut/foundation.hpp"
+#include "blackbird/foundation.hpp"
 #include <string>
 #include <string_view>
 
-namespace arconaut {
+namespace blackbird {
 struct JsonNumber {
   std::string text;
   bool operator==(const JsonNumber &) const = default;
@@ -43,4 +43,4 @@ private:
 };
 Result<Json> parse_json(std::string_view input, JsonLimits limits = {});
 Result<std::string> dump_json(const Json &value, JsonLimits limits = {});
-} // namespace arconaut
+} // namespace blackbird

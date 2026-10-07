@@ -1,4 +1,4 @@
-#include "arconaut/journal_writer.hpp"
+#include "blackbird/journal_writer.hpp"
 
 #include <algorithm>
 #include <array>
@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-using namespace arconaut;
+using namespace blackbird;
 
 namespace {
 std::atomic<std::ptrdiff_t> allocation_cut{-1};

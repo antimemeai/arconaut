@@ -1,4 +1,4 @@
-# Current Arconaut stock — 2026-10-07
+# Current Blackbird stock — 2026-10-07
 
 The operator halted autonomous development for consolidation and hands-on use.
 Master is the unified accepted source. Armada admission and its core/colleague

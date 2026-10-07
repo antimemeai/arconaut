@@ -14,7 +14,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = json.loads((ROOT / "tooling/local-profile.json").read_text())
 LLVM = Path(PROFILE["llvm"]["directory"])
-PROFILES = ("debug", "release", "asan", "tsan", "fuzz")
+PROFILES = ("debug", "release", "asan", "tsan", "fuzz", "profile")
 CPP_UNITS = {".cpp", ".cc", ".cxx", ".C", ".c++", ".cppm", ".ixx"}
 CPP_HEADERS = {".h", ".hpp", ".hh", ".hxx", ".h++", ".inl", ".ipp"}
 

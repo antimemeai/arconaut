@@ -1,7 +1,7 @@
-#include "arconaut/context.hpp"
+#include "blackbird/context.hpp"
 #include <algorithm>
 #include <charconv>
-namespace arconaut {
+namespace blackbird {
 namespace {
 Json number(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
 std::size_t index(const Json &q, std::string_view key, std::size_t fallback) {
@@ -180,4 +180,4 @@ Json AuditLog::inspect(const Json &q) {
        {"scope", Json{"committed facts only; end pins append-only prefix; record "
                       "indices stable within this journal lineage"}}});
 }
-} // namespace arconaut
+} // namespace blackbird

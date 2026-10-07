@@ -1,10 +1,10 @@
 #pragma once
-#include "arconaut/openai.hpp"
-#include "arconaut/session.hpp"
-#include "arconaut/tools.hpp"
+#include "blackbird/openai.hpp"
+#include "blackbird/session.hpp"
+#include "blackbird/tools.hpp"
 #include <map>
 #include <memory>
-namespace arconaut {
+namespace blackbird {
 class CodingProvider {
 public:
   virtual ~CodingProvider() = default;
@@ -115,4 +115,4 @@ private:
                  const std::function<Json(OperationAttemptId)> &body);
   friend struct Runtime;
 };
-} // namespace arconaut
+} // namespace blackbird

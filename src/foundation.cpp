@@ -1,10 +1,10 @@
-#include "arconaut/foundation.hpp"
+#include "blackbird/foundation.hpp"
 
 #include <chrono>
 #include <ratio>
 #include <type_traits>
 
-namespace arconaut {
+namespace blackbird {
 
 const char *error_name(ErrorCode code) noexcept {
   switch (code) {
@@ -170,4 +170,4 @@ Result<ClockSample> NativeClock::observe() {
   return ClockSample::from({domain_, wall.value()}, {domain_, monotonic.value()});
 }
 
-} // namespace arconaut
+} // namespace blackbird

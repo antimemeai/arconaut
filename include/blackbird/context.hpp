@@ -1,10 +1,10 @@
 #pragma once
-#include "arconaut/json.hpp"
-#include "arconaut/retained_state.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/retained_state.hpp"
 #include <functional>
 #include <map>
 
-namespace arconaut {
+namespace blackbird {
 template <class T> T unwrap(Result<T> result) {
   if (!result.has_value())
     throw result.error();
@@ -82,4 +82,4 @@ private:
   bool valid_entries(const Json &entries) const;
   void append_impl(Json::Array items, std::string_view origin, const Json *lineage);
 };
-} // namespace arconaut
+} // namespace blackbird

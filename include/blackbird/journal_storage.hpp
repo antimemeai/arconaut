@@ -1,11 +1,11 @@
 #pragma once
 
-#include "arconaut/foundation.hpp"
+#include "blackbird/foundation.hpp"
 
 #include <memory>
 #include <string_view>
 
-namespace arconaut {
+namespace blackbird {
 
 enum class FileAccess : std::uint8_t { read_only, read_write };
 class JournalFile : public Storage {
@@ -62,4 +62,4 @@ private:
   int descriptor_;
 };
 
-} // namespace arconaut
+} // namespace blackbird

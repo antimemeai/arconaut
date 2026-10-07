@@ -1,9 +1,9 @@
 # phux support
 
-[phux](https://github.com/no-phux/phux), by phall, is Arconaut's officially
+[phux](https://github.com/no-phux/phux), by phall, is Blackbird's officially
 supported external terminal multiplexer. It runs as a separate service; Arco
 runs its ordinary C++ TUI inside a pane. No terminal library or phux runtime is
-bundled into Arco's core. Ordinary launch still works without phux.
+bundled into Blackbird's core. Ordinary launch still works without phux.
 
 ## Start and return
 
@@ -20,10 +20,10 @@ release archive checksum and installed phux/phux-mcp in ~/.local/bin.
 From your project working directory:
 
 ```sh
-/Users/patrickbeam/projects/arconaut/scripts/arco-phux arco --session context/my-arco
+/Users/patrickbeam/projects/blackbird/scripts/blackbird-phux arco --session context/my-blackbird
 ```
 
-The first argument names the phux session. Remaining arguments go to scripts/arco
+The first argument names the phux session. Remaining arguments go to scripts/blackbird
 literally; current working directory remains the tool working directory.
 The launcher creates a new named session, then attaches. Existing name refuses;
 return to that session with `phux attach arco`. It inherits PHUX_SOCKET/PHUX_PROFILE
@@ -32,7 +32,7 @@ if you deliberately choose another local server.
 - `Ctrl-A`, then `%`: split side by side.
 - `Ctrl-A`, then `d`: detach, leaving the agent running.
 - `phux attach arco`: reattach to the same running pane.
-- `/restart NOTE`: Arco's existing RRC; keeps the pane and retained conversation.
+- `/restart NOTE`: Blackbird's existing RRC; keeps the pane and retained conversation.
 - `/quit` or `/exit`: quit Arco. Detach is how to leave it running.
 
 Each concurrent Arco needs its own --session directory. Sharing a phux server
@@ -56,7 +56,7 @@ program beside a chosen pane, use `phux spawn --target @ID --cwd PATH -- PROGRAM
 Arcoboard remains a separate program, e.g. `arco-board --fleet`.
 
 Screen text is observation. It is not an inference result, an audit, or proof an
-effect completed. `wait --output-only` requires OSC-133 shell integration; Arco's
+effect completed. `wait --output-only` requires OSC-133 shell integration; Blackbird's
 TUI doesn't provide shell marks, so use a distinct observed output or explicit
 lifecycle integration rather than matching a word echoed from the submitted prompt.
 
@@ -79,5 +79,5 @@ context/phux-support. No third assurance campaign.
 
 Native Arco lifecycle emission, a phux-specific fleet view, remote enrollment and
 multiplayer protocol integration are subsequent work. They are not implemented
-by this launch support. phux's bounded live record history complements Arco's
+by this launch support. phux's bounded live record history complements Blackbird's
 complete retained audit. Source/fit discussion: papers/2026-10-07-phux-multiplexing.md.

@@ -1,11 +1,11 @@
 #include "../src/native_process.hpp"
-#include "arconaut/json.hpp"
+#include "blackbird/json.hpp"
 #include <exception>
 #include <fstream>
 
 #include <iostream>
 #include <thread>
-using arconaut::Json;
+using blackbird::Json;
 namespace fs = std::filesystem;
 namespace {
 void require(bool b, const char *s) {
@@ -13,11 +13,11 @@ void require(bool b, const char *s) {
     throw std::runtime_error(s);
 }
 std::string run(std::vector<std::string> a, int expected = 0) {
-  arconaut::detail::Child c;
+  blackbird::detail::Child c;
   c.start(std::move(a), {}, true);
   c.close_input();
   int code = 0;
-  auto out = c.collect(arconaut::detail::Clock::now() + std::chrono::seconds(20),
+  auto out = c.collect(blackbird::detail::Clock::now() + std::chrono::seconds(20),
                        1024 * 1024, &code);
   if ((expected == 0 && code != 0) || (expected != 0 && code == 0))
     throw std::runtime_error("unexpected exit: " + out);
@@ -27,18 +27,18 @@ Json obj(std::initializer_list<std::pair<std::string, Json>> a) {
   return Json::object(a);
 }
 Json s(const std::string &a) { return Json{a}; }
-Json n(std::size_t a) { return Json{arconaut::JsonNumber{std::to_string(a)}}; }
+Json n(std::size_t a) { return Json{blackbird::JsonNumber{std::to_string(a)}}; }
 void put(const fs::path &p, const std::string &a) {
   std::ofstream f(p);
   f << a;
 }
 Json parse(const std::string &v) {
-  auto r = arconaut::parse_json(v);
+  auto r = blackbird::parse_json(v);
   require(r.has_value(), "parse");
   return r.value();
 }
 std::string dump(const Json &v) {
-  auto r = arconaut::dump_json(v);
+  auto r = blackbird::dump_json(v);
   require(r.has_value(), "dump");
   return r.value();
 }
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
     return 0;
   } catch (const std::exception &e) {
     std::cerr << e.what() << " retained at " << dir << '\n';
-  } catch (const arconaut::Error &) {
+  } catch (const blackbird::Error &) {
     std::cerr << "native test failure retained at " << dir << '\n';
   }
   return 1;

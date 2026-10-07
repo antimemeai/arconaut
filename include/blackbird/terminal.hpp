@@ -1,5 +1,5 @@
 #pragma once
-#include "arconaut/chat_view.hpp"
+#include "blackbird/chat_view.hpp"
 #include <atomic>
 #include <filesystem>
 #include <functional>
@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-namespace arconaut {
+namespace blackbird {
 enum class InputAction {
   none,
   submit,
@@ -122,4 +122,4 @@ private:
   std::string title_;
   void post(Kind kind, std::string_view text);
 };
-} // namespace arconaut
+} // namespace blackbird

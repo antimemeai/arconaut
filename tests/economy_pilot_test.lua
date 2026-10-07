@@ -1,7 +1,7 @@
 local captured,attempts,calls,now,fail,policies
 local function run(policy,provider_fail)
  captured=nil;attempts=0;calls=0;now=0;fail=provider_fail;policies={}
- arco={json={encode=function(v) if type(v)=='table' and v.requests then captured=v end;return 'json' end,
+ blackbird={json={encode=function(v) if type(v)=='table' and v.requests then captured=v end;return 'json' end,
  decode=function() return {id='check',policy=policy,source='frozen'} end},
  stats=function() return {entries={},input_bytes=10,last_request_bytes=20} end,
  append=function(items) for _,i in ipairs(items) do if i.role=='developer' then policies[#policies+1]=i.content end end end,

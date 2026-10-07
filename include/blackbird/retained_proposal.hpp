@@ -1,8 +1,8 @@
 #pragma once
 
-#include "arconaut/journal_writer.hpp"
+#include "blackbird/journal_writer.hpp"
 
-namespace arconaut {
+namespace blackbird {
 struct RetainedProposal {
   JournalCursor expected;
   std::vector<std::vector<std::byte>> sources;
@@ -16,4 +16,4 @@ encode_retained_proposal(JournalCursor expected, std::span<const ByteView> sourc
                          std::uint64_t max_bytes);
 Result<RetainedProposal> decode_retained_proposal(ByteView bytes,
                                                   std::uint64_t max_bytes);
-} // namespace arconaut
+} // namespace blackbird

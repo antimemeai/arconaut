@@ -1,4 +1,5 @@
-#include "arconaut/chat_view.hpp"
+#include "blackbird/chat_view.hpp"
+#include "blackbird/sprite.hpp"
 #include <cerrno>
 #include <chrono>
 #include <clocale>
@@ -6,7 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 void require(bool yes, const char *why) {
   if (!yes)
     throw std::runtime_error(why);
@@ -50,13 +51,38 @@ int main(int argc, char **) {
       }
       return 0;
     }
+    const auto &idle_sprite = blackbird_sprite(false, 0);
+    require(&idle_sprite == &blackbird_sprite(false, 999), "idle mascot animates");
+    require(blackbird_sprite(true, 0) != blackbird_sprite(true, 1),
+            "busy exhaust static");
+    ChatGrid sprite_grid;
+    sprite_grid.reset(40, 2);
+    sprite_grid.line(0, {{"HEADER", Ink::normal}});
+    for (std::size_t y = 0; y < idle_sprite.size(); ++y)
+      sprite_grid.line(y, {{idle_sprite[y], Ink::assistant}}, 22);
+    require(sprite_grid.cells[0].scalar == U'H' && sprite_grid.cells[5].scalar == U'R',
+            "sprite blit overwrites header");
+    sprite_grid.line(0, {{idle_sprite[0], Ink::assistant}}, 40);
+    require(sprite_grid.cells[0].scalar == U'H', "offscreen sprite corrupts cells");
+    sprite_grid.reset(40, 2);
+    sprite_grid.line(0, {{"界x", Ink::normal}});
+    sprite_grid.line(0, {{"h", Ink::normal}}, 1);
+    require(sprite_grid.cells[0].scalar == U' ' && sprite_grid.cells[0].width == 1 &&
+                sprite_grid.cells[1].scalar == U'h' &&
+                sprite_grid.cells[2].scalar == U'x',
+            "offset blit leaves wide-cell leader");
+    sprite_grid.line(0, {{"界", Ink::normal}}, 2);
+    sprite_grid.line(0, {{"界", Ink::normal}}, 1);
+    require(sprite_grid.cells[1].width == 2 && sprite_grid.cells[2].width == 0 &&
+                sprite_grid.cells[3].width == 1,
+            "overlapping wide-cell blit leaves stale continuation");
     ChatView view;
     view.append(ChatKind::user, "hola");
     view.begin(ChatKind::assistant);
     view.stream("¡Hola! ¿En qué te ayudo?");
     auto text = plain(view.rows(80));
     require(text.find("YOU") != std::string::npos &&
-                text.find("ARCO") != std::string::npos,
+                text.find("BLACKBIRD") != std::string::npos,
             "typed roles missing");
     require(text.find("JSON bytes") == std::string::npos, "diagnostics leak");
     const auto count = view.reflows();

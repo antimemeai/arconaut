@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+blackbird_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+blackbird_executable=${BLACKBIRD_EXECUTABLE:-${ARCO_EXECUTABLE:-"$blackbird_root/build/release/blackbird"}}
+blackbird_probe=false
+blackbird_session="$HOME/.local/state/blackbird/default"
+if [ ! -e "$blackbird_session" ] && [ -d "$HOME/.local/state/arconaut/default" ]; then
+  blackbird_session="$HOME/.local/state/arconaut/default"
+fi
+blackbird_plain=false
+blackbird_once=false
+blackbird_value=''
+for blackbird_argument in "$@"; do
+  if [ -n "$blackbird_value" ]; then
+    if [ "$blackbird_value" = session ]; then blackbird_session=$blackbird_argument; fi
+    blackbird_value=''
+    continue
+  fi
+  case "$blackbird_argument" in
+    --help|--list-sessions|--audit-last) blackbird_probe=true ;;
+    --session) blackbird_value=session ;;
+    --model|--effort|--workflow) blackbird_value=skip ;;
+    --once) blackbird_once=true; blackbird_value=skip ;;
+    --resume-once) blackbird_once=true ;;
+    --plain) blackbird_plain=true ;;
+  esac
+done
+# Keep interactive startup on its published generation while the dev campaign
+# builds/replaces Blackbird. Explicit executable selection always wins.
+if [ -z "${BLACKBIRD_EXECUTABLE:-}${ARCO_EXECUTABLE:-}" ] && ! "$blackbird_once" && ! "$blackbird_probe" &&
+   [ -x "$blackbird_root/build/release/blackbird-ui" ]; then
+  blackbird_executable="$blackbird_root/build/release/blackbird-ui"
+fi
+if ! "$blackbird_once" && ! "$blackbird_probe" && [ -t 0 ] && [ -t 1 ]; then
+  printf 'Opening Blackbird session: %s\n' "$blackbird_session" >&2
+fi
+while :; do
+  if "$blackbird_executable" "$@"; then exit 0; else blackbird_status=$?; fi
+  if [ "$blackbird_status" -ne 75 ]; then exit "$blackbird_status"; fi
+  set -- --session "$blackbird_session" --resume-continue
+  if "$blackbird_plain"; then set -- "$@" --plain; fi
+  if "$blackbird_once"; then set -- "$@" --resume-once; fi
+done

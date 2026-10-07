@@ -1,7 +1,7 @@
-#include "arconaut/backstop.hpp"
-#include "arconaut/coding.hpp"
-#include "arconaut/station.hpp"
-#include "arconaut/terminal.hpp"
+#include "blackbird/backstop.hpp"
+#include "blackbird/coding.hpp"
+#include "blackbird/station.hpp"
+#include "blackbird/terminal.hpp"
 #include <atomic>
 #include <csignal>
 #include <fstream>
@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 namespace {
 std::atomic_bool interrupted{false};
 static_assert(std::atomic_bool::is_always_lock_free);
@@ -53,9 +53,8 @@ int main(int argc, char **argv) {
     const char *home = std::getenv("HOME");
     if (home == nullptr)
       throw Error{ErrorCode::invalid_range};
-    std::filesystem::path session =
-        std::filesystem::path{home} / ".local/state/arconaut/default";
-    std::filesystem::path workflow = ARCONAUT_WORKFLOW;
+    std::filesystem::path session = default_session_directory(home);
+    std::filesystem::path workflow = BLACKBIRD_WORKFLOW;
     std::string model = "gpt-6.1-sol", once, seed_path, backstop_path, station_path;
     Json backstop_mission;
     bool one = false, inspect = false, plain = false;
@@ -66,16 +65,16 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) {
       const std::string_view arg = argv[i];
       if (arg == "--help") {
-        std::cout
-            << "arco [--session DIRECTORY] [--model NAME] [--workflow FILE] [--once "
-               "PROMPT] [--audit-last] [--effort low|medium|high|xhigh] "
-               "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
-               "[--backstop MISSION_JSON (requires --once)] "
-               "[--resume-continue|--resume-once]\nInteractive: /context, "
-               "/originals, /restore "
-               "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
-               "/session, "
-               "/restart NOTE, /paste (until /send), /quit or /exit\n";
+        std::cout << "blackbird [--session DIRECTORY] [--model NAME] [--workflow FILE] "
+                     "[--once "
+                     "PROMPT] [--audit-last] [--effort low|medium|high|xhigh] "
+                     "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
+                     "[--backstop MISSION_JSON (requires --once)] "
+                     "[--resume-continue|--resume-once]\nInteractive: /context, "
+                     "/originals, /restore "
+                     "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
+                     "/session, "
+                     "/restart NOTE, /paste (until /send), /quit or /exit\n";
         return 0;
       }
       if (arg == "--list-sessions") {
@@ -294,7 +293,7 @@ int main(int argc, char **argv) {
     engine.cancelled = [&] {
       return interrupted.load(std::memory_order_relaxed) || cancelled.load();
     };
-    TerminalUI ui{"Arconaut · " + model + " · " + effort + " · " + session.string()};
+    TerminalUI ui{"Blackbird · " + model + " · " + effort + " · " + session.string()};
     const bool tui = station_path.empty() && !plain && !one && isatty(STDIN_FILENO) &&
                      isatty(STDOUT_FILENO);
     auto emit = [&](std::string_view text) {
@@ -429,7 +428,7 @@ int main(int argc, char **argv) {
           engine.turn({"", prompt.substr(5)});
         else if (prompt.starts_with("/"))
           emit("Unknown command: " + std::string{prompt} +
-               ". /help lists commands; /quit or /exit closes Arco.\n");
+               ". /help lists commands; /quit or /exit closes Blackbird.\n");
         else if (!prompt.empty())
           engine.turn({prompt, read_file(workflow)});
         if (prompt != "/sessions")
@@ -440,7 +439,7 @@ int main(int argc, char **argv) {
           restart_pending.store(true);
         }
         if (tui)
-          ui.title("Arconaut · " + model + " · " + effort + " · " + session.string());
+          ui.title("Blackbird · " + model + " · " + effort + " · " + session.string());
       } catch (const Error &e) {
         if (tui)
           ui.failed();
@@ -588,14 +587,14 @@ int main(int argc, char **argv) {
           resume_turn ? "continue" : "", session / "ui-state.json");
       return restart_pending.load() ? 75 : 0;
     }
-    std::cout << "Arconaut · " << model << " · " << effort << " · " << session.string()
+    std::cout << "Blackbird · " << model << " · " << effort << " · " << session.string()
               << "\n/help lists commands; /quit or /exit exits.\n";
     if (resume_turn)
       perform("continue");
     if (restart_pending.load())
       return 75;
     std::string line;
-    while (std::cout << "\narco> " && std::getline(std::cin, line)) {
+    while (std::cout << "\nblackbird> " && std::getline(std::cin, line)) {
       if (line == "/quit" || line == "/exit")
         break;
       if (line == "/paste") {
@@ -614,12 +613,12 @@ int main(int argc, char **argv) {
     return restart_pending.load() ? 75 : 0;
 
   } catch (const Error &e) {
-    std::cerr << "arco: " << error_name(e.code) << " (" << e.detail
+    std::cerr << "blackbird: " << error_name(e.code) << " (" << e.detail
               << "). Inspect --audit-last; use a fresh --session for unresolved prior "
                  "work.\n";
     return 1;
   } catch (const std::exception &e) {
-    std::cerr << "arco: " << safe(e.what()) << '\n';
+    std::cerr << "blackbird: " << safe(e.what()) << '\n';
     return 1;
   }
 }

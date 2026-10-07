@@ -3926,3 +3926,44 @@ analyzer/schema-parameter warnings remain backlog. Do not claim full rigor green
 Final new-renderer clang-tidy clean; final renderer/VT/terminal/PTY recheck4/4 in
 11.34s. Record old lint debt arconaut-lh1. Publish qualified native binary atomically
 as build/release/arco-ui for scripts/arco; operator's running process untouched.
+
+## Blackbird rename, SR-71 and native profiling — 2026-10-07
+
+Operator executes rename and asks to restore mascot as Kelly Johnson's magnum
+opus, then wire profilers; additionally requests board identity/sprite. Move
+checkout to projects/blackbird with old-path symlink; stop/restart only its own
+Dolt server around relocation. Rename current namespace/includes/build/runtime/
+launcher/Lua primary API. Preserve retained format, identity/data, issue IDs,
+historical research and quarantined sources. Lua arco is the exact same table;
+old launcher/build names remain. Existing legacy default is selected until a new
+Blackbird default exists. New current guide USING_BLACKBIRD; old guide redirects.
+
+Original36x8 SR-71 silhouette in two existing header rows, cached Braille frames,
+active exhaust on existing clock, reserved text space and narrow hiding. Board
+uses same original silhouette, name/defaultroot and blackbird-board alias; old
+command remains. No copied image or Qud asset, no added core dashboard burden.
+
+Optimized-symbol/frame-pointer profile preset; finite private capture wrapper for
+sample, Instruments CPU/allocations/system and optional Linux perf. Provider-free
+native layout/composition/paint fixture. Sample source-resolved stacks and serial
+CPU trace/export pass. Concurrent Instruments fail: serialize with lock. Allocation
+attach/launch fails; profile-only get-task-allow signing fixes actual attachment.
+Never change machine-wide developer mode; release artifact signing unchanged.
+Counters span whole fixture/init/teardown, not only sample window.
+
+One tribunal reports compatibility missing-output, failed/interrupt profiler
+reporting, offset-wide-cell footprint and board flame/status defects. Fix and
+perform direct rechecks; no second review. Refuted ETXTBSY finding requires no
+change. Full local release41/42 initially only old resume-command expectation;
+final6/6 relevant recheck33.27s covers canonical expectation and alias. Board
+installed command PTY title/sprite/quit passes after keeping output drained.
+Actual preview in evotools papers/blackbird-board-preview.svg. Profiling known
+machine/tool limitations are in docs/PROFILING and review-disposition paper.
+
+Final Neuroses debug/release/ASan+UBSan focused native/VT/terminal/session/RRC
+checks pass across all three profiles. Initial remote run caught the same old
+resume-command expectation; corrected once with explicit canonical name. Local
+final6/6 and actual profiler failure/interruption/reaping checks pass. Missing
+compatibility executable is restored by its target. Install blackbird-ui and
+legacy arco-ui atomically. Board update committed/pushed separately in evotools.
+One review round only; existing general lint debt remains explicitly open.

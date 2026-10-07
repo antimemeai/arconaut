@@ -1,9 +1,9 @@
 #pragma once
 
-#include "arconaut/journal.hpp"
-#include "arconaut/journal_storage.hpp"
+#include "blackbird/journal.hpp"
+#include "blackbird/journal_storage.hpp"
 
-namespace arconaut {
+namespace blackbird {
 inline constexpr std::size_t head_selector_size = 72;
 struct HeadSelector {
   EnvironmentId environment;
@@ -61,4 +61,4 @@ private:
   bool initial_prepared_ = false;
   bool in_transaction_ = false;
 };
-} // namespace arconaut
+} // namespace blackbird

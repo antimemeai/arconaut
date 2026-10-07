@@ -1,8 +1,8 @@
-#include "arconaut/journal_writer.hpp"
+#include "blackbird/journal_writer.hpp"
 
 #include <algorithm>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 class AppendAttempt {
 public:
@@ -704,4 +704,4 @@ Result<ObservedJournalBytes> FramedJournal::read_original_range(std::uint64_t of
   }
 }
 
-} // namespace arconaut
+} // namespace blackbird

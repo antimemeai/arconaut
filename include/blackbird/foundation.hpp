@@ -12,7 +12,7 @@
 #include <variant>
 #include <vector>
 
-namespace arconaut {
+namespace blackbird {
 
 enum class ErrorCode : std::uint8_t {
   invalid_identity,
@@ -330,4 +330,4 @@ public:
   virtual Result<void> dispatch(const EffectIntent &intent) = 0;
 };
 
-} // namespace arconaut
+} // namespace blackbird

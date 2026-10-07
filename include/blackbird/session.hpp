@@ -1,7 +1,8 @@
 #pragma once
-#include "arconaut/context.hpp"
+#include "blackbird/context.hpp"
 #include <filesystem>
-namespace arconaut {
+namespace blackbird {
+std::filesystem::path default_session_directory(const std::filesystem::path &home);
 struct SessionSettings {
   std::string model = "gpt-6.1-sol", effort = "medium", workflow;
   bool operator==(const SessionSettings &) const = default;
@@ -29,4 +30,4 @@ private:
   SessionSettings settings_;
   Json restart_;
 };
-} // namespace arconaut
+} // namespace blackbird

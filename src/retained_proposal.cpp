@@ -1,8 +1,8 @@
-#include "arconaut/retained_proposal.hpp"
+#include "blackbird/retained_proposal.hpp"
 
 #include <algorithm>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 constexpr std::string_view magic{"ARPROP01"};
 template <std::size_t Width>
@@ -156,4 +156,4 @@ Result<RetainedProposal> decode_retained_proposal(ByteView bytes,
     return Result<RetainedProposal>::failure({ErrorCode::allocation});
   }
 }
-} // namespace arconaut
+} // namespace blackbird

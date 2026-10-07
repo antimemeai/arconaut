@@ -1,4 +1,4 @@
-#include "arconaut/retained_events.hpp"
+#include "blackbird/retained_events.hpp"
 
 #include <algorithm>
 #include <array>
@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace arconaut;
+using namespace blackbird;
 namespace {
 std::atomic<std::ptrdiff_t> fail_allocation{-1};
 }

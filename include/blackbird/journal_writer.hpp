@@ -1,10 +1,10 @@
 #pragma once
 
-#include "arconaut/journal.hpp"
-#include "arconaut/journal_storage.hpp"
+#include "blackbird/journal.hpp"
+#include "blackbird/journal_storage.hpp"
 #include <algorithm>
 
-namespace arconaut {
+namespace blackbird {
 
 struct JournalCapacity {
   std::uint64_t max_file_bytes;
@@ -146,4 +146,4 @@ private:
   bool in_restage_ = false;
 };
 
-} // namespace arconaut
+} // namespace blackbird

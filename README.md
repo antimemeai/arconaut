@@ -1,12 +1,12 @@
-# Arconaut
+# Blackbird
 
 **A programmable coding agent for an operator who intends to use the whole machine.**
 
-Arconaut begins with a particular kind of person at the keyboard: technically sophisticated, curious, impatient with artificial restrictions, and inclined to invent a workflow rather than choose one from a menu. Someone who might want a model to write C++, interrogate a standing database, enlist a colleague running a different model, hold an argument in a live channel, and redesign the agent's own turn program before lunch.
+Blackbird begins with a particular kind of person at the keyboard: technically sophisticated, curious, impatient with artificial restrictions, and inclined to invent a workflow rather than choose one from a menu. Someone who might want a model to write C++, interrogate a standing database, enlist a colleague running a different model, hold an argument in a live channel, and redesign the agent's own turn program before lunch.
 
 The machine should make those things possible. The operator should be able to steer the work. The model should have substantial agency over the programs it uses. Routine tools should execute without an approval pageant. And when the work goes wrong, there should be enough retained evidence to understand what happened.
 
-That is the project. It is also the reason Arconaut is being built inside Arconaut. An agent that can change its own harness, rebuild it, resume the same conversation, and continue useful work gives us a direct way to improve the system we inhabit.
+That is the project. It is also the reason Blackbird is being built inside Blackbird. An agent that can change its own harness, rebuild it, resume the same conversation, and continue useful work gives us a direct way to improve the system we inhabit.
 
 
 This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal interface, and an operating self-development loop**. It is an early system in active use and reconstruction. Its ambitions exceed its present implementation; the distinctions below are part of the description, rather than small print.
@@ -14,37 +14,42 @@ This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal int
 For current accepted capabilities, unfinished work and the paused development
 cycle, see [the project stock](docs/CURRENT_STATE.md).
 
+Arconaut is now **Blackbird**. Old launch commands and the Lua `arco` API remain compatibility aliases; sessions and retained audit formats are preserved.
+
+The header carries a small original SR-71 sprite, with active exhaust animation.
+For native CPU/allocation investigation, see [Profiling](docs/PROFILING.md).
+
 ## Come aboard
 
 From a configured checkout with the release executable built:
 
 ```sh
-./scripts/arco --session context/my-arco
+./scripts/blackbird --session context/my-blackbird
 ```
 
 In a terminal this opens the conversation view and composer. Piped input and `--once` select the plain interface; `--plain` selects it explicitly.
 
 ```sh
-./scripts/arco --session context/my-arco --once 'Inspect this project and explain its build.'
-./scripts/arco --session context/my-arco --model gpt-6.1-sol --effort medium
-./scripts/arco --list-sessions
+./scripts/blackbird --session context/my-blackbird --once 'Inspect this project and explain its build.'
+./scripts/blackbird --session context/my-blackbird --model gpt-6.1-sol --effort medium
+./scripts/blackbird --list-sessions
 ```
 
 **Supported partner tool: [phux](https://github.com/no-phux/phux)**, by phall,
-is the officially supported external multiplexer. It keeps Arco's terminal
+is the officially supported external multiplexer. It keeps Blackbird's terminal
 running across detach/reattach and gives humans and models access to the same panes.
 Start a named phux session with:
 
 ```sh
-./scripts/arco-phux arco --session context/my-arco
+./scripts/blackbird-phux arco --session context/my-blackbird
 ```
 
 Detach with `Ctrl-A`, then `d`; return with `phux attach arco`. See
-[phux support](docs/PHUX.md) for installation, multiple Arcos, and terminal control.
+[phux support](docs/PHUX.md) for installation, multiple Blackbirds, and terminal control.
 
-The working directory is the tool working directory. The default session lives at `~/.local/state/arconaut/default`; an explicit directory keeps a project's conversation where you choose. Only one process may hold a session. Model, reasoning effort, workflow path, and conversation identities persist across restart. Explicit launch options override and save the corresponding settings.
+The working directory is the tool working directory. New default sessions live at `~/.local/state/blackbird/default`; an existing `~/.local/state/arconaut/default` is reused until you select a new default. An explicit directory keeps a project's conversation where you choose. Only one process may hold a session. Model, reasoning effort, workflow path, and conversation identities persist across restart. Explicit launch options override and save the corresponding settings.
 
-The current OpenAI connection uses the operator's existing **Codex ChatGPT sign-in**. Installed native Codex supplies authentication and refresh. Arconaut constructs the provider requests, processes the streams, runs tools, and maintains context. An API key is not required for this bootstrap path. Codex is currently a runtime prerequisite for authentication; removing that construction scaffolding is future work. This is not yet a general multi-provider distribution.
+The current OpenAI connection uses the operator's existing **Codex ChatGPT sign-in**. Installed native Codex supplies authentication and refresh. Blackbird constructs the provider requests, processes the streams, runs tools, and maintains context. An API key is not required for this bootstrap path. Codex is currently a runtime prerequisite for authentication; removing that construction scaffolding is future work. This is not yet a general multi-provider distribution.
 
 ### Building this checkout
 
@@ -53,18 +58,18 @@ The build is deliberately tied to qualified development profiles. The local macO
 ```sh
 scripts/rigor doctor
 scripts/rigor build release
-./scripts/arco --session context/my-arco
+./scripts/blackbird --session context/my-blackbird
 ```
 
 Once the release build is configured, the ordinary native rebuild is:
 
 ```sh
-cmake --build build/release --target arco
+cmake --build build/release --target blackbird
 ```
 
 The [tooling guide](tooling/README.md) documents profiles, diagnostics, sanitizer and fuzz tooling, and Linux checks. Python is used by some development and test drivers; production agent logic is C++ and Lua. The present provider transport also uses the system's `curl` executable. There is no JavaScript application runtime or terminal framework underneath the conversation.
 
-For everyday operation, keep [Using Arco](docs/USING_ARCO.md) nearby. It contains the exact options, limits, Lua interfaces, context proposals, and recovery instructions. This README supplies the landscape; that guide supplies the roads.
+For everyday operation, keep [Using Blackbird](docs/USING_BLACKBIRD.md) nearby. It contains the exact options, limits, Lua interfaces, context proposals, and recovery instructions. This README supplies the landscape; that guide supplies the roads.
 
 ## The person, the model, and the machine
 
@@ -83,20 +88,20 @@ The core is native C++ because the underlying machinery matters: bytes, processe
 The host provides request, tool, context, inspection, and display interfaces:
 
 ```lua
-local result = arco.call("read_file", {
+local result = blackbird.call("read_file", {
   path = "README.md",
   line_start = 1,
   line_end = 30
 })
 
-local state = arco.stats()
-arco.display(arco.json.encode(state))
+local state = blackbird.stats()
+blackbird.display(blackbird.json.encode(state))
 ```
 
-`arco.request(options)` lets a program configure a model request, including its assembly and request-local choices. `arco.context()`, `arco.edit(...)`, `arco.manage(...)`, and `arco.inspect(...)` expose the working context and retained material. `arco.call(...)` gives Lua the same native tools used by the model. The model's Lua tool makes these interfaces available during normal work.
+`blackbird.request(options)` lets a program configure a model request, including its assembly and request-local choices. `blackbird.context()`, `blackbird.edit(...)`, `blackbird.manage(...)`, and `blackbird.inspect(...)` expose the working context and retained material. `blackbird.call(...)` gives Lua the same native tools used by the model. The model's Lua tool makes these interfaces available during normal work.
 
 Lua globals are ephemeral between turns. Persistent state belongs in context, files, or services. Base, coroutine, table, string, math, and UTF-8 facilities are available; host effects go through the audited interfaces. Raw `io`, `os`, `package`, and `debug` libraries are absent. Named modules can be staged through `program_config` and imported with
-`arco.module(name)` from retained, workflow-pinned source; explicit tool reads and
+`blackbird.module(name)` from retained, workflow-pinned source; explicit tool reads and
 `load` remain available for experiments. This arrangement keeps ordinary effects visible in the audit. It does not claim hostile-code isolation.
 
 The native engine underneath the program owns operation admission, observed outcomes, retained source material, and publication of accepted context. In that vocabulary, **admission** means recording an operation before dispatch. It is an internal execution record, not a request for the operator to approve a command. Dispatch, completion, failure, and an unknown outcome remain separate facts.
@@ -126,7 +131,7 @@ Automatic compaction policy remains separate. A smaller provider context also do
 
 ## The audit remembers what the conversation forgets
 
-Arconaut's audit is a core instrument for diagnosis and improvement. It records operation inputs and dispositions, original provider requests and streamed bytes, context revisions, effective program source, file prior/proposed bytes, and process output. Causal identities connect decisions, invocations, attempts, and observed results. Authentication credentials are excluded from the provider audit interface.
+Blackbird's audit is a core instrument for diagnosis and improvement. It records operation inputs and dispositions, original provider requests and streamed bytes, context revisions, effective program source, file prior/proposed bytes, and process output. Causal identities connect decisions, invocations, attempts, and observed results. Authentication credentials are excluded from the provider audit interface.
 
 An accepted answer does not retroactively make an earlier failed request succeed. A process that timed out may already have performed external effects. A command whose disposition is unknown cannot safely be treated as a command that never ran. Those distinctions affect what happens next.
 
@@ -144,7 +149,7 @@ That failure drove concrete work: physical byte/record headroom is now exposed, 
 
 ## The terminal is a place to work
 
-The TUI keeps a conversation, activity display, and multiline composer on screen. Assistant text streams during inference. Tools show commands or paths, output, timing, and observed results. Scrolling can remain anchored while new output arrives. The Arconaut in the corner gently bobs and his plume shimmers while a turn is underway.
+The TUI keeps a conversation, activity display, and multiline composer on screen. Assistant text streams during inference. Tools show commands or paths, output, timing, and observed results. Scrolling can remain anchored while new output arrives. The Blackbird in the corner gently bobs and his plume shimmers while a turn is underway.
 
 The basic controls are intentionally ordinary:
 
@@ -167,7 +172,7 @@ The external **arcoboard** is a different tool: a project view of queued work, i
 
 ## Build the ship while sailing it
 
-The first milestone was always to reach the point where we could develop Arconaut in Arconaut. The practical mechanism turned out to be straightforward:
+The first milestone was always to reach the point where we could develop Blackbird in Blackbird. The practical mechanism turned out to be straightforward:
 
 **edit → test → build → restart → resume the session → continue.**
 
@@ -175,7 +180,7 @@ The launcher recognizes a requested restart and starts the replacement executabl
 
 Restart is deferred to the successful turn/tool boundary. Pending call linkage or unfinished admitted effects blocks it; failed or interrupted turns cancel the request. An ordinary reopen does not consume a pending continuation intent. Explicit `--resume-continue` is the recovery control when the launcher failed. These details prevent a convenient restart button from becoming an accidental side-effect replay mechanism.
 
-Real models have edited C++ tools, exercised a failing regression, corrected the implementation, rebuilt the agent, and continued in the replacement. Subsequent autonomous campaigns have shipped compaction, observability, candidate tooling, and resilience changes through this loop. The operator has accepted the first milestone: Arconaut is developing Arconaut. Further comfort and resilience improvements remain active work; the broader core specification is still unfinished.
+Real models have edited C++ tools, exercised a failing regression, corrected the implementation, rebuilt the agent, and continued in the replacement. Subsequent autonomous campaigns have shipped compaction, observability, candidate tooling, and resilience changes through this loop. The operator has accepted the first milestone: Blackbird is developing Blackbird. Further comfort and resilience improvements remain active work; the broader core specification is still unfinished.
 
 The larger **autodroit** design extends this agency from a few manually directed changes to model-governed research and improvement with operator steering. Outposts offer a future way to carry selected context into another working environment, including a temporary colleague during a core refit. Refit must quiesce this harness's active programs and provider activity. Standing work owned by this harness is intended to pause and survive; uninterrupted services belong in independently managed processes. Full outpost/refit and standing-worker continuity are not implemented in the current bootstrap.
 
@@ -195,7 +200,7 @@ The model can complain. `rageshake` captures an observation together with contex
 
 Evolution candidates use **Git branches and commits for retained source**, with a configurable bounded checkout pool for actual execution. Serial experiments reuse a checkout once its users have stopped and its state is explicitly settled. Overflow queues. Source and experiment artifacts survive checkout retirement. Archiving source, qualifying behavior, and activating an implementation are different actions; pushing a branch establishes only the first.
 
-This matters because autonomous improvement can otherwise bury itself under worktrees, repeated reviews, and elaborate declarations of confidence. Arconaut's working rules bound retries and review loops. A passed check stays settled until a relevant change or new evidence gives a reason to revisit it. Reviews attack consequential fault classes. They do not recursively certify each other.
+This matters because autonomous improvement can otherwise bury itself under worktrees, repeated reviews, and elaborate declarations of confidence. Blackbird's working rules bound retries and review loops. A passed check stays settled until a relevant change or new evidence gives a reason to revisit it. Reviews attack consequential fault classes. They do not recursively certify each other.
 
 The useful-work interstitial supplied audit exploration, complaints, editable Lua feedback and contrast records, branch candidates, and a small matched experiment. It compared ordinary information gathering with bounded-first reading on twelve fresh task sessions. All twelve artifacts were accepted; latency and resource outcomes were mixed. The disposition was **revise the unconditional policy**. There was no defensible general speedup claim.
 
@@ -203,15 +208,15 @@ The [pilot report](papers/2026-10-06-useful-work-pilot.md) retains measured outc
 
 ## Beyond one seat
 
-Arconaut is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The current production connection is OpenAI; independent colleagues have been invoked through development tooling. An integrated provider fleet has not shipped.
+Blackbird is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The current production connection is OpenAI; independent colleagues have been invoked through development tooling. An integrated provider fleet has not shipped.
 
 Two operating styles are also on the road ahead. **Campaign mode** is the operator in the seat, steering sustained work. **Station mode** is an agent listening for an explicit feed or trigger and acting in the background. Today we run autonomous campaigns with Lua and external supervision. A general native station/trigger service remains future work.
 
 Common integrations should arrive as optional packages: GitHub, Linear, Slack, Discord, Hugging Face, and others according to actual need. A minimal installation should stay small. The proposed HUD is a thematic feed relevant to a project set: security advisories, research papers, financial events, or other selected sources. Receiving an event, displaying it, including it in context, and acting on it are separate operations.
 
-**Multiplayer means independent Arconauts sharing work over a network.** Start with two; preserve the design for many. The intended communication is peer to peer and end-to-end encrypted, with agent–agent, human–human, and human–agent interaction. An integrated IRC-style channel can be enough. Richer collaboration can share a problem, files, or build identities; inter-Arco model mail is another possibility. Independent conversations need not become a single merged context. This is a design direction, not an implemented network protocol.
+**Multiplayer means independent Blackbirds sharing work over a network.** Start with two; preserve the design for many. The intended communication is peer to peer and end-to-end encrypted, with agent–agent, human–human, and human–agent interaction. An integrated IRC-style channel can be enough. Richer collaboration can share a problem, files, or build identities; inter-Arco model mail is another possibility. Independent conversations need not become a single merged context. This is a design direction, not an implemented network protocol.
 
-Kernels, standing databases, and computational services can serve an army of Arconauts. Arconaut consumes them. Their provisioning, scaling, and control plane belong to the eventual project fabric. Restarting one harness must not halt a shared database simply because that harness used it.
+Kernels, standing databases, and computational services can serve an army of Blackbirds. Blackbird consumes them. Their provisioning, scaling, and control plane belong to the eventual project fabric. Restarting one harness must not halt a shared database simply because that harness used it.
 
 The [participants and modes brief](docs/PARTICIPANTS_AND_MODES.md) and [integration research](papers/integrations-2026-10-06/SYNTHESIS.md) develop these questions, including Claude Code's teams and mods. Reference acquisition is research, not dependency adoption.
 
@@ -229,7 +234,7 @@ Literature and reference implementations are first-class working material. The r
 
 | Place | What belongs there |
 | --- | --- |
-| [`src/`](src/) and [`include/arconaut/`](include/arconaut/) | Native foundation, journal, context, provider, tools, sessions, terminal, and candidate machinery. |
+| [`src/`](src/) and [`include/blackbird/`](include/blackbird/) | Native foundation, journal, context, provider, tools, sessions, terminal, and candidate machinery. |
 | [`programs/`](programs/) | Turn programs, useful-work helpers, and experiment instrumentation. |
 | [`tests/`](tests/) | Direct behavioral, recovery, protocol, tool, and terminal oracles. |
 | [`scripts/`](scripts/) | Launcher, build/check utilities, and development exercises. |
@@ -240,21 +245,21 @@ Literature and reference implementations are first-class working material. The r
 | [`QUARANTINE.md`](QUARANTINE.md) | Reference sources and restoration instructions. |
 | `context/`, `quarantine/`, `build/` | Ignored working evidence, acquired references, and build products. |
 
-For the conceptual route, read [Foundation](docs/FOUNDATION.md), then the [core design](docs/CORE_DESIGN.md). For the implementation route, start with [Using Arco](docs/USING_ARCO.md), the [implementation plan](docs/IMPLEMENTATION_PLAN.md), and the [autodevelopment queue](docs/AUTODEV_QUEUE.md). For the empirical route, read the [agent survey](papers/capabilities/README.md), [harness-evolution synthesis](papers/frumentarii-2026-10-06/SYNTHESIS.md), and the campaign reports linked above. Older plans and journal entries describe their time; current source and later explicit operator decisions resolve their status.
+For the conceptual route, read [Foundation](docs/FOUNDATION.md), then the [core design](docs/CORE_DESIGN.md). For the implementation route, start with [Using Blackbird](docs/USING_BLACKBIRD.md), the [implementation plan](docs/IMPLEMENTATION_PLAN.md), and the [autodevelopment queue](docs/AUTODEV_QUEUE.md). For the empirical route, read the [agent survey](papers/capabilities/README.md), [harness-evolution synthesis](papers/frumentarii-2026-10-06/SYNTHESIS.md), and the campaign reports linked above. Older plans and journal entries describe their time; current source and later explicit operator decisions resolve their status.
 
 Issues use the repository's beads database. Supported backups live under `.beads/backup/`. Raw session audits, provider history, working captures, acquired references, PDFs, and build products stay out of source publication.
 
-## What happened to the previous Arconaut?
+## What happened to the previous Blackbird?
 
 This is a reconstruction, not an uncritical continuation of inherited code. The earlier implementation and its plans were assessed, preserved, and moved to ignored `quarantine/arconaut/`. Archived instructions are historical reference. The [assessment baseline](docs/RESTART.md) and source manifests retain what was found and how to recover it.
 
 The fresh C++/Lua implementation follows the operator's renewed brief. Historical Git records preserve the old project; current campaign branches preserve source and experiments from the reconstruction. A branch is a useful identity for work, not a reason to postpone integration forever.
 
-Arconaut already does useful work on itself. The next obligation is to make that work comfortable, resilient, inspectable, and increasingly capable—while retaining enough evidence to tell whether the changes helped.
+Blackbird already does useful work on itself. The next obligation is to make that work comfortable, resilient, inspectable, and increasingly capable—while retaining enough evidence to tell whether the changes helped.
 
 ## License
 
-Arconaut's original software and documentation are released under the
+Blackbird's original software and documentation are released under the
 [MIT License](LICENSE). Copyright © 2026 Patrick Beam.
 
 Third-party material retains its original license.

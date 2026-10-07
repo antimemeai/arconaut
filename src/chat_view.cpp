@@ -1,5 +1,5 @@
-#include "arconaut/chat_view.hpp"
-#include "arconaut/terminal.hpp"
+#include "blackbird/chat_view.hpp"
+#include "blackbird/terminal.hpp"
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <unistd.h>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 constexpr std::size_t display_limit = 64 * 1024;
 constexpr std::size_t line_limit = 2048;
@@ -328,7 +328,7 @@ const std::vector<ChatRow> &ChatView::rows(std::size_t width) {
       if (!rows_.empty())
         rows_.push_back({});
       const auto label = b.kind == ChatKind::user        ? "YOU"
-                         : b.kind == ChatKind::assistant ? "ARCO"
+                         : b.kind == ChatKind::assistant ? "BLACKBIRD"
                          : b.kind == ChatKind::tool      ? "ACTIVITY"
                          : b.kind == ChatKind::error     ? "ERROR"
                          : b.kind == ChatKind::summary   ? "TURN"
@@ -385,18 +385,27 @@ void ChatGrid::reset(std::size_t columns, std::size_t rows) {
   std::fill(cells.begin(), cells.end(), ChatCell{});
   tails.clear();
 }
-void ChatGrid::line(std::size_t row, const ChatRow &content) {
-  if (row >= height)
+void ChatGrid::line(std::size_t row, const ChatRow &content, std::size_t column) {
+  if (row >= height || column >= width)
     return;
-  std::size_t column = 0;
   for (const auto &span : content) {
     auto text = std::string_view{span.text};
     while (!text.empty()) {
       const auto r = cluster(text);
       if (column + r.width > width)
         return;
+      const auto erase_footprint = [&](std::size_t x) {
+        auto &old = cells[row * width + x];
+        if (old.width == 0 && x > 0)
+          cells[row * width + x - 1] = ChatCell{};
+        if (old.width == 2 && x + 1 < width)
+          cells[row * width + x + 1] = ChatCell{};
+        old = ChatCell{};
+      };
+      erase_footprint(column);
+      if (r.width == 2)
+        erase_footprint(column + 1);
       auto &cell = cells[row * width + column];
-      cell = ChatCell{};
       cell.scalar = r.scalar;
       cell.ink = span.ink;
       cell.width = static_cast<std::uint8_t>(r.width);
@@ -514,4 +523,4 @@ bool ChatOutput::flush() {
   }
   return !pending();
 }
-} // namespace arconaut
+} // namespace blackbird

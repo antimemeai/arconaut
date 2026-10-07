@@ -1,10 +1,10 @@
-#include "arconaut/coding.hpp"
+#include "blackbird/coding.hpp"
 #include <cerrno>
 #include <chrono>
 #include <iostream>
 #include <set>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 template <class T> T id(unsigned char n) {
   IdentityBytes b{};
   b[0] = std::byte{n};
@@ -222,7 +222,8 @@ void atomic_admission_test(const std::string &path, int mode) {
   ContextStore context{log};
   UsageProvider provider;
   CodingEngine engine{log, context, provider, "test"};
-  engine.turn({"", "arco.call('context_stats', {})"});
+  engine.turn({"", "assert(rawequal(blackbird, arco)); assert(blackbird.module == "
+                   "arco.module); arco.call('context_stats', {})"});
   const auto counts = [&] {
     std::array<std::size_t, 3> result{};
     for (const auto &fact : root->committed_facts()) {

@@ -12,24 +12,24 @@ end
 function M.lines(path, first, last)
   first, last = M.number(first), M.number(last)
   assert(first>=1 and last>=first and first%1==0 and last%1==0, 'inclusive line range')
-  return arco.call('read_file',{path=path,range={mode='lines',start=first,['end']=last}})
+  return blackbird.call('read_file',{path=path,range={mode='lines',start=first,['end']=last}})
 end
 function M.bytes(path, first, last)
   first, last = M.number(first), M.number(last)
   assert(first>=0 and last>=first and first%1==0 and last%1==0, 'half-open byte range')
-  return arco.call('read_file',{path=path,range={mode='bytes',start=first,['end']=last}})
+  return blackbird.call('read_file',{path=path,range={mode='bytes',start=first,['end']=last}})
 end
 -- Positional watermark avoids the real reserved-key `end` parser failure.
 function M.page(cursor, count, watermark)
   local q = {cursor=cursor, count=count or 32}
   if watermark ~= nil then q['end'] = watermark end
-  return arco.call('audit_inspect', {query=q})
+  return blackbird.call('audit_inspect', {query=q})
 end
 function M.original(record, source, offset, limit, watermark)
   local q = {record=record, offset=offset or 0, limit=limit or 4096}
   if source ~= nil then q.source=source end
   if watermark ~= nil then q['end']=watermark end
-  return arco.call('audit_inspect',{query=q})
+  return blackbird.call('audit_inspect',{query=q})
 end
 -- Bounded search, explicit continuation. Occurrences stay distinct. No replay.
 function M.find(cursor, watermark, pages, predicate)
@@ -47,7 +47,7 @@ function M.find(cursor, watermark, pages, predicate)
           limitation='page budget exhausted; unvisited facts unknown'}
 end
 function M.feedback(s)
-  s=s or arco.stats()
+  s=s or blackbird.stats()
   local entries={}
   for _,e in ipairs(s.entries or {}) do entries[#entries+1]={id=e.id, bytes=e.item_bytes} end
   table.sort(entries,function(a,b) return M.number(a.bytes)>M.number(b.bytes) end)
@@ -68,9 +68,9 @@ function M.record(pool, request_path, r, executable)
     assert(r[key]~=nil, 'missing '..key)
   end
   r.resources=r.resources or M.feedback()
-  local persisted=arco.call('write_file',{path=request_path,content=arco.json.encode(r)})
+  local persisted=blackbird.call('write_file',{path=request_path,content=blackbird.json.encode(r)})
   if persisted.written~=true then return {error='request write not confirmed',write_result=persisted} end
-  return arco.call('exec',{argv={executable or 'build/release/arco-candidate',pool,'record',request_path},
+  return blackbird.call('exec',{argv={executable or 'build/release/blackbird-candidate',pool,'record',request_path},
                          timeout_seconds=30,output_max_bytes=4096})
 end
 function M.contrast(pool, request_path, r, executable)
@@ -87,8 +87,8 @@ end
 -- Keep this file local (context/), not a command-approval mechanism. Explicit
 -- interrupt is native cancellation. Failed read/parse is visible, not ignored.
 function M.boundary(steer_path)
-  local raw=arco.call('read_file',{path=steer_path})
-  local steer=arco.json.decode(raw.content)
+  local raw=blackbird.call('read_file',{path=steer_path})
+  local steer=blackbird.json.decode(raw.content)
   assert(type(steer)=='table' and type(steer.direction)=='string', 'invalid operator steer')
   return {steer=steer,feedback=M.feedback()}
 end

@@ -1,11 +1,11 @@
-#include "arconaut/context.hpp"
+#include "blackbird/context.hpp"
 #include <algorithm>
 #include <charconv>
 #include <filesystem>
 #include <limits>
 #include <set>
 
-namespace arconaut {
+namespace blackbird {
 std::string hex_identity(const IdentityBytes &bytes) {
   constexpr char digits[] = "0123456789abcdef";
   std::string out;
@@ -901,4 +901,4 @@ Json ContextStore::inspect(const Json &query) const {
                        {"context_revision", Json{head_}}});
 }
 
-} // namespace arconaut
+} // namespace blackbird

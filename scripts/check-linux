@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
     # Explicit current native unit source scope, excluding history, credentials and captures.
     paths = ["CMakeLists.txt", "include", "src", "tests", "programs", "tooling/probes",
-             "scripts/check-foundation-api", "scripts/check-terminal-pty", "scripts/check-rrc", "scripts/arco"]
+             "scripts/check-foundation-api", "scripts/check-terminal-pty", "scripts/check-rrc", "scripts/arco", "scripts/blackbird", "scripts/terminal-screen-oracle.py"]
     lua_archive = ROOT.parent / "quarantine_proj/archives/lua-5.4.8.tar.gz"
     if hashlib.sha256(lua_archive.read_bytes()).hexdigest() != "4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae":
         raise RuntimeError("Lua 5.4.8 source archive checksum mismatch")
@@ -59,7 +59,7 @@ subprocess.run(['make', '-C', str(lua), 'liblua.a', 'CC=/usr/bin/clang-18', 'MYC
 
 for name, mode, instrumentation in [('debug', 'Debug', 'none'), ('release', 'Release', 'none'), ('asan', 'Debug', 'address')]:
     build = root / 'build' / name
-    subprocess.run(['/usr/bin/cmake', '-S', str(root), '-B', str(build), '-G', 'Ninja', '-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18', '-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja', '-DARCONAUT_COMPILER_PROFILE=linux-clang18', '-DCMAKE_BUILD_TYPE='+mode, '-DARCONAUT_INSTRUMENTATION='+instrumentation, '-DLUA_INCLUDE_DIR='+str(lua), '-DLUA_LIBRARY='+str(lua / 'liblua.a')], check=True)
+    subprocess.run(['/usr/bin/cmake', '-S', str(root), '-B', str(build), '-G', 'Ninja', '-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18', '-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja', '-DBLACKBIRD_COMPILER_PROFILE=linux-clang18', '-DCMAKE_BUILD_TYPE='+mode, '-DBLACKBIRD_INSTRUMENTATION='+instrumentation, '-DLUA_INCLUDE_DIR='+str(lua), '-DLUA_LIBRARY='+str(lua / 'liblua.a')], check=True)
     subprocess.run(['/usr/bin/cmake', '--build', str(build), '--parallel', '4'], check=True)
     tests = ['/usr/bin/ctest', '--test-dir', str(build), '--output-on-failure', '--no-tests=error']
     if test_regex is not None:

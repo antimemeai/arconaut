@@ -1,8 +1,15 @@
-#include "arconaut/session.hpp"
-#include "arconaut/tools.hpp"
+#include "blackbird/session.hpp"
+#include "blackbird/tools.hpp"
 #include <algorithm>
 #include <sys/stat.h>
-namespace arconaut {
+namespace blackbird {
+std::filesystem::path default_session_directory(const std::filesystem::path &home) {
+  const auto current = home / ".local/state/blackbird/default";
+  const auto legacy = home / ".local/state/arconaut/default";
+  return !std::filesystem::exists(current) && std::filesystem::is_directory(legacy)
+             ? legacy
+             : current;
+}
 namespace {
 Json packet(const ApplicationRecordEvent &record) {
   return unwrap(parse_json(std::string_view{
@@ -116,14 +123,14 @@ Json list_sessions(const std::filesystem::path &requested) {
     for (const char c : stable)
       quoted += c == '\'' ? "'\"'\"'" : std::string(1, c);
     quoted += "'";
-    entries.push_back(
-        Json::object({{"path", Json{stable}},
-                      {"configuration", std::move(config)},
-                      {"metadata_status", Json{status}},
-                      {"last_activity_unix_seconds", std::move(activity)},
-                      {"last_activity_status",
-                       Json{activity_available ? "available" : "unavailable"}},
-                      {"resume_command", Json{"./scripts/arco --session " + quoted}}}));
+    entries.push_back(Json::object(
+        {{"path", Json{stable}},
+         {"configuration", std::move(config)},
+         {"metadata_status", Json{status}},
+         {"last_activity_unix_seconds", std::move(activity)},
+         {"last_activity_status",
+          Json{activity_available ? "available" : "unavailable"}},
+         {"resume_command", Json{"./scripts/blackbird --session " + quoted}}}));
   }
   return Json::object(
       {{"root", Json{root.string()}},
@@ -234,4 +241,4 @@ bool SessionStore::resume(ContextStore &context) {
   restart_ = std::move(consumed);
   return true;
 }
-} // namespace arconaut
+} // namespace blackbird

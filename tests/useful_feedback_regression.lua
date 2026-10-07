@@ -4,7 +4,7 @@
 -- docs/USEFUL_WORK_CANDIDATES.md:66-70.
 local stats_calls = 0
 local current_stats
-arco = {
+blackbird = {
   stats = function()
     stats_calls = stats_calls + 1
     assert(current_stats, 'unexpected stats request')
@@ -61,7 +61,7 @@ local function check(f, s)
   end
 end
 
--- Explicit stats must bypass arco.stats; absent provider usage remains nil.
+-- Explicit stats must bypass blackbird.stats; absent provider usage remains nil.
 local missing = {entries=entries, input_bytes={'1439'}, last_request_bytes=2048,
                  request_scope='last request in this process'}
 local f = M.feedback(missing)

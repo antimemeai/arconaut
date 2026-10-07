@@ -1,9 +1,9 @@
 #pragma once
-#include "arconaut/json.hpp"
+#include "blackbird/json.hpp"
 #include <filesystem>
 #include <functional>
 
-namespace arconaut {
+namespace blackbird {
 // Credentials are deliberately absent from the request/response audit interface.
 struct OpenAiConfig {
   std::string codex_executable = "codex";
@@ -48,4 +48,4 @@ private:
   std::size_t bytes_ = 0;
 };
 Result<Json> completed_response(std::string_view event_stream, JsonLimits limits = {});
-} // namespace arconaut
+} // namespace blackbird

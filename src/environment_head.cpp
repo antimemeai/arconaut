@@ -1,10 +1,10 @@
-#include "arconaut/environment_head.hpp"
+#include "blackbird/environment_head.hpp"
 
 #include <algorithm>
 #include <cerrno>
 #include <string_view>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 constexpr std::string_view magic = "ARCHEAD1";
 template <std::size_t Width, std::size_t Offset>
@@ -347,4 +347,4 @@ Result<void> EnvironmentHead::replace(const HeadSelector &expected, AuditStreamI
     return Result<void>::failure({ErrorCode::allocation});
   }
 }
-} // namespace arconaut
+} // namespace blackbird

@@ -1,5 +1,6 @@
-#include "arconaut/terminal.hpp"
-#include "arconaut/tools.hpp"
+#include "blackbird/terminal.hpp"
+#include "blackbird/sprite.hpp"
+#include "blackbird/tools.hpp"
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -21,7 +22,7 @@
 #include <thread>
 #include <unistd.h>
 extern char **environ;
-namespace arconaut {
+namespace blackbird {
 namespace {
 volatile sig_atomic_t resize_pipe = -1;
 void resize_signal(int) {
@@ -370,7 +371,7 @@ std::string terminal_key_help() {
          "  Paste        Multiline text stays literal; Enter sends explicitly\n";
 }
 std::string terminal_help() {
-  std::string out = "Arco command guide\n";
+  std::string out = "Blackbird command guide\n";
   std::string_view group;
   for (const auto &command : commands) {
     if (command.group != group) {
@@ -1080,6 +1081,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   bool pending_grid = false;
   auto escape_deadline = std::chrono::steady_clock::time_point::max();
   unsigned short old_rows = 0, old_columns = 0;
+  const auto *mascot_setting = std::getenv("BLACKBIRD_MASCOT");
+  const bool mascot_enabled =
+      !mascot_setting || std::string_view{mascot_setting} != "0";
   auto started = std::chrono::steady_clock::now();
   auto second = started, tool_started = started;
   auto start = [&](std::string prompt) {
@@ -1296,7 +1300,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       if (path != std::string::npos)
         title = title.substr(0, path) + " · " +
                 std::filesystem::path(title.substr(path + 4)).filename().string();
-      grid.line(0, {{" " + terminal_lines(title, width - 1)[0], Ink::assistant}});
+      const bool show_sprite = mascot_enabled && width >= 90;
+      const auto header_width =
+          show_sprite ? width - blackbird_sprite_width - 2 : width;
+      grid.line(0,
+                {{" " + terminal_lines(title, header_width - 1)[0], Ink::assistant}});
       std::string status_line;
       if (busy)
         status_line = "Turn " +
@@ -1323,12 +1331,19 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                   .count() /
               80) %
           spinner.size();
-      const auto status_text = terminal_lines(
-          std::string{busy ? spinner[phase] : "·"} + " " + status_line + " ", width)[0];
+      const auto status_text = terminal_lines(std::string{busy ? spinner[phase] : "·"} +
+                                                  " " + status_line + " ",
+                                              header_width)[0];
       std::string rule;
-      for (auto n = display_width(status_text); n < width; ++n)
+      for (auto n = display_width(status_text); n < header_width; ++n)
         rule += "─";
       grid.line(1, {{status_text, busy ? Ink::user : Ink::muted}, {rule, Ink::border}});
+      if (show_sprite) {
+        const auto &sprite = blackbird_sprite(busy, phase / 2);
+        for (std::size_t row = 0; row < sprite.size(); ++row)
+          grid.line(row, {{sprite[row], busy ? Ink::assistant : Ink::muted}},
+                    width - blackbird_sprite_width);
+      }
       for (std::size_t row = 0; row < height; ++row)
         if (begin + row < end)
           grid.line(row + 2, lines[begin + row]);
@@ -1546,4 +1561,4 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   }
   persist();
 }
-} // namespace arconaut
+} // namespace blackbird

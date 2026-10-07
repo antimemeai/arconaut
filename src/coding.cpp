@@ -1,5 +1,5 @@
-#include "arconaut/coding.hpp"
-#include "arconaut/process_lifetime.hpp"
+#include "blackbird/coding.hpp"
+#include "blackbird/process_lifetime.hpp"
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>
@@ -13,7 +13,7 @@ extern "C" {
 #include <set>
 #include <thread>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 enum class JsonTag { array, object, number, null };
 char markers[4]; // array, object, exact number, null (registry keys, no string
@@ -289,14 +289,16 @@ struct CodingEngine::Runtime {
     lua_getfield(L, -2, "encode");
     lua_setfield(L, -2, "encode");
     lua_setfield(L, -2, "json");
-    lua_setglobal(L, "arco");
+    lua_pushvalue(L, -1);
+    lua_setglobal(L, "blackbird");
+    lua_setglobal(L, "arco"); // Compatibility alias for retained programs.
     constexpr const char *tool_api =
-        "function arco.define_tool(d) return arco.call('tool_define',"
+        "function blackbird.define_tool(d) return blackbird.call('tool_define',"
         "{definition=d}) end "
-        "do local cache,loading={},{}; function arco.module(name) "
+        "do local cache,loading={},{}; function blackbird.module(name) "
         "if cache[name]~=nil then return cache[name] end "
         "assert(not loading[name], 'cyclic module import: '..name); "
-        "local r=arco.call('module_source',{name=name}); "
+        "local r=blackbird.call('module_source',{name=name}); "
         "assert(r.source, 'module unavailable: '..name); "
         "local env=setmetatable({}, {__index=_G}); "
         "local fn=assert(load(r.source, '@module:'..name..':'..r.revision, 't', env)); "
@@ -310,7 +312,7 @@ struct CodingEngine::Runtime {
     constexpr const char *print_program =
         "function print(...) local v={} for i=1,select('#',...) do "
         "v[i]=tostring(select(i,...)) end "
-        "arco.display(table.concat(v,'\\t')..'\\n') end";
+        "blackbird.display(table.concat(v,'\\t')..'\\n') end";
     if (luaL_loadstring(L, print_program) != LUA_OK || lua_pcall(L, 0, 0, 0) != LUA_OK)
       return lua_error(L);
     return 0;
@@ -453,7 +455,7 @@ struct CodingEngine::Runtime {
     }
     literal += "\"";
     return eval("local fn = function(args)\n" + string_field(definition, "source") +
-                "\nend\nreturn fn(arco.json.decode(" + literal + "))");
+                "\nend\nreturn fn(blackbird.json.decode(" + literal + "))");
   }
   Json eval(std::string_view source) {
     const int base = lua_gettop(state);
@@ -1123,7 +1125,7 @@ Json CodingEngine::request(Json options) {
                           ? model_
                           : string_field(program_config_, "model")}},
        {"instructions",
-        Json{"You are Arconaut, a programmable coding colleague for an expert "
+        Json{"You are Blackbird, a programmable coding colleague for an expert "
              "operator. Use local file/process tools without approval ceremony. "
              "Context is ordinary editable data: inspect it, transform it with Lua, "
              "repair it from originals. A timed-out tool returns a result: inspect "
@@ -1132,7 +1134,7 @@ Json CodingEngine::request(Json options) {
              "blindly repeat an effect with unknown outcome. Keep tool call/result "
              "linkage valid. Governing "
              "Lua workflow changes activate next turn. For compiled changes, build "
-             "build/release/arco and request restart with a note listing changes, "
+             "build/release/blackbird and request restart with a note listing changes, "
              "checks and next steps; the same session will resume with continue. "
              "Bound hardening before starting: list concrete remediation tasks, "
              "direct checks and a time/resource allowance. Layer one: remediate "
@@ -1517,7 +1519,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
                    {{"argv",
                      Json{Json::Array{
                          Json{"bd"}, Json{"create"},
-                         Json{"Arco model complaint " + complaint}, Json{"--type"},
+                         Json{"Blackbird model complaint " + complaint}, Json{"--type"},
                          Json{"bug"}, Json{"--description"},
                          Json{"Local audit complaint " + complaint + "; conversation " +
                               hex_identity(identity_.conversation.bytes()) +
@@ -1794,4 +1796,4 @@ void CodingEngine::turn(TurnInput input) {
     throw;
   }
 }
-} // namespace arconaut
+} // namespace blackbird

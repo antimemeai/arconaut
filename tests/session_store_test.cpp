@@ -1,7 +1,7 @@
-#include "arconaut/coding.hpp"
+#include "blackbird/coding.hpp"
 #include <iostream>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 template <class T> T id(unsigned char n) {
   IdentityBytes b{};
   b[0] = std::byte{n};
@@ -24,6 +24,12 @@ int main() {
   const JournalCapacity capacity{16 * 1024 * 1024, 10000};
   std::string actor, conversation, workflow;
   try {
+    const auto home = std::filesystem::path{path} / "home";
+    check(default_session_directory(home) == home / ".local/state/blackbird/default");
+    std::filesystem::create_directories(home / ".local/state/arconaut/default");
+    check(default_session_directory(home) == home / ".local/state/arconaut/default");
+    std::filesystem::create_directories(home / ".local/state/blackbird/default");
+    check(default_session_directory(home) == home / ".local/state/blackbird/default");
     {
       auto root =
           unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(

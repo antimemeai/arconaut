@@ -1,19 +1,19 @@
 // Bounded, local candidate checkout ownership. No provider or activation authority.
-#include "arconaut/json.hpp"
+#include "blackbird/json.hpp"
 #include "native_process.hpp"
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <sys/file.h>
 
-using arconaut::Json;
+using blackbird::Json;
 namespace fs = std::filesystem;
 namespace {
 Json text(const std::string &s) { return Json{s}; }
-Json num(std::size_t n) { return Json{arconaut::JsonNumber{std::to_string(n)}}; }
+Json num(std::size_t n) { return Json{blackbird::JsonNumber{std::to_string(n)}}; }
 [[noreturn]] void refuse(const std::string &s) { throw std::runtime_error(s); }
 std::string dump(const Json &j) {
-  auto r = arconaut::dump_json(j);
+  auto r = blackbird::dump_json(j);
   if (!r.has_value())
     refuse("JSON encoding failed");
   return r.value();
@@ -23,7 +23,7 @@ Json read(const fs::path &p) {
   if (!f)
     refuse("cannot read " + p.string());
   std::string s((std::istreambuf_iterator<char>(f)), {});
-  auto r = arconaut::parse_json(s);
+  auto r = blackbird::parse_json(s);
   if (!r.has_value())
     refuse("invalid JSON: " + p.string());
   return r.value();
@@ -119,10 +119,10 @@ void write(const fs::path &p, std::string_view s) {
 }
 std::string git(const fs::path &repo, std::vector<std::string> args) {
   args.insert(args.begin(), {"git", "-C", repo.string()});
-  arconaut::detail::Child child;
+  blackbird::detail::Child child;
   child.start(std::move(args), {}, true);
   child.close_input();
-  auto out = child.collect(arconaut::detail::Clock::now() + std::chrono::seconds(60),
+  auto out = child.collect(blackbird::detail::Clock::now() + std::chrono::seconds(60),
                            1024 * 1024);
   while (!out.empty() && (out.back() == '\n' || out.back() == '\r'))
     out.pop_back();
@@ -397,12 +397,12 @@ public:
       auto id = save("run.intent", r);
       global.unlock();
       Json outcome;
-      arconaut::detail::Child child;
+      blackbird::detail::Child child;
       try {
         child.start(std::move(args), {}, true);
         child.close_input();
         int code = 0;
-        auto out = child.collect(arconaut::detail::Clock::now() +
+        auto out = child.collect(blackbird::detail::Clock::now() +
                                      std::chrono::seconds(seconds),
                                  16 * 1024 * 1024, &code);
         write(root / "records" / (id + ".output"), out);
@@ -507,7 +507,7 @@ public:
 int main(int argc, char **argv) {
   try {
     if (argc != 4)
-      refuse("usage: arco-candidate POOL COMMAND REQUEST.json");
+      refuse("usage: blackbird-candidate POOL COMMAND REQUEST.json");
     fs::path root = fs::absolute(argv[1]);
     fs::create_directories(root);
     Manager m(root);
@@ -515,7 +515,7 @@ int main(int argc, char **argv) {
     return 0;
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
-  } catch (const arconaut::Error &e) {
+  } catch (const blackbird::Error &e) {
     std::cerr << "native operation failed; inspect recorded transition: "
               << static_cast<int>(e.code) << '\n';
   }

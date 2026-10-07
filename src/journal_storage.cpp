@@ -1,4 +1,4 @@
-#include "arconaut/journal_storage.hpp"
+#include "blackbird/journal_storage.hpp"
 
 #include <cerrno>
 #include <cstdio>
@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 Error native_error(int code) noexcept {
   if (code == EINTR) {
@@ -112,7 +112,7 @@ Result<std::uint64_t> NativeJournalFile::extent() {
   return Result<std::uint64_t>::success(static_cast<std::uint64_t>(metadata.st_size));
 }
 Result<void> NativeJournalFile::synchronize(SyncStrength strength) {
-  return arconaut::synchronize(descriptor_, strength);
+  return blackbird::synchronize(descriptor_, strength);
 }
 Result<void> NativeJournalFile::lock_writer() {
   if (::flock(descriptor_, LOCK_EX | LOCK_NB) == -1) {
@@ -202,7 +202,7 @@ NativeJournalDirectory::open_existing(std::string_view name, FileAccess access) 
   return open_file(name, access == FileAccess::read_only ? O_RDONLY : O_RDWR);
 }
 Result<void> NativeJournalDirectory::synchronize_directory(SyncStrength strength) {
-  return arconaut::synchronize(descriptor_, strength);
+  return blackbird::synchronize(descriptor_, strength);
 }
 Result<void> NativeJournalDirectory::replace_file(std::string_view from,
                                                   std::string_view to) {
@@ -243,4 +243,4 @@ Result<void> NativeJournalDirectory::replace_file(std::string_view from,
   }
 }
 
-} // namespace arconaut
+} // namespace blackbird

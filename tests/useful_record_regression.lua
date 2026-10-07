@@ -2,7 +2,7 @@
 -- No real writes or subprocesses: all helper effects are mocked below.
 assert(type(helper_path) == 'string', 'runner must provide helper_path')
 local active
-arco = {
+blackbird = {
   json = {
     encode = function(value)
       active.encodes = active.encodes + 1
@@ -39,7 +39,7 @@ local function attempt(label, write_result, exec_result, executable)
   active = {
     writes = 0, executions = 0, encodes = 0, calls = {},
     path = 'mock-requests/' .. label .. '.json',
-    executable = executable or 'build/release/arco-candidate',
+    executable = executable or 'build/release/blackbird-candidate',
     write_result = write_result, exec_result = exec_result,
     request = {
       question = 'record dispatch regression', action = 'mock persistence',

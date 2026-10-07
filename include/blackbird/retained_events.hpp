@@ -1,12 +1,12 @@
 #pragma once
 
-#include "arconaut/journal.hpp"
+#include "blackbird/journal.hpp"
 
 #include <algorithm>
 #include <memory>
 #include <utility>
 
-namespace arconaut {
+namespace blackbird {
 
 struct DecisionTag;
 struct ComplaintTag;
@@ -210,4 +210,4 @@ Result<std::vector<std::byte>> encode_retained_event(const RetainedEvent &event,
                                              std::uint32_t max_payload);
 Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_payload);
 
-} // namespace arconaut
+} // namespace blackbird

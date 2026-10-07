@@ -1,5 +1,5 @@
-#include "arconaut/terminal.hpp"
-#include "arconaut/tools.hpp"
+#include "blackbird/terminal.hpp"
+#include "blackbird/tools.hpp"
 #include <clocale>
 #include <cstdlib>
 #include <iostream>
@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 void check(bool good, std::source_location where = std::source_location::current()) {
   if (!good)
     throw std::runtime_error("terminal contract at line " +

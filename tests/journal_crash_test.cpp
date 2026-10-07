@@ -1,4 +1,4 @@
-#include "arconaut/journal_writer.hpp"
+#include "blackbird/journal_writer.hpp"
 
 #include <algorithm>
 #include <array>
@@ -12,7 +12,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-using namespace arconaut;
+using namespace blackbird;
 
 namespace {
 void check(bool condition, const char *expression, int line) {

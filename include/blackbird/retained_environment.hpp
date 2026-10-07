@@ -1,9 +1,9 @@
 #pragma once
 
-#include "arconaut/environment_head.hpp"
-#include "arconaut/retained_state.hpp"
+#include "blackbird/environment_head.hpp"
+#include "blackbird/retained_state.hpp"
 
-namespace arconaut {
+namespace blackbird {
 struct EnvironmentBounds {
   JournalLimits framing;
   JournalCapacity segment;
@@ -101,4 +101,4 @@ private:
   bool busy_ = false;
   bool continuation_required_ = false;
 };
-} // namespace arconaut
+} // namespace blackbird

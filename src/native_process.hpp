@@ -1,6 +1,6 @@
 #pragma once
-#include "arconaut/foundation.hpp"
-#include "arconaut/process_lifetime.hpp"
+#include "blackbird/foundation.hpp"
+#include "blackbird/process_lifetime.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <charconv>
@@ -23,7 +23,7 @@
 #endif
 
 extern char **environ;
-namespace arconaut::detail {
+namespace blackbird::detail {
 [[noreturn]] inline void fail(ErrorCode code, std::int64_t detail = 0) {
   throw Error{code, detail};
 }
@@ -276,4 +276,4 @@ private:
     return true;
   }
 };
-} // namespace arconaut::detail
+} // namespace blackbird::detail

@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""Development-only bounded native profiling. No production runtime dependency."""
+import argparse
+import fcntl
+from contextlib import contextmanager
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def run(command, **kwargs):
+    return subprocess.run(command, check=True, **kwargs)
+
+
+def build():
+    run(['cmake', '--preset', 'profile'], cwd=ROOT, timeout=120)
+    run(['cmake', '--build', '--preset', 'profile', '--target',
+         'blackbird', 'renderer_profile'], cwd=ROOT, timeout=120)
+    if platform.system() == 'Darwin':
+        for name in ('blackbird', 'renderer_profile'):
+            run(['codesign', '--force', '--sign', '-', '--entitlements',
+                 str(ROOT / 'tooling/profiling.entitlements.plist'),
+                 str(ROOT / 'build/profile' / name)], timeout=30)
+            run(['dsymutil', str(ROOT / 'build/profile' / name)], timeout=120)
+
+
+def backend(kind, pid, seconds, output):
+    if platform.system() == 'Darwin':
+        if kind == 'sample':
+            return ['/usr/bin/sample', str(pid), str(seconds), '1', '-mayDie',
+                    '-fullPaths', '-file', str(output / 'sample.txt')]
+        templates = {'cpu': 'Time Profiler', 'allocations': 'Allocations',
+                     'system': 'System Trace'}
+        return ['xcrun', 'xctrace', 'record', '--no-prompt', '--template',
+                templates[kind], '--attach', str(pid), '--time-limit',
+                f'{seconds}s', '--output', str(output / f'{kind}.trace')]
+    if platform.system() == 'Linux' and kind == 'cpu':
+        return ['perf', 'record', '-e', 'cpu-clock:u', '-F', '199',
+                '--call-graph', 'fp', '-p', str(pid), '-o', str(output / 'perf.data'),
+                '--', 'sleep', str(seconds)]
+    raise RuntimeError(f'{kind} capture is unavailable on {platform.system()}')
+
+
+def new_capture_directory(kind, destination):
+    if destination:
+        output = Path(destination).resolve()
+        output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    else:
+        parent = ROOT / 'context/profiles'
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        output = Path(tempfile.mkdtemp(prefix=f'{kind}-', dir=parent))
+    return output
+
+
+@contextmanager
+def instrument_lock(kind):
+    if platform.system() != 'Darwin' or kind == 'sample':
+        yield
+        return
+    parent = Path.home() / '.cache/blackbird'
+    parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (parent / 'instruments.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError('An Instruments capture is already running; record one at a time') from error
+        yield
+
+
+def capture(kind, pid, seconds, output, executable=None):
+    if pid <= 1:
+        raise RuntimeError('Select an explicit process PID greater than 1')
+    os.kill(pid, 0)
+    command = backend(kind, pid, seconds, output)
+    identity = {'pid': pid, 'kind': kind, 'seconds': seconds,
+                'platform': platform.platform(), 'command': command,
+                'started_unix': time.time(), 'status': 'recording'}
+    identity['git_commit'] = subprocess.check_output(
+        ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    identity['source_dirty'] = bool(subprocess.check_output(
+        ['git', 'status', '--porcelain'], cwd=ROOT, text=True))
+    if executable:
+        identity['executable'] = str(executable)
+        with executable.open("rb") as binary:
+            identity['executable_sha256'] = hashlib.file_digest(binary, "sha256").hexdigest()
+    metadata = output / 'capture.json'
+    metadata.write_text(json.dumps(identity, indent=2) + '\n')
+    print(f'Capture: {output}', flush=True)
+    try:
+        with instrument_lock(kind), (output / 'profiler.log').open('w') as log:
+            run(command, stdout=log, stderr=subprocess.STDOUT, timeout=seconds + 90)
+        identity['status'] = 'complete'
+    except KeyboardInterrupt as error:
+        identity['status'] = 'interrupted'
+        raise RuntimeError(f'Capture interrupted; retained at {output}') from error
+    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+        identity['status'] = 'failed'
+        identity['error'] = str(error)
+        raise RuntimeError(f'Profiler failed; inspect {output / "profiler.log"}') from error
+    finally:
+        identity['finished_unix'] = time.time()
+        metadata.write_text(json.dumps(identity, indent=2) + '\n')
+    return output
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_subparsers(dest='action', required=True)
+    actions.add_parser('build')
+    actions.add_parser('doctor')
+    for action in ('capture', 'exercise'):
+        sub = actions.add_parser(action)
+        sub.add_argument('kind', choices=('sample', 'cpu', 'allocations', 'system'))
+        sub.add_argument('--seconds', type=int, default=10)
+        sub.add_argument('--out', help='New capture directory; never overwrites one')
+        if action == 'capture':
+            sub.add_argument('--pid', type=int, required=True)
+        else:
+            sub.add_argument('--scenario', choices=('stream', 'motion'), default='stream')
+    args = parser.parse_args()
+    os.umask(0o077)
+    if args.action == 'build':
+        build()
+    elif args.action == 'doctor':
+        print('Host:', platform.platform())
+        for tool in ('cmake', 'dsymutil', 'xcrun', 'perf'):
+            print(f'{tool}: {shutil.which(tool) or "unavailable"}')
+        if platform.system() == 'Darwin':
+            run(['xcrun', 'xctrace', 'list', 'templates'], timeout=30)
+    else:
+        if not 1 <= args.seconds <= 60:
+            parser.error('--seconds must be between 1 and 60')
+        output = new_capture_directory(args.kind, args.out)
+        if args.action == 'capture':
+            capture(args.kind, args.pid, args.seconds, output)
+        else:
+            executable = ROOT / 'build/profile/renderer_profile'
+            if not executable.is_file():
+                raise RuntimeError('Run scripts/profile build first')
+            # Finite native workload with headroom for profiler initialization.
+            with (output / 'workload.json').open('w') as stdout, (output / 'workload.stderr').open('w') as stderr:
+                child = subprocess.Popen([str(executable), str(min(300, args.seconds + 90)),
+                                          args.scenario], stdout=stdout, stderr=stderr)
+                try:
+                    capture(args.kind, child.pid, args.seconds, output, executable)
+                finally:
+                    if child.poll() is None:
+                        child.terminate()
+                    try:
+                        child.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        child.kill()
+                        child.wait()
+            if child.returncode != 0:
+                raise RuntimeError(f'Workload failed ({child.returncode}); inspect {output}')
+            print((output / 'workload.json').read_text().strip())
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+        print(f'profile: {error}', file=sys.stderr)
+        sys.exit(1)

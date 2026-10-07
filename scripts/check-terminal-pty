@@ -74,7 +74,7 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         wait_for(b"BLOCK_4")
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 52, 0, 0))
         observed.clear()
-        wait_for(b"Arconaut")
+        wait_for(b"Blackbird")
         send(b"/lua while true do end\r")
         time.sleep(0.2)
         os.write(master, b"\x03")

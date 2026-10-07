@@ -1,4 +1,4 @@
-#include "arconaut/openai.hpp"
+#include "blackbird/openai.hpp"
 #include "native_process.hpp"
 #include <algorithm>
 #include <cerrno>
@@ -19,7 +19,7 @@
 #endif
 
 extern char **environ;
-namespace arconaut {
+namespace blackbird {
 namespace {
 [[noreturn]] void fail(ErrorCode code, std::int64_t detail = 0) {
   throw Error{code, detail};
@@ -138,7 +138,7 @@ Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh) {
     const auto deadline = Clock::now() + std::chrono::seconds{30};
     (void)rpc(child,
               "{\"id\":\"init\",\"method\":\"initialize\",\"params\":{\"clientInfo\":{"
-              "\"name\":\"arconaut\",\"title\":\"Arconaut\",\"version\":\"0.1.0\"}}}\n",
+              "\"name\":\"blackbird\",\"title\":\"Blackbird\",\"version\":\"0.1.0\"}}}\n",
               deadline);
     child.send("{\"method\":\"initialized\",\"params\":{}}\n", deadline);
     auto status =
@@ -185,7 +185,7 @@ Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &l
     input +=
         "header = " + config_quote("ChatGPT-Account-ID: " + login.account_id_) + "\n";
     input += "header = \"Content-Type: application/json\"\nheader = \"originator: "
-             "arconaut\"\n";
+             "blackbird\"\n";
     if (request != nullptr) {
       auto encoded = dump_json(*request);
       if (!encoded.has_value())
@@ -375,4 +375,4 @@ Result<Json> completed_response(std::string_view stream, JsonLimits limits) {
     return Result<Json>::failure({ErrorCode::capacity});
   }
 }
-} // namespace arconaut
+} // namespace blackbird

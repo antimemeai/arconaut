@@ -42,7 +42,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="foundation-api-", dir=parent) as directory:
         for name, code, diagnostic in CASES:
             source = Path(directory) / (name + ".cpp")
-            source.write_text('#include "arconaut/foundation.hpp"\nusing namespace arconaut;\n' + code + "\n")
+            source.write_text('#include "blackbird/foundation.hpp"\nusing namespace blackbird;\n' + code + "\n")
             result = subprocess.run([command[0], *flags, "-fsyntax-only", str(source)],
                                     cwd=entry["directory"], capture_output=True, text=True, timeout=30)
             if diagnostic is None:

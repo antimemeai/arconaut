@@ -1,6 +1,6 @@
-#include "arconaut/openai.hpp"
+#include "blackbird/openai.hpp"
 #include <iostream>
-using namespace arconaut;
+using namespace blackbird;
 int main(int argc, char **argv) {
   const bool live = argc == 3 && std::string_view{argv[1]} == "--live";
   if (argc != 1 && !live) {

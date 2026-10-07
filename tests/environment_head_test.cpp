@@ -1,5 +1,5 @@
-#include "arconaut/environment_head.hpp"
-#include "arconaut/journal_writer.hpp"
+#include "blackbird/environment_head.hpp"
+#include "blackbird/journal_writer.hpp"
 
 #include <algorithm>
 #include <array>
@@ -17,7 +17,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-using namespace arconaut;
+using namespace blackbird;
 namespace {
 std::atomic<std::ptrdiff_t> allocation_cut{-1};
 }

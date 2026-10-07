@@ -1,8 +1,8 @@
 #pragma once
 
-#include "arconaut/foundation.hpp"
+#include "blackbird/foundation.hpp"
 
-namespace arconaut {
+namespace blackbird {
 
 inline constexpr std::size_t journal_header_size = 112;
 inline constexpr std::size_t journal_frame_header_size = 32;
@@ -47,4 +47,4 @@ encode_journal_frame(FrameKind kind, std::uint64_t sequence, std::uint64_t batch
 // journal replay before any authoritative publication.
 Result<JournalFrameView> decode_journal_frame(ByteView bytes, JournalLimits limits);
 
-} // namespace arconaut
+} // namespace blackbird

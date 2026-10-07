@@ -62,7 +62,7 @@ function M.new(profile)
     row.status = "running"
     row.remote_disposition = "unknown"
     active = row.id
-    -- Callbacks use ordinary arco.call; native lifetime/cancellation remains owner.
+    -- Callbacks use ordinary blackbird.call; native lifetime/cancellation remains owner.
     -- Catching an exception NEVER establishes nonexecution or remote cancellation.
     local ok, result =
       pcall(action, { owner = owner, id = row.id, attempt = row.attempts })

@@ -1,7 +1,7 @@
 #pragma once
-#include "arconaut/context.hpp"
+#include "blackbird/context.hpp"
 #include <set>
-namespace arconaut {
+namespace blackbird {
 // Single native session owner. File adapters are trusted local operator inputs.
 class StationStore {
 public:
@@ -23,4 +23,4 @@ private:
   std::map<std::pair<std::string, std::string>, std::string> events_;
   void apply_control(const Json &command);
 };
-} // namespace arconaut
+} // namespace blackbird

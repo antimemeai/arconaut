@@ -1,4 +1,4 @@
-#include "arconaut/foundation.hpp"
+#include "blackbird/foundation.hpp"
 
 #include <array>
 #include <atomic>
@@ -31,7 +31,7 @@ void *operator new[](std::size_t size) { return ::operator new(size); }
 void operator delete[](void *pointer) noexcept { ::operator delete(pointer); }
 
 namespace {
-using namespace arconaut;
+using namespace blackbird;
 
 void check(bool condition, const char *expression, int line) {
   if (!condition) {

@@ -1,11 +1,11 @@
-#include "arconaut/backstop.hpp"
-#include "arconaut/process_lifetime.hpp"
+#include "blackbird/backstop.hpp"
+#include "blackbird/process_lifetime.hpp"
 #include <fstream>
 #include <set>
 #include <sys/stat.h>
 #include <sys/random.h>
 #include <unistd.h>
-namespace arconaut {
+namespace blackbird {
 namespace {
 Json number(std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; }
 template <class T> T random_identity() {
@@ -15,7 +15,7 @@ template <class T> T random_identity() {
   return unwrap(T::from_bytes(bytes));
 }
 constexpr std::string_view assessment = R"lua(
-local response = arco.request({tools=arco.json.decode('[]'), retry_policy={max_attempts=1}})
+local response = blackbird.request({tools=blackbird.json.decode('[]'), retry_policy={max_attempts=1}})
 local text = ''
 for _, item in ipairs(response.output) do
   if item.type == 'function_call' then error('Assessment must not dispatch tools') end
@@ -25,7 +25,7 @@ for _, item in ipairs(response.output) do
     end
   end
 end
-return arco.json.decode(text)
+return blackbird.json.decode(text)
 )lua";
 constexpr std::string_view instruction =
     "Independent backstop assessment. Source workflow failed; its audit is preserved "
@@ -34,10 +34,10 @@ constexpr std::string_view instruction =
     "Mission packet is author-declared, not verified inherited context. Preserve "
     "dirty work and unknowns. Choose a changed approach or independent useful work "
     "where a resource is blocked. Return only JSON, no markdown, with string fields "
-    "retained, uncertain, change, next, action (an ordinary Arco Lua turn program), "
+    "retained, uncertain, change, next, action (an ordinary Blackbird Lua turn program), "
     "and oracle:{path:absolute file path,content:exact expected new bytes}. Action "
     "must do useful work for the mission and produce the declared artifact, not a "
-    "recovery-status facade. Use arco.call/read_file to reconcile uncertain file "
+    "recovery-status facade. Use blackbird.call/read_file to reconcile uncertain file "
     "effects rather than replay them. Arbitrary exec containment is unavailable: "
     "exec/restart and provider requests during action are refused in recovery; use "
     "native file/context APIs. Two-minute total deadline. File mutations "
@@ -240,4 +240,4 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   log.original({"backstop.blocked", unwrap(dump_json(outcome)), Json{}});
   return outcome;
 }
-} // namespace arconaut
+} // namespace blackbird

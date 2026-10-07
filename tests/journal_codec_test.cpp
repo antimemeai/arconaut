@@ -1,4 +1,4 @@
-#include "arconaut/journal.hpp"
+#include "blackbird/journal.hpp"
 
 #include <array>
 #include <cstdio>
@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-using namespace arconaut;
+using namespace blackbird;
 
 namespace {
 void check(bool condition, const char *expression, int line) {

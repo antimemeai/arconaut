@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+if [ "$#" -eq 0 ] || [ "$1" = --help ] || [ "$1" = -h ]; then
+  printf '%s\n' 'Usage: scripts/blackbird-phux PHUX_SESSION [blackbird options...]' \
+    'Creates and attaches a new named phux session running Blackbird.' \
+    'Return later with: phux attach PHUX_SESSION' \
+    'Choose a distinct --session directory for each running Blackbird.'
+  exit 0
+fi
+blackbird_phux_name=$1
+shift
+blackbird_phux_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if ! command -v phux >/dev/null 2>&1; then
+  printf '%s\n' 'Install phux first: https://phux.sh/install' >&2
+  exit 127
+fi
+# phux owns the terminal lifetime; scripts/blackbird owns restart/resume behavior.
+# Preserve the operator cwd and literal option boundaries. PHUX_SOCKET/profile
+# are inherited, allowing the same launcher against a private/local service.
+phux new --json --cwd "$PWD" --session "$blackbird_phux_name" -- \
+  "$blackbird_phux_root/scripts/blackbird" "$@" >/dev/null
+exec phux attach "$blackbird_phux_name"

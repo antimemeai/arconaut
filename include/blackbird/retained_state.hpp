@@ -1,9 +1,9 @@
 #pragma once
 
-#include "arconaut/journal_writer.hpp"
-#include "arconaut/retained_events.hpp"
+#include "blackbird/journal_writer.hpp"
+#include "blackbird/retained_events.hpp"
 
-namespace arconaut {
+namespace blackbird {
 struct RecordReference {
   AuditStreamId journal;
   std::uint64_t sequence;
@@ -205,4 +205,4 @@ private:
   bool in_transaction_ = false;
   bool recording_failed_ = false;
 };
-} // namespace arconaut
+} // namespace blackbird

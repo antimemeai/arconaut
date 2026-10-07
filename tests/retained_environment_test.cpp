@@ -1,5 +1,5 @@
-#include "arconaut/retained_environment.hpp"
-#include "arconaut/retained_proposal.hpp"
+#include "blackbird/retained_environment.hpp"
+#include "blackbird/retained_proposal.hpp"
 
 #include <algorithm>
 #include <array>
@@ -30,7 +30,7 @@ void operator delete[](void *pointer, std::size_t) noexcept {
   ::operator delete(pointer);
 }
 
-using namespace arconaut;
+using namespace blackbird;
 namespace {
 void check(bool condition, const char *expression, int line) {
   if (!condition)

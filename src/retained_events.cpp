@@ -1,9 +1,9 @@
-#include "arconaut/retained_events.hpp"
+#include "blackbird/retained_events.hpp"
 
 #include <algorithm>
 #include <type_traits>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 class Encoder {
 public:
@@ -654,4 +654,4 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
     return Result<RetainedEvent>::failure({ErrorCode::allocation});
   }
 }
-} // namespace arconaut
+} // namespace blackbird

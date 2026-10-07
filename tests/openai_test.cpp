@@ -1,7 +1,7 @@
-#include "arconaut/openai.hpp"
+#include "blackbird/openai.hpp"
 #include <iostream>
 #include <stdexcept>
-using namespace arconaut;
+using namespace blackbird;
 void check(bool good) {
   if (!good)
     throw std::runtime_error("OpenAI stream contract");

@@ -1,4 +1,4 @@
-#include "arconaut/journal.hpp"
+#include "blackbird/journal.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -7,7 +7,7 @@
 #include <arm_acle.h>
 #endif
 
-namespace arconaut {
+namespace blackbird {
 
 namespace {
 constexpr std::array<std::byte, 8> header_magic{
@@ -281,4 +281,4 @@ Result<JournalFrameView> decode_journal_frame(ByteView bytes, JournalLimits limi
       {kind, sequence, first, payload, journal_frame_header_size + payload.size()});
 }
 
-} // namespace arconaut
+} // namespace blackbird

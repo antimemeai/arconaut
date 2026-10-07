@@ -1,6 +1,6 @@
 local writes,executions,requests=0,0,{}
 local watermark={"130"}
-arco={json={encode=function() return '{}' end,decode=function(v) return {direction=v} end},
+blackbird={json={encode=function() return '{}' end,decode=function(v) return {direction=v} end},
   stats=function() return {entries={{id='large',item_bytes={'800'}},{id='small',item_bytes={'10'}}},
     input_bytes={'900'},last_request_bytes={'1000'},usage='unavailable'} end,
   call=function(name,args)
@@ -35,8 +35,8 @@ local r=M.contrast('pool','request',{hypothesis='actual parser trace',discrimina
 assert(r.effect_outcome=='unknown' and executions==1 and writes==1,'no unknown delivery replay')
 print('useful Lua fault checks passed')
 -- A failed request write must not execute a stale/missing request file.
-local prior=arco.call
-arco.call=function(name,args)
+local prior=blackbird.call
+blackbird.call=function(name,args)
   if name=='write_file' then return {error='parent absent'} end
   return prior(name,args)
 end
@@ -44,7 +44,7 @@ local before=executions
 local rejected=M.record('pool','absent/request',{question='write failure',action='persist',outcome='unknown',references={}})
 assert(executions==before and rejected.error,'failed write must stop CLI dispatch')
 local ranges={}
-arco.call=function(name,args)
+blackbird.call=function(name,args)
  assert(name=='read_file');ranges[#ranges+1]=args;return {content='exact range'}
 end
 assert(M.lines('file',{'2'},4).content=='exact range')

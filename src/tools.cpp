@@ -1,10 +1,10 @@
-#include "arconaut/tools.hpp"
+#include "blackbird/tools.hpp"
 #include "native_process.hpp"
 #include <charconv>
 #include <fstream>
 #include <sys/stat.h>
 
-namespace arconaut {
+namespace blackbird {
 std::string read_file(const std::filesystem::path &path, std::size_t limit) {
   std::ifstream file{path, std::ios::binary};
   if (!file)
@@ -279,7 +279,7 @@ Json LocalTools::run(std::string_view name, const Json &args) {
 Json tool_definitions() {
   return unwrap(parse_json(R"([
 {"type":"function","name":"program_config","description":"Inspect or stage retained named Lua modules and request defaults (model/effort; empty uses launch defaults). Proposal is complete {modules:[{name,source}],model,effort}. Compile-only validation; successful workflow boundary activation; failure/cancel preserves effective. Optional base binds revision.","parameters":{"type":"object","properties":{"proposal":{"type":"object"},"base":{"type":"string"}}}},
-{"type":"function","name":"module_source","description":"Read an effective named module's retained source and revision. Pending sources cannot resolve; arco.module(name) loads with a per-workflow cache and private environment. Top-level effects are not rollbackable.","parameters":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}},
+{"type":"function","name":"module_source","description":"Read an effective named module's retained source and revision. Pending sources cannot resolve; blackbird.module(name) loads with a per-workflow cache and private environment. Top-level effects are not rollbackable.","parameters":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}},
 {"type":"function","name":"tool_define","description":"Stage a Lua tool definition (name, description, flat scalar-object parameters, source function body with args). Activates only on successful workflow boundary; failed/invalid definitions preserve effective registry. No native name replacement. Optional base binds effective registry revision.","parameters":{"type":"object","properties":{"definition":{"type":"object"},"base":{"type":"string"}},"required":["definition"]}},
 {"type":"function","name":"tool_registry","description":"Inspect effective and pending session Lua tool definitions and revisions. Source is retained; pending definitions cannot dispatch until a successful workflow boundary.","parameters":{"type":"object","properties":{}}},
 
@@ -300,7 +300,7 @@ Json tool_definitions() {
 {"type":"function","name":"context_repair","description":"Explicit protocol repair for calls already unanswered when this workflow began. Requires current context base. Appends unknown-result placeholders without dispatch/replay or settling actual effects; preserves originals and existing outputs. Refuses active-workflow calls, malformed linkage and live owned children. Use from an explicit recovery Lua workflow before the next provider request.","parameters":{"type":"object","properties":{"base":{"type":"string"}},"required":["base"]}},
 {"type":"function","name":"context_restore","description":"Restore an original context entry by stable entry ID.","parameters":{"type":"object","properties":{"entry":{"type":"string"}},"required":["entry"]}},
 {"type":"function","name":"restart","description":"Request restart/resume/continue after the current tool batch and turn complete. Build the release executable first. Include changes, checks, and next steps in the note. Failed or interrupted turns do not restart.","parameters":{"type":"object","properties":{"note":{"type":"string"}},"required":["note"]}},
-{"type":"function","name":"lua","description":"Run a Lua transformation or experiment in the current workflow. arco.context(), arco.stats(), arco.edit(candidate), arco.originals(), arco.restore(id), arco.append(items), arco.json.encode/decode, arco.call(name,args) are available. Return a JSON-encodable result. Governing workflow file changes activate next turn.","parameters":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}}
+{"type":"function","name":"lua","description":"Run a Lua transformation or experiment in the current workflow. blackbird.context(), blackbird.stats(), blackbird.edit(candidate), blackbird.originals(), blackbird.restore(id), blackbird.append(items), blackbird.json.encode/decode, blackbird.call(name,args) are available. Return a JSON-encodable result. Governing workflow file changes activate next turn.","parameters":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}}
 ])"));
 }
-} // namespace arconaut
+} // namespace blackbird

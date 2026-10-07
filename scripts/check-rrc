@@ -96,7 +96,7 @@ with tempfile.TemporaryDirectory(prefix='arco-discovery-') as tmp:
         assert entry['configuration']['model'] == 'discovery-model', entry
         assert entry['last_activity_unix_seconds'] > 0
         import shlex
-        assert shlex.split(entry['resume_command']) == ['./scripts/arco', '--session', str(session.resolve())]
+        assert shlex.split(entry['resume_command']) == ['./scripts/blackbird', '--session', str(session.resolve())]
         assert next(e for e in entries if e['path']==str(broken.resolve()))['metadata_status'] == 'damaged'
         assert all(p.read_bytes()==raw for p,raw in originals.items()), 'listing changed session files'
         (broken / 'session-info.json').unlink()

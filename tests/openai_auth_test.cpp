@@ -1,4 +1,4 @@
-#include "arconaut/openai.hpp"
+#include "blackbird/openai.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
-using namespace arconaut;
+using namespace blackbird;
 namespace {
 void check(bool good, std::source_location where = std::source_location::current()) {
   if (!good)

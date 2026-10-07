@@ -1,4 +1,4 @@
-# Arconaut reconstruction
+# Blackbird (formerly Arconaut)
 
 Read [BLACKBIRD.md](BLACKBIRD.md), [README.md](README.md), and
 [JOURNAL.md](JOURNAL.md). Blackbird is the current working doctrine.

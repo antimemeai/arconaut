@@ -1,10 +1,10 @@
-#include "arconaut/retained_environment.hpp"
-#include "arconaut/retained_proposal.hpp"
+#include "blackbird/retained_environment.hpp"
+#include "blackbird/retained_proposal.hpp"
 
 #include <algorithm>
 #include <string_view>
 
-namespace arconaut {
+namespace blackbird {
 namespace {
 class BorrowedDirectory final : public JournalDirectory {
 public:
@@ -684,4 +684,4 @@ Result<void> RetainedEnvironment::reconcile(CustodyVerifier &verifier) {
   BusyGuard guard{busy_};
   return semantic_->reconcile(verifier);
 }
-} // namespace arconaut
+} // namespace blackbird

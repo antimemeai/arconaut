@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace arconaut {
+namespace blackbird {
 enum class ChatKind { user, assistant, notice, tool, error, summary };
 enum class Ink : std::uint8_t {
   normal,
@@ -73,7 +73,7 @@ struct ChatGrid {
   std::vector<ChatCell> cells;
   std::string tails;
   void reset(std::size_t columns, std::size_t rows);
-  void line(std::size_t row, const ChatRow &content);
+  void line(std::size_t row, const ChatRow &content, std::size_t column = 0);
 };
 // The returned packet is a complete frame delta. Commit only after successful I/O.
 class ChatPainter {
@@ -109,4 +109,4 @@ private:
   std::string_view packet_;
   std::size_t offset_ = 0;
 };
-} // namespace arconaut
+} // namespace blackbird
