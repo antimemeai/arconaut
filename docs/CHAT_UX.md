@@ -30,10 +30,15 @@ Tab completes a slash-command name at the end of the token. A unique argument-ta
 
 `/help`, `/keys`, `/queue` and `/cancel` are immediate local TUI controls, even while work is active. Other session/model/context commands keep their owning worker's turn-boundary semantics. `/clear` clears display only, not model context. `/queue` distinguishes pending prompts from recovered drafts, whose submission remains explicit.
 
+## External editor: delivered
+
+**Ctrl-G** opens the current draft in `$VISUAL`, falling back to `$EDITOR` and then `vi`. **`/edit`** opens a blank draft. This is idle-only: a busy turn refuses the handoff without changing the current draft. Set a foreground command that waits for editing to finish, e.g. `VISUAL='code --wait'` or `EDITOR='nvim'`. Editor command strings are trusted operator configuration, with the private temporary file appended as a shell-quoted argument.
+
+The terminal returns to its ordinary screen/canonical mode for the editor and restores the TUI afterwards. A private 0600 temporary file starts with the draft. Only a successful editor exit and a regular, nonsymlink file of at most1MiB are imported; failures retain the original text/cursor. Unchanged text preserves cursor position; changed text returns with the cursor at its end. Typeahead is discarded on return. **Enter still sends explicitly.** The temporary file is removed afterwards. This does not govern shared editor daemons or claim all remote/editor effects have settled.
+
 ## Next separate UX slices
 
 1. Wrapped visual-row navigation and a more generous adaptive composer viewport.
-2. External-editor escape hatch with terminal restoration, draft retention and explicit submission after return.
 3. Searchable keyboard command palette and human-friendly session/model selection.
 4. Distinct conversation blocks, bounded collapsible tool output, unobtrusive truthful activity, search, unread/follow-tail controls.
 

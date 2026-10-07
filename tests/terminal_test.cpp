@@ -1,8 +1,10 @@
 #include "arconaut/terminal.hpp"
 #include "arconaut/tools.hpp"
 #include <clocale>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <sys/stat.h>
 #include <unistd.h>
 using namespace arconaut;
 void check(bool good) {
@@ -21,6 +23,10 @@ InputResult feed(Composer &c, std::string_view bytes) {
 int main() {
   try {
     (void)std::setlocale(LC_CTYPE, "en_US.UTF-8");
+    Composer editor_key;
+    feed(editor_key, "draft");
+    check(feed(editor_key, "\x07").action != InputAction::none &&
+          editor_key.text() == "draft");
     Composer completion;
     feed(completion, "/hel\t");
     check(completion.text() == "/help" && completion.cursor() == 5);
@@ -190,6 +196,38 @@ int main() {
     trim_terminal_transcript(unicode_line);
     check(unicode_line.size() <= 1024 * 1024 &&
           dump_json(Json{unicode_line}).has_value());
+    const char *old_visual = std::getenv("VISUAL");
+    const char *old_editor = std::getenv("EDITOR");
+    const std::optional<std::string> visual =
+        old_visual ? std::optional<std::string>{old_visual} : std::nullopt;
+    const std::optional<std::string> editor =
+        old_editor ? std::optional<std::string>{old_editor} : std::nullopt;
+    check(setenv("VISUAL", "sh -c 'printf edited > \"$1\"' --", 1) == 0);
+    auto result = edit_terminal_draft("original");
+    check(result.accepted && result.text == "edited");
+    check(setenv("VISUAL", "sh -c 'printf bad > \"$1\"; exit 7' --", 1) == 0);
+    check(!edit_terminal_draft("original").accepted);
+    check(setenv("VISUAL", "no-such-arco-editor-123", 1) == 0);
+    check(!edit_terminal_draft("original").accepted);
+    check(setenv("VISUAL", "sh -c 'rm \"$1\"; ln -s /dev/null \"$1\"' --", 1) == 0);
+    check(!edit_terminal_draft("original").accepted);
+    check(setenv("VISUAL", "sh -c 'rm \"$1\"; mkfifo \"$1\"' --", 1) == 0);
+    check(!edit_terminal_draft("original").accepted);
+    check(setenv("VISUAL",
+                 "sh -c 'dd if=/dev/zero of=\"$1\" bs=1024 count=1025 2>/dev/null' --",
+                 1) == 0);
+    check(!edit_terminal_draft("original").accepted);
+    check(setenv("VISUAL", "", 1) == 0);
+    check(setenv("EDITOR", "sh -c 'printf fallback > \"$1\"' --", 1) == 0);
+    check(edit_terminal_draft("original").text == "fallback");
+    if (visual)
+      check(setenv("VISUAL", visual->c_str(), 1) == 0);
+    else
+      check(unsetenv("VISUAL") == 0);
+    if (editor)
+      check(setenv("EDITOR", editor->c_str(), 1) == 0);
+    else
+      check(unsetenv("EDITOR") == 0);
     char path[] = "/tmp/arco-ui-state-XXXXXX";
     const auto dir = mkdtemp(path);
     check(dir != nullptr);

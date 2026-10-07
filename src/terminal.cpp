@@ -7,14 +7,20 @@
 #include <charconv>
 #include <chrono>
 #include <clocale>
+#include <cstdlib>
 #include <cwchar>
+#include <fcntl.h>
 #include <iostream>
 #include <poll.h>
+#include <spawn.h>
 #include <stdexcept>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <termios.h>
 #include <thread>
 #include <unistd.h>
+extern char **environ;
 namespace arconaut {
 namespace {
 struct ChatCommand {
@@ -23,6 +29,10 @@ struct ChatCommand {
 constexpr std::array commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
+    ChatCommand{
+        "/edit", "",
+        "Open a blank draft in $VISUAL/$EDITOR; Ctrl-G edits current draft (idle TUI)",
+        "Chat"},
     ChatCommand{"/queue", "", "Show pending prompts (TUI only)", "Chat"},
     ChatCommand{"/cancel", "", "Request stop and clear pending queue (TUI only)",
                 "Chat"},
@@ -150,6 +160,9 @@ public:
   TerminalMode() {
     if (tcgetattr(STDIN_FILENO, &before_) != 0)
       throw std::runtime_error("Cannot read terminal mode");
+    resume();
+  }
+  void resume() {
     auto raw = before_;
     raw.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO | IEXTEN | ISIG));
     raw.c_iflag &= static_cast<tcflag_t>(~(IXON | ICRNL));
@@ -159,6 +172,14 @@ public:
       throw std::runtime_error("Cannot set terminal mode");
     active_ = true;
     std::cout << "\x1b[?1049h\x1b[?2004h" << std::flush;
+  }
+  void suspend() {
+    if (!active_)
+      return;
+    std::cout << "\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h" << std::flush;
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &before_) != 0)
+      throw std::runtime_error("Cannot restore terminal for editor");
+    active_ = false;
   }
   ~TerminalMode() {
     if (active_) {
@@ -172,11 +193,99 @@ private:
   bool active_ = false;
 };
 } // namespace
+EditorResult edit_terminal_draft(std::string_view draft) {
+  constexpr std::size_t limit = 1024 * 1024;
+  if (draft.size() > limit)
+    return {false, {}, "Draft exceeds editor limit."};
+  std::string path;
+  int fd = -1;
+  bool owned = false;
+  struct Cleanup {
+    std::string &path;
+    int &fd;
+    bool &owned;
+    ~Cleanup() {
+      if (fd >= 0)
+        (void)::close(fd);
+      if (owned)
+        (void)::unlink(path.c_str());
+    }
+  } cleanup{path, fd, owned};
+  try {
+    path = (std::filesystem::temp_directory_path() / "arco-draft-XXXXXX").string();
+    fd = ::mkstemp(path.data());
+    if (fd < 0)
+      throw std::runtime_error("Cannot create private editor draft");
+    owned = true;
+    if (::fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+      throw std::runtime_error("Cannot protect editor draft descriptor");
+    auto remaining = draft;
+    while (!remaining.empty()) {
+      const auto n = ::write(fd, remaining.data(), remaining.size());
+      if (n < 0 && errno == EINTR)
+        continue;
+      if (n <= 0)
+        throw std::runtime_error("Cannot write editor draft");
+      remaining.remove_prefix(static_cast<std::size_t>(n));
+    }
+    (void)::close(fd);
+    fd = -1;
+    const char *editor = std::getenv("VISUAL");
+    if (!editor || !*editor)
+      editor = std::getenv("EDITOR");
+    if (!editor || !*editor)
+      editor = "vi";
+    std::string quoted = "'";
+    for (const char c : path)
+      quoted += c == '\'' ? "'\\''" : std::string(1, c);
+    quoted += '\'';
+    std::string command = "exec " + std::string{editor} + " " + quoted;
+    std::array<char *, 4> args{const_cast<char *>("sh"), const_cast<char *>("-c"),
+                               command.data(), nullptr};
+    pid_t child{};
+    const auto launched =
+        ::posix_spawn(&child, "/bin/sh", nullptr, nullptr, args.data(), environ);
+    if (launched != 0)
+      return {false, {}, "Editor could not start; draft retained."};
+    int status{};
+    pid_t waited;
+    do {
+      waited = ::waitpid(child, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    if (waited < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+      return {false, {}, "Editor cancelled or failed; draft retained."};
+    fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+    struct stat info{};
+    if (fd < 0 || ::fstat(fd, &info) != 0 || !S_ISREG(info.st_mode))
+      return {false,
+              {},
+              "Editor draft unavailable or not a regular file; original retained."};
+    std::string edited;
+    std::array<char, 4096> bytes{};
+    while (true) {
+      const auto n = ::read(fd, bytes.data(), bytes.size());
+      if (n < 0 && errno == EINTR)
+        continue;
+      if (n < 0)
+        return {false, {}, "Cannot read editor draft; original retained."};
+      if (n == 0)
+        break;
+      const auto count = static_cast<std::size_t>(n);
+      if (count > limit - edited.size())
+        return {false, {}, "Editor draft exceeds 1 MiB; original retained."};
+      edited.append(bytes.data(), count);
+    }
+    return {true, std::move(edited), "Editor returned; Enter sends explicitly."};
+  } catch (const std::exception &e) {
+    return {false, {}, std::string{e.what()} + "; original draft retained."};
+  }
+}
 std::string terminal_key_help() {
   return "Keyboard\n"
          "  Enter        Send; while busy, queue for the next turn\n"
          "  Alt-Enter    Insert newline (also Ctrl-J)\n"
          "  Tab          Complete a slash-command name; ambiguity never submits\n"
+         "  Ctrl-G       Edit current draft in $VISUAL/$EDITOR (idle only)\n"
          "  Up / Down    Move between draft lines; history at first/last line\n"
          "  Ctrl-P / N   Explicit history; restores your draft and cursor\n"
          "  Left / Right Move within the draft\n"
@@ -504,6 +613,8 @@ InputResult Composer::feed(char byte) {
     insert(byte == '\r' ? '\n' : byte);
     return {};
   }
+  if (c == 7)
+    return {InputAction::edit, {}};
   if (c == 16 || c == 14) {
     history(c == 16);
     return {};
@@ -723,6 +834,26 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       post(Kind::complete, {});
     });
   };
+  auto edit = [&] {
+    if (busy) {
+      transcript += "\nEditor waits for an idle turn; draft retained.\n";
+      return false;
+    }
+    if (!persist())
+      return false;
+    mode.suspend();
+    const auto edited = edit_terminal_draft(composer.text());
+    mode.resume();
+    (void)tcflush(STDIN_FILENO,
+                  TCIFLUSH); // Editor typeahead must never send the returned draft.
+    if (edited.accepted && edited.text != composer.text())
+      composer.draft(edited.text);
+    transcript += "\n" + edited.message + "\n";
+    (void)persist();
+    scroll = 0;
+    redraw = true;
+    return true;
+  };
   if (!initial.empty())
     start(std::move(initial));
   while (true) {
@@ -914,6 +1045,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     for (ssize_t i = 0; i < count; ++i) {
       auto result = composer.feed(bytes[i]);
       redraw = true;
+      if (result.action == InputAction::edit && edit())
+        break;
       if (result.action == InputAction::page_up)
         scroll += static_cast<std::size_t>(rows / 2);
       if (result.action == InputAction::page_down)
@@ -932,7 +1065,10 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         cancelled.store(true);
       }
       if (result.action == InputAction::submit && !result.text.empty() && !quitting) {
-        if (result.text == "/help" || result.text == "/keys") {
+        if (result.text == "/edit") {
+          if (edit())
+            break;
+        } else if (result.text == "/help" || result.text == "/keys") {
           transcript +=
               "\n" + (result.text == "/help" ? terminal_help() : terminal_key_help());
           scroll = 0;

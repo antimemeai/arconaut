@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 namespace arconaut {
-enum class InputAction { none, submit, cancel, quit, page_up, page_down };
+enum class InputAction { none, submit, cancel, quit, page_up, page_down, edit };
 struct InputResult {
   InputAction action = InputAction::none;
   std::string text;
@@ -18,6 +18,12 @@ struct TerminalState {
   std::size_t cursor = 0;
   std::vector<std::string> history, queued;
 };
+struct EditorResult {
+  bool accepted = false;
+  std::string text, message;
+};
+// Synchronous operator-selected foreground editor; caller owns terminal handoff.
+EditorResult edit_terminal_draft(std::string_view draft);
 // Shared command discovery; local-only commands are labelled in help.
 std::string terminal_help();
 std::string terminal_key_help();

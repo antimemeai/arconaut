@@ -136,6 +136,66 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
     assert "Unknown command" in reopened.stdout and "[provider]" not in reopened.stderr
 print("PTY paste, resize, Lua/process interruption, continued work, restoration and reopen pass")
 
+# External editor handoff: canonical terminal, private temp file, explicit send,
+# failure retains draft/cursor, and busy work never launches an editor.
+with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
+    import json
+    editor = Path(work) / 'editor'
+    action = Path(work) / 'action'
+    calls = Path(work) / 'calls'
+    action.write_text('ok')
+    editor.write_text("#!/usr/bin/env python3\n"
+        "import os,sys,termios,pathlib\n"
+        "t=termios.tcgetattr(0)\n"
+        "assert t[3] & termios.ICANON and t[3] & termios.ECHO\n"
+        "p=pathlib.Path(sys.argv[1]); assert p.stat().st_mode & 0o777 == 0o600\n"
+        f"calls=pathlib.Path({str(calls)!r}); calls.write_text(calls.read_text()+'X' if calls.exists() else 'X')\n"
+        f"mode=pathlib.Path({str(action)!r}).read_text()\n"
+        "p.write_text('/lua print(\"EDIT_\" .. \"RUN\")')\n"
+        "sys.exit(7 if mode=='fail' else 0)\n")
+    editor.chmod(0o700)
+    env = dict(os.environ, VISUAL=str(editor))
+    master, slave = pty.openpty()
+    original = termios.tcgetattr(slave)
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
+                             stdout=slave, stderr=slave, env=env, start_new_session=True)
+    observed = bytearray()
+    try:
+        wait_for(b'Workflow reloads')
+        send(b'original\x07\r') # Pre-editor typeahead must not send the returned draft.
+        wait_for(b'Editor returned')
+        assert calls.read_text() == 'X'
+        assert b'EDIT_RUN' not in observed, 'editor return auto-submitted a prompt'
+        current = termios.tcgetattr(slave)
+        assert not current[3] & termios.ICANON and not current[3] & termios.ECHO
+        send(b'\r')
+        wait_for(b'EDIT_RUN')
+        send(b'/lua arco.call("exec", {command="printf EDITOR_BUSY; sleep 30"})\r')
+        wait_for(b'EDITOR_BUSY')
+        send(b'BUSY_DRAFT\x07')
+        wait_for(b'Editor waits for an idle turn')
+        assert calls.read_text() == 'X', 'busy turn launched editor'
+        send(b'\x03')
+        wait_for(b'interrupted')
+        action.write_text('fail')
+        send(b'\x15KEEP_CURSOR\x1b[D\x1b[D\x07')
+        wait_for(b'Editor cancelled or failed')
+        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        assert bytes.fromhex(saved['draft']) == b'KEEP_CURSOR' and saved['cursor'] == 9
+        assert calls.read_text() == 'XX'
+        send(b'\x11')
+        assert child.wait(timeout=5) == 0
+        restored = termios.tcgetattr(slave)
+        pending = getattr(termios, 'PENDIN', 0)
+        original[3] &= ~pending; restored[3] &= ~pending
+        assert original == restored
+    finally:
+        if child.poll() is None:
+            child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY external editor handoff, explicit send, busy refusal and failed-draft preservation pass')
+
 # Actual multiline composer: navigate/edit without submitting, recall history,
 # return to the same draft cursor, then preserve the edit on ordinary exit.
 with tempfile.TemporaryDirectory(prefix="arco-composer-") as work:
