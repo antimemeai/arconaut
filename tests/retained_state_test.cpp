@@ -691,27 +691,51 @@ void root_refuses_continuation_records() {
     CHECK(effect.calls == 0);
   }
 }
+std::uint64_t identity_counter(const IdentityBytes &bytes) {
+  std::uint64_t value = 0;
+  for (unsigned i = 0; i < 8; ++i)
+    value |= std::uint64_t(std::to_integer<unsigned char>(bytes[i + 8])) << (8 * i);
+  return value;
+}
 void issuer() {
   auto storage = std::make_shared<StorageState>();
   auto state = create(storage);
-  const auto participant = require(state->issue<ParticipantId>());
-  const auto workflow = require(state->issue<WorkflowId>());
-  CHECK(participant.bytes()[0] == std::byte{8} &&
-        participant.bytes()[7] == std::byte{1});
-  CHECK(participant.bytes()[8] == std::byte{1} && workflow.bytes()[8] == std::byte{2});
-  CHECK(participant.bytes() != workflow.bytes());
+  const auto syncs = storage->sync_calls;
+  for (std::uint64_t i = 1; i <= 1024; ++i) {
+    const auto identity = require(state->issue<ParticipantId>());
+    CHECK(identity_counter(identity.bytes()) == i);
+    CHECK(identity.bytes()[0] == std::byte{8} && identity.bytes()[7] == std::byte{1});
+  }
+  CHECK(storage->sync_calls == syncs + 1);
+  CHECK(state->issuer_counter() == 1024 && state->committed_facts().size() == 1);
   storage->fail_sync = true;
   error_is(state->issue<InvocationId>(), ErrorCode::io);
+  error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
   state.reset();
   storage->fail_sync = false;
   state = open(storage);
-  CHECK(state->issuer_counter() == 3);
+  CHECK(state->issuer_counter() == 2048);
+  error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
   require(state->confirm_recovery());
   Custody custody;
   require(state->reconcile(custody));
-  CHECK(require(state->issue<InvocationId>()).bytes()[8] == std::byte{4});
-  require(state->submit({{}, IssuerReservationEvent{UINT64_MAX}}));
+  CHECK(identity_counter(require(state->issue<InvocationId>()).bytes()) == 2049);
+  state.reset();
+  state = open(storage);
+  require(state->confirm_recovery());
+  require(state->reconcile(custody));
+  CHECK(identity_counter(require(state->issue<WorkflowId>()).bytes()) == 3073);
+  // External highwater burns the cached remainder; final range is shortened.
+  require(state->submit({{}, IssuerReservationEvent{UINT64_MAX - 2}}));
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX - 1);
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX);
   error_is(state->issue<ParticipantId>(), ErrorCode::overflow);
+  // A cached range cannot bypass a host admission block.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  require(state->issue<ParticipantId>());
+  state->block_admission();
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
 }
 void rejected_batch_and_suffix() {
   auto storage = std::make_shared<StorageState>();
@@ -1106,19 +1130,19 @@ void torn_reservation_burn() {
   require(state->issue<ParticipantId>());
   state.reset();
   const auto payload =
-      require(encode_retained_event({{}, IssuerReservationEvent{77}}, 1024));
+      require(encode_retained_event({{}, IssuerReservationEvent{1077}}, 1024));
   const auto frame = require(
       encode_journal_frame(FrameKind::semantic, 3, 3, payload, header().limits));
   storage->bytes.insert(storage->bytes.end(), frame.begin(), frame.end());
   state = open(storage);
-  CHECK(state->issuer_counter() == 77);
+  CHECK(state->issuer_counter() == 1077);
   const auto bytes = storage->bytes;
   const auto inspected = require(state->read_original_range(0, bytes.size()));
   CHECK(inspected.bytes == bytes && inspected.journal == header().journal);
   const auto report = state->recovery_report();
   CHECK(report.problem && report.problem->code == ErrorCode::incomplete);
   require(state->confirm_recovery());
-  CHECK(state->state() == JournalWriterState::blocked && state->issuer_counter() == 77);
+  CHECK(state->state() == JournalWriterState::blocked && state->issuer_counter() == 1077);
   error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
 }
 void rejection_preflight_limits() {

@@ -4222,3 +4222,8 @@ wrapper distinction. Closed stale deliverededitor/palette, remotebranch retireme
 and superseded W0survey entries. UpdatedTUI notes/priority to reflect removedphysical
 clamp and deliveredrename, without inventing missingPTY results. No newtests/reviews
 or taskhierarchy used merely to validate backlog bookkeeping.
+
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial durable range allocator/test edits. Four-segment cap exhausted after~12minutes; no direct count measurements, finished test result, independent review or actor completion report. Planned1024 range reduction is NOT measured delivery.
+Candidate inactive, original allowance expired; checkpoint not acceptance.
