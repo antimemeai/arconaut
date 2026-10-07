@@ -4222,3 +4222,8 @@ wrapper distinction. Closed stale deliverededitor/palette, remotebranch retireme
 and superseded W0survey entries. UpdatedTUI notes/priority to reflect removedphysical
 clamp and deliveredrename, without inventing missingPTY results. No newtests/reviews
 or taskhierarchy used merely to validate backlog bookkeeping.
+
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial lazy historical JSON restoration. Context/workflow_repair checks passed; one static Codex review found no substantive defect within inspected diff. All10 large-fixture benchmark runs exited1/error20, so timing/memory output is not a valid ready-operation measurement. Under100ms NOT demonstrated. Four-segment cap exhausted before final report/commit.
+Candidate inactive, original allowance expired; checkpoint not acceptance.
