@@ -4472,3 +4472,16 @@ pushed checkpoint preserved, native slot/board reservation released, profiles
 retained privately, n11/3x2 reopened with substantive remaining scope. Zero active,
 no new allowance or merge inferred. Preserve report in papers/storage-performance-
 2026-10-07/DURABLE-R1.md, correcting byte/tree wording in root handoff only.
+
+## 2026-10-07 — Resume on cold payload ownership and integrated consumers
+
+Operator explicitly directs continued work grounded in literature/reference code.
+Root inspected current committed_facts consumers (context/audit/session/coding/main/
+station/backstop), resident ImmutableBytes decoder and context restoration fields.
+Prepared papers/storage-performance-2026-10-07/COLD-HISTORY-R2.md: change cold
+historical payload ownership/read paths and integrate native consumers; do not
+substitute another scan hint/helper for actual useful behavior. Full current-state
+root/tail remains destination; this unit must at least deliver cold payloads in
+the native restoration path. Memory intentional, exact archival reads/equality,
+custody/settlement fences and owner lifetime preserved. Explicit continuation
+permits fresh bounded25min unit, one review/fix/direct recheck; no repeated survey.
