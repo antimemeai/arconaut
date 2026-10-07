@@ -1,8 +1,17 @@
 # Backstop recovery: step back, assess, pivot, continue
 
-Status: proposed operating design, grounded in current failure paths and source
-study. Operator2026-10-06/07 requests a mode for “got stuck, nothing in flight,
-back up, assess, pivot, and drive on.” This document does not claim implementation.
+Status: operating design with a first cooperative native implementation (G1).
+`--backstop MISSION_JSON_FILE --once PROMPT` opts into an independent model
+assessment after a failed workflow under the same native lifetime and session
+custody. See [BACKSTOP_OPERATING](BACKSTOP_OPERATING.md) for the delivered interface.
+This is NOT unattended crash recovery: a reopened engine has no backstop ticket,
+and arbitrary exec makes containment unavailable for that native lifetime. Recovery
+refuses exec/restart and provider requests during the selected action. At most two
+pivots and a two-minute native deadline produce either a changed artifact observation
+or a retained blocked/paused outcome. Exact-byte artifact observation is not a
+semantic correctness judgment. Broader supervisor containment below remains design,
+not delivered behavior. Operator2026-10-06/07 requests a mode for “got stuck,
+nothing in flight, back up, assess, pivot, and drive on.”
 The active capacity workflow remains its own coherent implementation unit; this
 backstop consumes its interfaces and extends recovery beyond a network retry.
 

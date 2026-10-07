@@ -1,4 +1,5 @@
 #include "arconaut/coding.hpp"
+#include "arconaut/process_lifetime.hpp"
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>
@@ -544,6 +545,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                              const std::function<Json(OperationAttemptId)> &body) {
   if (cancelled && cancelled())
     throw Error{ErrorCode::interrupted};
+  if (effect_policy)
+    effect_policy(name, input);
   if (capacity_stopped_ || operation_depth_ >= 16) {
     capacity_stopped_ = true;
     throw Error{ErrorCode::capacity};
@@ -1158,7 +1161,25 @@ void CodingEngine::present(const Json &item) {
       display(text);
   }
 }
+Error CodingEngine::claim_backstop() {
+  if (turn_running_ || operation_depth_ != 0 || !failed_turn_ ||
+      backstop_claimed_ || failed_turn_->code == ErrorCode::interrupted ||
+      (cancelled && cancelled()) || !detail::locally_quiescent() ||
+      log_.root().state() != JournalWriterState::live)
+    throw Error{ErrorCode::conflict};
+  backstop_claimed_ = true;
+  return *failed_turn_;
+}
 void CodingEngine::turn(TurnInput input) {
+  if (backstop_claimed_ || turn_running_)
+    throw Error{ErrorCode::conflict};
+  turn_running_ = true;
+  struct Running {
+    bool &value;
+    ~Running() { value = false; }
+  } running{turn_running_};
+  failed_turn_.reset();
+  workflow_result_ = Json{};
   restart_note_.reset();
   capacity_stopped_ = false;
   unretained_bytes_ = 0;
@@ -1191,7 +1212,7 @@ void CodingEngine::turn(TurnInput input) {
                                      {"content", Json{std::string{prompt}}}})},
                       "operator");
     runtime_ = std::make_unique<Runtime>(*this);
-    (void)runtime_->eval(workflow);
+    workflow_result_ = runtime_->eval(workflow);
     if (capacity_stopped_)
       throw Error{ErrorCode::capacity};
     if (cancelled && cancelled())
@@ -1203,6 +1224,7 @@ void CodingEngine::turn(TurnInput input) {
       validate_protocol(context_.items());
 
   } catch (const Error &e) {
+    failed_turn_ = e;
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);
@@ -1216,6 +1238,7 @@ void CodingEngine::turn(TurnInput input) {
     }
     throw;
   } catch (...) {
+    failed_turn_ = Error{ErrorCode::external_unknown};
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);

@@ -1,4 +1,5 @@
 #include "arconaut/coding.hpp"
+#include "arconaut/backstop.hpp"
 #include "arconaut/terminal.hpp"
 #include <atomic>
 #include <csignal>
@@ -53,7 +54,8 @@ int main(int argc, char **argv) {
     std::filesystem::path session =
         std::filesystem::path{home} / ".local/state/arconaut/default";
     std::filesystem::path workflow = ARCONAUT_WORKFLOW;
-    std::string model = "gpt-6.1-sol", once, seed_path;
+    std::string model = "gpt-6.1-sol", once, seed_path, backstop_path;
+    Json backstop_mission;
     bool one = false, inspect = false, plain = false;
     std::string effort = "medium";
     bool model_option = false, effort_option = false, workflow_option = false;
@@ -66,6 +68,7 @@ int main(int argc, char **argv) {
             << "arco [--session DIRECTORY] [--model NAME] [--workflow FILE] [--once "
                "PROMPT] [--audit-last] [--effort low|medium|high|xhigh] "
                "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
+               "[--backstop MISSION_JSON (requires --once)] "
                "[--resume-continue|--resume-once]\nInteractive: /context, "
                "/originals, /restore "
                "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
@@ -95,7 +98,9 @@ int main(int argc, char **argv) {
       }
       if (i + 1 == argc)
         throw Error{ErrorCode::invalid_range};
-      if (arg == "--seed-session")
+      if (arg == "--backstop")
+        backstop_path = argv[++i];
+      else if (arg == "--seed-session")
         seed_path = argv[++i];
       else if (arg == "--session")
         session = argv[++i];
@@ -112,6 +117,14 @@ int main(int argc, char **argv) {
         once = argv[++i];
         one = true;
       } else
+        throw Error{ErrorCode::invalid_range};
+    }
+    if (!backstop_path.empty()) {
+      if (!one || resume_requested || inspect || discovery || !seed_path.empty() ||
+          once.empty() || once.starts_with("/"))
+        throw Error{ErrorCode::conflict};
+      backstop_mission = unwrap(parse_json(read_file(backstop_path, 32768)));
+      if (string_field(backstop_mission, "mission").empty())
         throw Error{ErrorCode::invalid_range};
     }
     if (discovery && !seed_path.empty())
@@ -374,6 +387,15 @@ int main(int argc, char **argv) {
              "); context/audit retained\n");
         if (root->state() != JournalWriterState::live)
           throw;
+        if (!backstop_path.empty() && e.code != ErrorCode::interrupted &&
+            !engine.cancelled()) {
+          const auto outcome = run_backstop(engine, log, session, backstop_mission,
+                                           provider, session_store.settings(), engine.cancelled, emit);
+          emit("\nBackstop: " + unwrap(dump_json(outcome)) + "\n");
+          if (string_field(outcome, "phase") == "useful-work-observed")
+            return;
+          throw;
+        }
         if (one)
           throw;
       }

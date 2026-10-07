@@ -93,6 +93,22 @@ Recovered cursor offsets inside UTF-8 continuation bytes move back to a boundary
 No power-loss
 or arbitrary-crash exact-keystroke durability is claimed.
 
+## Opt-in cooperative backstop
+
+`--backstop MISSION_JSON_FILE --once 'PROMPT'` supplies a small author-declared
+mission packet for recovery after that workflow fails. The file contains an object
+with a nonempty `mission` string; optional fields retain steer/resource observations.
+`--workflow FILE` can select the failed source workflow. This is same-lifetime native
+custody, not authority inferred from a parent exit, old lease, or reopened session.
+Explicit cancellation stays paused; arbitrary exec makes containment unavailable.
+The fresh `SESSION/backstop/audit` preserves declared lineage and old unknowns,
+without inheriting attempt admissions. Two independent assessment/pivot attempts and
+a two-minute deadline bound recovery. Selected actions use native file/context APIs,
+not exec/restart or additional provider calls. Old-session mutations (including
+aliases) are refused. Success observes a declared changed file artifact; it does not
+settle remote effects or certify semantic usefulness. See
+[BACKSTOP_OPERATING](BACKSTOP_OPERATING.md) for examples and limits.
+
 ## Lua programs and context
 
 `programs/turn.lua` runs the request/tool loop. Edit it to change the next turn or

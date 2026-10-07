@@ -189,6 +189,8 @@ Json LocalTools::run(std::string_view name, const Json &args) {
           seconds > 3600)
         throw Error{ErrorCode::invalid_range};
     }
+    // Arbitrary programs may setsid/detach. Group cleanup is not containment.
+    detail::uncontained_exec.store(true);
     detail::Child child;
     child.cancelled = cancelled;
     child.output_observer = [this](std::string_view chunk) {

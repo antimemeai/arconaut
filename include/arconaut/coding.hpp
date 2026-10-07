@@ -35,6 +35,10 @@ public:
   CodingEngine(const CodingEngine &) = delete;
   CodingEngine &operator=(const CodingEngine &) = delete;
   void turn(TurnInput input);
+  // One cooperative failure ticket, consumed before creating a recovery audit.
+  // A reopened/crashed engine has no such authority.
+  Error claim_backstop();
+  const Json &workflow_result() const noexcept { return workflow_result_; }
   ContextStore &context() noexcept { return context_; }
   void model(std::string name) { model_ = std::move(name); }
   std::function<void(std::string_view)> display;
@@ -42,6 +46,9 @@ public:
   std::function<void(std::string_view)> operation_completed;
   std::function<void(std::string_view)> process_output;
   std::function<bool()> cancelled;
+  // Optional native effect restriction for a scoped workflow (e.g. recovery
+  // evidence protection). Throwing refuses admission; it is not Lua authority.
+  std::function<void(std::string_view, const Json &)> effect_policy;
   void effort(std::string value);
   Json stats() const;
   void validate_restart() const;
@@ -54,6 +61,9 @@ public:
 
 private:
   struct Runtime;
+  bool turn_running_ = false, backstop_claimed_ = false;
+  std::optional<Error> failed_turn_;
+  Json workflow_result_;
   bool capacity_stopped_ = false;
   std::size_t operation_depth_ = 0;
   std::size_t unretained_bytes_ = 0;

@@ -1,5 +1,6 @@
 #pragma once
 #include "arconaut/foundation.hpp"
+#include "arconaut/process_lifetime.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <charconv>
@@ -67,10 +68,17 @@ public:
     close_input();
     if (output >= 0)
       (void)::close(output);
+    // Keep group custody even after collect() reaps the leader.
+    if (group > 0)
+      (void)::kill(-group, SIGKILL);
     if (pid > 0) {
-      (void)::kill(-pid, SIGKILL);
       while (::waitpid(pid, nullptr, 0) < 0 && errno == EINTR) {
       }
+    }
+    if (group > 0) {
+      if (::kill(-group, 0) == 0 || errno != ESRCH)
+        uncontained_exec.store(true); // descendants not observed gone
+      --owned_children;
     }
   }
   void start(std::vector<std::string> args,
@@ -151,6 +159,8 @@ public:
       pid = -1;
       fail(ErrorCode::io, rc);
     }
+    group = pid;
+    ++owned_children;
     input = in[1];
     output = out[0];
     // Socket-style SIGPIPE suppression exists for pipes on the qualified Mac profile.
@@ -197,34 +207,37 @@ public:
                       int *exit_code = nullptr) {
     while (read(deadline, limit)) {
     }
-    int status = 0;
+    siginfo_t observed{};
     while (true) {
       if (cancelled && cancelled())
         fail(ErrorCode::interrupted);
-      const auto done = ::waitpid(pid, &status, WNOHANG);
-      if (done == pid) {
-        pid = -1;
+      // Observe exit without reaping: the zombie leader pins its PID/group name
+      // until owned group cleanup. Never kill a possibly recycled PGID.
+      const int rc = ::waitid(P_PID, static_cast<id_t>(pid), &observed,
+                              WEXITED | WNOHANG | WNOWAIT);
+      if (rc == 0 && observed.si_pid == pid)
         break;
-      }
-      if (done < 0 && errno != EINTR)
+      if (rc < 0 && errno != EINTR)
         fail(ErrorCode::io, errno);
       if (Clock::now() >= deadline)
         throw deadline_error;
       (void)::poll(nullptr, 0, 10);
     }
+    const int code = observed.si_code == CLD_EXITED ? observed.si_status
+                                                   : 128 + observed.si_status;
     if (exit_code != nullptr) {
-      *exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+      *exit_code = code;
       return std::move(pending);
     }
-    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-      fail(ErrorCode::io, WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+    if (observed.si_code != CLD_EXITED || code != 0)
+      fail(ErrorCode::io, observed.si_code == CLD_EXITED ? code : -1);
     return std::move(pending);
   }
 
   std::string take_partial() noexcept { return std::move(pending); }
 
 private:
-  pid_t pid = -1;
+  pid_t pid = -1, group = -1;
   int input = -1, output = -1;
   std::string pending;
   void wait(int fd, short events, Clock::time_point deadline) {
