@@ -36,9 +36,13 @@ fast-forward published through b7436e2, including the independently accepted UI
 palette source that arrived at the shared branch boundary. The G3 executable does
 not yet include that palette; UI activation remains its owner's action. See
 [Lua tools delivery](../papers/2026-10-07-lua-tools-delivery.md).
-Next ordered primary unit is G4 modules/configuration in a fresh root-authored
-working context; G5 remains the independent colleague lane. This note starts
-neither unit.
+G4 `arconaut-7iy.4` candidate015836b implements retained named module snapshots,
+staged model/effort defaults, combined effective/pending inspection and successful
+workflow-boundary publication. Affected Mac/Linux checks passed (initial Linux
+timeout and partial debug evidence retained). Native RRC and actual useful module
+use remain pending; not accepted or advanced to master yet. Scope/limitations:
+[modules/config delivery](../papers/2026-10-07-modules-config-delivery.md).
+G4 continues with original07:24:28.679526UTC deadline; G5 stays its independent lane.
 
 ## Ordered whole units
 
