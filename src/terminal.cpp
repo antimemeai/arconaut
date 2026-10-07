@@ -1207,9 +1207,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           }
         }
         if (load) {
+          const bool saved_draft = !composer.text().empty();
           composer.draft(std::move(result.text));
-          transcript +=
-              "\nCommand loaded; Enter sends explicitly. Previous draft in /drafts.\n";
+          transcript += saved_draft ? "\nCommand loaded; Enter sends explicitly. "
+                                      "Previous draft in /drafts.\n"
+                                    : "\nCommand loaded; Enter sends explicitly.\n";
         }
       }
       if (result.action == InputAction::edit && edit())

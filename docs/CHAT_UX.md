@@ -36,10 +36,18 @@ Tab completes a slash-command name at the end of the token. A unique argument-ta
 
 The terminal returns to its ordinary screen/canonical mode for the editor and restores the TUI afterwards. A private 0600 temporary file starts with the draft. Only a successful editor exit and a regular, nonsymlink file of at most1MiB are imported; failures retain the original text/cursor. Unchanged text preserves cursor position; changed text returns with the cursor at its end. Typeahead is discarded on return. **Enter still sends explicitly.** The temporary file is removed afterwards. This does not govern shared editor daemons or claim all remote/editor effects have settled.
 
+## Searchable palette: delivered
+
+**Ctrl-Space** (NUL in ordinary terminals) or **Ctrl-T** opens the command palette without disturbing the draft. **`/commands`** also opens it locally. Type to filter names, descriptions and groups case-insensitively; exact and partial command-name matches rank ahead of description/group matches. **Up/Down**, **Ctrl-P/N** or **Tab** select a result. **Enter loads the command into the composer, not into the worker.** A second explicit Enter sends it. Commands with arguments load their name and a trailing space for you to fill in.
+
+**Escape**, **Ctrl-C** or the opening shortcut backs out to the untouched draft and cursor. Ctrl-C is modal while the palette is open; close it before using Ctrl-C to stop the worker. Ctrl-Q still quits. Paste only filters; embedded control bytes do not execute commands. The palette is a local bounded viewport and remains available during busy work; selecting a command does not change model/workflow settings or queue a turn.
+
+When selection replaces a nonempty draft, that draft is retained in **`/drafts`**; **`/draft N`** retrieves it without submitting. If draft storage is full, selection is refused and the original draft remains. The number of visible results adapts to the window; expand very short windows to see more entries. Lone Escape is resolved on the input polling idle interval, distinguishing it from arrow/meta sequences.
+
 ## Next separate UX slices
 
 1. Wrapped visual-row navigation and a more generous adaptive composer viewport.
-3. Searchable keyboard command palette and human-friendly session/model selection.
-4. Distinct conversation blocks, bounded collapsible tool output, unobtrusive truthful activity, search, unread/follow-tail controls.
+2. Human-friendly session/model pickers beyond the general command palette.
+3. Distinct conversation blocks, bounded collapsible tool output, unobtrusive truthful activity, search, unread/follow-tail controls.
 
 Keep useful expert paths and truthful work ownership. A polished display must not pretend a stored steer was consumed, a stopped request settled remote effects, a tool completion accepted a unit, or a source commit activated a running executable.
