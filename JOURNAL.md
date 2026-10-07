@@ -3227,3 +3227,25 @@ success/untypedio92 refusal and Lua syntax passed, actual board displays new run
 Queue creation first command produced G2a before JSON parsing failed (missing
 --json); resumed by existing-title lookup, no duplicated tasks or missing intent.
 All nine later units now tracked; no source adoption/mutants/extra gate.
+
+## Two actual Arco implementation lanes
+
+Operator asks for parallel Arco instances. Separate whole invariants: primary G1
+recovery/process lifetime and isolated G5 heterogeneous colleagues. Existing
+candidate manager initialized with ONE extra active slot at accepted8c5fcc3;
+candidate/giga-colleagues runs under held lease, own local workflow/session and
+immutable copy of accepted native executable. No new dependencies or model ceiling.
+G5 launched04:24:51UTC (runner22229/supervisor22235/native22248), actual provider
+completion and colleague.hpp source write observed.55min lane deadline05:19:51,
+outer manager60min; hardening25min/two layers inside allowance. Candidate may
+commit/push, Root alone integrates after all checkout users stop. Pool checkpoint
+from inside held lease prohibited. No timeout/leader-exit quiescence fiction.
+
+Primary G1 had stopped04:05 on external_unknown(0), retaining partial source. Root
+preserves original audit and resumes04:27 in explicitly authored fresh working
+context, not a claimed verified successor seed or uncertain-action replay. Original
+03:54:14 start/05:24:14 deadline preserved across controller restart; per-unit
+bounds now persist. Primary queue excludes G5, avoiding duplicate implementation.
+Controller22838/supervisor22841. Partial G1 source remains unaccepted/unstaged.
+Parallel ownership and integration rules in docs/GIGA_PARALLELISM.md. Canonical
+beads stay primary, separate worktree does not initialize another database.
