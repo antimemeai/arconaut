@@ -3195,3 +3195,17 @@ Automatic physical rollover, full old-byte resolution/replay-cost optimization a
 filesystem-unavailable settlement are NOT delivered by this unit. No more reviewer,
 host recheck or native replacement; complete inside shortened25min bound. Root owns
 README/master promotion/retirement and launch of giga; none performed here.
+
+## Giga approved and first recovery unit prepared
+
+Operator agrees to ordered delivery waves: recovery/continuity, Lua programmability,
+heterogeneous colleagues then orchestration/station/integrations/two peers. Scoped
+capacity unit completed03:45:33 inside25min (actual activation and final affected
+checks recorded), clean3041163 source tree. Root reads actual disposition and accepts
+that scope without another review/profile run. GIGA_CAMPAIGN short execution brief
+sets whole conceptual units, predeclared allowances, hardening25min/two layers,
+useful real-work outcomes and prompt accepted-unit master integration. Epic7iy/
+child units created; existing scs reparented as first backstop unit. Research and
+library/provider decisions stay real, blocked units do not hold completed work.
+README capacity status refreshed. Prepare fresh explicit working mission, preserving
+old namespaces and unknown boundaries; no historical effect replay or seed claim.

@@ -126,7 +126,7 @@ An autonomous development session reached the configured **512 MiB audit limit**
 
 That failure drove concrete work: physical byte/record headroom is now exposed, and an explicit successor-seed interface can initialize a genuinely fresh session with selected context and declared source lineage. The destination receives fresh identities. It does not inherit old admissions, verify the source's settlement, or replay its effects.
 
-**Sustained-capacity handling remains in progress.** Visibility and a successor destination are useful pieces, but the system also needs room to finish admitted work, bounded capture behavior, a usable handoff, and targeted access to old originals. Increasing the cap would leave those obligations unresolved. The [capacity study](docs/HISTORY_CAPACITY_SUBPLAN.md) and [settlement subplan](docs/CAPACITY_SETTLEMENT_SUBPLAN.md) describe the measured growth and the implementation seam.
+**Bounded workflow-capacity protection is now implemented and activated.** Turns reserve room for stop/cancellation records and refuse prospective obligations that cannot fit the physical limits. Capture refusal retains earlier fragments, reports received-but-unretained bytes, and preserves unknown outcomes. Explicit successor initialization is available; automatic recovery/handoff and targeted predecessor-original access remain queued. The physical caps are unchanged. The [capacity study](docs/HISTORY_CAPACITY_SUBPLAN.md) and [settlement subplan](docs/CAPACITY_SETTLEMENT_SUBPLAN.md) describe the measured growth and the implementation seam.
 
 ## The terminal is a place to work
 

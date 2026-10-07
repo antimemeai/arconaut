@@ -272,3 +272,13 @@ The2026-10-07 instruction supersedes open-ended tribunal/recheck language above.
 layer2 one recheck/fix, named direct oracles and an upfront allowance. No third
 assurance layer, repeated full-suite recertification or silent budget reset.
 Backstop/old-history ergonomics do not expand current capacity promotion scope.
+
+## Giga is running — current operator sequence
+
+Milestone one .3 and interstitial .14 are CLOSED/accepted; .14.3 scoped integrated
+capacity stop is CLOSED after two-layer fixes/checks and actual native activation
+inside25minutes. Earlier “not ready” and open-compaction/pilot status passages are
+historical. Current execution is [GIGA_CAMPAIGN](GIGA_CAMPAIGN.md), epic
+arconaut-7iy: recovery, programmability, heterogeneous colleagues first; then
+orchestration, station, optional integration/feed and two encrypted independent peers.
+Accepted units advance master promptly; no global certification gate.
