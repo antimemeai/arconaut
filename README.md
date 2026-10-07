@@ -127,6 +127,11 @@ Native decision-model calls are available through `decision_model`,
 Batched Choice/Score/Noul results retain probabilities, usage and audit linkage;
 workflow code chooses what to do with them. See [decision models](docs/DECISION_MODELS.md).
 
+The native [colleague adapter](docs/COLLEAGUE.md) is built as
+`build/release/blackbird-colleague`: one selected-context OpenAI or Claude request,
+with retained request/result captures. Workflows can call it through audited `exec`.
+It is a synchronous adapter, with wider provider coverage still ahead.
+
 The current loop is synchronous. Its programmable seam is real; an arbitrary concurrent multi-model scheduler is still a design objective.
 
 ## Context is local data

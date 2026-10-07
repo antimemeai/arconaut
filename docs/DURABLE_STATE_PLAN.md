@@ -20,7 +20,9 @@ implementation plan. R1 substituted physical scan hints. R2 explicitly allowed
 cold ownership without checkpoint recovery. That was Root's sequencing error,
 not a worker independently refusing an otherwise complete instruction.
 
-R2d32a764 builds and changes native readers; it is an inactive prerequisite.
+R2d32a764 now resides on master through e743ce5. It is an implemented prerequisite,
+not completed saved-state/suffix recovery. The recovery index87f786f is merged too;
+its resident ordinal values and remaining migration are recorded in RECOVERY-PROGRESS.md.
 On its matched335.8MB fixture, request-ready RSS353MB→6–7MB, but median warm
 readiness198ms→245ms and reads672MB→1007MB. It still reconstructs history.
 Its one reviewer attempt timed out; that gap remains. Existing issuer/projection

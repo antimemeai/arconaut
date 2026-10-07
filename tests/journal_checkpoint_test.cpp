@@ -109,7 +109,7 @@ void reduction_and_corruption() {
   }
   std::filesystem::resize_file(workspace.path+"/audit",complete_end);
   // A truncated journal cannot use a root beyond its available boundary.
-  std::filesystem::resize_file(workspace.path+"/audit",112);
+  std::filesystem::resize_file(workspace.path+"/audit",journal_header_size - 1);
   auto reopened=RetainedState::open(directory(workspace.path),"audit",header,capacity,true);
   CHECK(!reopened.has_value()); CHECK(reopened.error().code==ErrorCode::incomplete);
 }

@@ -4742,3 +4742,17 @@ names to Blackbird, keeps arco-colleague build/CLI compatibility. Existing admit
 Jev/Beads/workflow paths and DEBUGOFF instrumentation guards retained.
 Unfinished checkpoint/native suffix delivery remains honestly unfinished in source;
 merging it does not invent missing functionality or erase prior review gaps.
+
+Native Release OFF build completed for harness, colleague CLI and affected fixtures.
+Affected CTest20/21 pass initially52.43s. Checkpoint oracle used exactly112 bytes
+(the complete valid header) while expecting incomplete-header refusal. Changed to
+journal_header_size-1, explicitly truncated header; its sole affected recheck passes
+0.77s. No production behavior changed to satisfy the erroneous literal. Remaining
+cold/index/environment/crash/source/context/session/CLI/workflow/Jev/terminal and
+RRC checks passed. No repeated unaffected suites or second review.
+
+Published source95ed4b6 runtime to interactive blackbird-ui via clone/atomic rename;
+fresh script/native Lua registry smoke passed exit0. Existing operator processes
+not restarted. All12 remote candidate tips verified ancestors of master after
+fetch/prune. No branch deletions or force push. Source integration is complete;
+current-state/suffix-recovery functionality remains incomplete as documented.

@@ -44,13 +44,19 @@ pre-cleanup snapshot and preserves every retired name and exact tip.
 
 ## Current consolidation — 2026-10-07
 
-The original two-head cleanup below is historical. Later bounded units added
-candidate branches;12 candidate refs plus master are currently tracked. Eight
-candidate tips are now ancestors of accepted master. This integration does not
-delete refs or worktrees. Their source is fully retained on master:
+Operator subsequently directed merging everything. All12 current candidate branch
+tips are included in master. Recovery mergee743ce5 includes physical-hintdce1481,
+cold-historyd32a764 and recovery-index87f786f ancestry; colleague merge95ed4b6
+includesf233689 and adapts its namespace/include/target names to Blackbird.
+Branch refs/worktrees are retained; no history rewrite or new worker.
+Unfinished native current-state/suffix recovery remains unfinished in merged source.
 
 | Included candidate | Exact tip |
 | --- | --- |
+| `candidate/cold-history-r2-2026-10-07` | `d32a764ea664ad1710a45e6de0bb0fa26b4a15d2` |
+| `candidate/durable-recovery-2026-10-07` | `87f786fb982dae5a5035eb2146a9b0aac0beba2d` |
+| `candidate/durable-state-r1-2026-10-07` | `dce1481fc05162432cb928f39cd14eb69ff0603a` |
+| `candidate/giga-colleagues` | `f23368914f46f9edd2db935fb499d669c690b009` |
 | `candidate/issuer-ranges-2026-10-07` | `02ff9acad35bf383958e5e51f7bfcfebf4de89c4` |
 | `candidate/issuer-ranges-r2-2026-10-07` | `e0e0b980cb333eabe120bf1689040c528312c841` |
 | `candidate/local-performance-2026-10-07` | `94bc2d4184a03f54a7e277d9cc408bda0d40436c` |
@@ -59,11 +65,6 @@ delete refs or worktrees. Their source is fully retained on master:
 | `candidate/startup-demand-loading-2026-10-07` | `8e35f55a9a1db808b80576b3a4cda0846961edc4` |
 | `candidate/startup-loading-r2-2026-10-07` | `35413f3f9eb1cecb70cf3c44a2aadd4008708f29` |
 | `candidate/workflow-core-2026-10-07` | `c8498f01d7c5b4d908d8d385d4f7e0eb4306a2a5` |
-
-Four unmerged candidates remain: giga-colleagues, durable-state-r1 (opt-in physical
-hints), cold-history-r2, and durable-recovery (unfinished index prerequisite).
-Preserve their exact sources/results; they are not active campaigns or accepted
-startup delivery. No new production feature is inferred from commit uniqueness.
 
 ## Exact remote inventory before cleanup
 
