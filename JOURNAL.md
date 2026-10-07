@@ -3633,3 +3633,13 @@ c719f382cd106aae8d8f0694badf6ca063a3c1b734b564cba919aa436663bddf;
 packages/github_releases.lua
 7917461c71704f2f78fcebd0e8066593375d4bac7c7cd9b301172e94574c8a96.
 Earlier unknown station path/final boundary retained, not retroactively settled.
+
+## Claude access restored (2026-10-07)
+
+Operator reauthenticated Claude. Actual existing native colleague adapter completed
+Sonnet4.6 readiness, reported210input/5output tokens, exit0/remote completed. Prior
+selected-source review120s and narrowed60s request timed out unknown/io, no output;
+not completed reviews/auth failures or settled remote requests. Direct CLI readiness
+also worked. Recorded exact distinctions in papers/2026-10-07-claude-auth-restored.md.
+Auth blocker removed; G5 useful work/source integration still pending. No core/G8
+source changes, repeat certification or credential disclosure.
