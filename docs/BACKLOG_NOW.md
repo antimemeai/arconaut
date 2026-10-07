@@ -22,11 +22,13 @@ catch sync and retained metadata work. P1 is small instrumentation serving those
 fixes; it must not grow into a laboratory that postpones the fixes.
 
 Both renewed performance autodevs completed within their allowances; zero active
-at that reconciliation. Operator now launches one new durable-state autodev,
-candidate/durable-state-r1-2026-10-07, seeded with both delivered improvements.
-Next useful step is serial integration of their delivered changes and a matched
-combined startup measurement. The allocator may reduce admission cost; that
-interaction has not been measured. No additional review panel is queued.
+at that reconciliation. The subsequent durable-state-r1 autodev also stopped:
+pushed dce1481 is a partial opt-in physical hint implementation, inactive.
+Combined full-scan baseline on its642-fact/335.7MB fixture gave196.708ms audited
+readiness; hint path120.609ms, prompt91.3767ms, RSS352MB unchanged. These differ
+from prior1282-fact samples and do not isolate allocator gain. Zero active.
+Compact semantic state, bounded tail and demand-read history remain the next
+actual redesign; no additional review panel is queued.
 
 Operator-directed [storage/messaging source study](../papers/storage-performance-2026-10-07/STUDY.md)
 proposes compact durable current state, bounded recovery tail and on-demand disk

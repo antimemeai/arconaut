@@ -9,10 +9,10 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **one active autodev**, durable-state-r1-2026-10-07. It owns the
-new compact-state/publication/recovery unit, seeded with the delivered allocator
-and projection changes in a candidate branch. Beads and debug-only timing surfaces
-are merged; earlier launch descriptions below are historical.
+Current status: **zero active autodevs**. Durable-state-r1 delivered a pushed
+partial physical hint implementation, inactive; semantic current-state/tail and
+demand-read history remain unfinished. Beads and debug-only timing surfaces are
+merged; earlier launch descriptions below are historical.
 
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |
@@ -102,3 +102,14 @@ persist resources/stacks/native spans, normal DEBUGOFF runtime unchanged.
 No master merge/primary replacement; design note precedes implementation, using
 the actual pinned source study rather than a fresh survey. Global admission paused,
 this specifically authorized job adopted. Old expired runs remain stopped.
+
+Durable-state-r1 result: pushed dce1481, useful partial inactive. Actor narrowed
+scope to opt-in checked physical recovery hints; compact semantic state and cold
+payload reads not delivered. Same335716494-byte/642fact/37livebyte private fixture,
+three warm successful samples per mode: full prompt167.259ms/readiness196.708ms
+versus hint91.3767ms/120.609ms. Actual read bytes671396924→335711578; RSS352MB.
+One review found three publication/storage findings, fixed/direct checkpoint-test
+recheck passed. Application main build timed out; probe/test completed. No target
+claim, varied-history/cold/live-context result or allocation census. Manager and
+collector exit0;302 sampled identities absent. Native/board reservations released;
+no budget reset or activation. Report: papers/storage-performance-2026-10-07/DURABLE-R1.md.

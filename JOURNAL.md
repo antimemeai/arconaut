@@ -4447,3 +4447,28 @@ design note then useful code/direct checks, one review/fix/recheck. Completion
 marker reports actual behavior/measurements/gaps; no arbitrary memory ceiling,
 extra survey, primary rebuild/restart or master integration. Board adopted this
 specifically authorized unit, old admission stayspaused. Issues n11/3x2 active.
+
+## 2026-10-07 — Durable-state autodev returned a bounded partial
+
+Pushed dce1481 useful partial inactive. Actor selected narrower physical hint
+scope before edits: skips initial full journal scan but retains all semantic
+payload replay/residency. The requested compact semantic current-state root,
+bounded semantic tail and demand-read payloads remain undelivered. Root's initial
+mission spanned journal/retained/session/context/coding ownership; one25minunit
+did not complete that architectural change. Do not confuse measured hint gain
+with the actual requested redesign.
+
+Three successful warm matched samples/mode on335716494-byte/642fact/37livebyte
+fixture: full prompt167.259/readiness196.708ms vs hint91.3767/120.609ms. Actual
+read bytes671396924→335711578; RSS352MB essentially unchanged. Different fact
+workload from prior1282-fact measurements; no cross-unit allocator isolation or
+cold/large-live/flat-history-scaling claim. One Codex review found reservation
+capacity loss, equal-root directory sync and abandoned temporary name issues;
+fixed with one affected checkpoint recheck passing. Full application build timed
+out in main compilation; changed probe/test targets completed. No default activation.
+
+Manager/collector exit0; all302 sampled identities absent via libproc. Clean
+pushed checkpoint preserved, native slot/board reservation released, profiles
+retained privately, n11/3x2 reopened with substantive remaining scope. Zero active,
+no new allowance or merge inferred. Preserve report in papers/storage-performance-
+2026-10-07/DURABLE-R1.md, correcting byte/tree wording in root handoff only.
