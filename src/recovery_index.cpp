@@ -1,0 +1,239 @@
+#include "blackbird/recovery_index.hpp"
+#include <algorithm>
+
+namespace blackbird {
+namespace {
+constexpr std::size_t header_size = 40;
+constexpr std::size_t entry_size = 48;
+constexpr std::size_t ref_size = 24;
+constexpr std::size_t max_entries = (RecoveryIndex::page_size - header_size - ref_size) /
+                                     (entry_size + ref_size);
+constexpr std::size_t max_depth = 32;
+void encode(MutableByteView out, std::size_t at, std::uint64_t n, std::size_t size) {
+  for (std::size_t i = 0; i < size; ++i) {
+    out[at+i] = static_cast<std::byte>(n & 255); n >>= 8;
+  }
+}
+std::uint64_t decode(ByteView in, std::size_t at, std::size_t size) {
+  std::uint64_t n = 0;
+  for (std::size_t i = size; i > 0; --i)
+    n = (n << 8) | std::to_integer<unsigned char>(in[at+i-1]);
+  return n;
+}
+Result<void> transfer(Storage &file, std::uint64_t offset, MutableByteView out) {
+  std::size_t done = 0;
+  while (done < out.size()) {
+    auto n = file.read_at(offset + done, out.subspan(done));
+    if (!n.has_value()) return Result<void>::failure(n.error());
+    if (n.value() == 0 || n.value() > out.size()-done)
+      return Result<void>::failure({ErrorCode::corrupt});
+    done += n.value();
+  }
+  return Result<void>::success();
+}
+}
+Result<std::unique_ptr<RecoveryIndex>> RecoveryIndex::open(
+    std::unique_ptr<JournalFile> file, std::uint64_t max_bytes) {
+  if (!file || max_bytes < page_size)
+    return Result<std::unique_ptr<RecoveryIndex>>::failure({ErrorCode::invalid_range});
+  auto extent = file->extent();
+  if (!extent.has_value())
+    return Result<std::unique_ptr<RecoveryIndex>>::failure(extent.error());
+  if (extent.value() > max_bytes || extent.value() > UINT64_MAX - page_size)
+    return Result<std::unique_ptr<RecoveryIndex>>::failure({ErrorCode::capacity});
+  // A failed partial page is orphaned, never selected by a valid root.
+  const auto end = (extent.value() + page_size - 1) / page_size * page_size;
+  try {
+    return Result<std::unique_ptr<RecoveryIndex>>::success(
+      std::unique_ptr<RecoveryIndex>{new RecoveryIndex{std::move(file), end, max_bytes}});
+  } catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<RecoveryIndex>>::failure({ErrorCode::allocation});
+  }
+}
+Result<RecoveryIndex::Node> RecoveryIndex::read(RecoveryPageRef ref) const {
+  if (ref.generation == 0 || ref.offset % page_size != 0 ||
+      ref.offset > end_ || page_size > end_ - ref.offset)
+    return Result<Node>::failure({ErrorCode::corrupt});
+  std::array<std::byte, page_size> bytes{};
+  auto loaded = transfer(*file_, ref.offset, bytes);
+  if (!loaded.has_value()) return Result<Node>::failure(loaded.error());
+  if (decode(bytes,0,8) != 0x3158444942524242ULL || decode(bytes,8,8) != ref.offset ||
+      decode(bytes,16,8) != ref.generation || decode(bytes,24,4) > 1 ||
+      decode(bytes,32,4) != ref.checksum || decode(bytes,36,4) != 0)
+    return Result<Node>::failure({ErrorCode::corrupt});
+  encode(bytes,32,0,4);
+  if (crc32c(bytes) != ref.checksum) return Result<Node>::failure({ErrorCode::corrupt});
+  const auto count = decode(bytes,28,4);
+  if (count == 0 || count > max_entries)
+    return Result<Node>::failure({ErrorCode::corrupt});
+  try {
+    Node node; node.leaf = decode(bytes,24,4) == 0;
+    node.entries.reserve(static_cast<std::size_t>(count));
+    std::size_t at = header_size;
+    for (std::size_t i = 0; i < count; ++i) {
+      RecoveryIndexEntry entry{};
+      std::copy_n(bytes.begin()+static_cast<std::ptrdiff_t>(at), entry.key.size(), entry.key.begin());
+      entry.value = decode(bytes,at+40,8); at += entry_size;
+      if (!node.entries.empty() && !(node.entries.back().key < entry.key))
+        return Result<Node>::failure({ErrorCode::corrupt});
+      node.entries.push_back(entry);
+    }
+    if (!node.leaf) {
+      node.children.reserve(static_cast<std::size_t>(count)+1);
+      for (std::size_t i = 0; i <= count; ++i) {
+        RecoveryPageRef child{decode(bytes,at,8),decode(bytes,at+8,8),
+                             static_cast<std::uint32_t>(decode(bytes,at+16,4))};
+        if (decode(bytes,at+20,4) != 0 || child.generation == 0 ||
+            child.offset % page_size != 0 || child.offset >= ref.offset ||
+            child.generation >= ref.generation)
+          return Result<Node>::failure({ErrorCode::corrupt});
+        node.children.push_back(child); at += ref_size;
+      }
+    }
+    for (; at < bytes.size(); ++at)
+      if (bytes[at] != std::byte{0}) return Result<Node>::failure({ErrorCode::corrupt});
+    return Result<Node>::success(std::move(node));
+  } catch (const std::bad_alloc &) { return Result<Node>::failure({ErrorCode::allocation}); }
+}
+Result<RecoveryPageRef> RecoveryIndex::write(const Node &node) {
+  if (node.entries.empty() || node.entries.size() > max_entries ||
+      (!node.leaf && node.children.size() != node.entries.size()+1))
+    return Result<RecoveryPageRef>::failure({ErrorCode::invalid_range});
+  if (end_ > max_bytes_ || page_size > max_bytes_ - end_)
+    return Result<RecoveryPageRef>::failure({ErrorCode::capacity});
+  std::array<std::byte,page_size> bytes{};
+  RecoveryPageRef ref{end_, end_/page_size+1, 0};
+  encode(bytes,0,0x3158444942524242ULL,8); encode(bytes,8,ref.offset,8);
+  encode(bytes,16,ref.generation,8); encode(bytes,24,node.leaf ? 0 : 1,4);
+  encode(bytes,28,node.entries.size(),4);
+  std::size_t at = header_size;
+  for (const auto &entry : node.entries) {
+    std::copy(entry.key.begin(),entry.key.end(),bytes.begin()+static_cast<std::ptrdiff_t>(at));
+    encode(bytes,at+40,entry.value,8); at += entry_size;
+  }
+  if (!node.leaf) for (const auto &child : node.children) {
+    encode(bytes,at,child.offset,8); encode(bytes,at+8,child.generation,8);
+    encode(bytes,at+16,child.checksum,4); at += ref_size;
+  }
+  ref.checksum = crc32c(bytes); encode(bytes,32,ref.checksum,4);
+  // Burn the address even on failed writes; an old selected page is never mutated.
+  end_ += page_size;
+  std::size_t done = 0;
+  while (done < bytes.size()) {
+    auto n = file_->write_at(ref.offset+done,ByteView{bytes}.subspan(done));
+    if (!n.has_value()) return Result<RecoveryPageRef>::failure(n.error());
+    if (n.value() == 0 || n.value() > bytes.size()-done)
+      return Result<RecoveryPageRef>::failure({ErrorCode::io});
+    done += n.value();
+  }
+  return Result<RecoveryPageRef>::success(ref);
+}
+Result<std::optional<std::uint64_t>> RecoveryIndex::find(
+    RecoveryPageRef root, const RecoveryKey &key) const {
+  for (std::size_t depth = 0; root.generation != 0 && depth < max_depth; ++depth) {
+    auto loaded = read(root);
+    if (!loaded.has_value()) return Result<std::optional<std::uint64_t>>::failure(loaded.error());
+    const auto &node = loaded.value();
+    const auto it = std::lower_bound(node.entries.begin(),node.entries.end(),key,
+      [](const auto &entry, const auto &k) { return entry.key < k; });
+    if (it != node.entries.end() && it->key == key)
+      return Result<std::optional<std::uint64_t>>::success(it->value);
+    if (node.leaf) return Result<std::optional<std::uint64_t>>::success(std::nullopt);
+    root = node.children[static_cast<std::size_t>(it-node.entries.begin())];
+  }
+  if (root.generation != 0 || root.offset != 0 || root.checksum != 0)
+    return Result<std::optional<std::uint64_t>>::failure({ErrorCode::corrupt});
+  return Result<std::optional<std::uint64_t>>::success(std::nullopt);
+}
+Result<RecoveryIndex::Change> RecoveryIndex::insert(
+    RecoveryPageRef root, RecoveryKey key, std::uint64_t value, std::size_t depth) {
+  if (depth >= max_depth) return Result<Change>::failure({ErrorCode::corrupt});
+  Node node;
+  if (root.generation != 0) {
+    auto loaded = read(root);
+    if (!loaded.has_value()) return Result<Change>::failure(loaded.error());
+    node = std::move(loaded).value();
+  } else if (root.offset != 0 || root.checksum != 0) {
+    return Result<Change>::failure({ErrorCode::corrupt});
+  }
+  auto it = std::lower_bound(node.entries.begin(),node.entries.end(),key,
+    [](const auto &entry, const auto &k) { return entry.key < k; });
+  const auto slot = static_cast<std::size_t>(it-node.entries.begin());
+  if (it != node.entries.end() && it->key == key) it->value = value;
+  else if (node.leaf) node.entries.insert(it,{key,value});
+  else {
+    auto child = insert(node.children[slot],key,value,depth+1);
+    if (!child.has_value()) return Result<Change>::failure(child.error());
+    node.children[slot] = child.value().left;
+    if (child.value().split) {
+      node.entries.insert(node.entries.begin()+static_cast<std::ptrdiff_t>(slot),*child.value().split);
+      node.children.insert(node.children.begin()+static_cast<std::ptrdiff_t>(slot+1),child.value().right);
+    }
+  }
+  if (node.entries.size() <= max_entries) {
+    auto ref = write(node);
+    if (!ref.has_value()) return Result<Change>::failure(ref.error());
+    return Result<Change>::success({ref.value(),std::nullopt,{}});
+  }
+  const auto middle = node.entries.size()/2;
+  const auto separator = node.entries[middle];
+  Node right; right.leaf = node.leaf;
+  right.entries.assign(node.entries.begin()+static_cast<std::ptrdiff_t>(middle+1),node.entries.end());
+  node.entries.resize(middle);
+  if (!node.leaf) {
+    right.children.assign(node.children.begin()+static_cast<std::ptrdiff_t>(middle+1),node.children.end());
+    node.children.resize(middle+1);
+  }
+  auto left_ref = write(node);
+  if (!left_ref.has_value()) return Result<Change>::failure(left_ref.error());
+  auto right_ref = write(right);
+  if (!right_ref.has_value()) return Result<Change>::failure(right_ref.error());
+  return Result<Change>::success({left_ref.value(),separator,right_ref.value()});
+}
+Result<RecoveryPageRef> RecoveryIndex::put(RecoveryPageRef root, RecoveryKey key,
+                                          std::uint64_t value) {
+  try {
+    auto changed = insert(root,key,value,0);
+    if (!changed.has_value()) return Result<RecoveryPageRef>::failure(changed.error());
+    if (!changed.value().split) return Result<RecoveryPageRef>::success(changed.value().left);
+    Node node; node.leaf = false; node.entries.push_back(*changed.value().split);
+    node.children = {changed.value().left,changed.value().right};
+    return write(node);
+  } catch (const std::bad_alloc &) { return Result<RecoveryPageRef>::failure({ErrorCode::allocation}); }
+}
+Result<bool> RecoveryIndex::walk(RecoveryPageRef root, const RecoveryKey &lower,
+    std::size_t &left, const std::function<Result<bool>(RecoveryIndexEntry)> &visit,
+    std::size_t depth) const {
+  if (depth >= max_depth) return Result<bool>::failure({ErrorCode::corrupt});
+  auto loaded = read(root);
+  if (!loaded.has_value()) return Result<bool>::failure(loaded.error());
+  const auto &node = loaded.value();
+  auto it = std::lower_bound(node.entries.begin(),node.entries.end(),lower,
+    [](const auto &entry,const auto &k) { return entry.key < k; });
+  auto slot = static_cast<std::size_t>(it-node.entries.begin());
+  for (; slot <= node.entries.size(); ++slot) {
+    if (!node.leaf) {
+      auto more = walk(node.children[slot],lower,left,visit,depth+1);
+      if (!more.has_value() || !more.value()) return more;
+    }
+    if (slot == node.entries.size()) break;
+    if (left == 0) return Result<bool>::success(false);
+    --left;
+    auto more = visit(node.entries[slot]);
+    if (!more.has_value() || !more.value()) return more;
+    if (left == 0) return Result<bool>::success(false);
+  }
+  return Result<bool>::success(true);
+}
+Result<void> RecoveryIndex::range(RecoveryPageRef root, const RecoveryKey &lower,
+    std::size_t limit,const std::function<Result<bool>(RecoveryIndexEntry)> &visit) const {
+  if (!visit) return Result<void>::failure({ErrorCode::invalid_range});
+  if (root.generation == 0) return (root.offset == 0 && root.checksum == 0)
+      ? Result<void>::success() : Result<void>::failure({ErrorCode::corrupt});
+  if (limit == 0) return Result<void>::success();
+  auto result = walk(root,lower,limit,visit,0);
+  if (!result.has_value()) return Result<void>::failure(result.error());
+  return Result<void>::success();
+}
+Result<void> RecoveryIndex::synchronize() { return file_->synchronize(SyncStrength::full); }
+} // namespace blackbird

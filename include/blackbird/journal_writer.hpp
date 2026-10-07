@@ -96,7 +96,7 @@ public:
   using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
   Result<PayloadReader> payload_reader(const PhysicalJournalRecord &record);
   bool used_scan_checkpoint() const noexcept { return used_scan_checkpoint_; }
-  ~FramedJournal() { file_->release_writer(); }
+  ~FramedJournal() { if (file_) file_->release_writer(); }
   FramedJournal(const FramedJournal &) = delete;
   FramedJournal &operator=(const FramedJournal &) = delete;
   Result<JournalCursor> append(std::span<const JournalDraft> drafts);

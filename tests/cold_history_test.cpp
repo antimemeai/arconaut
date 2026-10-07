@@ -29,11 +29,14 @@ int main() {
     ImmutableBytes survivor;
     {
       auto root=unwrap(RetainedState::open(directory(),"audit",h,cap)); unwrap(root->confirm_recovery());
+      auto index_directory=directory();
+      unwrap(root->enable_indexed_queries(unwrap(index_directory->create_exclusive("queries.index")),32*1024*1024));
+      CHECK(root->indexed_queries());
       AuditLog log{*root}; ContextStore ctx{log};
       CHECK(ctx.view()==view && ctx.originals()==originals && ctx.inspect(query)==history);
       CHECK(root->issuer_counter()==highwater && root->committed_facts().size()==eager.size());
       for (std::size_t i=0;i<eager.size();++i) {
-        CHECK(root->committed_facts()[i].event==eager[i]);
+        CHECK(unwrap(root->fact(i)).event==eager[i]);
         if (const auto *app=std::get_if<ApplicationRecordEvent>(&root->committed_facts()[i].event.body)) {
           CHECK(app->payload.is_cold() && app->payload.resident_bytes()==0); survivor=app->payload;
           CHECK(unwrap(root->submit(eager[i])).existing);

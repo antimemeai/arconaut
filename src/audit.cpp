@@ -127,16 +127,16 @@ std::vector<std::byte> payload(const RetainedBody &body) {
 Json AuditLog::inspect(const Json &q) {
   if (!std::holds_alternative<Json::Object>(q.value()))
     throw Error{ErrorCode::invalid_range};
-  const auto facts = root_.committed_facts();
-  const auto end = index(q, "end", facts.size());
+  const auto fact_count = root_.fact_count();
+  const auto end = index(q, "end", fact_count);
   const auto count = index(q, "count", 32), limit = index(q, "limit", 4096);
-  if (end > facts.size() || count == 0 || count > 64 || limit == 0 || limit > 65536)
+  if (end > fact_count || count == 0 || count > 64 || limit == 0 || limit > 65536)
     throw Error{ErrorCode::invalid_range};
   if (q.find("record")) {
     const auto i = index(q, "record", 0);
     if (i >= end)
       throw Error{ErrorCode::invalid_range};
-    const auto &fact = facts[i];
+    const auto fact = unwrap(root_.fact(i));
     auto result = summary(fact, i);
     std::vector<std::byte> original;
     auto raw = payload(fact.event.body);
@@ -169,7 +169,7 @@ Json AuditLog::inspect(const Json &q) {
   const auto next = cursor + std::min(count, end - cursor);
   Json::Array rows;
   for (auto i = cursor; i < next; ++i)
-    rows.push_back(summary(facts[i], i));
+    rows.push_back(summary(unwrap(root_.fact(i)), i));
   return Json::object(
       {{"end", number(end)},
        {"next", number(next)},

@@ -63,6 +63,13 @@ public:
   const JournalRecoveryReport &recovery_report() const noexcept {
     return semantic_->recovery_report();
   }
+  Result<void> enable_indexed_queries(std::unique_ptr<JournalFile> file,
+                                      std::uint64_t max_bytes) {
+    if (busy_) return Result<void>::failure({ErrorCode::busy});
+    return semantic_->enable_indexed_queries(std::move(file),max_bytes);
+  }
+  Result<RetainedFact> fact(std::size_t ordinal) const { return semantic_->fact(ordinal); }
+  std::size_t fact_count() const noexcept { return semantic_->fact_count(); }
   std::span<const RetainedFact> committed_facts() const noexcept {
     return semantic_->committed_facts();
   }

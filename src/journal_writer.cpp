@@ -108,7 +108,10 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  journal->file_ = std::move(opened).value();
+  try { journal->file_ = std::move(opened).value(); }
+  catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   const auto locked = journal->file_->lock_writer();
   if (!locked.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(locked.error());
@@ -158,7 +161,10 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  journal->file_ = std::move(opened).value();
+  try { journal->file_ = std::move(opened).value(); }
+  catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   const auto locked = journal->file_->lock_writer();
   if (!locked.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(locked.error());

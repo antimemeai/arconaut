@@ -207,13 +207,19 @@ AttemptAdmissionEvent admission(unsigned char attempt = 11,
   return {id<OperationAttemptId>(attempt), id<InvocationId>(9),
           id<DecisionId>(checkpoint), original};
 }
+bool indexed_mode = false;
+std::unique_ptr<RetainedState> attach(std::unique_ptr<RetainedState> state) {
+  if (indexed_mode) require(state->enable_indexed_queries(
+      std::make_unique<MemoryFile>(std::make_shared<StorageState>()),256*1024*1024));
+  return state;
+}
 std::unique_ptr<RetainedState> create(const std::shared_ptr<StorageState> &storage) {
-  return require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
-                                       "journal", header(), capacity));
+  return attach(require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
+                                       "journal", header(), capacity)));
 }
 std::unique_ptr<RetainedState> open(const std::shared_ptr<StorageState> &storage) {
-  return require(RetainedState::open(std::make_unique<MemoryDirectory>(storage),
-                                     "journal", header(), capacity));
+  return attach(require(RetainedState::open(std::make_unique<MemoryDirectory>(storage),
+                                     "journal", header(), capacity)));
 }
 void prepare(RetainedState &state) {
   require(state.submit({{}, decision()}));
@@ -1519,13 +1525,14 @@ void protected_settlement_faults() {
   }
 }
 } // namespace
-int main() {
+int main(int argc, char **) {
+  indexed_mode = argc > 1;
   try {
     protected_settlement_faults();
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();
-    replay_avoids_prefix_payload_copies();
+    if (!indexed_mode) replay_avoids_prefix_payload_copies();
     sources_and_invalid_replay();
     pending_source_inspection();
     pending_proposal_owns_originals();

@@ -2,6 +2,7 @@
 
 #include "blackbird/journal_writer.hpp"
 #include "blackbird/retained_events.hpp"
+#include "blackbird/recovery_index.hpp"
 
 namespace blackbird {
 struct RecordReference {
@@ -129,6 +130,13 @@ public:
   const JournalRecoveryReport &recovery_report() const noexcept {
     return journal_->recovery_report();
   }
+  // Explicit prerequisite mode: populate a derived paged index from full replay.
+  // Not checkpoint recovery: attachment does not skip any authoritative replay.
+  Result<void> enable_indexed_queries(std::unique_ptr<JournalFile> file,
+                                      std::uint64_t max_bytes);
+  bool indexed_queries() const noexcept { return query_index_ != nullptr; }
+  Result<RetainedFact> fact(std::size_t ordinal) const;
+  std::size_t fact_count() const noexcept { return committed_.facts.size(); }
   // Borrow lasts until the next mutation; no staged/uncertain facts appear here.
   std::span<const RetainedFact> committed_facts() const noexcept {
     return committed_.facts;
@@ -163,6 +171,7 @@ private:
     std::vector<PhysicalJournalRecord> sources;
     std::vector<RetainedFact> uncertain_facts;
     std::vector<ProvisionalOriginal> provisional_originals;
+    RecoveryPageRef query_root;
     std::uint64_t issuer_namespace = 0;
     std::uint64_t counter = 0;
     void swap(Snapshot &other) noexcept;
@@ -176,6 +185,13 @@ private:
                       std::uint64_t maintenance_end = 0);
   bool has_room(const Snapshot &snapshot, std::size_t count) const noexcept;
   FramedJournal *segment(AuditStreamId identity) const noexcept;
+  const RetainedFact *lookup(const Snapshot &snapshot, unsigned char family,
+      RetainedKind kind, const IdentityBytes &identity,
+      const IdentityBytes &second = {}) const;
+  void index_fact(Snapshot &snapshot, std::size_t ordinal);
+  void index_source(Snapshot &snapshot, std::size_t ordinal);
+  void populate_index(Snapshot &snapshot);
+  std::unique_ptr<RecoveryIndex> query_index_;
   struct ReplayIndex;
   Result<void> apply(Snapshot &snapshot, RetainedEvent event, RecordReference record,
                      RetainedEvidence evidence, ReplayIndex *index = nullptr);
