@@ -18,9 +18,6 @@ std::size_t index(const Json &q, std::string_view key, std::size_t fallback) {
     throw Error{ErrorCode::invalid_range};
   return out;
 }
-std::string_view text(ByteView b) {
-  return {reinterpret_cast<const char *>(b.data()), b.size()};
-}
 Json summary(const RetainedFact &fact, std::size_t i) {
   Json row = Json::object(
       {{"record", number(i)},
@@ -51,7 +48,7 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           // demand.
           if (e.payload.size() <= 65536 && (e.channel == ApplicationChannel::log ||
                                             e.channel == ApplicationChannel::program)) {
-            const auto p = unwrap(parse_json(text(e.payload)));
+            const auto p = unwrap(parse_json(read_text(e.payload)));
             for (const auto key : {"label", "generation", "activation"})
               if (const auto *v = p.find(key);
                   v && std::holds_alternative<std::string>(v->value()) &&
@@ -106,21 +103,21 @@ Json summary(const RetainedFact &fact, std::size_t i) {
       fact.event.body);
   return row;
 }
-ByteView payload(const RetainedBody &body) {
+std::vector<std::byte> payload(const RetainedBody &body) {
   return std::visit(
-      [](const auto &e) -> ByteView {
+      [](const auto &e) -> std::vector<std::byte> {
         using T = std::decay_t<decltype(e)>;
         if constexpr (std::is_same_v<T, ApplicationRecordEvent>)
-          return e.payload;
+          return unwrap(e.payload.read());
         else if constexpr (std::is_same_v<T, DecisionEvent>)
-          return e.continuation;
+          return unwrap(e.continuation.read());
         else if constexpr (std::is_same_v<T, InvocationEvent> ||
                            std::is_same_v<T, AttemptAdmissionEvent>)
-          return e.input;
+          return unwrap(e.input.read());
         else if constexpr (std::is_same_v<T, AttemptObservationEvent>)
-          return e.observation;
+          return unwrap(e.observation.read());
         else if constexpr (std::is_same_v<T, ComplaintEvent>)
-          return e.detail;
+          return unwrap(e.detail.read());
         else
           return {};
       },
@@ -130,16 +127,16 @@ ByteView payload(const RetainedBody &body) {
 Json AuditLog::inspect(const Json &q) {
   if (!std::holds_alternative<Json::Object>(q.value()))
     throw Error{ErrorCode::invalid_range};
-  const auto facts = root_.committed_facts();
-  const auto end = index(q, "end", facts.size());
+  const auto fact_count = root_.fact_count();
+  const auto end = index(q, "end", fact_count);
   const auto count = index(q, "count", 32), limit = index(q, "limit", 4096);
-  if (end > facts.size() || count == 0 || count > 64 || limit == 0 || limit > 65536)
+  if (end > fact_count || count == 0 || count > 64 || limit == 0 || limit > 65536)
     throw Error{ErrorCode::invalid_range};
   if (q.find("record")) {
     const auto i = index(q, "record", 0);
     if (i >= end)
       throw Error{ErrorCode::invalid_range};
-    const auto &fact = facts[i];
+    const auto fact = unwrap(root_.fact(i));
     auto result = summary(fact, i);
     std::vector<std::byte> original;
     auto raw = payload(fact.event.body);
@@ -155,7 +152,7 @@ Json AuditLog::inspect(const Json &q) {
     constexpr char digits[] = "0123456789abcdef";
     std::string hex;
     hex.reserve(n * 2);
-    for (const auto b : raw.subspan(offset, n)) {
+    for (const auto b : std::span<const std::byte>{raw}.subspan(offset, n)) {
       const auto v = std::to_integer<unsigned>(b);
       hex += digits[v >> 4U];
       hex += digits[v & 15U];
@@ -172,7 +169,7 @@ Json AuditLog::inspect(const Json &q) {
   const auto next = cursor + std::min(count, end - cursor);
   Json::Array rows;
   for (auto i = cursor; i < next; ++i)
-    rows.push_back(summary(facts[i], i));
+    rows.push_back(summary(unwrap(root_.fact(i)), i));
   return Json::object(
       {{"end", number(end)},
        {"next", number(next)},

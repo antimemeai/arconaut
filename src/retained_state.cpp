@@ -51,6 +51,49 @@ std::optional<EventKey> key(const RetainedBody &body,
       },
       body);
 }
+RecoveryKey query_key(unsigned char family, RetainedKind kind,
+                      const IdentityBytes &identity = {},
+                      const IdentityBytes &second = {}) {
+  RecoveryKey result{};
+  result[0] = static_cast<std::byte>(family);
+  result[1] = static_cast<std::byte>(kind);
+  std::copy(identity.begin(), identity.end(), result.begin()+2);
+  std::copy(second.begin(), second.end(), result.begin()+18);
+  return result;
+}
+RecoveryKey ordinal_key(unsigned char family, const IdentityBytes &identity,
+                        std::uint64_t ordinal) {
+  auto result = query_key(family, static_cast<RetainedKind>(0), identity);
+  for (std::size_t i = 0; i < 8; ++i) {
+    result[25-i] = static_cast<std::byte>(ordinal & 255); ordinal >>= 8;
+  }
+  return result;
+}
+std::vector<RecoveryKey> fact_keys(const RetainedFact &fact, std::uint64_t ns,
+                                  std::size_t ordinal) {
+  std::vector<RecoveryKey> result;
+  if (const auto identity = key(fact.event.body, ns))
+    result.push_back(query_key(1, identity->kind, identity->identity));
+  result.push_back(ordinal_key(6, {}, ordinal));
+  std::visit([&](const auto &body) {
+    using T = std::decay_t<decltype(body)>;
+    const auto kind = retained_kind(fact.event.body);
+    if constexpr (std::is_same_v<T, AttemptObservationEvent>) {
+      result.push_back(query_key(2, kind, body.attempt.bytes()));
+      if (body.phase == AttemptPhase::terminal)
+        result.push_back(query_key(1, kind, body.attempt.bytes()));
+    }
+    if constexpr (std::is_same_v<T, AttemptAdmissionEvent>)
+      result.push_back(query_key(3, kind, body.invocation.bytes()));
+    if constexpr (std::is_same_v<T, RetryEvent>)
+      result.push_back(query_key(4, kind, body.decision.bytes(),body.invocation.bytes()));
+    if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
+                  std::is_same_v<T, AttemptObservationEvent> ||
+                  std::is_same_v<T, AdapterReceiptEvent>)
+      result.push_back(ordinal_key(9,body.attempt.bytes(),ordinal));
+  },fact.event.body);
+  return result;
+}
 template <typename T, typename Predicate>
 const T *find_event(std::span<const RetainedFact> facts, Predicate predicate) {
   for (auto it = facts.rbegin(); it != facts.rend(); ++it) {
@@ -99,6 +142,7 @@ struct RetainedState::ReplayIndex {
   std::unordered_set<SourceReference, SourceHash> sources;
 };
 void RetainedState::Snapshot::swap(Snapshot &other) noexcept {
+  std::swap(query_root, other.query_root);
   facts.swap(other.facts);
   sources.swap(other.sources);
   uncertain_facts.swap(other.uncertain_facts);
@@ -154,7 +198,8 @@ RetainedState::create(std::unique_ptr<JournalDirectory> directory,
 }
 Result<std::unique_ptr<RetainedState>>
 RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
-                    JournalHeader header, JournalCapacity capacity) {
+                    JournalHeader header, JournalCapacity capacity,
+                    bool use_scan_checkpoint) {
   if (header.predecessor) {
     return Result<std::unique_ptr<RetainedState>>::failure({ErrorCode::unsupported});
   }
@@ -163,7 +208,8 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return allocated;
   }
   auto owner = std::move(allocated).value();
-  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity);
+  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity,
+                                     SyncStrength::full, use_scan_checkpoint);
   if (!journal.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
@@ -175,6 +221,101 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return Result<std::unique_ptr<RetainedState>>::failure(rebuilt.error());
   }
   return Result<std::unique_ptr<RetainedState>>::success(std::move(owner));
+}
+void RetainedState::index_fact(Snapshot &snapshot, std::size_t ordinal) {
+  if (!query_index_) return;
+  const auto &fact = snapshot.facts[ordinal];
+  const auto *origin = segment(fact.record.journal);
+  if (!origin) throw Error{ErrorCode::corrupt};
+  for (const auto &k : fact_keys(fact, origin->header().issuer_namespace, ordinal)) {
+    auto root = query_index_->put(snapshot.query_root,k,ordinal);
+    if (!root.has_value()) throw root.error();
+    snapshot.query_root = root.value();
+  }
+}
+void RetainedState::index_source(Snapshot &snapshot, std::size_t ordinal) {
+  if (!query_index_) return;
+  const auto &source = snapshot.sources[ordinal];
+  auto root = query_index_->put(snapshot.query_root,
+      ordinal_key(5,source.journal.bytes(),source.sequence),ordinal);
+  if (!root.has_value()) throw root.error();
+  snapshot.query_root = root.value();
+}
+void RetainedState::populate_index(Snapshot &snapshot) {
+  snapshot.query_root = {};
+  for (std::size_t i = 0; i < snapshot.facts.size(); ++i) index_fact(snapshot,i);
+  for (std::size_t i = 0; i < snapshot.sources.size(); ++i) index_source(snapshot,i);
+}
+Result<void> RetainedState::enable_indexed_queries(std::unique_ptr<JournalFile> file,
+                                                  std::uint64_t max_bytes) {
+  if (in_transaction_ || query_index_) return Result<void>::failure({ErrorCode::busy});
+  auto opened = RecoveryIndex::open(std::move(file),max_bytes);
+  if (!opened.has_value()) return Result<void>::failure(opened.error());
+  query_index_ = std::move(opened).value();
+  try {
+    populate_index(committed_);
+    if (prepared_) populate_index(*prepared_);
+    return Result<void>::success();
+  } catch (const Error &error) {
+    query_index_.reset(); committed_.query_root = {};
+    if (prepared_) prepared_->query_root = {};
+    return Result<void>::failure(error);
+  } catch (const std::bad_alloc &) {
+    query_index_.reset(); committed_.query_root = {};
+    if (prepared_) prepared_->query_root = {};
+    return Result<void>::failure({ErrorCode::allocation});
+  }
+}
+const RetainedFact *RetainedState::lookup(const Snapshot &snapshot,
+    unsigned char family, RetainedKind kind, const IdentityBytes &identity,
+    const IdentityBytes &second) const {
+  const auto wanted = query_key(family,kind,identity,second);
+  if (query_index_) {
+    auto found = query_index_->find(snapshot.query_root,wanted);
+    if (!found.has_value()) throw found.error();
+    if (!found.value()) return nullptr;
+    if (*found.value() >= snapshot.facts.size()) throw Error{ErrorCode::corrupt};
+    return &snapshot.facts[static_cast<std::size_t>(*found.value())];
+  }
+  for (std::size_t i = snapshot.facts.size(); i > 0; --i) {
+    const auto &fact = snapshot.facts[i-1];
+    const auto *origin = segment(fact.record.journal);
+    if (!origin) throw Error{ErrorCode::corrupt};
+    if (retained_kind(fact.event.body) != kind) continue;
+    if (family == 1) {
+      if (const auto k = key(fact.event.body,origin->header().issuer_namespace);
+          k && k->identity == identity) return &fact;
+      if (const auto *body = std::get_if<AttemptObservationEvent>(&fact.event.body);
+          body && body->phase == AttemptPhase::terminal && body->attempt.bytes() == identity)
+        return &fact;
+    } else if (family == 2) {
+      if (const auto *body = std::get_if<AttemptObservationEvent>(&fact.event.body);
+          body && body->attempt.bytes() == identity) return &fact;
+    } else if (family == 3) {
+      if (const auto *body = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
+          body && body->invocation.bytes() == identity) return &fact;
+    } else if (family == 4) {
+      if (const auto *body = std::get_if<RetryEvent>(&fact.event.body);
+          body && body->decision.bytes() == identity && body->invocation.bytes() == second)
+        return &fact;
+    }
+  }
+  return nullptr;
+}
+Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
+  try {
+    if (ordinal >= committed_.facts.size())
+      return Result<RetainedFact>::failure({ErrorCode::invalid_range});
+    if (query_index_) {
+      auto found = query_index_->find(committed_.query_root,ordinal_key(6,{},ordinal));
+      if (!found.has_value()) return Result<RetainedFact>::failure(found.error());
+      if (!found.value() || *found.value() != ordinal)
+        return Result<RetainedFact>::failure({ErrorCode::corrupt});
+    }
+    return Result<RetainedFact>::success(committed_.facts[ordinal]);
+  } catch (const std::bad_alloc &) {
+    return Result<RetainedFact>::failure({ErrorCode::allocation});
+  }
 }
 const RetainedState::Snapshot &RetainedState::visible() const noexcept {
   return prepared_ ? *prepared_ : committed_;
@@ -190,6 +331,13 @@ RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
                         const ReplayIndex *index) const {
   const auto identity =
       key(event.body, issuer_namespace.value_or(snapshot.issuer_namespace));
+  if (query_index_) {
+    if (identity) return lookup(snapshot,1,identity->kind,identity->identity);
+    if (const auto *observation = std::get_if<AttemptObservationEvent>(&event.body);
+        observation && observation->phase == AttemptPhase::terminal)
+      return lookup(snapshot,1,retained_kind(event.body),observation->attempt.bytes());
+    return nullptr;
+  }
   if (identity && index) {
     const auto found = index->facts.find(*identity);
     return found == index->facts.end() ? nullptr : &snapshot.facts[found->second];
@@ -273,6 +421,15 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
   if (!has_room(snapshot, 1))
     return Result<void>::failure({ErrorCode::capacity});
   for (const auto &dependency : event.dependencies) {
+    if (query_index_) {
+      auto found = query_index_->find(snapshot.query_root,
+          ordinal_key(5,dependency.journal.bytes(),dependency.sequence));
+      if (!found.has_value()) return Result<void>::failure(found.error());
+      if (!found.value()) return Result<void>::failure({ErrorCode::conflict});
+      if (*found.value() >= snapshot.sources.size())
+        return Result<void>::failure({ErrorCode::corrupt});
+      continue;
+    }
     if (index) {
       if (!index->sources.contains(dependency))
         return Result<void>::failure({ErrorCode::conflict});
@@ -287,6 +444,11 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
       return Result<void>::failure({ErrorCode::conflict});
     }
   }
+  const auto get = [&]<typename T>(unsigned char family, RetainedKind kind,
+      const IdentityBytes &identity, const IdentityBytes &second = {}) -> const T * {
+    const auto *fact = lookup(snapshot,family,kind,identity,second);
+    return fact ? std::get_if<T>(&fact->event.body) : nullptr;
+  };
   const auto validated = std::visit(
       [&](const auto &body) -> Result<void> {
         using T = std::decay_t<decltype(body)>;
@@ -305,38 +467,25 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
           }
         } else if constexpr (std::is_same_v<T, InvocationEvent>) {
           const auto *decision =
-              find_event<DecisionEvent>(snapshot.facts, [&](const auto &value) {
-                return value.decision == body.decision;
-              });
+              get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
           if (!decision || !plans(*decision, body.invocation)) {
             return Result<void>::failure({ErrorCode::conflict});
           }
         } else if constexpr (std::is_same_v<T, AttemptAdmissionEvent> ||
                              std::is_same_v<T, RetryEvent>) {
           const auto *invocation =
-              find_event<InvocationEvent>(snapshot.facts, [&](const auto &value) {
-                return value.invocation == body.invocation;
-              });
+              get.template operator()<InvocationEvent>(1,RetainedKind::invocation,body.invocation.bytes());
           const auto *decision =
-              find_event<DecisionEvent>(snapshot.facts, [&](const auto &value) {
-                return value.decision == body.decision;
-              });
+              get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
           if (!invocation || !decision || !plans(*decision, body.invocation)) {
             return Result<void>::failure({ErrorCode::conflict});
           }
           const auto *prior =
-              find_event<AttemptAdmissionEvent>(snapshot.facts, [&](const auto &value) {
-                return value.invocation == body.invocation;
-              });
+              get.template operator()<AttemptAdmissionEvent>(3,RetainedKind::attempt_admitted,body.invocation.bytes());
           if constexpr (std::is_same_v<T, RetryEvent>) {
-            const auto *used = find_event<AttemptAdmissionEvent>(
-                snapshot.facts,
-                [&](const auto &value) { return value.attempt == body.attempt; });
+            const auto *used = get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
             const auto *prior_retry =
-                find_event<RetryEvent>(snapshot.facts, [&](const auto &value) {
-                  return value.decision == body.decision &&
-                         value.invocation == body.invocation;
-                });
+                get.template operator()<RetryEvent>(4,RetainedKind::retry,body.decision.bytes(),body.invocation.bytes());
             if (!prior || used || prior_retry ||
                 body.decision == invocation->decision) {
               return Result<void>::failure({ErrorCode::conflict});
@@ -344,12 +493,9 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
           } else {
             if (prior) {
               const auto *retry =
-                  find_event<RetryEvent>(snapshot.facts, [&](const auto &value) {
-                    return value.attempt == body.attempt &&
-                           value.invocation == body.invocation &&
-                           value.decision == body.decision;
-                  });
-              if (!retry) {
+                  get.template operator()<RetryEvent>(1,RetainedKind::retry,body.attempt.bytes());
+              if (!retry || retry->invocation != body.invocation ||
+                  retry->decision != body.decision) {
                 return Result<void>::failure({ErrorCode::conflict});
               }
             } else if (body.decision != invocation->decision) {
@@ -358,25 +504,17 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
           }
         } else if constexpr (std::is_same_v<T, AdapterReceiptEvent>) {
           const auto *opened =
-              find_event<AttemptOpenEvent>(snapshot.facts, [&](const auto &value) {
-                return value.attempt == body.attempt;
-              });
+              get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
           if (!opened) {
             return Result<void>::failure({ErrorCode::conflict});
           }
         } else if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
                              std::is_same_v<T, AttemptObservationEvent>) {
           const auto *admission =
-              find_event<AttemptAdmissionEvent>(snapshot.facts, [&](const auto &value) {
-                return value.attempt == body.attempt;
-              });
+              get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
           const auto *opened =
-              find_event<AttemptOpenEvent>(snapshot.facts, [&](const auto &value) {
-                return value.attempt == body.attempt;
-              });
-          const auto *observation = find_event<AttemptObservationEvent>(
-              snapshot.facts,
-              [&](const auto &value) { return value.attempt == body.attempt; });
+              get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
+          const auto *observation = get.template operator()<AttemptObservationEvent>(2,RetainedKind::observation,body.attempt.bytes());
           if (!admission ||
               (observation && observation->phase == AttemptPhase::terminal)) {
             return Result<void>::failure({ErrorCode::conflict});
@@ -404,6 +542,7 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
     return validated;
   }
   snapshot.facts.push_back({record, std::move(event), evidence});
+  index_fact(snapshot,snapshot.facts.size()-1);
   if (index) {
     const auto *origin = segment(record.journal);
     if (const auto identity =
@@ -427,13 +566,13 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
                                    std::uint64_t maintenance_end) {
   try {
     ReplayIndex lookup;
-    for (std::size_t i = 0; i < staging.facts.size(); ++i) {
+    if (!query_index_) for (std::size_t i = 0; i < staging.facts.size(); ++i) {
       const auto &fact = staging.facts[i];
       const auto *origin = segment(fact.record.journal);
       if (const auto identity = key(fact.event.body, origin->header().issuer_namespace))
         lookup.facts.emplace(*identity, i);
     }
-    for (const auto &source : staging.sources)
+    if (!query_index_) for (const auto &source : staging.sources)
       lookup.sources.insert({source.journal, source.sequence});
     const auto records = journal.staged_records();
     std::size_t first = 0;
@@ -453,6 +592,7 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
         std::size_t facts;
         std::size_t sources;
         std::uint64_t counter;
+        RecoveryPageRef root;
         bool accepted = false;
         ~BatchRollback() {
           if (accepted)
@@ -471,10 +611,11 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
             snapshot.sources.pop_back();
           }
           snapshot.counter = counter;
+          snapshot.query_root = root;
         }
       } rollback{
           staging,        *this, lookup, staging.facts.size(), staging.sources.size(),
-          staging.counter};
+          staging.counter, staging.query_root};
       for (std::size_t index = first; index < end; ++index) {
         if (records[index].kind == FrameKind::source) {
           const SourceReference reference{records[index].journal,
@@ -489,7 +630,8 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
             return Result<void>::failure(checked.error());
           }
           staging.sources.push_back(records[index]);
-          lookup.sources.insert({records[index].journal, records[index].sequence});
+          index_source(staging,staging.sources.size()-1);
+          if (!query_index_) lookup.sources.insert({records[index].journal, records[index].sequence});
         }
       }
       std::optional<Error> invalid;
@@ -511,9 +653,26 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
           invalid = decoded.error();
           break;
         }
+        if (auto *application = std::get_if<ApplicationRecordEvent>(&decoded.value().body)) {
+          auto reader = journal.payload_reader(records[index]);
+          if (!reader.has_value()) return Result<void>::failure(reader.error());
+          const auto offset = std::size_t{30} + decoded.value().dependencies.size() * 24;
+          const auto size = application->payload.size();
+          if (offset > payload.value().size() || size != payload.value().size() - offset)
+            return Result<void>::failure({ErrorCode::corrupt});
+          application->payload = ImmutableBytes::cold(size,
+            [reader = std::move(reader).value(), offset, size]() {
+              auto bytes = reader();
+              if (!bytes.has_value()) return bytes;
+              if (offset > bytes.value().size() || size != bytes.value().size() - offset)
+                return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+              bytes.value().erase(bytes.value().begin(), bytes.value().begin() + static_cast<std::ptrdiff_t>(offset));
+              return bytes;
+            });
+        }
         const auto applied = apply(staging, std::move(decoded).value(),
                                    {records[index].journal, records[index].sequence},
-                                   RetainedEvidence::recovered_pending, &lookup);
+                                   RetainedEvidence::recovered_pending, query_index_ ? nullptr : &lookup);
         if (!applied.has_value()) {
           if (applied.error().code == ErrorCode::capacity)
             return applied;
@@ -553,6 +712,8 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
       }
     }
     return Result<void>::success();
+  } catch (const Error &error) {
+    return Result<void>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<void>::failure({ErrorCode::allocation});
   }
@@ -703,6 +864,7 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
                                    FrameKind::source, sequence++, current.sequence + 1,
                                    offset + journal_frame_header_size,
                                    static_cast<std::uint32_t>(source.size())});
+      index_source(candidate,candidate.sources.size()-1);
       offset += journal_frame_header_size + source.size();
       drafts.push_back({FrameKind::source, source});
     }
@@ -794,6 +956,8 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
     }
     timing.outcome("success");
     return written;
+  } catch (const Error &error) {
+    return Result<JournalCursor>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<JournalCursor>::failure({ErrorCode::allocation});
   }
@@ -938,6 +1102,7 @@ Result<Submission> RetainedState::submit(const RetainedEvent &event) {
 }
 Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
                                               bool settlement) {
+  try {
   if (const auto *previous = existing(visible(), event);
       previous && previous->event == event) {
     return Result<Submission>::success({true, previous->record, previous->evidence});
@@ -947,7 +1112,6 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
     return Result<Submission>::success(
         {true, previous->record, RetainedEvidence::uncertain});
   }
-  try {
     const auto current = cursor();
     const std::array events{event};
     const auto written = append_impl(current, {}, events, false, settlement);
@@ -956,6 +1120,8 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
     }
     return Result<Submission>::success(
         {false, {current.journal, current.sequence + 1}, RetainedEvidence::live});
+  } catch (const Error &error) {
+    return Result<Submission>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<Submission>::failure({ErrorCode::allocation});
   }
@@ -963,6 +1129,34 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
 Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
   try {
     const auto &snapshot = visible();
+    if (query_index_) {
+      const auto *admission = lookup(snapshot,1,RetainedKind::attempt_admitted,identity.bytes());
+      if (!admission) return Result<AttemptState>::failure({ErrorCode::stale_handle});
+      const auto *opened = lookup(snapshot,1,RetainedKind::attempt_open,identity.bytes());
+      const auto *observed = lookup(snapshot,2,RetainedKind::observation,identity.bytes());
+      const auto *receipt = lookup(snapshot,1,RetainedKind::adapter_receipt,identity.bytes());
+      auto evidence = admission->evidence;
+      const bool uncertain_observation = observed && observed->evidence == RetainedEvidence::uncertain;
+      auto inspected = query_index_->range(snapshot.query_root,ordinal_key(9,identity.bytes(),0),
+          snapshot.facts.size(),[&](RecoveryIndexEntry entry) -> Result<bool> {
+        if (entry.key[0] != std::byte{9} ||
+            !std::equal(identity.bytes().begin(),identity.bytes().end(),entry.key.begin()+2))
+          return Result<bool>::success(false);
+        if (entry.value >= snapshot.facts.size()) return Result<bool>::failure({ErrorCode::corrupt});
+        const auto &related = snapshot.facts[static_cast<std::size_t>(entry.value)];
+        if (related.evidence == RetainedEvidence::uncertain ||
+            (evidence == RetainedEvidence::live && related.evidence != RetainedEvidence::live))
+          evidence = related.evidence;
+        return Result<bool>::success(true);
+      });
+      if (!inspected.has_value()) return Result<AttemptState>::failure(inspected.error());
+      const auto *observation = observed ? std::get_if<AttemptObservationEvent>(&observed->event.body) : nullptr;
+      const bool terminal = observation && !uncertain_observation && observation->phase == AttemptPhase::terminal;
+      return Result<AttemptState>::success({std::get<AttemptAdmissionEvent>(admission->event.body),
+          opened != nullptr, observation ? std::optional<AttemptObservationEvent>{*observation} : std::nullopt,
+          receipt ? std::optional<AdapterReceiptEvent>{std::get<AdapterReceiptEvent>(receipt->event.body)} : std::nullopt,
+          evidence, (!reconciled_ || recording_failed_ || evidence == RetainedEvidence::uncertain) && !terminal});
+    }
     for (const auto &fact : snapshot.facts) {
       const auto *admitted = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
       if (!admitted || admitted->attempt != identity) {
@@ -1012,6 +1206,8 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
                !terminal});
     }
     return Result<AttemptState>::failure({ErrorCode::stale_handle});
+  } catch (const Error &error) {
+    return Result<AttemptState>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<AttemptState>::failure({ErrorCode::allocation});
   }
@@ -1031,10 +1227,11 @@ Result<DispatchReport> RetainedState::dispatch(OperationAttemptId identity,
     return Result<DispatchReport>::success(
         {false, Result<void>::success(), Result<void>::success()});
   }
-  const auto *checkpoint =
-      find_event<DecisionEvent>(committed_.facts, [&](const auto &value) {
-        return value.decision == owned.admission.decision;
-      });
+  const DecisionEvent *checkpoint = nullptr;
+  try {
+    const auto *fact = lookup(committed_,1,RetainedKind::decision,owned.admission.decision.bytes());
+    checkpoint = fact ? std::get_if<DecisionEvent>(&fact->event.body) : nullptr;
+  } catch (const Error &error) { return Result<DispatchReport>::failure(error); }
   if (!checkpoint) {
     return Result<DispatchReport>::failure({ErrorCode::corrupt});
   }
@@ -1062,6 +1259,25 @@ Result<DispatchReport> RetainedState::dispatch(OperationAttemptId identity,
                             : Result<void>::failure(recorded.error())});
 }
 Result<std::vector<std::byte>> RetainedState::source(SourceReference reference) {
+  if (query_index_) {
+    const auto k = ordinal_key(5,reference.journal.bytes(),reference.sequence);
+    auto found = query_index_->find(committed_.query_root,k);
+    if (!found.has_value()) return Result<std::vector<std::byte>>::failure(found.error());
+    if (found.value()) {
+      if (*found.value() >= committed_.sources.size())
+        return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+      const auto &record = committed_.sources[static_cast<std::size_t>(*found.value())];
+      if (record.journal != reference.journal || record.sequence != reference.sequence)
+        return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+      auto *origin = segment(reference.journal);
+      return origin ? origin->read_payload(record)
+                    : Result<std::vector<std::byte>>::failure({ErrorCode::stale_handle});
+    }
+    auto pending = query_index_->find(visible().query_root,k);
+    if (!pending.has_value()) return Result<std::vector<std::byte>>::failure(pending.error());
+    return Result<std::vector<std::byte>>::failure(
+        {pending.value() ? ErrorCode::audit_unavailable : ErrorCode::stale_handle});
+  }
   for (const auto &record : committed_.sources) {
     if (record.journal == reference.journal && record.sequence == reference.sequence) {
       auto *origin = segment(reference.journal);

@@ -14,6 +14,7 @@ inline void unwrap(Result<void> result) {
   if (!result.has_value())
     throw result.error();
 }
+std::string read_text(const ImmutableBytes &bytes);
 std::string hex_identity(const IdentityBytes &bytes);
 const Json &field(const Json &value, std::string_view name);
 const std::string &string_field(const Json &value, std::string_view name);
@@ -67,8 +68,19 @@ private:
   AuditLog &log_;
   std::string head_;
   Json::Array entries_;
-  std::map<std::string, Json> originals_;
-  Json::Array captured_;
+  struct Original {
+    ImmutableBytes payload;
+    std::size_t index = 0;
+    bool packet = false;
+    std::string id;
+    Original(const Json &entry);
+    Original(ImmutableBytes source, std::size_t ordinal, std::string identity)
+        : payload(std::move(source)), index(ordinal), packet(true), id(std::move(identity)) {}
+    Json entry() const;
+  };
+  std::map<std::string, Original> originals_;
+  std::vector<Original> captured_;
+  Json::Array captured_entries() const;
   struct HistoryRecord {
     ImmutableBytes payload;
     std::string revision;

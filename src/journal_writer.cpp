@@ -101,11 +101,17 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
     return allocated;
   }
   auto journal = std::move(allocated).value();
+  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   auto opened = directory.create_exclusive(name);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  journal->file_ = std::move(opened).value();
+  try { journal->file_ = std::move(opened).value(); }
+  catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   const auto locked = journal->file_->lock_writer();
   if (!locked.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(locked.error());
@@ -141,17 +147,24 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
                                                            std::string_view name,
                                                            JournalHeader expected,
                                                            JournalCapacity capacity,
-                                                           SyncStrength strength) {
+                                                           SyncStrength strength,
+                                                           bool use_scan_checkpoint) {
   auto allocated = allocate(directory, expected, capacity, strength);
   if (!allocated.has_value()) {
     return allocated;
   }
   auto journal = std::move(allocated).value();
+  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   auto opened = directory.open_existing(name, FileAccess::read_write);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  journal->file_ = std::move(opened).value();
+  try { journal->file_ = std::move(opened).value(); }
+  catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   const auto locked = journal->file_->lock_writer();
   if (!locked.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(locked.error());
@@ -182,6 +195,23 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
   }
   if (decoded.value() != expected) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::conflict});
+  }
+  if (use_scan_checkpoint) {
+    auto a = journal->load_scan_checkpoint(0);
+    auto b = journal->load_scan_checkpoint(1);
+    if (!a.has_value() || !b.has_value())
+      return Result<std::unique_ptr<FramedJournal>>::failure(
+          !a.has_value() ? a.error() : b.error());
+    auto selected = std::move(a).value();
+    auto other = std::move(b).value();
+    if (other && (!selected || other->cursor.sequence > selected->cursor.sequence))
+      selected = std::move(other);
+    if (selected) {
+      journal->cursor_ = selected->cursor;
+      journal->staged_.insert(journal->staged_.end(), selected->records.begin(),
+                              selected->records.end());
+      journal->used_scan_checkpoint_ = true;
+    }
   }
   const auto scanned = journal->scan();
   if (!scanned.has_value()) {
@@ -332,8 +362,15 @@ Result<JournalCursor> FramedJournal::append(std::span<const JournalDraft> drafts
 
 Result<void> FramedJournal::scan(bool propagate_read_errors) {
   try {
-    auto offset = static_cast<std::uint64_t>(journal_header_size);
-    std::uint64_t expected_sequence = 1;
+    auto offset = cursor_.end_offset;
+    if (cursor_.sequence == UINT64_MAX) {
+      if (offset != recovery_.available_end) {
+        recovery_.problem = Error{ErrorCode::overflow};
+        recovery_.diagnostic_offset = offset;
+      }
+      return Result<void>::success();
+    }
+    std::uint64_t expected_sequence = cursor_.sequence + 1;
     std::uint64_t batch_offset = offset;
     std::size_t batch_bytes = 0;
     std::uint32_t batch_checksum = 0;
@@ -655,6 +692,65 @@ FramedJournal::read_payload(const PhysicalJournalRecord &record) {
     return Result<std::vector<std::byte>>::success(std::move(bytes));
   } catch (const std::bad_alloc &) {
     return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
+  }
+}
+
+Result<FramedJournal::PayloadReader>
+FramedJournal::payload_reader(const PhysicalJournalRecord &record) {
+  const auto contains = [&](const auto &records) {
+    const auto found = std::lower_bound(records.begin(), records.end(), record.sequence,
+      [](const auto &candidate, std::uint64_t sequence) { return candidate.sequence < sequence; });
+    return found != records.end() && *found == record;
+  };
+  if (in_restage_ || (!contains(records_) && !contains(staged_)))
+    return Result<PayloadReader>::failure({ErrorCode::stale_handle});
+  if (record.environment != header_.environment || record.journal != header_.journal ||
+      record.payload_offset < journal_header_size + journal_frame_header_size ||
+      record.payload_size > header_.limits.max_payload)
+    return Result<PayloadReader>::failure({ErrorCode::corrupt});
+  try {
+    return Result<PayloadReader>::success([file = file_, header = header_, record]() {
+      const auto exact = [&](std::uint64_t offset, MutableByteView output) -> Result<void> {
+        std::size_t done = 0;
+        unsigned interruptions = 0;
+        while (done < output.size()) {
+          if (offset > UINT64_MAX - done)
+            return Result<void>::failure({ErrorCode::invalid_range});
+          auto read = file->read_at(offset + done, output.subspan(done));
+          if (!read.has_value()) {
+            if (read.error().code == ErrorCode::interrupted && ++interruptions < 8) continue;
+            return Result<void>::failure(read.error());
+          }
+          if (read.value() == 0 || read.value() > output.size() - done)
+            return Result<void>::failure({ErrorCode::corrupt});
+          done += read.value();
+        }
+        return Result<void>::success();
+      };
+      try {
+        std::array<std::byte, journal_header_size> root{};
+        auto got = exact(0, root);
+        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
+        auto identity = decode_journal_header(root);
+        if (!identity.has_value() || identity.value() != header)
+          return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+        std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);
+        got = exact(record.payload_offset - journal_frame_header_size, bytes);
+        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
+        auto frame = decode_journal_frame(bytes, header.limits);
+        if (!frame.has_value() || frame.value().kind != record.kind ||
+            frame.value().sequence != record.sequence || frame.value().batch_first != record.batch_first ||
+            frame.value().payload.size() != record.payload_size ||
+            get_little(ByteView{bytes}.subspan(28, 4)) != record.frame_checksum)
+          return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+        bytes.erase(bytes.begin(), bytes.begin() + journal_frame_header_size);
+        return Result<std::vector<std::byte>>::success(std::move(bytes));
+      } catch (const std::bad_alloc &) {
+        return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
+      }
+    });
+  } catch (const std::bad_alloc &) {
+    return Result<PayloadReader>::failure({ErrorCode::allocation});
   }
 }
 

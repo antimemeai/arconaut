@@ -207,13 +207,41 @@ AttemptAdmissionEvent admission(unsigned char attempt = 11,
   return {id<OperationAttemptId>(attempt), id<InvocationId>(9),
           id<DecisionId>(checkpoint), original};
 }
+void indexed_errors_close_queries() {
+  auto storage = std::make_shared<StorageState>();
+  auto state = require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
+                                            "journal", header(), capacity));
+  auto index_storage = std::make_shared<StorageState>();
+  require(state->enable_indexed_queries(std::make_unique<MemoryFile>(index_storage),4*1024*1024));
+  const RetainedEvent event{{}, decision()};
+  require(state->submit(event));
+  const auto before = state->cursor();
+  const auto bytes = storage->bytes;
+  // Selected-page corruption is a query error, never absence or a new submission.
+  index_storage->bytes.back() ^= std::byte{1};
+  error_is(state->submit(event),ErrorCode::corrupt);
+  error_is(state->fact(0),ErrorCode::corrupt);
+  CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
+  index_storage->bytes.back() ^= std::byte{1};
+  CHECK(require(state->submit(event)).existing);
+  index_storage->fail_after = index_storage->writes;
+  error_is(state->submit({{}, invocation()}),ErrorCode::io);
+  CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
+  CHECK(require(state->submit(event)).existing); // old root survives failed derivation
+}
+bool indexed_mode = false;
+std::unique_ptr<RetainedState> attach(std::unique_ptr<RetainedState> state) {
+  if (indexed_mode) require(state->enable_indexed_queries(
+      std::make_unique<MemoryFile>(std::make_shared<StorageState>()),256*1024*1024));
+  return state;
+}
 std::unique_ptr<RetainedState> create(const std::shared_ptr<StorageState> &storage) {
-  return require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
-                                       "journal", header(), capacity));
+  return attach(require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
+                                       "journal", header(), capacity)));
 }
 std::unique_ptr<RetainedState> open(const std::shared_ptr<StorageState> &storage) {
-  return require(RetainedState::open(std::make_unique<MemoryDirectory>(storage),
-                                     "journal", header(), capacity));
+  return attach(require(RetainedState::open(std::make_unique<MemoryDirectory>(storage),
+                                     "journal", header(), capacity)));
 }
 void prepare(RetainedState &state) {
   require(state.submit({{}, decision()}));
@@ -402,23 +430,18 @@ void replay_avoids_prefix_payload_copies() {
   CHECK(reopened->committed_facts().size() == 64);
   Custody custody;
   require(reopened->reconcile(custody));
-  const auto *prefix =
-      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
-          .payload.data();
+  const auto prefix =
+      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body).payload;
+  CHECK(prefix.is_cold() && prefix.resident_bytes() == 0);
   allocated_bytes.store(0);
   measure_allocation.store(true);
   for (int i = 0; i < 32; ++i)
     require(reopened->issue<ParticipantId>());
   measure_allocation.store(false);
-  std::fprintf(stderr, "forward allocations %zu for %zu journal bytes\n",
-               allocated_bytes.load(), storage->bytes.size());
-  CHECK(std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
-            .payload.data() == prefix);
-  // The alias oracle establishes sharing of immutable bytes; total allocation
-  // also includes metadata and this fixture's in-memory journal writes.
   const auto copy =
       std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body);
-  CHECK(copy.payload.data() == prefix);
+  CHECK(copy.payload.is_cold() && copy.payload.resident_bytes() == 0);
+  CHECK(copy.payload == prefix);
   for (std::size_t i = 0; i < 64; ++i) {
     const auto &fact =
         std::get<ApplicationRecordEvent>(reopened->committed_facts()[i].event.body);
@@ -1524,13 +1547,15 @@ void protected_settlement_faults() {
   }
 }
 } // namespace
-int main() {
+int main(int argc, char **) {
+  indexed_mode = argc > 1;
   try {
+    indexed_errors_close_queries();
     protected_settlement_faults();
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();
-    replay_avoids_prefix_payload_copies();
+    if (!indexed_mode) replay_avoids_prefix_payload_copies();
     sources_and_invalid_replay();
     pending_source_inspection();
     pending_proposal_owns_originals();

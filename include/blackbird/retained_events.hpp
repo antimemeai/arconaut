@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <functional>
 #include <utility>
 
 namespace blackbird {
@@ -15,8 +16,9 @@ using ComplaintId = Id<ComplaintTag>;
 struct ApplicationRecordTag;
 using ApplicationRecordId = Id<ApplicationRecordTag>;
 enum class ApplicationChannel : std::uint16_t { log = 1, context = 2, program = 3 };
-// Retained application payloads never change after construction. A candidate
-// snapshot shares their bytes; it owns only its new facts and small metadata.
+// Immutable application bytes are either owned working bytes or a checked disk
+// reader with shared storage lifetime. Reading returns an owned buffer and never
+// installs a historical cache. Eager accessors deliberately reject cold bytes.
 class ImmutableBytes {
 public:
   ImmutableBytes() = default;
@@ -27,22 +29,53 @@ public:
   template <typename Iterator>
   ImmutableBytes(Iterator first, Iterator last)
       : ImmutableBytes(std::vector<std::byte>{first, last}) {}
-  const std::byte *data() const noexcept { return value().data(); }
-  std::size_t size() const noexcept { return value().size(); }
-  bool empty() const noexcept { return value().empty(); }
-  const std::byte &operator[](std::size_t i) const noexcept { return value()[i]; }
-  auto begin() const noexcept { return value().begin(); }
-  auto end() const noexcept { return value().end(); }
+  using Reader = std::function<Result<std::vector<std::byte>>() >;
+  static ImmutableBytes cold(std::size_t size, Reader reader) {
+    ImmutableBytes result;
+    result.size_ = size;
+    result.reader_ = std::make_shared<const Reader>(std::move(reader));
+    return result;
+  }
+  bool is_cold() const noexcept { return bool(reader_); }
+  std::size_t resident_bytes() const noexcept { return bytes_ ? bytes_->size() : 0; }
+  Result<std::vector<std::byte>> read() const {
+    try {
+      if (!reader_)
+        return Result<std::vector<std::byte>>::success(value());
+      auto result = (*reader_)();
+      if (result.has_value() && result.value().size() != size_)
+        return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+      return result;
+    } catch (const std::bad_alloc &) {
+      return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
+    }
+  }
+  const std::byte *data() const { return value().data(); }
+  std::size_t size() const noexcept { return reader_ ? size_ : (bytes_ ? bytes_->size() : 0); }
+  bool empty() const noexcept { return size() == 0; }
+  const std::byte &operator[](std::size_t i) const { return value()[i]; }
+  auto begin() const { return value().begin(); }
+  auto end() const { return value().end(); }
   friend bool operator==(const ImmutableBytes &a, const ImmutableBytes &b) {
-    return a.bytes_ == b.bytes_ || a.value() == b.value();
+    if (a.size() != b.size()) return false;
+    if (!a.reader_ && !b.reader_) return a.bytes_ == b.bytes_ || a.value() == b.value();
+    auto left = a.read();
+    if (!left.has_value()) throw left.error();
+    auto right = b.read();
+    if (!right.has_value()) throw right.error();
+    return left.value() == right.value();
   }
 
 private:
-  const std::vector<std::byte> &value() const noexcept {
+  const std::vector<std::byte> &value() const {
+    // An eager accessor must never turn a historical visit into a pinned cache.
+    if (reader_) throw Error{ErrorCode::stale_handle};
     static const std::vector<std::byte> empty;
     return bytes_ ? *bytes_ : empty;
   }
   std::shared_ptr<const std::vector<std::byte>> bytes_;
+  std::shared_ptr<const Reader> reader_;
+  std::size_t size_ = 0;
 };
 struct ApplicationRecordEvent {
   ApplicationRecordId identity;

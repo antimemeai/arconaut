@@ -3,6 +3,8 @@
 #include "blackbird/journal.hpp"
 #include "blackbird/journal_storage.hpp"
 #include <algorithm>
+#include <string>
+#include <functional>
 
 namespace blackbird {
 
@@ -87,7 +89,14 @@ public:
          JournalCapacity capacity, SyncStrength strength = SyncStrength::full);
   static Result<std::unique_ptr<FramedJournal>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader expected,
-       JournalCapacity capacity, SyncStrength strength = SyncStrength::full);
+       JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
+       bool use_scan_checkpoint = false);
+  // Optional physical hint only: no semantic snapshot or admission permission.
+  Result<void> publish_scan_checkpoint();
+  using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
+  Result<PayloadReader> payload_reader(const PhysicalJournalRecord &record);
+  bool used_scan_checkpoint() const noexcept { return used_scan_checkpoint_; }
+  ~FramedJournal() { if (file_) file_->release_writer(); }
   FramedJournal(const FramedJournal &) = delete;
   FramedJournal &operator=(const FramedJournal &) = delete;
   Result<JournalCursor> append(std::span<const JournalDraft> drafts);
@@ -128,14 +137,23 @@ private:
                                                          JournalHeader header,
                                                          JournalCapacity capacity,
                                                          SyncStrength strength);
+  struct ScanCheckpoint {
+    JournalCursor cursor;
+    std::vector<PhysicalJournalRecord> records;
+    unsigned slot;
+  };
+  Result<std::optional<ScanCheckpoint>> load_scan_checkpoint(unsigned slot);
   Result<void> scan(bool propagate_read_errors = false);
   Result<void> read_exact(std::uint64_t offset, MutableByteView output);
   Result<void> write_exact(std::uint64_t offset, ByteView input);
+  std::string name_;
+  bool used_scan_checkpoint_ = false;
+  std::uint64_t checkpoint_attempt_ = 0;
   JournalHeader header_;
   JournalCapacity capacity_;
   SyncStrength strength_;
   JournalDirectory &directory_;
-  std::unique_ptr<JournalFile> file_;
+  std::shared_ptr<JournalFile> file_;
   std::vector<PhysicalJournalRecord> records_;
   std::vector<PhysicalJournalRecord> staged_;
   std::vector<PhysicalJournalRecord> pending_;

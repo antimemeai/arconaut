@@ -805,8 +805,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
     if (!record || record->channel != ApplicationChannel::program)
       continue;
     auto packet = unwrap(parse_json(
-        std::string_view{reinterpret_cast<const char *>(record->payload.data()),
-                         record->payload.size()}));
+        read_text(record->payload)));
     const auto *label = packet.find("label");
     if (label && label->string() == "workflow-config-effective-v1") {
       if (const auto *config = packet.find("program_config")) {
@@ -1555,8 +1554,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
         if (!record || record->channel != ApplicationChannel::log)
           continue;
         const auto packet = unwrap(parse_json(
-            std::string_view{reinterpret_cast<const char *>(record->payload.data()),
-                             record->payload.size()}));
+            read_text(record->payload)));
         const auto &metadata = field(packet, "metadata");
         const auto *old_attempt = metadata.find("attempt");
         if (!old_attempt || old_attempt->string() != reference)

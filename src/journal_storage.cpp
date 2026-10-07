@@ -125,6 +125,11 @@ Result<void> NativeJournalFile::lock_writer() {
   return Result<void>::success();
 }
 
+void NativeJournalFile::release_writer() noexcept {
+  // Keep the selected descriptor alive for readers, but not the writer lease.
+  while (::flock(descriptor_, LOCK_UN) == -1 && errno == EINTR) {}
+}
+
 Result<NativeJournalDirectory> NativeJournalDirectory::open(std::string_view path) {
   if (path.empty() || path.find('\0') != std::string_view::npos) {
     return Result<NativeJournalDirectory>::failure({ErrorCode::invalid_range});
