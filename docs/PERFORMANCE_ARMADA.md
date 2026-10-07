@@ -9,14 +9,16 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **one active native BB**, durable-recovery-2026-10-07,
-following docs/DURABLE_STATE_PLAN.md under the operator's explicit launch.
-Seed fef64c1 combines native cold-history d32a764 with current master/plan.
-It starts S1 indexed queries and proceeds through projection/checkpoint/tail
-as dependencies permit. Actual integrated recovery is the milestone; smaller
-prerequisites leave progress/continuation, never the completion marker.
-Normal installed runtime remains DEBUGOFF; this development run explicitly
-captures native timings and OS resources. Earlier results below are historical.
+Current status: **zero active native BBs**. The durable-recovery-2026-10-07
+period returned useful partial S1 work at pushed87f786f; S1 is unfinished and
+S2/S3/S4 have not begun. Root reconciled the stopped identities and released its
+slot and board reservation. No completion marker, integration or primary binary
+change. Exact continuation is preserved in
+[papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md](../papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md).
+The next edit changes index RAM ordinals into checked audit locators, followed by
+native consumer migration and bounded overlay. The same recovery milestone remains
+open; a smaller prerequisite is not success. Normal installed runtime remains
+DEBUGOFF. Historical launches and measurements below are retained as observations.
 
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |

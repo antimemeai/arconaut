@@ -4562,3 +4562,34 @@ supervisor62856 running, provider active,15resource samples observed. Persisted
 OS CPU/RSS/I/O/stacks and explicit per-process DEBUG timings; ordinary runtime
 unchanged/OFF. Launch/run/mission/spec files retained privately in context/.
 Board adopted the authorized run while general admission remains paused.
+
+## 2026-10-07 — recovery continuation and native decision models
+
+Recovery returned unfinished S1 at pushed87f786f. All342 sampled identities absent
+via Darwin libproc; candidate settlement/checkpoint/release and board release done.
+No active autodevs, completion marker, allowance reset, integration or installed
+binary change. S2/S3/S4 not started. Preserved actor RECOVERY-PROGRESS.md unchanged;
+next exact edit replaces index uint64 RAM ordinals with checked audit locators,
+then selected authoritative reads, native consumer migration and bounded overlay.
+One actor review attempt failed Kimi403; no independent findings. Historical
+fixture numbers are not startup or suffix-recovery measurements.
+
+Operator asks for native decision-model interfaces, Jev first. Root implemented
+isolated candidate/native-jev-2026-10-07 based20d3006 in reusedslot1 within a25minute
+period; source ccc2608 committed/pushed. Generic model decision_model, Lua
+blackbird.decide and operator /decision route through native C++/curl. Lazy host
+credentials through stdin, exact Choice/Score/Noul batch validation, admitted
+audited effect and observed response capture, cancellation and bounded errors.
+No new library/Python runtime, startup secret I/O, hidden retry/cache or approval
+policy. Read current live TypeSafe API/primitives/models and owned workspace/native
+transport reference. Written subplan and report live on the candidate branch.
+
+One independent native_jev_review returned three findings: failed-response capture,
+quiet stderr polling latency and Score legend validation. Fixed and directly
+rechecked. Affected coding/tools/terminal passed; decision_models1.77s passes after
+fixing the test's temporary-owner lifetime. Focused clang-tidy passed after removing
+unnecessary string parameter copy; Release DEBUGOFF build<=j2. One native live
+batch from jev-1.13.0 returned all three question types:385input/63output tokens,
+288234us adapter elapsed. This is one observation, not calibration or p95 evidence.
+Private audit/results retained. Candidate awaits explicit master integration;
+primary runtime unchanged. Tracking arconaut-1ma.
