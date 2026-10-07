@@ -91,3 +91,26 @@ Upstream performance.md records two heavily loaded-host runs with ranking revers
 separate server/client RSS and unmeasured GUI boundaries. It supports designing our
 measurement, not advertising universal speed. Initial external process use avoids
 turning each Arco installation into a terminal toolkit distribution.
+
+## Supported external tool: operator decision
+
+Operator explicitly selects phux as officially supported external tool, no additional
+core machinery. Install verified official stable binaries; add only a shell launch
+convenience plus operational docs. C++/Lua core unchanged, native lifecycle emission
+not part of this first support increment. Use a private disposable phux profile for
+one real Arco TUI and shell. Direct checks: snapshot keeps grid unchanged, detach/
+reattach preserves same process/actor, explicit input+submit works, actual RRC returns
+to retained conversation in same terminal, /quit cleans test session. No provider
+reviews, repeated assurance or server remote/service install.25min whole pilot bound;
+findings before expansion, no third certification. Keep operator/campaign sessions
+separate and never kill default shared service during test cleanup.
+
+Delivery: official0.52.0 installer verified release checksum, native binaries in
+~/.local/bin. scripts/arco-phux uses atomic JSON create followed by attach after
+first naked-new cold path seeded a shell instead of requested command. No core edit.
+Actual private Arco model turn, stable52x22 snapshot, same-process detach/reattach,
+native8467->9391 RRC with same wrapper8463/session-info/pane passed. Bare /restart
+oracle corrected to documented /restart NOTE. Optional shell run timed out10s;
+no completion claim or third loop. Private server shut down explicitly; existing
+operator/campaign sessions untouched. Operational support/docs delivered; lifecycle
+adapter/fleet remote projection remain separately scoped work.

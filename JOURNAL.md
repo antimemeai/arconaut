@@ -3696,3 +3696,17 @@ TUI lives in phux pane, compact lifecycle projection, shared terminal orchestrat
 Arcoboard consumption; shared server unaffected by individual refit. Arco audit/task
 semantics remain distinct. No install/dependency adoption or empirical phux claim.
 Study papers/2026-10-07-phux-multiplexing.md and QUARANTINE restoration retained.
+
+## Official external phux support (2026-10-07)
+
+Operator selects officially supported external tool, no additional core. Installed
+official stable0.52.0 with upstream checksum verification. Thin scripts/arco-phux
+literal-argument/cwd launcher and docs/PHUX.md/README support. First naked-new cold
+launch seeded default shell; source study identified preseed path, replaced launcher
+with atomic new--json then attach. Actual fresh Arco TUI/model turn, geometry-safe
+snapshots, same-process detach/reattach, RRC native8467->9391 keeping wrapper8463,
+same session-info and retained output. Bare /restart check corrected to NOTE syntax.
+Separate shell run10s timed out, retained unresolved rather than broad hardening.
+Private profile/socket/server stopped, operator default and dev loop untouched.
+No C++/Lua core dependency or native lifecycle projection delivered. Source grounding
+and actual support limits in papers/docs, no phux runtime qualification inference.
