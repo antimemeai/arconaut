@@ -17,7 +17,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "BLACKBIRD_INSTRUMENTATION": "none"
+        "BLACKBIRD_INSTRUMENTATION": "none",
+        "BLACKBIRD_DEBUG": "ON"
       }
     },
     {
@@ -25,7 +26,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "BLACKBIRD_INSTRUMENTATION": "none"
+        "BLACKBIRD_INSTRUMENTATION": "none",
+        "BLACKBIRD_DEBUG": "OFF"
       }
     },
     {
@@ -33,7 +35,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "BLACKBIRD_INSTRUMENTATION": "address"
+        "BLACKBIRD_INSTRUMENTATION": "address",
+        "BLACKBIRD_DEBUG": "ON"
       }
     },
     {
@@ -41,7 +44,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "BLACKBIRD_INSTRUMENTATION": "thread"
+        "BLACKBIRD_INSTRUMENTATION": "thread",
+        "BLACKBIRD_DEBUG": "ON"
       }
     },
     {
@@ -49,7 +53,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "BLACKBIRD_INSTRUMENTATION": "fuzz"
+        "BLACKBIRD_INSTRUMENTATION": "fuzz",
+        "BLACKBIRD_DEBUG": "ON"
       }
     },
     {
@@ -58,7 +63,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "BLACKBIRD_INSTRUMENTATION": "none",
-        "BLACKBIRD_PROFILING": "ON"
+        "BLACKBIRD_PROFILING": "ON",
+        "BLACKBIRD_DEBUG": "ON"
       }
     }
   ],

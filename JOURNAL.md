@@ -4323,3 +4323,27 @@ rechecks performed. Four successful segments ended before deadline without
 final marker/commit. Root preserves useful source, actual review and aggregate
 results in papers/2026-10-07-p1-measurements.md; no target/activation claim.
 Candidate remains separate from master; raw records retained privately.
+
+## 2026-10-07 — Integrate Beads and compile debug machinery out normally
+
+Operator authorizes native Beads merge and instrumentation interfaces, clarifying
+profilingON is not steady state and requests debugbuild bool defaultfalse. Merged
+47bb9be and94bc2d4 onto master; resolved independent CMake target additions and
+retained both journal histories. BLACKBIRD_DEBUG defaultsOFF, normal release
+preset explicitlyOFF; debug/sanitizer/fuzz/profile presets explicitlyON. Timing
+implementation, sink/TLS/buffers, worker binding and profiling/fault/fuzz fixture
+targets excludedOFF. Empty inline hook facade remains source-level only. Profiler
+flags/sanitizers requireON; required audit and correctness remain normal. ON
+recording still requires explicit BLACKBIRD_LOCAL_TIMING. External collectors
+remain development-only launches, not startup behavior.
+
+One focused review found old unconditional instrumentation_fault/bytes_fuzz_probe
+targets; gated them. OFF/ON builds passed; OFF compilegraph/symbols have no timing
+implementation and env activation createsnooutput; freshdefaultOFF and invalid
+profilingOFF config rejected. ON deterministic timing oracle and explicit recording
+passed. Beads/tools/coding/context/retained checks pass. Terminal directcheck found
+Beads insertion displaced existing menu ordering; appended command instead and
+affected recheck passes. Native installedCLI readonly ready/show smoke passed in
+private session; no operator task mutations. No repeated tribunal/full-suite pass.
+Beads runtime configuration remains process-local. Primary releaseUI publication
+uses normalOFF binary; active operator process not killed or silently refitted.

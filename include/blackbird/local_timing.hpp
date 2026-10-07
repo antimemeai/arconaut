@@ -1,4 +1,8 @@
 #pragma once
+#ifndef BLACKBIRD_DEBUG
+#define BLACKBIRD_DEBUG 0
+#endif
+#if BLACKBIRD_DEBUG
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -68,3 +72,20 @@ private:
   const char *path_{};
 };
 } // namespace blackbird
+#else
+#include <cstdint>
+#include <string_view>
+namespace blackbird {
+// Normal builds contain no timing state, clocks, sink, TLS or output path.
+class LocalSpan {
+public:
+  constexpr LocalSpan(const char *, const char *, bool = true) noexcept {}
+  constexpr bool enabled() const noexcept { return false; }
+  constexpr void observe(std::uint64_t, std::uint64_t, std::uint64_t = 0) noexcept {}
+  constexpr void linkage(std::string_view, std::string_view = {}) noexcept {}
+  constexpr void outcome(const char *) noexcept {}
+  constexpr void finish() noexcept {}
+};
+class LocalTimingSession {};
+} // namespace blackbird
+#endif

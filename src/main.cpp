@@ -51,7 +51,9 @@ std::string safe(std::string_view text) {
 }
 } // namespace
 int main(int argc, char **argv) {
+#if BLACKBIRD_DEBUG
   blackbird::LocalTimingSession local_timing;
+#endif
   try {
     const char *home = std::getenv("HOME");
     if (home == nullptr)

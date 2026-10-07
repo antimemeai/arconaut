@@ -39,7 +39,6 @@ struct ChatCommand {
 };
 constexpr std::array commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
-    ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
     ChatCommand{"/commands", "",
                 "Search command palette; Ctrl-Space or Ctrl-T (TUI only)", "Chat"},
@@ -70,7 +69,8 @@ constexpr std::array commands{
     ChatCommand{"/lua", "CODE", "Run a Lua workflow", "Programs"},
     ChatCommand{"/workflow", "FILE", "Select the turn workflow", "Programs"},
     ChatCommand{"/restart", "NOTE", "Request native restart; build replacement first",
-                "Programs"}};
+                "Programs"},
+    ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};
 
 std::string search_text(std::string_view text) {
   std::string out{text};
@@ -1110,12 +1110,20 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     activity = "Starting";
     // Turns are serialized: the previous worker is joined above; engine access
     // on the UI thread is idle-only. Borrow the process sink for this turn.
+#if BLACKBIRD_DEBUG
     auto *const timing = local_timing_sink;
-    worker = std::jthread([&, timing, prompt = std::move(prompt)] {
+#endif
+    worker = std::jthread([&,
+#if BLACKBIRD_DEBUG
+                          timing,
+#endif
+                          prompt = std::move(prompt)] {
+#if BLACKBIRD_DEBUG
       local_timing_sink = timing;
       struct UnbindTiming {
         ~UnbindTiming() { local_timing_sink = nullptr; }
       } unbind_timing;
+#endif
       try {
         perform(prompt);
       } catch (const std::exception &e) {
