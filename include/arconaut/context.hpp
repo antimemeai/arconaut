@@ -29,6 +29,9 @@ public:
   std::string record(ApplicationChannel channel, const Json &packet);
   void record(ApplicationRecordId identity, ApplicationChannel channel,
               const Json &packet);
+  // Atomically append managed context plus a native successful-boundary program record.
+  void record_boundary(ApplicationRecordId identity, const Json &context_packet,
+                       const Json &program_packet);
   std::string original(OriginalCapture capture);
   Json inspect(const Json &query);
   RetainedState &root() noexcept { return root_; }
@@ -58,7 +61,7 @@ public:
                                       const Json &proposal) const;
   Json pending_proposal() const;
   void begin_workflow();
-  Json finish_workflow(bool success);
+  Json finish_workflow(bool success, const Json &boundary_program = Json{});
 
 private:
   AuditLog &log_;
@@ -74,7 +77,7 @@ private:
   };
   std::optional<Pending> pending_;
   Json publish_managed(const Json &proposal, const Json::Array &basis,
-                       std::string_view stage);
+                       std::string_view stage, const Json &boundary_program = Json{});
   Json reject_managed(const Json &proposal, std::string_view reason);
   bool valid_entries(const Json &entries) const;
   void append_impl(Json::Array items, std::string_view origin, const Json *lineage);

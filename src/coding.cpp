@@ -439,11 +439,108 @@ struct CodingEngine::Runtime {
     }
   }
 };
+namespace {
+Json default_context_budget() {
+  return Json::object(
+      {{"enabled", Json{false}},
+       {"trigger_bytes", Json{JsonNumber{"262144"}}},
+       {"target_bytes", Json{JsonNumber{"131072"}}},
+       {"reason", Json{"opt-in; byte policy is not a provider token limit"}}});
+}
+std::size_t budget_number(const Json &value, std::string_view key) {
+  const auto &text = field(value, key).number().text;
+  std::size_t n = 0;
+  auto parsed = std::from_chars(text.data(), text.data() + text.size(), n);
+  if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() || n == 0 ||
+      n > 64 * 1024 * 1024)
+    throw Error{ErrorCode::invalid_range};
+  return n;
+}
+void validate_context_budget(const Json &value) {
+  if (!std::holds_alternative<Json::Object>(value.value()))
+    throw Error{ErrorCode::invalid_range};
+  for (const auto &[key, v] : value.object()) {
+    (void)v;
+    if (key != "enabled" && key != "trigger_bytes" && key != "target_bytes" &&
+        key != "reason")
+      throw Error{ErrorCode::invalid_range};
+  }
+  if (!std::holds_alternative<bool>(field(value, "enabled").value()) ||
+      budget_number(value, "target_bytes") >= budget_number(value, "trigger_bytes") ||
+      string_field(value, "reason").empty() ||
+      string_field(value, "reason").size() > 4096)
+    throw Error{ErrorCode::invalid_range};
+}
+} // namespace
+Json CodingEngine::budget_view(std::string_view model, std::size_t input_bytes) const {
+  const bool triggered = std::get<bool>(field(budget_, "enabled").value()) &&
+                         input_bytes >= budget_number(budget_, "trigger_bytes");
+  return Json::object(
+      {{"revision", Json{budget_revision_}},
+       {"effective", budget_},
+       {"pending", pending_budget_},
+       {"pending_revision",
+        pending_budget_ == Json{} ? Json{} : Json{pending_budget_revision_}},
+       {"triggered", Json{triggered}},
+       {"input_bytes", Json{JsonNumber{std::to_string(input_bytes)}}},
+       {"units",
+        Json{"serialized input UTF-8 JSON bytes; not tokens or total wire bytes"}},
+       {"capability",
+        Json::object(
+            {{"provider", Json{std::string{provider_.provider_identity()}}},
+             {"provider_source",
+              Json{"native adapter identity; unavailable for unspecified adapters"}},
+             {"model", Json{std::string{model}}},
+             {"model_source",
+              Json{"effective request model; stats uses engine default"}},
+             {"context_window_tokens", Json{}},
+             {"context_window_source",
+              Json{"unavailable; no qualified model capability catalog"}}})}});
+}
+Json CodingEngine::context_budget(const Json &arguments) {
+  if (!arguments.find("proposal"))
+    return budget_view(model_, unwrap(dump_json(Json{context_.items()})).size());
+  auto proposal = field(arguments, "proposal");
+  const auto *base = proposal.find("base");
+  if (base && base->string() != budget_revision_)
+    return Json::object(
+        {{"staged", Json{false}}, {"reason", Json{"stale-policy-revision"}}});
+  if (base) {
+    auto &fields = proposal.object();
+    fields.erase(std::remove_if(fields.begin(), fields.end(),
+                                [](const auto &f) { return f.first == "base"; }),
+                 fields.end());
+  }
+  validate_context_budget(proposal);
+  auto revision =
+      hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
+  pending_budget_ = std::move(proposal);
+  pending_budget_revision_ = std::move(revision);
+  auto result = budget_view(model_, unwrap(dump_json(Json{context_.items()})).size());
+  result.object().emplace_back("staged", Json{true});
+  return result;
+}
 CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
                            CodingProvider &provider, std::string model)
     : log_(log), context_(context), provider_(provider), model_(std::move(model)),
       identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
+  budget_ = default_context_budget();
+  for (const auto &fact : log_.root().committed_facts()) {
+    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+    if (!record || record->channel != ApplicationChannel::program)
+      continue;
+    auto packet = unwrap(parse_json(
+        std::string_view{reinterpret_cast<const char *>(record->payload.data()),
+                         record->payload.size()}));
+    const auto *label = packet.find("label");
+    if (!label || label->string() != "context-budget-effective-v1")
+      continue;
+    auto policy = field(packet, "policy");
+    validate_context_budget(policy);
+    budget_ = std::move(policy);
+    budget_revision_ = string_field(packet, "revision");
+  }
   if (context_.head().empty())
     context_.append({}, "initial");
 }
@@ -804,6 +901,30 @@ Json CodingEngine::request(Json options) {
   if (store == nullptr || *store || stream == nullptr || !*stream)
     throw Error{ErrorCode::unsupported};
   validate_protocol(field(request, "input").array());
+  const auto budget = budget_view(string_field(request, "model"),
+                                  unwrap(dump_json(field(request, "input"))).size());
+  if (std::get<bool>(field(budget, "triggered").value())) {
+    auto &instructions =
+        std::find_if(request.object().begin(), request.object().end(),
+                     [](const auto &f) { return f.first == "instructions"; })
+            ->second;
+    instructions =
+        Json{instructions.string() + "\nCONTEXT_BUDGET " + unwrap(dump_json(budget)) +
+             "\nThe configured advisory trigger is reached. Inspect the working map "
+             "and propose managed context "
+             "with context_manage or Lua toward target_bytes, or revise/defer policy "
+             "with context_budget and a reason. "
+             "Do not discard live instructions or incomplete tool groups. Destructive "
+             "proposals remain model-authored; "
+             "native acceptance checks structure, not summary quality. Managed "
+             "proposals and policy changes activate only "
+             "after successful workflow completion: finish this workflow to use them "
+             "on the next turn. "
+             "Repair may exceed the target; retrieve bounded originals and restore "
+             "when useful. "
+             "Neither target nor trigger is a token estimate, hard provider limit, or "
+             "audit reclamation."};
+  }
   last_request_bytes_ =
       Json{JsonNumber{std::to_string(unwrap(dump_json(request)).size())}};
   usage_ = Json{};
@@ -979,6 +1100,8 @@ Json CodingEngine::call(std::string name, Json arguments) {
         throw Error{ErrorCode::invalid_range};
       return process_output_presentation(raw, arguments);
     }
+    if (name == "context_budget")
+      return context_budget(arguments);
     if (name == "context_manage") {
       auto proposal = field(arguments, "proposal");
       // Explicit invocation-time snapshot convenience. Supplied bases remain strict
@@ -1128,6 +1251,9 @@ Json CodingEngine::stats() const {
                                 {"detail", Json{JsonNumber{std::to_string(
                                                journal.extent_error->detail)}}}})
                 : Json{}}}));
+  result.object().emplace_back(
+      "context_budget",
+      budget_view(model_, unwrap(dump_json(Json{context_.items()})).size()));
   result.object().emplace_back("last_request_bytes", last_request_bytes_);
   result.object().emplace_back("usage", usage_);
   result.object().emplace_back(
@@ -1162,10 +1288,9 @@ void CodingEngine::present(const Json &item) {
   }
 }
 Error CodingEngine::claim_backstop() {
-  if (turn_running_ || operation_depth_ != 0 || !failed_turn_ ||
-      backstop_claimed_ || failed_turn_->code == ErrorCode::interrupted ||
-      (cancelled && cancelled()) || !detail::locally_quiescent() ||
-      log_.root().state() != JournalWriterState::live)
+  if (turn_running_ || operation_depth_ != 0 || !failed_turn_ || backstop_claimed_ ||
+      failed_turn_->code == ErrorCode::interrupted || (cancelled && cancelled()) ||
+      !detail::locally_quiescent() || log_.root().state() != JournalWriterState::live)
     throw Error{ErrorCode::conflict};
   backstop_claimed_ = true;
   return *failed_turn_;
@@ -1180,6 +1305,8 @@ void CodingEngine::turn(TurnInput input) {
   } running{turn_running_};
   failed_turn_.reset();
   workflow_result_ = Json{};
+  pending_budget_ = Json{};
+  pending_budget_revision_.clear();
   restart_note_.reset();
   capacity_stopped_ = false;
   unretained_bytes_ = 0;
@@ -1217,14 +1344,34 @@ void CodingEngine::turn(TurnInput input) {
       throw Error{ErrorCode::capacity};
     if (cancelled && cancelled())
       throw Error{ErrorCode::interrupted};
-    auto settlement = context_.finish_workflow(true);
-    if (settlement != Json{} && display)
-      display("Managed context: " + unwrap(dump_json(settlement)) + "\n");
     if (restart_note_)
       validate_protocol(context_.items());
-
+    const auto boundary_program =
+        pending_budget_ == Json{}
+            ? Json{}
+            : Json::object({{"label", Json{"context-budget-effective-v1"}},
+                            {"policy", pending_budget_},
+                            {"revision", Json{pending_budget_revision_}},
+                            {"activation", Json{"successful-workflow-boundary"}}});
+    // Context + policy share one durable append. Everything fallible precedes
+    // publication; afterward only noexcept moves and best-effort notification.
+    auto settlement = context_.finish_workflow(true, boundary_program);
+    if (pending_budget_ != Json{}) {
+      std::swap(budget_, pending_budget_);
+      budget_revision_.swap(pending_budget_revision_);
+      pending_budget_ = Json{};
+      pending_budget_revision_.clear();
+    }
+    if (settlement != Json{} && display) {
+      try {
+        display("Managed context: " + unwrap(dump_json(settlement)) + "\n");
+      } catch (...) { /* Notification cannot undo committed workflow work. */
+      }
+    }
   } catch (const Error &e) {
     failed_turn_ = e;
+    pending_budget_ = Json{};
+    pending_budget_revision_.clear();
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);
@@ -1239,6 +1386,8 @@ void CodingEngine::turn(TurnInput input) {
     throw;
   } catch (...) {
     failed_turn_ = Error{ErrorCode::external_unknown};
+    pending_budget_ = Json{};
+    pending_budget_revision_.clear();
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);

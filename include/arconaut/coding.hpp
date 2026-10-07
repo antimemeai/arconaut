@@ -9,6 +9,7 @@ class CodingProvider {
 public:
   virtual ~CodingProvider() = default;
   std::function<bool()> cancelled;
+  virtual std::string_view provider_identity() const noexcept { return "unavailable"; }
   virtual Json respond(const Json &request,
                        const std::function<void(std::string_view)> &capture) = 0;
 };
@@ -16,6 +17,9 @@ class OpenAiCodingProvider final : public CodingProvider {
 public:
   explicit OpenAiCodingProvider(OpenAiConfig config = {})
       : config_(std::move(config)) {}
+  std::string_view provider_identity() const noexcept override {
+    return "openai-codex";
+  }
   Json respond(const Json &, const std::function<void(std::string_view)> &) override;
 
 private:
@@ -74,6 +78,10 @@ private:
   std::string model_;
   std::string effort_ = "medium";
   Json last_request_bytes_, usage_;
+  Json budget_, pending_budget_;
+  std::string budget_revision_ = "initial-disabled", pending_budget_revision_;
+  Json context_budget(const Json &arguments);
+  Json budget_view(std::string_view model, std::size_t input_bytes) const;
   std::map<std::string, std::string> previewed_;
   void present(const Json &item);
 

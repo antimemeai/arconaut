@@ -57,6 +57,23 @@ void AuditLog::record(ApplicationRecordId identity, ApplicationChannel channel,
   (void)unwrap(
       root_.submit({{}, ApplicationRecordEvent{identity, channel, bytes(serialized)}}));
 }
+void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context_packet,
+                               const Json &program_packet) {
+  if (program_packet == Json{}) {
+    record(identity, ApplicationChannel::context, context_packet);
+    return;
+  }
+  const auto program_identity = issue();
+  const std::array<RetainedEvent, 2> events{
+      RetainedEvent{{},
+                    ApplicationRecordEvent{identity, ApplicationChannel::context,
+                                           bytes(unwrap(dump_json(context_packet)))}},
+      RetainedEvent{{},
+                    ApplicationRecordEvent{program_identity,
+                                           ApplicationChannel::program,
+                                           bytes(unwrap(dump_json(program_packet)))}}};
+  (void)unwrap(root_.append(root_.cursor(), {}, events));
+}
 std::string AuditLog::original(OriginalCapture capture) {
   const auto label = capture.label;
   const auto raw = capture.bytes;
@@ -655,10 +672,13 @@ Json ContextStore::manage(const Json &proposal) {
     return reject_managed(proposal, "malformed-proposal");
   }
 }
-Json ContextStore::finish_workflow(bool success) {
+Json ContextStore::finish_workflow(bool success, const Json &boundary_program) {
   workflow_ = false;
-  if (!pending_)
+  if (!pending_) {
+    if (success && boundary_program != Json{})
+      log_.record(ApplicationChannel::program, boundary_program);
     return Json{};
+  }
   auto pending = *pending_;
   if (!success) {
     pending_.reset();
@@ -667,15 +687,18 @@ Json ContextStore::finish_workflow(bool success) {
                            {"reason", Json{"workflow-cancelled-audit-unavailable"}}});
     return reject_managed(pending.proposal, "workflow-cancelled");
   }
-  auto result =
-      pending.expected != head_
-          ? reject_managed(pending.proposal, "settlement-conflict")
-          : publish_managed(pending.proposal, pending.snapshot, pending.stage);
+  auto result = pending.expected != head_
+                    ? reject_managed(pending.proposal, "settlement-conflict")
+                    : publish_managed(pending.proposal, pending.snapshot, pending.stage,
+                                      boundary_program);
+  if (!accepted(result) && boundary_program != Json{})
+    log_.record(ApplicationChannel::program, boundary_program);
   pending_.reset();
   return result;
 }
 Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basis,
-                                   std::string_view stage) {
+                                   std::string_view stage,
+                                   const Json &boundary_program) {
   const auto &mode = string_field(proposal, "mode");
   std::set<std::string> selected;
   for (const auto &id : field(proposal, "ids").array())
@@ -786,7 +809,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
   history.push_back(packet);
   if (protect)
     protect(next, proposal);
-  log_.record(identity, ApplicationChannel::context, packet);
+  log_.record_boundary(identity, packet, boundary_program);
   history_.swap(history);
   originals_.swap(originals);
   captured_.swap(captured);
