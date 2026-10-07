@@ -21,6 +21,34 @@ InputResult feed(Composer &c, std::string_view bytes) {
 int main() {
   try {
     (void)std::setlocale(LC_CTYPE, "en_US.UTF-8");
+    Composer completion;
+    feed(completion, "/hel\t");
+    check(completion.text() == "/help" && completion.cursor() == 5);
+    feed(completion, "\x15/mod\t");
+    check(completion.text() == "/model ");
+    feed(completion, "gpt-example\t");
+    check(completion.text() == "/model gpt-example");
+    feed(completion, "\x15/dra\t");
+    check(completion.text() == "/draft");
+    feed(completion, "\t");
+    check(completion.text() == "/draft ");
+    feed(completion, "\x15/co\t");
+    check(completion.text() == "/co"); // Ambiguous: never guess a command.
+    feed(completion, "\x15/unknown\t");
+    check(completion.text() == "/unknown");
+    feed(completion, "\x15/hel\x1b[D\t");
+    check(completion.text() == "/hel" && completion.cursor() == 3);
+    feed(completion, "\x15\x1b[200~/hel\t\x1b[201~");
+    check(completion.text() == "/hel\t"); // Paste is literal, never completion.
+    check(terminal_command_hint("/co").find("/compact") != std::string::npos);
+    check(terminal_command_hint("/co").find("/context") != std::string::npos);
+    check(terminal_command_hint("/model foo").find("NAME") != std::string::npos);
+    check(terminal_command_hint("/unknown").starts_with("Unknown command"));
+    check(terminal_command_hint("ordinary draft").empty());
+    check(terminal_command_hint("/lua\ncode").empty());
+    check(terminal_help().find("/sessions") != std::string::npos);
+    check(terminal_help().find("not model context") != std::string::npos);
+    check(terminal_key_help().find("keep unsent draft") != std::string::npos);
     Composer c;
     feed(c, "aéz");
     feed(c, "\x1b[D\x7f");

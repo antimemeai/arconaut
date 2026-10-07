@@ -42,6 +42,12 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
 
     try:
         wait_for(b"Workflow reloads")
+        send(b"/hel\t")
+        wait_for(b"> /help")
+        send(b"\r")
+        wait_for(b"Keyboard: /keys")
+        send(b"/keys\r")
+        wait_for(b"keep unsent draft")
         send(b'\x1b[200~/lua print("PASTE_" .. (1+1));\nprint("BLOCK_" .. (2+2))\x1b[201~\r')
         wait_for(b"PASTE_2")
         wait_for(b"BLOCK_4")
@@ -60,6 +66,10 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         send(code.encode())
         wait_for(b"TOOL_STREAM")
         pid = int(Path(pidfile).read_text())
+        send(b"/help\r")
+        wait_for(b"Keyboard: /keys")
+        os.kill(pid, 0)  # Local help never waits for or cancels the active shell.
+        assert b"queued 1" not in observed, "help became a queued turn"
         send(b'\x1b[200~draft contains \x03 literally\x1b[201~')
         wait_for(b"draft contains")
         wait_for(b"\\x03 literally")
@@ -68,9 +78,14 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         os.write(master, b"\x15")
         send(b'/lua print("QUEUED_" .. "SHOULD_NOT_RUN")\r')
         wait_for(b"queued 1")
+        send(b"/queue\r")
+        wait_for(b"Pending prompts: 1")
+        os.kill(pid, 0)
+        assert b"queued 2" not in observed, "queue inspection queued itself"
         send(b"UNSUBMITTED_DRAFT")
         wait_for(b"UNSUBMITTED_DRAFT")
         started = time.monotonic()
+        # Keep the existing unsent-draft Ctrl-C oracle. Slash stop is exercised below.
         os.write(master, b"\x03")
         observed.clear()
         wait_for(b"interrupted", 3)
@@ -94,6 +109,11 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         send(b'/lua print("AFTER_" .. "STOP")\r')
         wait_for(b"AFTER_STOP")
         assert b"QUEUED_SHOULD_NOT_RUN" not in observed, "cancelled queue executed"
+        send(b'/lua arco.call("exec", {command="sleep 30"})\r')
+        wait_for(b"sleep 30")
+        send(b"/cancel\r")
+        wait_for(b"Stop requested")
+        wait_for(b"interrupted", 3)
         send(b"/exit\r")
         assert child.wait(timeout=5) == 0
         after = termios.tcgetattr(slave)
