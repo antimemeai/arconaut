@@ -515,3 +515,27 @@ Sources, hashes, exact paths, restoration and acquisition gaps are recorded in:
 
 [Source-grounded synthesis](papers/networking-2026-10-07/SYNTHESIS.md) separates
 identity, reachability, encryption, custody and shared-work authority.
+
+## Lean durable-state performance references — 2026-10-07
+
+Source-grounded storage/messaging study for startup and bounded memory, beyond
+agent harness references. Acquired immutable LMDB700e10f91a65,
+SQLite5af1b822f5da, TigerBeetlec95d7a53a3d0, Aeronad4baf8dcd5a and
+Bitcaskd84c8d913713 archives. Originals remain intact in shared
+`../quarantine_proj/archives/blackbird-storage-2026-10-07/`; extracted source is
+ignored under `quarantine/storage-NAME-COMMITPREFIX/`, Git metadata/detritus and
+symlinks omitted. Bitcask's original2010 paper remains in its source archive.
+Existing LevelDB7ee830d02b62 also studied. Official SQLite/Git/TigerBeetle/Symas
+documents are snapshotted under ignored `quarantine/storage-documents-2026-10-07/`.
+
+Exact identities, SHA256, byte sizes, URLs and restoration/extraction arguments:
+[references](papers/storage-performance-2026-10-07/references.json),
+[documents](papers/storage-performance-2026-10-07/documents.json).
+Restore to absent extraction destinations using each manifest's curl and owned
+scripts/ingest_zip.py arguments. HTML documents may change upstream; their hashes
+identify the acquired content, not a guarantee of future identical restoration.
+
+[Study and proposed course](papers/storage-performance-2026-10-07/STUDY.md)
+distinguishes compact current state, bounded recovery tail and on-demand archive.
+No imported builds/tests/installers executed, runtime adopted or dependency selected;
+Aeron's JVM code is mechanism reference only. Archived instructions are historical.

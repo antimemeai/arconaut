@@ -1,0 +1,38 @@
+[
+  {
+    "url": "https://www.sqlite.org/wal.html",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/00.html",
+    "bytes": 42143,
+    "sha256": "f3467b530b883d4a00574fe1a898b3d121ed72764ae28cf66941080ac0badb9e"
+  },
+  {
+    "url": "https://www.sqlite.org/walformat.html",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/01.html",
+    "bytes": 37802,
+    "sha256": "e47da418b1fa6bcdcef83373ae7851bbe390b0904649a7ab7124428a7bd91b72"
+  },
+  {
+    "url": "https://www.sqlite.org/atomiccommit.html",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/02.html",
+    "bytes": 77968,
+    "sha256": "5a5be7b660217c9408c8a81eaf2faa2d08832ed3790f895a0a713916ad856ea1"
+  },
+  {
+    "url": "https://git-scm.com/docs/commit-graph-format",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/03.html",
+    "bytes": 35795,
+    "sha256": "459dfa58c556ad2ffebcdeefab7abe93a5a20fd6c97d68a2e0838f8f02e29499"
+  },
+  {
+    "url": "https://docs.tigerbeetle.com/operating/hardware/",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/04.html",
+    "bytes": 27880,
+    "sha256": "3d031448e1e10dec59ab9521f42d99f4a8ef22d5abc188930ceea47c4c4932e2"
+  },
+  {
+    "url": "https://www.symas.com/lmdb.php",
+    "path": "/Users/patrickbeam/projects/blackbird/quarantine/storage-documents-2026-10-07/05.html",
+    "bytes": 15732,
+    "sha256": "375a8eb04ad9e1249c9b4934f4a7ab27e224ec098cd434c7af89d6969cfabd9e"
+  }
+]

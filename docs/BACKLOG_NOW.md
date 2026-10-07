@@ -26,6 +26,13 @@ Next useful step is serial integration of their delivered changes and a matched
 combined startup measurement. The allocator may reduce admission cost; that
 interaction has not been measured. No additional review panel is queued.
 
+Operator-directed [storage/messaging source study](../papers/storage-performance-2026-10-07/STUDY.md)
+proposes compact durable current state, bounded recovery tail and on-demand disk
+history. This addresses n11/3x2 structurally: constant live state/tail should have
+essentially flat reopen/private-memory cost as archived payload volume increases.
+Fault model, complete hot-state schema, publication protocol and historical query
+APIs require design before coding. No new dependency or autodev launched by this study.
+
 ## Other useful product work
 
 - **Native Beads integration (arconaut-jim):** operator requests sketch/design then

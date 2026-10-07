@@ -4397,3 +4397,30 @@ reservations, retained raw profiles privately. Zero active autodevs. No addition
 unit allowance, assurance layer, primary rebuild or implicit master merge.
 Native Beads and debug-only instrumentation already integrated; ordinary
 BLACKBIRD_DEBUG=OFF runtime remains unchanged and recording remains opt-in.
+
+## 2026-10-07 — Study lean durable state outside agent harnesses
+
+Operator explicitly requests extreme-performance analogues for much leaner/faster
+startup. Acquired pinned LMDB, SQLite, TigerBeetle, Aeron and Bitcask source archives,
+preserved originals/hashes/restoration, stripped extracted metadata. Read actual
+root publication, WAL recovery, selected-frame reads, cache allocation, snapshot
+log-position planning and checked hint loading. Read original Bitcask2010 paper,
+official Git binary graph format, existing LevelDB manifest recovery and Rhizome
+ownership/representation guidance. No imported programs/tests executed or adopted.
+
+Traced currentcandidate35413f3 memory: semantic replay decodes application blobs
+into owned ImmutableBytes retained in Snapshot::facts; ContextStore history shares
+those payloads. JSON projection avoids unused trees but not resident archival bytes.
+354MB is peak RSS, not precise heap attribution. Full frame scan followed by semantic
+read/decode and context-history walk couples readiness to all historical content.
+
+Saved source-grounded papers/storage-performance-2026-10-07/STUDY.md and manifests.
+Proposed compact durable working-state root + bounded recovery tail + disk archive
+and paged indexes; no unconditional whole-history verify/load on ordinary reopen.
+Explicit current-state reduction/publication/fault-model contract required; CRC/hash
+does not prove semantic reduction or authenticate all unread history. Small bounded
+pread buffers first, measure mappings for sealed indexes/segments where useful.
+Defined flat-history scaling discriminator, tentative memory goals, direct full-replay
+equivalence and deterministic publication-fault oracles. No promised latency result,
+extra tribunal, code implementation, budget renewal or autodev launch. Existing
+n11/3x2 retain startup/state scope; capture batching/single-input remain separate.

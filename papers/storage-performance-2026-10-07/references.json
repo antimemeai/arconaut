@@ -1,0 +1,137 @@
+[
+  {
+    "repo": "LMDB/lmdb",
+    "commit": "700e10f91a65fae69520301926fb9819f16d292f",
+    "source": "https://github.com/LMDB/lmdb",
+    "archive_url": "https://codeload.github.com/LMDB/lmdb/zip/700e10f91a65fae69520301926fb9819f16d292f",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/lmdb-700e10f91a65fae69520301926fb9819f16d292f.zip",
+    "archive_bytes": 215904,
+    "sha256": "f0fca703ccbee738ff2dd709734e0c2467836aa0935c3046a1bb536787cb38e0",
+    "extracted": "/Users/patrickbeam/projects/blackbird/quarantine/storage-lmdb-700e10f91a65",
+    "restoration": [
+      "curl",
+      "-fL",
+      "https://codeload.github.com/LMDB/lmdb/zip/700e10f91a65fae69520301926fb9819f16d292f",
+      "-o",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/lmdb-700e10f91a65fae69520301926fb9819f16d292f.zip"
+    ],
+    "extraction": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/lmdb-700e10f91a65fae69520301926fb9819f16d292f.zip",
+      "/Users/patrickbeam/projects/blackbird/quarantine/storage-lmdb-700e10f91a65",
+      "--root",
+      "lmdb-700e10f91a65fae69520301926fb9819f16d292f",
+      "--skip-symlinks"
+    ],
+    "study_only": true
+  },
+  {
+    "repo": "tigerbeetle/tigerbeetle",
+    "commit": "c95d7a53a3d044741409b03b2f334a8ed033fa3c",
+    "source": "https://github.com/tigerbeetle/tigerbeetle",
+    "archive_url": "https://codeload.github.com/tigerbeetle/tigerbeetle/zip/c95d7a53a3d044741409b03b2f334a8ed033fa3c",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/tigerbeetle-c95d7a53a3d044741409b03b2f334a8ed033fa3c.zip",
+    "archive_bytes": 2396945,
+    "sha256": "96cbe93a0a8ac8060c07efcef89fe366033674575c6583066c5c7f5ebf2b6cca",
+    "extracted": "/Users/patrickbeam/projects/blackbird/quarantine/storage-tigerbeetle-c95d7a53a3d0",
+    "restoration": [
+      "curl",
+      "-fL",
+      "https://codeload.github.com/tigerbeetle/tigerbeetle/zip/c95d7a53a3d044741409b03b2f334a8ed033fa3c",
+      "-o",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/tigerbeetle-c95d7a53a3d044741409b03b2f334a8ed033fa3c.zip"
+    ],
+    "extraction": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/tigerbeetle-c95d7a53a3d044741409b03b2f334a8ed033fa3c.zip",
+      "/Users/patrickbeam/projects/blackbird/quarantine/storage-tigerbeetle-c95d7a53a3d0",
+      "--root",
+      "tigerbeetle-c95d7a53a3d044741409b03b2f334a8ed033fa3c",
+      "--skip-symlinks"
+    ],
+    "study_only": true
+  },
+  {
+    "repo": "aeron-io/aeron",
+    "commit": "ad4baf8dcd5aed31e5a60a89940748e9408baa12",
+    "source": "https://github.com/aeron-io/aeron",
+    "archive_url": "https://codeload.github.com/aeron-io/aeron/zip/ad4baf8dcd5aed31e5a60a89940748e9408baa12",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/aeron-ad4baf8dcd5aed31e5a60a89940748e9408baa12.zip",
+    "archive_bytes": 5746682,
+    "sha256": "45eef779f3a8e67ff4a363f8316253968dfdb63af21ebb6e1f1c359ae2c987a0",
+    "extracted": "/Users/patrickbeam/projects/blackbird/quarantine/storage-aeron-ad4baf8dcd5a",
+    "restoration": [
+      "curl",
+      "-fL",
+      "https://codeload.github.com/aeron-io/aeron/zip/ad4baf8dcd5aed31e5a60a89940748e9408baa12",
+      "-o",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/aeron-ad4baf8dcd5aed31e5a60a89940748e9408baa12.zip"
+    ],
+    "extraction": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/aeron-ad4baf8dcd5aed31e5a60a89940748e9408baa12.zip",
+      "/Users/patrickbeam/projects/blackbird/quarantine/storage-aeron-ad4baf8dcd5a",
+      "--root",
+      "aeron-ad4baf8dcd5aed31e5a60a89940748e9408baa12",
+      "--skip-symlinks"
+    ],
+    "study_only": true
+  },
+  {
+    "repo": "basho/bitcask",
+    "commit": "d84c8d913713da8f02403431217405f84ee1ba22",
+    "source": "https://github.com/basho/bitcask",
+    "archive_url": "https://codeload.github.com/basho/bitcask/zip/d84c8d913713da8f02403431217405f84ee1ba22",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/bitcask-d84c8d913713da8f02403431217405f84ee1ba22.zip",
+    "archive_bytes": 1789295,
+    "sha256": "8294f49c744be23f6bf9a45a304b5cfc64dc4db81475e3b393a80cd1ecf521c1",
+    "extracted": "/Users/patrickbeam/projects/blackbird/quarantine/storage-bitcask-d84c8d913713",
+    "restoration": [
+      "curl",
+      "-fL",
+      "https://codeload.github.com/basho/bitcask/zip/d84c8d913713da8f02403431217405f84ee1ba22",
+      "-o",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/bitcask-d84c8d913713da8f02403431217405f84ee1ba22.zip"
+    ],
+    "extraction": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/bitcask-d84c8d913713da8f02403431217405f84ee1ba22.zip",
+      "/Users/patrickbeam/projects/blackbird/quarantine/storage-bitcask-d84c8d913713",
+      "--root",
+      "bitcask-d84c8d913713da8f02403431217405f84ee1ba22",
+      "--skip-symlinks"
+    ],
+    "study_only": true
+  },
+  {
+    "repo": "sqlite/sqlite",
+    "commit": "5af1b822f5da6f4ea72ead5060e4bc365ccbf209",
+    "source": "https://github.com/sqlite/sqlite",
+    "archive_url": "https://codeload.github.com/sqlite/sqlite/zip/5af1b822f5da6f4ea72ead5060e4bc365ccbf209",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/sqlite-5af1b822f5da6f4ea72ead5060e4bc365ccbf209.zip",
+    "archive_bytes": 14920306,
+    "sha256": "af356f393ef2fce2176b61f03ad7944c339c090b4a28a55946b6800123e0b99e",
+    "extracted": "/Users/patrickbeam/projects/blackbird/quarantine/storage-sqlite-5af1b822f5da",
+    "restoration": [
+      "curl",
+      "-fL",
+      "https://codeload.github.com/sqlite/sqlite/zip/5af1b822f5da6f4ea72ead5060e4bc365ccbf209",
+      "-o",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/sqlite-5af1b822f5da6f4ea72ead5060e4bc365ccbf209.zip"
+    ],
+    "extraction": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "/Users/patrickbeam/projects/quarantine_proj/archives/blackbird-storage-2026-10-07/sqlite-5af1b822f5da6f4ea72ead5060e4bc365ccbf209.zip",
+      "/Users/patrickbeam/projects/blackbird/quarantine/storage-sqlite-5af1b822f5da",
+      "--root",
+      "sqlite-5af1b822f5da6f4ea72ead5060e4bc365ccbf209",
+      "--skip-symlinks"
+    ],
+    "study_only": true
+  }
+]
