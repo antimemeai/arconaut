@@ -3249,3 +3249,54 @@ bounds now persist. Primary queue excludes G5, avoiding duplicate implementation
 Controller22838/supervisor22841. Partial G1 source remains unaccepted/unstaged.
 Parallel ownership and integration rules in docs/GIGA_PARALLELISM.md. Canonical
 beads stay primary, separate worktree does not initialize another database.
+
+## G1 cooperative backstop candidate and actual useful pivot
+
+Root-authored interrupted-unit continuation preserved original03:54:14/05:24:14
+allowance and old audit namespace. Read-only physical tail observed commit22663 /
+end102134397 with lua.error; no semantic settlement inferred. Candidate c58485b
+pushed explicitly scoped G1 sources/docs/report, no G5 checkout changes. Native
+same-lifetime failure ticket/custody, fresh independent assessment, explicit selected
+Lua file action, changed-artifact oracle, alias-protected predecessor tree, no replay,
+explicit pause and two attempts/two-minute bound implemented. Crash/reopen/arbitrary
+exec containment remains unavailable, not inferred from parent exit or freed lease.
+
+Hardening two layers only, conservative10minutes prior +15remaining ending04:46UTC.
+Mac affected rrc/backstop/coding passed. Linux run-3lcgq8vh failed collect argument;
+fixed run-471gqhr2 debug/release/ASan affected backstop/coding passed. Within layer2,
+shared-provider cancellation closure lifetime fixed, direct Mac backstop passed;
+final narrow Linux fix check run-8a3_ybjx still running at04:39. No third assurance.
+First actual model recovery hit missing-destination read and exhausted two pivots,
+retained blocked unchanged (usage3879+8656 total tokens). Independent existing-draft
+transformation after direct inspection failed its source workflow, then fresh model
+selected/read actual source+draft and delivered useful BACKSTOP_OPERATING.md pivot1
+(usage3241 total tokens). No replay or reset of the old incident; costs unavailable.
+Release built04:38:13UTC, candidate not accepted/activated yet. Same-unit RRC next,
+observe actual resumed native process, finish pending fix check inside bound, then
+close bead and checked non-force fast-forward master. Root owns parallel journal
+publication; this source candidate did not stage journal/parallel docs/backups.
+
+G1 final affected callback-fix Linux run-8a3_ybjx narrow backstop debug/release/
+ASan+UBSan passed, observed04:41:49UTC. Actual release activation observed04:41:05:
+PID26902 start04:40:14, release build04:38:13 (990712bytes), successful provider
+response in resumed same Root-authored recovery session. No original effect settled
+by that observation. Hardening ended inside conservative10prior+15remaining bound;
+no third review/check layer. arconaut-scs closed for this cooperative scope, bd
+backup performed. Giga queue note marks G1 delivered and G2 policy next, G5 remains
+independent lane. Source publication uses checked non-force master fast-forward;
+Root's dirty parallel journal/backups remain excluded from unit source commit.
+
+G1 publication complete04:43UTC: source c58485b and final-outcome note b052a49
+pushed candidate then checked non-force fast-forward master. Initial branch switch
+refused overwriting dirty Root journal/backups; preserved them, advanced inactive
+local master with non-force local fetch (ancestor check), switched identical tree,
+pushed650db43..b052a49. Remote master b052a4936f0ae1031499387552314ef962deb469
+observed. Root journal/backups still dirty, deliberately outside scoped source
+commits. scs closed/accepted cooperative slice; next primary G2 policy in fresh
+Root-authored context. No later-unit code or repeated qualification here.
+
+## TUI chat-shell and management continuation (2026-10-07)
+
+Management imported Codex context, observed core initially live then external_unknown; retained prior session/remote uncertainty and resumed G2 in fresh Root-authored context with original06:13:47 unit and05:14 hardening deadlines. No repeated Linux matrix or stopped colleague access retry. UI candidate 76c401613bad81e510c23a118edd6891f220575f owns terminal discovery/local controls only; completion red-to-green, actual busy PTY help/queue/stop and existing draft/paste/resize/restart oracles passed; single recheck fixed exact /draft precedence. Separate release build/ui-shell used. Source candidate publication is not native activation; see papers/2026-10-07-tui-chat-shell.md. Core dirty changes left outside UI candidate.
+
+TUI source69a483a integrated onto accepted core8a0e959 and pushed master05:10UTC. Actual management native restart observed PID40412 start05:09:05, executable built05:07:48; resumed provider/tool conversation successful. arconaut-n64 closed and bd backup done. Core controller continues arconaut-7iy.2 workflow continuity; colleague access blockage unchanged. UI direct checks remain settled; no further assurance pass. Next UX discussion: composer first, then navigable palette and conversation readability.
