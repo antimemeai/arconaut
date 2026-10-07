@@ -3733,3 +3733,25 @@ and adaptations from the project grant. GitHub About already configured. Checked
 license text against the OSI MIT reference, notice, artwork boundary and whitespace.
 Documentation-only; no runtime tests required. Published accepted files to master
 without switching or merging the active campaign checkout.
+
+## Mascot and artwork withdrawn (2026-10-07)
+
+Operator requests removal from Arco after Arcoboard drafts were withdrawn. Plan:
+delete sprite header/image, rendering and animation-only wakeups; return the
+conversation to full width; remove attribution file/README credit/license carveout
+and obsolete mascot subplan/guide paragraph. Keep historical journal/literature
+and Git records. Update affected PTY checks to require no overlay in wide/narrow
+views, preserving scroll/resize/cursor/cancellation oracles. Build release and run
+only terminal and terminal_pty checks; publish accepted change and interactive
+executable. No graphics replacement, core dependency or campaign restart.
+
+## Halt and consolidation (2026-10-07)
+
+Operator halts autonomous development, defers multiplayer implementation, and
+requests unified main plus a local build. Armada admission and both registered
+jobs paused; process observation finds no matching worker/supervisor. Retain
+reservations/source/unknown outcomes, do not resume or replay. G9 security study
+is discussion, not an approved implementation. Frumentarii now independently
+study P2P transport, multiplayer state and E2EE primary literature/refimpls.
+Consolidate accepted source and historical work notes on master, reconcile current
+status and inventory unaccepted branches; do not merge candidate code blindly.

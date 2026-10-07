@@ -287,11 +287,6 @@ already-performed external effects remain possible and are not replayed automati
 Operator cancellation still stops the turn. Provider transport failures remain
 separate from this tool-result continuation.
 
-The Arconaut sprite appears at the upper right in terminals at least 90 columns
-wide and 20 rows tall. He gently bobs and his plume shimmers during a turn, then
-settles when idle. Smaller windows use the full width for the conversation.
-The sprite uses Unicode half blocks and ANSI truecolor; no image protocol is needed.
-
 ## Local audit explorer and advisory complaints
 
 Model tools `audit_inspect({query:...})` and `rageshake({...})` are also available
