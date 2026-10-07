@@ -3781,8 +3781,10 @@ Atomic local publication to build/release/arco-ui (launcher interactive generati
 Actual fresh TUI context/main-preview/session using gpt-6.1-sol medium returned
 MAIN_READY, provider2843ms,1886 reported tokens. Turn completed, then /quit exited0
 and restored terminal. No user session or autonomous campaign was resumed.
-A redundant second build was started after checkout consolidation; its identical
-source rebuild is tracked to completion, not an additional test/certification layer.
+A redundant concurrent build was started after checkout consolidation. Root stopped
+only that build's identified descendants and completed serial linking successfully.
+The final main executable is byte-identical to the tested/published interactive
+generation; no repeated provider call or third testing layer.
 
 Compared unique old branch commits: useful-work request-write fence already in main
 with direct regression; old TUI shell superseded by editor/palette. Colleague source
