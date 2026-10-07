@@ -1053,7 +1053,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
   if (boundary.error &&
       (boundary.error->code == ErrorCode::capacity || name == "provider" ||
-       name == "exec") &&
+       name == "exec" || name == "beads") &&
       (boundary.error->code == ErrorCode::capacity ||
        boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
@@ -1061,9 +1061,17 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
        boundary.error->code == ErrorCode::external_unknown ||
        boundary.error->code == ErrorCode::provider_transport))
     disposition = AttemptDisposition::unknown;
+  if (boundary.error && name == "beads" && beads_.mutation_may_have_started())
+    disposition = AttemptDisposition::unknown;
   if (!boundary.error && name == "exec" &&
       field(result, "exit_code").number().text != "0")
     disposition = AttemptDisposition::failure;
+  if (!boundary.error && name == "beads") {
+    const auto state = string_field(result, "status");
+    disposition = state == "unknown" ? AttemptDisposition::unknown
+                  : (state == "ok" || state == "configured" || state == "cached")
+                      ? AttemptDisposition::success : AttemptDisposition::failure;
+  }
   RetainedEvent terminal{{},
                          AttemptObservationEvent{attempt,
                                                  AttemptPhase::terminal,
@@ -1113,6 +1121,10 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
        boundary.error->code == ErrorCode::interrupted || name == "provider" ||
        root.state() != JournalWriterState::live))
     throw *boundary.error;
+  if (name == "beads") {
+    const auto *stopped = result.find("interrupted");
+    if (stopped && std::get<bool>(stopped->value())) throw Error{ErrorCode::interrupted};
+  }
   return result;
 }
 Json CodingEngine::request(Json options) {
@@ -1360,6 +1372,15 @@ Json CodingEngine::call(std::string name, Json arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
+    if (name == "beads") {
+      beads_.cancelled = cancelled;
+      beads_.observer = [&](std::string_view label, std::string_view raw) {
+        log_.original({label, raw, Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      };
+      auto result = beads_.run(arguments);
+      result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
+      return result;
+    }
     if (name == "program_config")
       return program_config(arguments);
     if (name == "module_source")

@@ -2,6 +2,7 @@
 #include "blackbird/openai.hpp"
 #include "blackbird/session.hpp"
 #include "blackbird/tools.hpp"
+#include "blackbird/beads.hpp"
 #include <map>
 #include <memory>
 namespace blackbird {
@@ -105,6 +106,7 @@ private:
   std::map<std::string, std::string> previewed_;
   void present(const Json &item);
 
+  BeadsAdapter beads_;
   SessionIdentity identity_;
   std::optional<std::string> restart_note_;
   DefinitionGenerationId generation_;

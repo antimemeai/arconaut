@@ -60,6 +60,12 @@ class Child {
 public:
   std::function<void(std::string_view)> output_observer;
   std::function<bool()> cancelled;
+  std::function<void(std::string_view)> error_observer;
+  std::string error_bytes;
+  std::filesystem::path cwd;
+  std::vector<std::string> child_environment;
+  bool separate_error = false;
+  bool spawned() const noexcept { return group > 0; }
   Error deadline_error{ErrorCode::io, ETIMEDOUT};
   Child() = default;
   Child(const Child &) = delete;
@@ -68,6 +74,7 @@ public:
     close_input();
     if (output >= 0)
       (void)::close(output);
+    if (error_output >= 0) (void)::close(error_output);
     // Keep group custody even after collect() reaps the leader.
     if (group > 0)
       (void)::kill(-group, SIGKILL);
@@ -91,7 +98,11 @@ public:
     argv.push_back(nullptr);
     std::vector<std::string> environment;
     std::vector<char *> envp;
-    if (!codex_home.empty()) {
+    if (!child_environment.empty()) {
+      environment = child_environment;
+      for (auto &entry : environment) envp.push_back(entry.data());
+      envp.push_back(nullptr);
+    } else if (!codex_home.empty()) {
       for (char **entry = environ; *entry != nullptr; ++entry)
         if (!std::string_view{*entry}.starts_with("CODEX_HOME="))
           environment.emplace_back(*entry);
@@ -100,7 +111,7 @@ public:
         envp.push_back(entry.data());
       envp.push_back(nullptr);
     }
-    int in[2]{-1, -1}, out[2]{-1, -1};
+    int in[2]{-1, -1}, out[2]{-1, -1}, err[2]{-1, -1};
     // Normalize descriptors above stdio even if the parent started with closed stdio.
     auto pipe = [](int (&fds)[2]) {
       if (::pipe(fds) != 0)
@@ -121,9 +132,11 @@ public:
     pipe(in);
     try {
       pipe(out);
+      if (separate_error) pipe(err);
     } catch (...) {
       for (int fd : in)
         (void)::close(fd);
+      for (int fd : out) if (fd >= 0) (void)::close(fd);
       throw;
     }
     posix_spawn_file_actions_t actions;
@@ -136,10 +149,18 @@ public:
         if (rc == 0)
           rc = ::posix_spawn_file_actions_adddup2(&actions, out[1], STDOUT_FILENO);
         if (rc == 0)
-          rc = merge_error
+          rc = separate_error
+                   ? ::posix_spawn_file_actions_adddup2(&actions, err[1], STDERR_FILENO)
+                   : merge_error
                    ? ::posix_spawn_file_actions_adddup2(&actions, out[1], STDERR_FILENO)
                    : ::posix_spawn_file_actions_addopen(&actions, STDERR_FILENO,
                                                         "/dev/null", O_WRONLY, 0);
+        if (rc == 0 && !cwd.empty())
+          #ifdef __APPLE__
+          rc = ::posix_spawn_file_actions_addchdir(&actions, cwd.c_str());
+#else
+          rc = ::posix_spawn_file_actions_addchdir_np(&actions, cwd.c_str());
+#endif
         if (rc == 0)
           rc = ::posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
         if (rc == 0)
@@ -153,9 +174,11 @@ public:
     }
     (void)::close(in[0]);
     (void)::close(out[1]);
+    if (err[1] >= 0) (void)::close(err[1]);
     if (rc != 0) {
       (void)::close(in[1]);
       (void)::close(out[0]);
+      if (err[0] >= 0) (void)::close(err[0]);
       pid = -1;
       fail(ErrorCode::io, rc);
     }
@@ -163,6 +186,8 @@ public:
     ++owned_children;
     input = in[1];
     output = out[0];
+    error_output = err[0];
+    if (error_output >= 0 && ::fcntl(error_output, F_SETFL, O_NONBLOCK) < 0) fail(ErrorCode::io, errno);
     // Socket-style SIGPIPE suppression exists for pipes on the qualified Mac profile.
 #ifdef F_SETNOSIGPIPE
     if (::fcntl(input, F_SETNOSIGPIPE, 1) < 0)
@@ -238,7 +263,8 @@ public:
 
 private:
   pid_t pid = -1, group = -1;
-  int input = -1, output = -1;
+  int input = -1, output = -1, error_output = -1;
+  bool stdout_done = false;
   std::string pending;
   void wait(int fd, short events, Clock::time_point deadline) {
     if (cancelled && cancelled())
@@ -257,11 +283,21 @@ private:
       fail(ErrorCode::io);
   }
   bool read(Clock::time_point deadline, std::size_t limit) {
+    if (error_output >= 0) {
+      wait(error_output, POLLIN, deadline);
+      char b[8192]; const auto n = ::read(error_output, b, sizeof(b));
+      if (n == 0) { (void)::close(error_output); error_output = -1; }
+      else if (n > 0) {
+        if (error_observer) error_observer(std::string_view{b, static_cast<std::size_t>(n)});
+        if (error_bytes.size() + static_cast<std::size_t>(n) > limit) fail(ErrorCode::capacity);
+        error_bytes.append(b, static_cast<std::size_t>(n));
+      } else if (errno != EAGAIN && errno != EINTR) fail(ErrorCode::io, errno);
+    }
+    if (stdout_done) return error_output >= 0;
     wait(output, POLLIN, deadline);
     char bytes[8192];
     const auto n = ::read(output, bytes, sizeof(bytes));
-    if (n == 0)
-      return false;
+    if (n == 0) { stdout_done = true; return error_output >= 0; }
     if (n < 0) {
       if (errno != EAGAIN && errno != EINTR)
         fail(ErrorCode::io, errno);

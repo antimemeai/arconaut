@@ -64,7 +64,7 @@ target_include_directories(blackbird_foundation PUBLIC include)
 target_link_libraries(blackbird_foundation PUBLIC blackbird_build)
 target_sources(blackbird_foundation PRIVATE src/json.cpp src/openai.cpp)
 target_sources(blackbird_foundation PRIVATE src/context.cpp src/audit.cpp)
-target_sources(blackbird_foundation PRIVATE src/tools.cpp)
+target_sources(blackbird_foundation PRIVATE src/tools.cpp src/beads.cpp)
 find_package(Lua 5.4 EXACT REQUIRED)
 if(NOT LUA_VERSION_STRING STREQUAL "5.4.8")
   message(FATAL_ERROR "Coding runtime requires qualified Lua 5.4.8")
@@ -251,3 +251,8 @@ add_custom_command(TARGET blackbird-candidate POST_BUILD
 
 add_executable(renderer_profile tooling/probes/render_workload.cpp)
 target_link_libraries(renderer_profile PRIVATE blackbird_coding)
+
+add_executable(beads_test tests/beads_test.cpp)
+target_link_libraries(beads_test PRIVATE blackbird_coding)
+add_test(NAME beads COMMAND beads_test)
+set_tests_properties(beads PROPERTIES TIMEOUT 30 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
