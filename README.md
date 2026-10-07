@@ -10,6 +10,8 @@ The machine should make those things possible. The operator should be able to st
 
 That is the project. It is also the reason Arconaut is being built inside Arconaut. An agent that can change its own harness, rebuild it, resume the same conversation, and continue useful work gives us a direct way to improve the system we inhabit.
 
+Our little arconaut comes from **[Caves of Qud](https://www.cavesofqud.com/)**, by **[Freehold Games](https://www.freeholdgames.com/)**. All credit for the original artwork goes to its creators; Qud's [official credits](https://cavesofqud.com/press-kit/) name **Sam Wilson** for tile art. It's an awesome game—[go buy it](https://store.steampowered.com/app/333640/Caves_of_Qud/) and support them. See [artwork attribution](ATTRIBUTION.md) for the source and credits.
+
 This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal interface, and an operating self-development loop**. It is an early system in active use and reconstruction. Its ambitions exceed its present implementation; the distinctions below are part of the description, rather than small print.
 
 ## Come aboard

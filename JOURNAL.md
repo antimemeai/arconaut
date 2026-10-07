@@ -3067,3 +3067,15 @@ with no new checker/certifier. Source policy staged separately from Arco's activ
 implementation; runtime activation awaits rebuilt image. No tests for prompt prose;
 diff whitespace and exact staged scope checked. Unsafe candidate remains inactive
 at bound, never correctness-by-expired-budget.
+
+## Caves of Qud sprite attribution
+
+Operator identifies supplied arconaut sprite as Caves of Qud and requests prominent
+near-top credit plus attribution file and purchase recommendation. Official press
+kit verifies developer Freehold Games, tile art Sam Wilson, co-creators Jason
+Grinblat/Brian Bucklew; individual tile authorship not independently verified.
+ATTRIBUTION.md names exact local asset/terminal adaptation and published credits,
+links official source and Steam/itch purchase pages. README credit follows opening
+purpose paragraphs, before current implementation introduction. Local targets and
+whitespace checked; no product tests for prose. Bounded capacity campaign continues
+with two-layer instruction; no extra certification work from this attribution.
