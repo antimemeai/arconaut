@@ -93,6 +93,18 @@ Candidate includes scoped C++/Lua-facing interface, direct test and guides. Init
 build used a source snapshot at8a0e959 to exclude unrelated dirty TUI work. Root
 subsequently integrated accepted UI through932ca08 while this unit ran; final native
 replacement includes that accepted baseline plus this unit. Unrelated journal/bead
-changes are protected. Candidate publication is not acceptance. Actual same-session
-RRC observation, final bead/queue update and checked non-force master fast-forward
-remain next actions at this checkpoint. Unit/hardening deadlines do not reset.
+changes were protected. Candidate773c46f published before activation. Root's
+independent accepted composer-note0449a17 was appended without altering G2b source.
+Actual same-unit RRC observed05:26:57UTC: PID48458 started05:25:11UTC, executable
+built05:24:17UTC,1011601 bytes, SHA-256
+`ff77ee6d723968e579092f03c63be601f424f865a0afc7865caf02e09841d4be`.
+Resumed provider/tool conversation succeeded; native process stats reported a
+completed request (last observed81470 total tokens; not a whole-unit aggregate).
+No third hardening pass, old campaign rerun or effect settlement inferred.
+
+Scoped B4 behavior accepted after that activation observation. Bead closure and
+checked non-force master promotion are the publication-boundary actions; their
+actual outcome is recorded in JOURNAL and unit working intent. Original unit
+deadline preserved; this checkpoint is well inside it. Later units start only in their root-authored
+fresh contexts. Range-mixing arconaut-k48 and broader containment/recovery limitations
+remain independent backlog, not swept into this acceptance.

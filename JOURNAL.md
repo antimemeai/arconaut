@@ -3331,3 +3331,13 @@ Initial scoped executable excluded dirty UI; Root subsequently accepted UI throu
 bead closure and checked non-force master integration next; candidate != accepted.
 
 Composer actual management activation observed PID47847 start05:23:35UTC, after own05:20:50 release build; successful resumed provider/tool conversation. Source932ca08 already onmaster, arconaut-cy3 closed and bd backup updated. Core workflow-repair773c46f separately published candidate, same-unit replacement observed PID48458 start05:25:11 after05:24:17 scoped build; core acceptance/promotion remains its continuation responsibility. UI checks remain settled, no third assurance. Baseline chat-first/tools-secondary UX adopted; next independent proposed slice external editor, then command palette.
+
+G2b actual same-session RRC observed05:26:57UTC: PID48458 start05:25:11,
+release built05:24:17 (1011601bytes), SHA256
+ff77ee6d723968e579092f03c63be601f424f865a0afc7865caf02e09841d4be; resumed provider/
+tool conversation succeeded. Scoped B4 accepted and arconaut-7iy.2 closed05:28:04,
+bd backup completed. Two-layer hardening stayed ended05:22:24, no extra checks.
+Root separately appended accepted composer note0449a17; its work preserved.
+Outcome report/queue now name acceptance and remaining effect/reader limitations.
+Prepare non-force publication with fresh remote/master ancestor check; G3 next
+fresh root working context, no later unit implementation in this session.
