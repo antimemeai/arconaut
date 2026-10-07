@@ -4523,3 +4523,25 @@ Manager/collector completed exit0; all254 sampled identities absent via Darwin
 libproc, launcher identities absent. Checkout clean/pushed/checkpointed, native
 slot and board reservation released; zero active autodevs, raw evidence retained.
 No implicit allowance renewal, further review round or master code integration.
+
+## 2026-10-07 — operator challenges missing plan and premature partial endpoints
+
+Inspected STUDY, R2 direction/design and native candidate source. Research/source
+grounding is real, but complete state schema and reader migration were left as
+future design. Root allowed physical hints then explicitly cold ownership to
+substitute for the recovery milestone. BB delivered the smaller authorized scope,
+not saved-state/suffix recovery. This was Root's sequencing error. R2 log records
+69 completed provider responses totaling990.297s, consuming most of its bounded
+execution period; a25minute total allowance was not a credible whole-redesign scope.
+
+Wrote docs/DURABLE_STATE_PLAN.md: actual saved-state schema/14-kind reduction,
+RetainedEnvironment predecessor recovery, typed paged COW lookup, native consumer
+census, data-before-root publication, unchanged audit/explicit fallback, recovery
+fences, bounded-tail/settlement maintenance, and dependency-ordered endpoints with
+exact state/fault/readiness discriminators. Re-read relevant pinned LMDB root/split,
+Aeron snapshot-position, SQLite selected read, Bitcask metadata/fallback and TB
+address/content/lifetime code. References remain study-only; no dependency adopted.
+
+Plan is a written proposal, not independently reviewed or launched. Keep one
+recovery milestone across bounded execution periods; prerequisites are not success.
+No new worker, review panel, deadline reset, code merge or primary binary change.

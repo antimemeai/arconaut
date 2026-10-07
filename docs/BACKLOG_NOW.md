@@ -6,6 +6,11 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 
 ## Immediate performance work
 
+Remaining recovery implementation follows [DURABLE_STATE_PLAN](DURABLE_STATE_PLAN.md):
+one owner, indexed queries → native current-state projection → checkpoint/suffix
+reopen → bounded maintenance/direct delivery. Written proposal, not yet reviewed
+or launched. Cold ownership/physical hints are prerequisites, not the finish line.
+
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
 | arconaut-fsp | Native timing surfaces and real history measurements | Merged; debug-only build machinery, defaultOFF, runtime recording also explicit. Issue closed. |

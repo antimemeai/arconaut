@@ -17,6 +17,11 @@ Durable-state-r1's physical hints remain an inactive partial;
 compact current-state/tail recovery is still the destination. Beads/debug-only
 timing surfaces are merged; earlier launch descriptions below are historical.
 
+The remaining milestone is specified in [DURABLE_STATE_PLAN](DURABLE_STATE_PLAN.md).
+Its schema, publication, native reader migration and dependency order replace
+the earlier broad mission/optional substitute deliveries. It is a written proposal,
+not independently reviewed or launched; execution bounds do not redefine success.
+
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |
 | arconaut-fsp / candidate/local-performance-2026-10-07 | Opt-in local timing, representative append/context/request hooks and scaling fixture | Local wall/CPU, disabled-path cost and matched short/long histories |
