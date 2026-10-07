@@ -3633,3 +3633,36 @@ c719f382cd106aae8d8f0694badf6ca063a3c1b734b564cba919aa436663bddf;
 packages/github_releases.lua
 7917461c71704f2f78fcebd0e8066593375d4bac7c7cd9b301172e94574c8a96.
 Earlier unknown station path/final boundary retained, not retroactively settled.
+
+## Grok auth and general phux multiplexing study (2026-10-07)
+
+Operator signed into Grok. Actual grok-4.7-build readiness completed2.768s; bounded
+CRC review60s returned no output/unknown after local termination, not a review.
+Recorded both without credential contents. Operator then selected phall's phux for
+Arco multiplexing generally. Acquired intact20MB source archive/extracted reference,
+read resource/lifecycle/terminal-control/remote source, bounded AgentSession retention
+and reported benchmark boundaries. Recommendation external optional service: Arco
+TUI lives in phux pane, compact lifecycle projection, shared terminal orchestration,
+Arcoboard consumption; shared server unaffected by individual refit. Arco audit/task
+semantics remain distinct. No install/dependency adoption or empirical phux claim.
+Study papers/2026-10-07-phux-multiplexing.md and QUARANTINE restoration retained.
+
+## Official external phux support (2026-10-07)
+
+Operator selects officially supported external tool, no additional core. Installed
+official stable0.52.0 with upstream checksum verification. Thin scripts/arco-phux
+literal-argument/cwd launcher and docs/PHUX.md/README support. First naked-new cold
+launch seeded default shell; source study identified preseed path, replaced launcher
+with atomic new--json then attach. Actual fresh Arco TUI/model turn, geometry-safe
+snapshots, same-process detach/reattach, RRC native8467->9391 keeping wrapper8463,
+same session-info and retained output. Bare /restart check corrected to NOTE syntax.
+Separate shell run10s timed out, retained unresolved rather than broad hardening.
+Private profile/socket/server stopped, operator default and dev loop untouched.
+No C++/Lua core dependency or native lifecycle projection delivered. Source grounding
+and actual support limits in papers/docs, no phux runtime qualification inference.
+
+## Supported partner tool link (2026-10-07)
+
+Operator requested a direct phux repository link in README as a supported partner
+tool. Added the link and attribution beside the existing launch instructions.
+Documentation-only change; checked the diff and whitespace.
