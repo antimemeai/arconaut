@@ -1,3 +1,4 @@
+#include "blackbird/local_timing.hpp"
 #include "blackbird/retained_state.hpp"
 #include "blackbird/retained_proposal.hpp"
 
@@ -614,6 +615,13 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
                                                  std::span<const ByteView> sources,
                                                  std::span<const RetainedEvent> events,
                                                  bool diagnostic, bool settlement) {
+  LocalSpan timing{"retained.append", "src/retained_state.cpp:append_impl"};
+  if (timing.enabled()) {
+    std::uint64_t bytes = 0;
+    for (auto source : sources) bytes += source.size();
+    timing.observe(journal_->physical_records().size(), bytes, expected.sequence);
+    timing.outcome("rejected");
+  }
   settlement = settlement || maintenance_;
   if (in_transaction_) {
     return Result<JournalCursor>::failure({ErrorCode::busy});
@@ -664,6 +672,12 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
     if (sources.size() >= UINT64_MAX - current.sequence ||
         events.size() >= UINT64_MAX - current.sequence - sources.size()) {
       return Result<JournalCursor>::failure({ErrorCode::overflow});
+    }
+    if (timing.enabled()) {
+      std::uint64_t bytes = 0;
+      for (auto source : sources) bytes += source.size();
+      for (const auto &event : encoded) bytes += event.size();
+      timing.observe(journal_->physical_records().size(), bytes, expected.sequence);
     }
     auto candidate = committed_;
     auto offset = current.end_offset;
@@ -751,6 +765,7 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
     prepared_ = std::move(candidate);
     const auto written = journal_->append(drafts);
     if (!written.has_value()) {
+      timing.outcome(state() == JournalWriterState::poisoned ? "uncertain" : "rejected");
       if (state() != JournalWriterState::poisoned) {
         prepared_.reset();
         if (!diagnostic) {
@@ -777,6 +792,7 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
     if (!diagnostic) {
       pending_proposal_.reset();
     }
+    timing.outcome("success");
     return written;
   } catch (const std::bad_alloc &) {
     return Result<JournalCursor>::failure({ErrorCode::allocation});

@@ -1,3 +1,4 @@
+#include "blackbird/local_timing.hpp"
 #include "blackbird/backstop.hpp"
 #include "blackbird/coding.hpp"
 #include "blackbird/station.hpp"
@@ -50,6 +51,7 @@ std::string safe(std::string_view text) {
 }
 } // namespace
 int main(int argc, char **argv) {
+  blackbird::LocalTimingSession local_timing;
   try {
     const char *home = std::getenv("HOME");
     if (home == nullptr)

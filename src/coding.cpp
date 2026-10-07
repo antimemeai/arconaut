@@ -1,3 +1,4 @@
+#include "blackbird/local_timing.hpp"
 #include "blackbird/coding.hpp"
 #include "blackbird/process_lifetime.hpp"
 extern "C" {
@@ -1116,6 +1117,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   return result;
 }
 Json CodingEngine::request(Json options) {
+  LocalSpan preparation{"provider.prepare", "src/coding.cpp:request"};
   if (restart_note_)
     throw Error{ErrorCode::busy};
   auto items = context_.items();
@@ -1231,6 +1233,13 @@ Json CodingEngine::request(Json options) {
     (diagnostic ? diagnostic : display)(
         "\n[request " + last_request_bytes_.number().text + " JSON bytes]\n");
   const auto origin = context_.head();
+  if (preparation.enabled()) {
+    preparation.linkage(origin);
+    preparation.observe(log_.root().cursor().sequence,
+                        static_cast<std::uint64_t>(std::stoull(last_request_bytes_.number().text)));
+    preparation.outcome("success");
+  }
+  preparation.finish();
   // One live request group; each failed attempt stays independently recorded.
   const auto retry_group =
       hex_identity(unwrap(log_.root().issue<OperationAttemptId>()).bytes());
@@ -1265,7 +1274,10 @@ Json CodingEngine::request(Json options) {
                            {"generation", Json{hex_identity(generation_.bytes())}},
                            {"retry_group", Json{retry_group}},
                            {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})});
-        return provider_.respond(request, [&](std::string_view raw) {
+        LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond", false};
+        if (transport.enabled()) transport.linkage(origin, hex_identity(attempt.bytes()));
+        transport.outcome("exception");
+        auto result = provider_.respond(request, [&](std::string_view raw) {
           try {
             log_.original(
                 {"provider.stream", raw,
@@ -1282,6 +1294,8 @@ Json CodingEngine::request(Json options) {
               display(delta.text);
           }
         });
+        transport.outcome("returned");
+        return result;
       });
       break;
     } catch (const Error &e) {

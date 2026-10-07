@@ -59,7 +59,7 @@ endif()
 include(CTest)
 find_package(Threads REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-add_library(blackbird_foundation src/foundation.cpp src/journal.cpp src/journal_storage.cpp src/journal_writer.cpp src/retained_events.cpp src/retained_state.cpp src/environment_head.cpp src/retained_proposal.cpp src/retained_environment.cpp)
+add_library(blackbird_foundation src/foundation.cpp src/local_timing.cpp src/journal.cpp src/journal_storage.cpp src/journal_writer.cpp src/retained_events.cpp src/retained_state.cpp src/environment_head.cpp src/retained_proposal.cpp src/retained_environment.cpp)
 target_include_directories(blackbird_foundation PUBLIC include)
 target_link_libraries(blackbird_foundation PUBLIC blackbird_build)
 target_sources(blackbird_foundation PRIVATE src/json.cpp src/openai.cpp)
@@ -251,3 +251,9 @@ add_custom_command(TARGET blackbird-candidate POST_BUILD
 
 add_executable(renderer_profile tooling/probes/render_workload.cpp)
 target_link_libraries(renderer_profile PRIVATE blackbird_coding)
+
+add_executable(local_timing_test tests/local_timing_test.cpp)
+target_link_libraries(local_timing_test PRIVATE blackbird_foundation)
+add_test(NAME local_timing COMMAND local_timing_test)
+add_executable(local_history_profile tooling/probes/local_history.cpp)
+target_link_libraries(local_history_profile PRIVATE blackbird_foundation)

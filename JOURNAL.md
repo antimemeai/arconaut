@@ -4195,3 +4195,13 @@ and collector both exited0. Reconciledlocal slot after cleancheckout, absentmana
 PIDs and libprocbirthcheck showed all213 sampled process identities no longerlive.
 Unobserved escapedchildren/remote outcomes are not certified by those observations.
 Board records reviewgap; primary/operatorTUI unchanged.
+
+## 2026-10-07 — P1 local timing candidate checkpoint
+
+Opt-in fixed-buffer local wall/thread-CPU spans, representative append/request
+preparation and growing-history fixture implemented by BB. Four affected checks
+passed; one independent Codex review reported five findings, fixes/direct
+rechecks performed. Four successful segments ended before deadline without
+final marker/commit. Root preserves useful source, actual review and aggregate
+results in papers/2026-10-07-p1-measurements.md; no target/activation claim.
+Candidate remains separate from master; raw records retained privately.
