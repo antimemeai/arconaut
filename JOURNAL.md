@@ -3348,3 +3348,25 @@ non-force local/remote master fast-forward932ca08..3971871. Actual remote master
 397187116858ccf2df3d0ea0bdd1eda5928e798a observed; working tree clean. Original
 failed-session paths and unknown exec effects remain preserved. Final working intent
 accepted for arconaut-7iy.2; controller may start G3 in its new root-authored context.
+
+## G3 live Lua-defined tools candidate (2026-10-07)
+
+Unit7iy.3 start05:29:09/deadline06:59:09UTC unchanged. Source-grounded small
+session registry stages schema+Lua function body through ordinary tool_define /
+arco.define_tool, publishes only successful workflow boundary, exposes to later
+requests, and invokes through retained operation/native-effect paths. Native names
+protected; invalid source/schema preserves effective configuration; failure/pause
+cancels pending. Hardening05:33:10..before05:44UTC, layers1+2 completed/no third.
+Collision oracle caught temporary range lifetime bug and fixed it. Mac affected
+release and new ASan oracle passed; Linux affected debug/release/ASan passed
+context/linux/run-s7bg00gp. No old pilot/backstop/capacity campaign rerun.
+
+Actual OpenAI definition -> boundary -> later named g3_source_map invocation ->
+retained source reads + useful35-match maintenance map delivered in
+context/giga-campaign/g3/actual. Two old mixed-range failures repaired with bounded
+Lua/native read, arconaut-k48 not fixed by implication.48509 actual tokens total,
+dollar costs unavailable. Details papers/2026-10-07-lua-tools-delivery.md and usage
+docs/LUA_TOOLS.md. Candidate publication distinct from pending native RRC and
+master FF acceptance. Concurrent editor source0f1019c is now parent; uncommitted
+palette/UI paths preserved/excluded, coherent source snapshot used for replacement.
+No later unit started; controller working intent stays continue until activation.

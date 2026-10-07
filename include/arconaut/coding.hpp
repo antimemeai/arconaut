@@ -81,7 +81,13 @@ private:
   // Calls already unanswered at workflow admission. Repair never closes calls
   // introduced by the currently running workflow.
   Json::Array repairable_outputs_;
+  Json lua_tools_{Json::Array{}}, pending_lua_tools_;
+  std::string tools_revision_ = "initial-empty", pending_tools_revision_;
+  Json tool_registry() const;
+  Json define_tool(const Json &arguments);
+  Json request_tools() const;
   Json budget_, pending_budget_;
+
   std::string budget_revision_ = "initial-disabled", pending_budget_revision_;
   Json context_budget(const Json &arguments);
   Json budget_view(std::string_view model, std::size_t input_bytes) const;

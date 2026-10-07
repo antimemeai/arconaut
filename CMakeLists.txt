@@ -101,6 +101,11 @@ add_executable(coding_test tests/coding_test.cpp)
 target_link_libraries(coding_test PRIVATE arconaut_coding)
 add_test(NAME coding COMMAND coding_test)
 
+add_executable(lua_tools_test tests/lua_tools_test.cpp)
+target_link_libraries(lua_tools_test PRIVATE arconaut_coding)
+add_test(NAME lua_tools COMMAND lua_tools_test)
+set_tests_properties(lua_tools PROPERTIES TIMEOUT 30 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 add_executable(workflow_repair_test tests/workflow_repair_test.cpp)
 target_link_libraries(workflow_repair_test PRIVATE arconaut_coding)
 add_test(NAME workflow_repair COMMAND workflow_repair_test)

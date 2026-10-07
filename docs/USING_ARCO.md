@@ -177,6 +177,16 @@ unknown outcome and supplies interruption results for pending calls so later tur
 can continue. It never automatically repeats a side effect. Pure Lua loops stop
 through the instruction hook too.
 
+## Live Lua-defined tools
+
+`tool_define` (or `arco.define_tool(definition)`) stages a session tool schema and
+Lua function body; `tool_registry` inspects effective versus pending definitions.
+Successful workflow boundaries publish them. Later default requests expose the
+tools and `arco.call` dispatches them through retained operation/native-effect
+paths. Invalid definitions or failed workflows preserve effective configuration.
+See [LUA_TOOLS](LUA_TOOLS.md) for the supported scalar-object schema, exact bounds,
+source/body example, persistence and unknown-effect limits.
+
 ## Restart/resume/continue (RRC)
 
 Build `cmake --build build/release --target arco`, then use `/restart NOTE` or let

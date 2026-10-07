@@ -290,6 +290,12 @@ struct CodingEngine::Runtime {
     lua_setfield(L, -2, "encode");
     lua_setfield(L, -2, "json");
     lua_setglobal(L, "arco");
+    constexpr const char *tool_api =
+        "function arco.define_tool(d) return arco.call('tool_define',"
+        "{definition=d}) end";
+    if (luaL_loadstring(L, tool_api) != LUA_OK || lua_pcall(L, 0, 0, 0) != LUA_OK)
+      return lua_error(L);
+
     constexpr const char *print_program =
         "function print(...) local v={} for i=1,select('#',...) do "
         "v[i]=tostring(select(i,...)) end "
@@ -406,6 +412,31 @@ struct CodingEngine::Runtime {
       luaL_error(L, "Turn interrupted");
     }
   }
+  bool valid_tool_source(std::string_view source) {
+    const int base = lua_gettop(state);
+    const auto wrapped = "return function(args)\n" + std::string{source} + "\nend";
+    const bool valid = luaL_loadbufferx(state, wrapped.data(), wrapped.size(),
+                                        "arco-tool-definition", "t") == LUA_OK;
+    lua_settop(state, base);
+    return valid;
+  }
+  Json invoke_tool(const Json &definition, const Json &arguments) {
+    // The body is compiled as a function; args is a JSON round-trip, not Lua code.
+    const auto encoded = unwrap(dump_json(arguments));
+    // JSON string escapes aren't all Lua escapes (e.g. \/ and \u); use a byte
+    // literal with decimal escapes, avoiding interpolation of untrusted values.
+    std::string literal = "\"";
+    for (char ch : encoded) {
+      const auto c = static_cast<unsigned char>(ch);
+      literal += "\\";
+      literal += static_cast<char>('0' + c / 100);
+      literal += static_cast<char>('0' + (c / 10) % 10);
+      literal += static_cast<char>('0' + c % 10);
+    }
+    literal += "\"";
+    return eval("local fn = function(args)\n" + string_field(definition, "source") +
+                "\nend\nreturn fn(arco.json.decode(" + literal + "))");
+  }
   Json eval(std::string_view source) {
     const int base = lua_gettop(state);
     if (luaL_loadbufferx(state, source.data(), source.size(), "arco-program", "t") !=
@@ -440,7 +471,67 @@ struct CodingEngine::Runtime {
   }
 };
 namespace {
+// Intentionally small supported schema: a flat object of scalar JSON types.
+// Unsupported schema keywords reject rather than pretending to enforce them.
+void validate_tool_schema(const Json &schema) {
+  if (string_field(schema, "type") != "object")
+    throw Error{ErrorCode::invalid_range};
+  for (const auto &[k, v] : schema.object()) {
+    (void)v;
+    if (k != "type" && k != "properties" && k != "required" &&
+        k != "additionalProperties")
+      throw Error{ErrorCode::invalid_range};
+  }
+  const auto &properties = field(schema, "properties").object();
+  if (properties.size() > 64)
+    throw Error{ErrorCode::capacity};
+  for (const auto &[key, property] : properties) {
+    if (key.empty() || key.size() > 128)
+      throw Error{ErrorCode::invalid_range};
+    const auto &type = string_field(property, "type");
+    if (type != "string" && type != "number" && type != "integer" &&
+        type != "boolean" && type != "null")
+      throw Error{ErrorCode::invalid_range};
+    for (const auto &[k, v] : property.object()) {
+      if (k != "type" && k != "description")
+        throw Error{ErrorCode::invalid_range};
+      if (k == "description" && v.string().size() > 4096)
+        throw Error{ErrorCode::invalid_range};
+    }
+  }
+  std::set<std::string> required;
+  for (const auto &key : field(schema, "required").array()) {
+    if (!field(schema, "properties").find(key.string()) ||
+        !required.insert(key.string()).second)
+      throw Error{ErrorCode::invalid_range};
+  }
+  if (std::get<bool>(field(schema, "additionalProperties").value()))
+    throw Error{ErrorCode::invalid_range};
+}
+void validate_tool_arguments(const Json &schema, const Json &args) {
+  for (const auto &key : field(schema, "required").array())
+    if (!args.find(key.string()))
+      throw Error{ErrorCode::invalid_range};
+  for (const auto &[key, value] : args.object()) {
+    const auto *property = field(schema, "properties").find(key);
+    if (!property)
+      throw Error{ErrorCode::invalid_range};
+    const auto &type = string_field(*property, "type");
+    bool ok =
+        (type == "string" && std::holds_alternative<std::string>(value.value())) ||
+        (type == "boolean" && std::holds_alternative<bool>(value.value())) ||
+        (type == "null" && value == Json{}) ||
+        (type == "number" && std::holds_alternative<JsonNumber>(value.value()));
+    if (type == "integer" && std::holds_alternative<JsonNumber>(value.value())) {
+      const auto &text = value.number().text;
+      ok = text.find_first_of(".eE") == std::string::npos;
+    }
+    if (!ok)
+      throw Error{ErrorCode::invalid_range};
+  }
+}
 Json default_context_budget() {
+
   return Json::object(
       {{"enabled", Json{false}},
        {"trigger_bytes", Json{JsonNumber{"262144"}}},
@@ -472,6 +563,70 @@ void validate_context_budget(const Json &value) {
     throw Error{ErrorCode::invalid_range};
 }
 } // namespace
+Json CodingEngine::tool_registry() const {
+  return Json::object(
+      {{"revision", Json{tools_revision_}},
+       {"effective", lua_tools_},
+       {"pending", pending_lua_tools_},
+       {"pending_revision",
+        pending_lua_tools_ == Json{} ? Json{} : Json{pending_tools_revision_}}});
+}
+Json CodingEngine::request_tools() const {
+  auto result = tool_definitions();
+  for (const auto &d : lua_tools_.array())
+    result.array().push_back(Json::object({{"type", Json{"function"}},
+                                           {"name", field(d, "name")},
+                                           {"description", field(d, "description")},
+                                           {"parameters", field(d, "parameters")}}));
+  return result;
+}
+Json CodingEngine::define_tool(const Json &arguments) {
+  if (const auto *base = arguments.find("base");
+      base && base->string() != tools_revision_)
+    throw Error{ErrorCode::conflict};
+  const auto &definition = field(arguments, "definition");
+  for (const auto &[k, v] : definition.object()) {
+    (void)v;
+    if (k != "name" && k != "description" && k != "parameters" && k != "source")
+      throw Error{ErrorCode::invalid_range};
+  }
+  const auto &name = string_field(definition, "name");
+  if (name.empty() || name.size() > 64 || name == "provider" ||
+      !std::all_of(name.begin(), name.end(), [](char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+               (c >= '0' && c <= '9') || c == '_' || c == '-';
+      }))
+    throw Error{ErrorCode::invalid_range};
+  const auto native_definitions = tool_definitions();
+  for (const auto &d : native_definitions.array())
+    if (string_field(d, "name") == name)
+      throw Error{ErrorCode::conflict};
+  const auto &description = string_field(definition, "description");
+  const auto &source = string_field(definition, "source");
+  if (description.empty() || description.size() > 4096 || source.empty() ||
+      source.size() > 16384)
+    throw Error{ErrorCode::invalid_range};
+  validate_tool_schema(field(definition, "parameters"));
+  if (!runtime_->valid_tool_source(source))
+    throw Error{ErrorCode::invalid_range};
+  auto next = pending_lua_tools_ == Json{} ? lua_tools_ : pending_lua_tools_;
+  auto found =
+      std::find_if(next.array().begin(), next.array().end(),
+                   [&](const Json &d) { return string_field(d, "name") == name; });
+  if (found == next.array().end())
+    next.array().push_back(definition);
+  else
+    *found = definition;
+  if (next.array().size() > 32 || unwrap(dump_json(next)).size() > 65536)
+    throw Error{ErrorCode::capacity};
+  auto revision =
+      hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
+  pending_lua_tools_ = std::move(next);
+  pending_tools_revision_ = std::move(revision);
+  auto result = tool_registry();
+  result.object().emplace_back("staged", Json{true});
+  return result;
+}
 Json CodingEngine::budget_view(std::string_view model, std::size_t input_bytes) const {
   const bool triggered = std::get<bool>(field(budget_, "enabled").value()) &&
                          input_bytes >= budget_number(budget_, "trigger_bytes");
@@ -534,7 +689,13 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
         std::string_view{reinterpret_cast<const char *>(record->payload.data()),
                          record->payload.size()}));
     const auto *label = packet.find("label");
-    if (!label || label->string() != "context-budget-effective-v1")
+    if (label && label->string() == "workflow-config-effective-v1") {
+      lua_tools_ = field(packet, "tools");
+      tools_revision_ = string_field(packet, "tools_revision");
+    }
+    if (!label || (label->string() != "context-budget-effective-v1" &&
+                   label->string() != "workflow-config-effective-v1"))
+
       continue;
     auto policy = field(packet, "policy");
     validate_context_budget(policy);
@@ -854,7 +1015,7 @@ Json CodingEngine::request(Json options) {
              std::filesystem::current_path().string()}},
        {"reasoning", Json::object({{"effort", Json{effort_}}})},
        {"input", Json{std::move(items)}},
-       {"tools", tool_definitions()},
+       {"tools", request_tools()},
        {"parallel_tool_calls", Json{false}},
        {"include", Json{Json::Array{Json{"reasoning.encrypted_content"}}}},
        {"store", Json{false}},
@@ -1057,7 +1218,22 @@ Json CodingEngine::call(std::string name, Json arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
+    if (name == "tool_define")
+      return define_tool(arguments);
+    if (name == "tool_registry")
+      return tool_registry();
+    for (const auto &definition : lua_tools_.array()) {
+      if (string_field(definition, "name") != name)
+        continue;
+      validate_tool_arguments(field(definition, "parameters"), arguments);
+      log_.original({"tool.source", string_field(definition, "source"),
+                     Json::object({{"name", Json{name}},
+                                   {"revision", Json{tools_revision_}},
+                                   {"attempt", Json{hex_identity(attempt.bytes())}}})});
+      return runtime_->invoke_tool(definition, arguments);
+    }
     if (name == "restart") {
+
       auto note = string_field(arguments, "note");
       if (note.empty() || note.size() > 65536)
         throw Error{ErrorCode::invalid_range};
@@ -1341,6 +1517,8 @@ void CodingEngine::turn(TurnInput input) {
   failed_turn_.reset();
   workflow_result_ = Json{};
   pending_budget_ = Json{};
+  pending_lua_tools_ = Json{};
+  pending_tools_revision_.clear();
   pending_budget_revision_.clear();
   repairable_outputs_ =
       ContextStore::stop_outputs(field(context_.view(), "entries").array(), false);
@@ -1384,16 +1562,31 @@ void CodingEngine::turn(TurnInput input) {
     if (restart_note_)
       validate_protocol(context_.items());
     const auto boundary_program =
-        pending_budget_ == Json{}
+        pending_budget_ == Json{} && pending_lua_tools_ == Json{}
             ? Json{}
-            : Json::object({{"label", Json{"context-budget-effective-v1"}},
-                            {"policy", pending_budget_},
-                            {"revision", Json{pending_budget_revision_}},
-                            {"activation", Json{"successful-workflow-boundary"}}});
+            : Json::object(
+                  {{"label", Json{"workflow-config-effective-v1"}},
+                   {"policy", pending_budget_ == Json{} ? budget_ : pending_budget_},
+                   {"revision",
+                    Json{pending_budget_ == Json{} ? budget_revision_
+                                                   : pending_budget_revision_}},
+                   {"tools",
+                    pending_lua_tools_ == Json{} ? lua_tools_ : pending_lua_tools_},
+                   {"tools_revision",
+                    Json{pending_lua_tools_ == Json{} ? tools_revision_
+                                                      : pending_tools_revision_}},
+                   {"activation", Json{"successful-workflow-boundary"}}});
     // Context + policy share one durable append. Everything fallible precedes
     // publication; afterward only noexcept moves and best-effort notification.
     auto settlement = context_.finish_workflow(true, boundary_program);
+    if (pending_lua_tools_ != Json{}) {
+      std::swap(lua_tools_, pending_lua_tools_);
+      tools_revision_.swap(pending_tools_revision_);
+      pending_lua_tools_ = Json{};
+      pending_tools_revision_.clear();
+    }
     if (pending_budget_ != Json{}) {
+
       std::swap(budget_, pending_budget_);
       budget_revision_.swap(pending_budget_revision_);
       pending_budget_ = Json{};
@@ -1408,6 +1601,8 @@ void CodingEngine::turn(TurnInput input) {
   } catch (const Error &e) {
     failed_turn_ = e;
     pending_budget_ = Json{};
+    pending_lua_tools_ = Json{};
+    pending_tools_revision_.clear();
     pending_budget_revision_.clear();
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
@@ -1424,6 +1619,8 @@ void CodingEngine::turn(TurnInput input) {
   } catch (...) {
     failed_turn_ = Error{ErrorCode::external_unknown};
     pending_budget_ = Json{};
+    pending_lua_tools_ = Json{};
+    pending_tools_revision_.clear();
     pending_budget_revision_.clear();
     context_.protect = {};
     RetainedState::MaintenanceScope maintenance{root};
