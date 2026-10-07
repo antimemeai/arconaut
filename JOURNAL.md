@@ -4274,3 +4274,11 @@ children/remote outcomes. Native pool settled/checkpointed/released, board recor
 inactive candidate, bead remains open for integration. No allowance extension,
 extra review, primary build replacement or performance-target claim. Reuse slot
 for independent Beads work after design, avoiding another permanent worktree.
+
+One2-minute design check found two concrete seams, incorporated before launch:
+native operation() must record unknown Beads writes as unknown retained terminal
+facts, not merely JSON text; upstream readonly still runs version-maintenance,
+so BB promises no initiated migration, not absolute foreign-backend nonmutation.
+B1 targets the installed0.58 CLI, probes version before database commands and
+uses deterministic fake backends for strict mutation/isolation oracles. Read-only
+delivery is a coherent fallback if truthful native mutation settlement cannot fit.

@@ -12,7 +12,7 @@ slash dispatch. Actual ready/claim/version-commit semantics guide the interface.
 ## Boundary and ownership
 
 Beads owns issues, relationships and ready/claim arbitration. Blackbird consumes
-it; no Dolt governance, automatic DB initialization/migration/copy or new control
+it; no initiated Dolt governance, DB initialization/migration/copy or new control
 plane. Task status is distinct from campaign/process/worktree ownership. A turn
 finishing does not close a task automatically.
 
@@ -83,3 +83,18 @@ Mutation checks use fake backends or disposable isolated DB, never operator task
 Only affected checks, one substantive code review/fixes and direct recheck within
 fixed25minutes. No third layer, mutants or allowance reset. Commit/push candidate
 and report measurements/gaps. Root integrates serially; primary UI/build stays live.
+
+## Bounded design review corrections
+
+[One design check](../papers/2026-10-07-beads-design-review.md) identified two
+integration seams to address before advertising writes. Current operation()
+records a returned unknown JSON envelope as success and name-gates most unknown
+errors to provider/exec. Beads must explicitly integrate unknown terminal
+disposition; fake timeout-after-write tests inspect retained facts, not just JSON.
+Otherwise B1 delivers a complete read path and leaves writes unadvertised.
+
+Pinned bd --readonly still performs its own version-maintenance path. Blackbird
+initiates no migration and does not install/upgrade bd, but cannot promise that
+external backend discovery is completely non-mutating. Probe CLI version before
+DB commands; target the already-used supported0.58 installation. Deterministic
+fake backend checks supply strict read isolation. No live mutation experiments.
