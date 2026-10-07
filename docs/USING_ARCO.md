@@ -313,5 +313,24 @@ Use bounded context history inspection to recover that packet. Old paths/journal
 entry IDs remain old locators; original bytes have not been copied wholesale or
 moved. A failed write can leave allocator reservation facts but cannot publish
 selected context without lineage. Inspect such a destination; do not silently retry
-seeding into it. Live model-managed handoff, reserved settlement/output capacity
-and bounded old-entry resolution without full parent replay remain unimplemented.
+seeding into it. Automatic handoff and bounded old-entry resolution without full
+parent replay remain separately queued; explicit declared continuation is supported.
+
+### Bounded workflow capacity stop
+
+Each coding turn protects byte/record credits for bounded diagnostics, outstanding
+nested attempts (maximum depth16), pending managed-proposal cancellation, and call
+linkage. Before context/staging publication, the prospective stop packets must fit
+the unchanged physical payload/batch limits as well as remaining journal capacity.
+Oversized obligations are refused rather than raising caps. A capacity refusal is
+sticky for the turn, including Lua `pcall`: no fresh effects or provider retries.
+
+Provider/process capture refusal stops the live adapter/child, retains earlier
+committed fragments, records unknown effect outcome and received-but-unretained byte
+counts, cancels pending management, and closes open calls with stop outputs. Bounded
+Lua error capture reports omitted bytes. This is not a promise that rejected bytes
+were retained, that no dispatched effect occurred, or that physical write/sync
+failures can be settled in an unavailable audit. Success outputs remain ordinary
+bounded writes; post-dispatch output overflow uses a bounded unknown terminal.
+Context compaction does not reclaim physical audit bytes. Act on early headroom
+warnings and explicitly select a successor; no automatic physical rollover exists.

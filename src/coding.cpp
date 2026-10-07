@@ -207,6 +207,8 @@ struct CodingEngine::Runtime {
   std::array<char, 512> bridge_error{};
   void failed(Error why, const char *message) noexcept {
     failure = why;
+    if (why.code == ErrorCode::capacity)
+      engine.capacity_stopped_ = true;
     const auto count = std::min(std::strlen(message), bridge_error.size() - 1);
     std::memcpy(bridge_error.data(), message, count);
     bridge_error[count] = '\0';
@@ -410,10 +412,14 @@ struct CodingEngine::Runtime {
         lua_pcall(state, 0, 1, 0) != LUA_OK) {
       const char *message = lua_tostring(state, -1);
       error = message == nullptr ? "Lua error" : message;
+      const auto lost = error.size() > 512 ? error.size() - 512 : 0;
+      error.resize(std::min<std::size_t>(error.size(), 512));
+      RetainedState::MaintenanceScope maintenance{engine.log_.root()};
       engine.log_.original(
           {"lua.error", error,
            Json::object(
-               {{"generation", Json{hex_identity(engine.generation_.bytes())}}})});
+               {{"generation", Json{hex_identity(engine.generation_.bytes())}},
+                {"unretained_bytes", Json{JsonNumber{std::to_string(lost)}}}})});
       lua_settop(state, base);
       throw failure.value_or(Error{ErrorCode::external_unknown});
     }
@@ -514,10 +520,42 @@ void recover_coding_session(RetainedState &root) {
   }
 }
 
+void CodingEngine::protect_workflow(const Json::Array &entries, const Json &proposal) {
+  if (capacity_stopped_)
+    throw Error{ErrorCode::capacity};
+  try {
+    auto credit = context_.cancellation_budget(entries, proposal);
+    const auto existing = context_.cancellation_budget(
+        field(context_.view(), "entries").array(), context_.pending_proposal());
+    credit.max_file_bytes = std::max(credit.max_file_bytes, existing.max_file_bytes);
+    credit.max_records = std::max(credit.max_records, existing.max_records);
+    // One future admission plus each outstanding nested attempt. Error sources,
+    // issuers, receipt and terminal are bounded per slot. Depth is limited below.
+    credit.max_file_bytes += (operation_depth_ + 1) * 8192;
+    credit.max_records += (operation_depth_ + 1) * 16;
+    unwrap(log_.root().refresh_settlement(credit));
+  } catch (const Error &e) {
+    if (e.code == ErrorCode::capacity)
+      capacity_stopped_ = true;
+    throw;
+  }
+}
 Json CodingEngine::operation(std::string_view name, const Json &input,
                              const std::function<Json(OperationAttemptId)> &body) {
   if (cancelled && cancelled())
     throw Error{ErrorCode::interrupted};
+  if (capacity_stopped_ || operation_depth_ >= 16) {
+    capacity_stopped_ = true;
+    throw Error{ErrorCode::capacity};
+  }
+  ++operation_depth_;
+  struct Depth {
+    std::size_t &value;
+    ~Depth() { --value; }
+  } depth{operation_depth_};
+  if (log_.root().protected_settlement())
+    protect_workflow(field(context_.view(), "entries").array(),
+                     context_.pending_proposal());
   const auto began = std::chrono::steady_clock::now();
   if (status) {
     std::string description{name};
@@ -597,15 +635,39 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       result.object().emplace_back("effect_outcome", Json{"unknown"});
     }
   }
-  const auto output = unwrap(dump_json(result));
-  log_.original({"operation.result", output,
-                 Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                               {"operation", Json{std::string{name}}}})});
+  auto output = unwrap(dump_json(result));
+  try {
+    log_.original({"operation.result", output,
+                   Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                                 {"operation", Json{std::string{name}}}})});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    capacity_stopped_ = true;
+    unretained_bytes_ += output.size();
+    boundary.error = e;
+    result = error_json(e);
+    output = unwrap(dump_json(result));
+  }
+  if (boundary.error && boundary.error->code == ErrorCode::capacity) {
+    capacity_stopped_ = true;
+    RetainedState::MaintenanceScope maintenance{root};
+    log_.original(
+        {"capacity.stop",
+         "effect outcome unknown; no replay; earlier originals retained, rejected "
+         "bytes not retained",
+         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                       {"unretained_bytes",
+                        Json{JsonNumber{std::to_string(unretained_bytes_)}}}})});
+  }
   const auto observed = std::as_bytes(std::span{output.data(), output.size()});
   auto disposition =
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
-  if (boundary.error && (name == "provider" || name == "exec") &&
-      (boundary.error->code == ErrorCode::interrupted ||
+  if (boundary.error &&
+      (boundary.error->code == ErrorCode::capacity || name == "provider" ||
+       name == "exec") &&
+      (boundary.error->code == ErrorCode::capacity ||
+       boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
        boundary.error->code == ErrorCode::incomplete ||
        boundary.error->code == ErrorCode::external_unknown ||
@@ -614,12 +676,29 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   if (!boundary.error && name == "exec" &&
       field(result, "exit_code").number().text != "0")
     disposition = AttemptDisposition::failure;
-  (void)unwrap(
-      root.submit({{},
-                   AttemptObservationEvent{attempt,
-                                           AttemptPhase::terminal,
-                                           disposition,
-                                           {observed.begin(), observed.end()}}}));
+  RetainedEvent terminal{{},
+                         AttemptObservationEvent{attempt,
+                                                 AttemptPhase::terminal,
+                                                 disposition,
+                                                 {observed.begin(), observed.end()}}};
+  auto recorded =
+      boundary.error ? root.submit_settlement(terminal) : root.submit(terminal);
+  if (!recorded.has_value() && recorded.error().code == ErrorCode::capacity) {
+    capacity_stopped_ = true;
+    boundary.error = recorded.error();
+    result = error_json(*boundary.error);
+    const std::string bounded =
+        "capacity stop after dispatch; outcome unknown; no replay";
+    const auto bounded_raw = std::as_bytes(std::span{bounded.data(), bounded.size()});
+    disposition = AttemptDisposition::unknown;
+    recorded = root.submit_settlement(
+        {{},
+         AttemptObservationEvent{attempt,
+                                 AttemptPhase::terminal,
+                                 disposition,
+                                 {bounded_raw.begin(), bounded_raw.end()}}});
+  }
+  (void)unwrap(std::move(recorded));
   if (operation_completed) {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::steady_clock::now() - began)
@@ -638,7 +717,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     process_output("\n[" + std::string{name} + ": " + error_name(boundary.error->code) +
                    "]\n");
   if (boundary.error &&
-      (boundary.error->code == ErrorCode::interrupted || name == "provider" ||
+      (boundary.error->code == ErrorCode::capacity ||
+       boundary.error->code == ErrorCode::interrupted || name == "provider" ||
        root.state() != JournalWriterState::live))
     throw *boundary.error;
   return result;
@@ -762,9 +842,16 @@ Json CodingEngine::request(Json options) {
                            {"retry_group", Json{retry_group}},
                            {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})});
         return provider_.respond(request, [&](std::string_view raw) {
-          log_.original({"provider.stream", raw,
-                         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                                       {"revision", Json{origin}}})});
+          try {
+            log_.original(
+                {"provider.stream", raw,
+                 Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                               {"revision", Json{origin}}})});
+          } catch (const Error &e) {
+            if (e.code == ErrorCode::capacity)
+              unretained_bytes_ += raw.size();
+            throw;
+          }
           for (const auto &delta : preview.feed(raw)) {
             previewed_[delta.item_id] += delta.text;
             if (display)
@@ -990,8 +1077,15 @@ Json CodingEngine::call(std::string name, Json arguments) {
     if (name == "lua")
       return runtime_->eval(string_field(arguments, "code"));
     LocalTools tools{[&](std::string_view label, std::string_view raw) {
-      log_.original({label, raw,
-                     Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      try {
+        log_.original(
+            {label, raw,
+             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      } catch (const Error &e) {
+        if (e.code == ErrorCode::capacity)
+          unretained_bytes_ += raw.size();
+        throw;
+      }
       if (label == "process.output" && process_output)
         process_output(raw);
     }};
@@ -1066,23 +1160,40 @@ void CodingEngine::present(const Json &item) {
 }
 void CodingEngine::turn(TurnInput input) {
   restart_note_.reset();
+  capacity_stopped_ = false;
+  unretained_bytes_ = 0;
+  auto &root = log_.root();
+  auto credit =
+      context_.cancellation_budget(field(context_.view(), "entries").array(), Json{});
+  credit.max_file_bytes += 8192;
+  credit.max_records += 16;
+  auto protected_workflow = unwrap(root.protect_settlement(credit));
+  context_.protect = [this](const Json::Array &entries, const Json &proposal) {
+    protect_workflow(entries, proposal);
+  };
+  struct Reset {
+    ContextStore &context;
+    ~Reset() { context.protect = {}; }
+  } reset{context_};
   const auto prompt = input.prompt;
   const auto workflow = input.program;
-  generation_ = unwrap(log_.root().issue<DefinitionGenerationId>());
-  log_.original(
-      {"program.source", workflow,
-       Json::object({{"generation", Json{hex_identity(generation_.bytes())}}})});
-  log_.record(ApplicationChannel::program,
-              Json::object({{"generation", Json{hex_identity(generation_.bytes())}},
-                            {"activation", Json{"turn-boundary"}}}));
-  if (!prompt.empty())
-    context_.append({Json::object({{"role", Json{"user"}},
-                                   {"content", Json{std::string{prompt}}}})},
-                    "operator");
-  runtime_ = std::make_unique<Runtime>(*this);
   context_.begin_workflow();
   try {
+    generation_ = unwrap(log_.root().issue<DefinitionGenerationId>());
+    log_.original(
+        {"program.source", workflow,
+         Json::object({{"generation", Json{hex_identity(generation_.bytes())}}})});
+    log_.record(ApplicationChannel::program,
+                Json::object({{"generation", Json{hex_identity(generation_.bytes())}},
+                              {"activation", Json{"turn-boundary"}}}));
+    if (!prompt.empty())
+      context_.append({Json::object({{"role", Json{"user"}},
+                                     {"content", Json{std::string{prompt}}}})},
+                      "operator");
+    runtime_ = std::make_unique<Runtime>(*this);
     (void)runtime_->eval(workflow);
+    if (capacity_stopped_)
+      throw Error{ErrorCode::capacity};
     if (cancelled && cancelled())
       throw Error{ErrorCode::interrupted};
     auto settlement = context_.finish_workflow(true);
@@ -1092,32 +1203,21 @@ void CodingEngine::turn(TurnInput input) {
       validate_protocol(context_.items());
 
   } catch (const Error &e) {
+    context_.protect = {};
+    RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);
     restart_note_.reset();
-    if (e.code == ErrorCode::interrupted &&
+    if ((e.code == ErrorCode::interrupted || e.code == ErrorCode::capacity) &&
         log_.root().state() == JournalWriterState::live) {
-      std::set<std::string> pending;
-      for (const auto &item : context_.items()) {
-        const auto *type = item.find("type");
-        if (!type)
-          continue;
-        if (type->string() == "function_call")
-          pending.insert(string_field(item, "call_id"));
-        if (type->string() == "function_call_output")
-          pending.erase(string_field(item, "call_id"));
-      }
-      Json::Array results;
-      for (const auto &call : pending)
-        results.push_back(Json::object(
-            {{"type", Json{"function_call_output"}},
-             {"call_id", Json{call}},
-             {"output", Json{"{\"error\":\"turn_interrupted\",\"detail\":\"Consult "
-                             "audit for effect outcome; no automatic retry\"}"}}}));
+      auto results = ContextStore::stop_outputs(
+          field(context_.view(), "entries").array(), e.code == ErrorCode::interrupted);
       if (!results.empty())
-        context_.append(std::move(results), "interrupt.linkage");
+        context_.append(std::move(results), "stop.linkage");
     }
     throw;
   } catch (...) {
+    context_.protect = {};
+    RetainedState::MaintenanceScope maintenance{root};
     (void)context_.finish_workflow(false);
     restart_note_.reset();
     throw;

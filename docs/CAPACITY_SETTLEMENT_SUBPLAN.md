@@ -120,3 +120,59 @@ coding/native retry consumer checks, release build/actual replacement follow.
 
 Not completion of .14.3: workflow obligations, protected context maintenance, bounded
 output/cancellation loss accounting, live handoff and old-original resolver remain.
+
+## Integrated workflow refinement (fresh root-authored working context)
+
+Source reread: `turn` only links calls on interrupt, Runtime::eval captures arbitrary
+Lua error before propagating, context append/edit and staging publish without a
+prospective floor, and receipt protection alone does not protect operation.result.
+Implement one turn-owned credit scope, refreshed before prospective context/pending
+publication and admission. Bound admitted nesting at 16; each active slot covers
+receipt, bounded error source+issuer+terminal, plus bounded Lua diagnostics. Context
+obligation is derived from serialized prospective entries with actual open-call IDs
+and pending proposal, including fresh output originals and cancellation packet.
+Conservative framing allowances are explicit, not physical cap increases.
+
+Private native maintenance capability covers cancellation/linkage and bounded error
+sources/issuer writes, never fresh admission or adapter dispatch. Successful normal
+results remain normal writes; refusal after dispatch settles a bounded unknown
+terminal rather than losing the attempt. Capacity is sticky for the turn even if
+Lua catches it: no new effects; cancellation closes protocol groups. Streaming
+observer refusal aborts existing provider/child behavior, retains previous fragments
+and records received-but-unretained byte count (not content/full retention). Oversized
+Lua diagnostics are truncated with explicit lost-byte metadata. Physical write/sync
+failures remain unavailable/unknown, not capacity recovery. Reserve establishment
+failure before workflow mutations is a pre-execution stop. Successor/old resolver
+are separate remaining work, not implied by this integration.
+
+### Bounded layer1 repairs, 2026-10-07
+
+Operator's BOUNDED_HARDENING governs this envelope: layer1 remediation then ONE
+layer2 scoped recheck/fix, never a third reviewer or unchanged-host recertification.
+Started03:28:55Z; layer1 bound03:58:55Z, layer2 bound04:13:55Z including waits.
+Kimi transport failed before a review; no replacement consensus sought. Independent
+ChatGPT concrete findings: physical packet limits and longer interruption modeling.
+Now preflight encoded cancellation/linkage packets against unchanged payload/batch
+limits using actual next entries, duplicate originals, proposal, framing and issuer.
+Shared stop_outputs produces both actual linkage and the longer reserve representation.
+Single-context-event batch fits follow journal's valid_limits(payload <= batch-88),
+but cost is checked explicitly; tight valid profiles exercise both constraints.
+2000-call actual interrupted turn consumes ordinary room down to protected floor and
+closes every call with turn_interrupted. Payload boundary oracle first RED: published
+call and file effect; corrected tight fixtures now GREEN reject publication/effect.
+The first batch fixture was invalid (payload > batch-88), not a behavioral red; fixed.
+Earlier interrupted text mismatch was conservatively padded by longest dummy IDs,
+so no demonstrated old under-reservation trace is claimed for finding2; replaced by
+exact larger serialization regardless. Pending proposal survives failed success
+publication until cancellation, and floor covers both old and prospective state.
+Existing Linux3profiles coding/context/retained_state pass completed before new fixes;
+only changed behavior will be checked again. Layer2 is now scoped to these fixes and
+integrated stop claim. Successor/old resolver are separate per explicit operator steer.
+
+Layer2 returned one propagation finding: cancellation_budget could throw before
+protect_workflow's refresh-only sticky catch. Actual Lua bridge Runtime::failed
+already sets capacity_stopped, so strengthened pcall -> write fixture passed BEFORE
+this repair; claimed Lua escape was not reproduced. Still centralize the sticky
+catch over the entire native calculation so the owner does not rely on bridge
+propagation. Same oracle rerun, no layer3 review. Layer2 done subject to final affected
+coding checks and activation. No consensus/review of recheck sought.

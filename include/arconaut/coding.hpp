@@ -54,6 +54,10 @@ public:
 
 private:
   struct Runtime;
+  bool capacity_stopped_ = false;
+  std::size_t operation_depth_ = 0;
+  std::size_t unretained_bytes_ = 0;
+  void protect_workflow(const Json::Array &entries, const Json &proposal);
   AuditLog &log_;
   ContextStore &context_;
   CodingProvider &provider_;

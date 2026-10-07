@@ -3125,3 +3125,45 @@ Remaining unsafe source stays candidate/backlog. Strategy discussion for giga
 centers programmable tools/workflows, heterogeneous colleagues and sustained
 triggered work, then optional integration/feed/multiplayer deliverables. No giga
 launch or new dependency selected during discussion.
+
+## 2026-10-07 — integrated workflow capacity stop, bounded hardening
+
+Fresh context explicitly root-authored after two physical stops; old audits unchanged,
+no imported settlement or replay. Source-grounded refinement before implementation
+in CAPACITY_SETTLEMENT_SUBPLAN. Turn-owned dynamic floor covers old+prospective context,
+actual pending candidate/call IDs, bounded active nesting/errors/issuer/source writes.
+Private maintenance seam spends held credits, never dispatches new work. Physical caps
+unchanged. Capacity sticky even through Lua pcall; streaming/process refusal aborts,
+retains earlier committed fragments, records omitted received bytes/unknown terminals,
+cancels management, closes call/output linkage. Bounded Lua diagnostics report loss.
+Normal large successful terminals stay normal writes with bounded overflow fallback.
+
+Direct actual-engine oracles: byte/record streamed refusal, nested Lua+pending cancel,
+process file effect + partial output + responsive child cleanup + unknown + linkage,
+16 admitted nested terminals, refused oversized prospective mutation, tight physical
+profiles refusing prospective open-call publication/file effect, 2000-call interruption
+with ordinary room consumed to protected floor. Existing atomic-admission test now
+adjusts the turn-owned floor rather than illegally nesting an external scope; journal
+primitive behavior unchanged. Early-warning fixture now expects pre-dispatch refusal,
+not provider success when its request plus protected floor cannot fit.
+
+First integrated coding GREEN after compile-shadow/stale-test and interrupted-string
+compatibility mistakes fixed; no behavioral-red claim for those. Independent Kimi
+transport failed before review. One ChatGPT review found physical packet limits and
+longer interruption modeling. Payload boundary first RED committed call/file effect;
+tight corrected fixtures GREEN. Invalid batch fixture (payload > batch-88) was not a
+behavioral red. Exact encoded packet/framing+issuer preflight and shared longer stop
+representation fix both. Old longest-dummy-ID padding means no actual under-reserve
+trace claimed for wording mismatch. Layer2 one scoped ChatGPT recheck: native budget
+exceptions precede refresh-only sticky catch. Stronger pcall oracle passed BEFORE
+repair via existing Runtime::failed; no reproduced Lua escape. Centralized catch still
+strengthened native ownership. No third review, consensus or unchanged-host rerun.
+
+Mac initial coding/context/retained_state3/3 all3 profiles; final changed coding1/1 all3
+passed. Linux initial same3/3 all3 run-32bcglod and physical-fix coding1/1 all3
+run-bxpj48ls passed; final native-owner/pcall coding run pending at this checkpoint.
+release/arco built final including root-authored default-instruction policy. Native
+activation still pending, no completion claim yet. B1/pilot/fullsuite not rerun.
+Source/report contain no private provider/audit content. Existing explicit successor
+suffices scoped continuation; automatic backstop/old resolver separately queued per
+ROOT, not promotion blockers. Root owns README/merge/promotion/retirement. bd backup.

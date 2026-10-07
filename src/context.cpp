@@ -334,6 +334,8 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
   for (const auto &entry : field(packet, "originals").array())
     captured.push_back(entry);
   auto expected = revision;
+  if (protect)
+    protect(next, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
   history_.swap(history);
   captured_.swap(captured);
@@ -372,6 +374,8 @@ Json ContextStore::edit(const Json &candidate) {
                               {"outcome", outcome}});
   auto history = history_;
   history.push_back(packet);
+  if (protect)
+    protect(publishes ? next : entries_, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
   history_.swap(history);
   if (publishes) {
@@ -491,6 +495,99 @@ Json ContextStore::reject_managed(const Json &proposal, std::string_view why) {
   history_.swap(history);
   return outcome;
 }
+Json ContextStore::pending_proposal() const {
+  return pending_ ? pending_->proposal : Json{};
+}
+Json::Array ContextStore::stop_outputs(const Json::Array &entries, bool interrupted) {
+  std::set<std::string> calls;
+  for (const auto &entry : entries) {
+    const auto &item = field(entry, "item");
+    const auto *type = item.find("type");
+    if (type && *type == Json{"function_call"})
+      calls.insert(string_field(item, "call_id"));
+    if (type && *type == Json{"function_call_output"})
+      calls.erase(string_field(item, "call_id"));
+  }
+  Json::Array outputs;
+  for (const auto &call : calls)
+    outputs.push_back(Json::object(
+        {{"type", Json{"function_call_output"}},
+         {"call_id", Json{call}},
+         {"output",
+          Json{interrupted ? "{\"error\":\"turn_interrupted\",\"detail\":\"Consult "
+                             "audit for effect outcome; no automatic retry\"}"
+                           : "{\"error\":\"turn_stopped\",\"detail\":\"Consult audit "
+                             "for effect outcome; no automatic retry\"}"}}}));
+  return outputs;
+}
+JournalCapacity ContextStore::cancellation_budget(const Json::Array &entries,
+                                                  const Json &proposal) const {
+  const auto limits = log_.root().journal_limits();
+  // Bounded receipt/diagnostic maintenance must fit too, even in custom journals.
+  if (limits.max_payload < 1024 || limits.max_batch_bytes < 2048)
+    throw Error{ErrorCode::capacity};
+  IdentityBytes id{};
+  id[0] = std::byte{1};
+  const auto identity = unwrap(ApplicationRecordId::from_bytes(id));
+  const std::string revision(32, '0');
+  const auto issuer = unwrap(
+      encode_retained_event({{}, IssuerReservationEvent{1}}, limits.max_payload));
+  const auto packet_cost = [&](const Json &packet) {
+    const auto serialized = unwrap(dump_json(packet));
+    const auto raw = std::as_bytes(std::span{serialized.data(), serialized.size()});
+    auto encoded = encode_retained_event(
+        {{},
+         ApplicationRecordEvent{
+             identity, ApplicationChannel::context, {raw.begin(), raw.end()}}},
+        limits.max_payload);
+    if (!encoded.has_value()) {
+      if (encoded.error().code == ErrorCode::capacity ||
+          encoded.error().code == ErrorCode::invalid_range)
+        throw Error{ErrorCode::capacity};
+      throw encoded.error();
+    }
+    const auto cost = encoded.value().size() + journal_frame_header_size + 56;
+    if (cost > limits.max_batch_bytes)
+      throw Error{ErrorCode::capacity};
+    return cost + issuer.size() + journal_frame_header_size + 56;
+  };
+  // This floor covers bounded workflow diagnostics in addition to exact context
+  // obligations; no guessed context-size multiplier or physical limit increase.
+  JournalCapacity credit{8192, 16};
+  auto outputs = stop_outputs(entries, true); // longer supported representation
+  if (!outputs.empty()) {
+    Json::Array fresh, next = entries;
+    for (std::size_t i = 0; i < outputs.size(); ++i) {
+      auto entry = Json::object({{"id", Json{revision + "." + std::to_string(i)}},
+                                 {"item", std::move(outputs[i])}});
+      fresh.push_back(entry);
+      next.push_back(std::move(entry));
+    }
+    auto packet = Json::object({{"op", Json{"append"}},
+                                {"base", Json{revision}},
+                                {"observed", Json{revision}},
+                                {"revision", Json{revision}},
+                                {"accepted", Json{true}},
+                                {"origin", Json{"stop.linkage"}},
+                                {"originals", Json{std::move(fresh)}},
+                                {"entries", Json{std::move(next)}}});
+    credit.max_file_bytes += packet_cost(packet);
+  }
+  if (proposal != Json{}) {
+    auto outcome = Json::object({{"accepted", Json{false}},
+                                 {"reason", Json{"settlement-conflict"}},
+                                 {"current", Json{revision}},
+                                 {"revision", Json{revision}}});
+    auto packet = Json::object({{"op", Json{"managed"}},
+                                {"revision", Json{revision}},
+                                {"observed", Json{revision}},
+                                {"accepted", Json{false}},
+                                {"candidate", proposal},
+                                {"outcome", std::move(outcome)}});
+    credit.max_file_bytes += packet_cost(packet);
+  }
+  return credit;
+}
 void ContextStore::begin_workflow() {
   if (workflow_)
     throw Error{ErrorCode::conflict};
@@ -546,6 +643,8 @@ Json ContextStore::manage(const Json &proposal) {
     }
     if (!workflow_)
       return publish_managed(proposal, entries_, "");
+    if (protect)
+      protect(entries_, proposal);
     auto result = reject_managed(proposal, "staged");
     pending_ = Pending{proposal, entries_, head_, string_field(result, "revision")};
     result.object().emplace_back("staged", Json{true});
@@ -560,17 +659,20 @@ Json ContextStore::finish_workflow(bool success) {
   workflow_ = false;
   if (!pending_)
     return Json{};
-  auto pending = std::move(*pending_);
-  pending_.reset();
+  auto pending = *pending_;
   if (!success) {
+    pending_.reset();
     if (log_.root().state() != JournalWriterState::live)
       return Json::object({{"accepted", Json{false}},
                            {"reason", Json{"workflow-cancelled-audit-unavailable"}}});
     return reject_managed(pending.proposal, "workflow-cancelled");
   }
-  if (pending.expected != head_)
-    return reject_managed(pending.proposal, "settlement-conflict");
-  return publish_managed(pending.proposal, pending.snapshot, pending.stage);
+  auto result =
+      pending.expected != head_
+          ? reject_managed(pending.proposal, "settlement-conflict")
+          : publish_managed(pending.proposal, pending.snapshot, pending.stage);
+  pending_.reset();
+  return result;
 }
 Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basis,
                                    std::string_view stage) {
@@ -682,6 +784,8 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
                               {"outcome", outcome}});
   auto history = history_;
   history.push_back(packet);
+  if (protect)
+    protect(next, proposal);
   log_.record(identity, ApplicationChannel::context, packet);
   history_.swap(history);
   originals_.swap(originals);

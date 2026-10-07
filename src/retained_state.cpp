@@ -504,6 +504,19 @@ RetainedState::protect_settlement(JournalCapacity credit) {
     return Outcome::failure({ErrorCode::allocation});
   }
 }
+Result<void> RetainedState::refresh_settlement(JournalCapacity credit) {
+  if (!settlement_credit_ || in_transaction_)
+    return Result<void>::failure({ErrorCode::busy});
+  const auto usage = journal_usage();
+  if (usage.extent_error)
+    return Result<void>::failure(*usage.extent_error);
+  const auto bytes = usage.remaining_bytes();
+  if (!bytes || credit.max_file_bytes > *bytes ||
+      credit.max_records > usage.remaining_records())
+    return Result<void>::failure({ErrorCode::capacity});
+  settlement_credit_ = credit;
+  return Result<void>::success();
+}
 Result<Submission> RetainedState::submit_settlement(const RetainedEvent &event) {
   const auto *observation = std::get_if<AttemptObservationEvent>(&event.body);
   if (!std::holds_alternative<AdapterReceiptEvent>(event.body) &&
@@ -521,6 +534,7 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
                                                  std::span<const ByteView> sources,
                                                  std::span<const RetainedEvent> events,
                                                  bool diagnostic, bool settlement) {
+  settlement = settlement || maintenance_;
   if (in_transaction_) {
     return Result<JournalCursor>::failure({ErrorCode::busy});
   }

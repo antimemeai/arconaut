@@ -75,6 +75,7 @@ public:
     RetainedState &owner_;
   };
   Result<std::unique_ptr<SettlementScope>> protect_settlement(JournalCapacity credit);
+  Result<void> refresh_settlement(JournalCapacity credit);
   std::optional<JournalCapacity> protected_settlement() const noexcept {
     return settlement_credit_;
   }
@@ -107,6 +108,7 @@ public:
     return T::from_bytes(std::move(reserved).value());
   }
   JournalCursor cursor() const noexcept { return journal_->cursor(); }
+  JournalLimits journal_limits() const noexcept { return journal_->header().limits; }
   JournalUsage journal_usage() const {
     auto result = journal_->usage();
     result.state = state();
@@ -133,6 +135,21 @@ public:
 
 private:
   friend class RetainedEnvironment;
+  friend class CodingEngine;
+  friend class ContextStore;
+  class MaintenanceScope {
+  public:
+    explicit MaintenanceScope(RetainedState &owner)
+        : owner_(owner), previous_(owner.maintenance_) {
+      owner_.maintenance_ = true;
+    }
+    ~MaintenanceScope() { owner_.maintenance_ = previous_; }
+
+  private:
+    RetainedState &owner_;
+    bool previous_;
+  };
+  bool maintenance_ = false;
   struct Snapshot {
     std::vector<RetainedFact> facts;
     std::vector<PhysicalJournalRecord> sources;

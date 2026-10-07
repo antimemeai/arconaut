@@ -1,6 +1,7 @@
 #pragma once
 #include "arconaut/json.hpp"
 #include "arconaut/retained_state.hpp"
+#include <functional>
 #include <map>
 
 namespace arconaut {
@@ -50,6 +51,12 @@ public:
   Json originals() const;
   Json manage(const Json &proposal);
   Json inspect(const Json &query) const;
+  // Native workflow owner validates prospective obligations before publication.
+  std::function<void(const Json::Array &, const Json &)> protect;
+  static Json::Array stop_outputs(const Json::Array &entries, bool interrupted);
+  JournalCapacity cancellation_budget(const Json::Array &entries,
+                                      const Json &proposal) const;
+  Json pending_proposal() const;
   void begin_workflow();
   Json finish_workflow(bool success);
 

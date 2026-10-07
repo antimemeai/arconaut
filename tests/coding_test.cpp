@@ -237,8 +237,6 @@ void atomic_admission_test(const std::string &path, int mode) {
   const auto args =
       Json::object({{"path", Json{marker}},
                     {"content", Json{std::string(mode == 2 ? 7000 : 2048, 'x')}}});
-  std::unique_ptr<RetainedState::SettlementScope> hold;
-  std::optional<JournalCapacity> saved_credit;
   engine.status = [&](std::string_view description) {
     if (!description.starts_with("write_file"))
       return;
@@ -287,9 +285,8 @@ void atomic_admission_test(const std::string &path, int mode) {
           throw Error{ErrorCode::corrupt};
         credit = {*usage.remaining_bytes() - room, 1};
       }
-      hold = unwrap(root->protect_settlement(credit));
+      unwrap(root->refresh_settlement(credit));
     }
-    saved_credit = root->protected_settlement();
   };
 
   bool refused = false;
@@ -302,16 +299,13 @@ void atomic_admission_test(const std::string &path, int mode) {
   const auto after_credit = root->protected_settlement();
   if (!refused || counts() != before || std::filesystem::exists(marker) ||
       provider.bytes != 0 || root->state() != JournalWriterState::live ||
-      saved_credit.has_value() != after_credit.has_value() ||
-      (saved_credit && (saved_credit->max_file_bytes != after_credit->max_file_bytes ||
-                        saved_credit->max_records != after_credit->max_records))) {
+      after_credit) {
     const auto actual = counts();
     std::cerr << "admission refusal mode=" << mode << " refused=" << refused
               << " committed deltas=" << actual[0] - before[0] << ','
               << actual[1] - before[1] << ',' << actual[2] - before[2] << '\n';
     throw Error{ErrorCode::corrupt};
   }
-  hold.reset();
   engine.status = {};
   auto expected = counts();
   std::set<IdentityBytes> prior_ids;
@@ -590,8 +584,15 @@ void capacity_warning_test(const std::string &path) {
         s.find("no handoff reserve") != std::string_view::npos)
       ++warnings;
   };
-  engine.turn({"warning", R"(arco.request())"});
-  if (warnings != 1 || provider.calls != 1 ||
+  bool refused = false;
+  try {
+    engine.turn({"warning", R"(arco.request())"});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    refused = true;
+  }
+  if (!refused || warnings != 1 || provider.calls != 0 ||
       !std::get<bool>(field(field(engine.stats(), "audit"), "approaching").value()))
     throw Error{ErrorCode::corrupt};
 }
@@ -756,12 +757,320 @@ void retry_tests(const std::string &path) {
       throw Error{ErrorCode::corrupt};
   }
 }
+class ExhaustingProvider final : public CodingProvider {
+public:
+  int calls = 0;
+  bool returned = false;
+  bool records = false;
+  Json respond(const Json &,
+               const std::function<void(std::string_view)> &capture) override {
+    ++calls;
+    capture("retained-first-fragment");
+    for (int i = 0; i < 500; ++i)
+      capture(std::string(records ? 80 : 120000, 'x'));
+    returned = true;
+    return Json::object({{"output", Json{Json::Array{}}}});
+  }
+};
+void workflow_capacity_test(const std::string &path, bool records) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(91),
+                        id<AuditStreamId>(92),
+                        9,
+                        {1024 * 1024, 4 * 1024 * 1024},
+                        std::nullopt};
+  auto root = unwrap(RetainedState::create(
+      std::make_unique<NativeJournalDirectory>(
+          unwrap(NativeJournalDirectory::open(path))),
+      "audit", h, {records ? 8 * 1024 * 1024U : 384 * 1024U, 180}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  ExhaustingProvider provider;
+  provider.records = records;
+  CodingEngine engine{log, context, provider, "test"};
+  context.append({Json::object({{"role", Json{"assistant"}},
+                                {"content", Json{std::string(12000, 'a')}}})},
+                 "fixture");
+  // Actual staged proposal + nested outstanding Lua attempt + streamed refusal.
+  bool capacity = false;
+  try {
+    engine.turn(
+        {"", "local v=arco.context(); arco.manage({base=v.base,mode='archive',"
+             "ids={v.entries[#v.entries].id},reason='capacity',source='test'}); "
+             "pcall(function() arco.call('lua',{code='return arco.request()'}) end); "
+             "pcall(function() arco.request() end)"});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    capacity = true;
+  }
+  if (!capacity || provider.calls != 1 || provider.returned ||
+      root->state() != JournalWriterState::live || root->protected_settlement() ||
+      context.pending_proposal() != Json{})
+    throw Error{ErrorCode::corrupt};
+  std::size_t unknown = 0;
+  bool first = false, lost = false, cancelled = false;
+  for (const auto &fact : root->committed_facts()) {
+    if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
+        o && o->phase == AttemptPhase::terminal &&
+        o->disposition == AttemptDisposition::unknown)
+      ++unknown;
+    if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
+      const auto packet = unwrap(parse_json(std::string_view{
+          reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
+      if (const auto *label = packet.find("label")) {
+        if (*label == Json{"provider.stream"})
+          for (const auto ref : fact.event.dependencies) {
+            const auto bytes = unwrap(root->source(ref));
+            if (std::string_view{reinterpret_cast<const char *>(bytes.data()),
+                                 bytes.size()} == "retained-first-fragment")
+              first = true;
+          }
+        if (*label == Json{"capacity.stop"} &&
+            field(field(packet, "metadata"), "unretained_bytes").number().text != "0")
+          lost = true;
+      }
+      if (const auto *outcome = packet.find("outcome"))
+        if (const auto *reason = outcome->find("reason");
+            reason && *reason == Json{"workflow-cancelled"})
+          cancelled = true;
+    }
+  }
+  if (unknown < 1 || !first || !lost || !cancelled)
+    throw Error{ErrorCode::corrupt};
+}
+
+void workflow_process_capacity_test(const std::string &path) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(93),
+                        id<AuditStreamId>(94),
+                        10,
+                        {1024 * 1024, 4 * 1024 * 1024},
+                        std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {384 * 1024, 1000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  UsageProvider provider;
+  CodingEngine engine{log, context, provider, "test"};
+  const auto marker = path + "/effect";
+  const auto args = Json::object(
+      {{"command", Json{"printf X > '" + marker +
+                        "'; printf FIRST; head -c 2000000 /dev/zero; sleep 20"}}});
+  const auto began = std::chrono::steady_clock::now();
+  bool capacity = false;
+  try {
+    engine.turn({"", "arco.append({{type='function_call',call_id='capacity-exec',"
+                     "name='exec',arguments='{}'}}); "
+                     "arco.call('exec',arco.json.decode([==[" +
+                         unwrap(dump_json(args)) + "]==]))"});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    capacity = true;
+  }
+  bool linked = false, partial = false, unknown = false;
+  for (const auto &item : context.items())
+    if (const auto *type = item.find("type");
+        type && *type == Json{"function_call_output"})
+      linked = string_field(item, "call_id") == "capacity-exec" &&
+               string_field(item, "output").find("turn_stopped") != std::string::npos;
+  for (const auto &fact : root->committed_facts()) {
+    if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
+        o && o->phase == AttemptPhase::terminal &&
+        o->disposition == AttemptDisposition::unknown)
+      unknown = true;
+    if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+        a && a->channel == ApplicationChannel::log) {
+      const auto p = unwrap(parse_json(std::string_view{
+          reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
+      if (field(p, "label") == Json{"process.output"})
+        for (const auto ref : fact.event.dependencies) {
+          const auto raw = unwrap(root->source(ref));
+          partial |=
+              std::string_view{reinterpret_cast<const char *>(raw.data()), raw.size()}
+                  .starts_with("FIRST");
+        }
+    }
+  }
+  if (!capacity || !linked || !partial || !unknown || read_file(marker) != "X" ||
+      root->state() != JournalWriterState::live ||
+      std::chrono::steady_clock::now() - began > std::chrono::seconds{5})
+    throw Error{ErrorCode::corrupt};
+}
+
+void workflow_mutation_capacity_test(const std::string &path, bool nesting) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(95),
+                        id<AuditStreamId>(96),
+                        11,
+                        {1024 * 1024, 4 * 1024 * 1024},
+                        std::nullopt};
+  auto root = unwrap(RetainedState::create(
+      std::make_unique<NativeJournalDirectory>(
+          unwrap(NativeJournalDirectory::open(path))),
+      "audit", h, {nesting ? 8 * 1024 * 1024U : 384 * 1024U, 2000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  UsageProvider provider;
+  CodingEngine engine{log, context, provider, "test"};
+  const auto marker = path + "/forbidden";
+  const auto old = context.items();
+  std::string code =
+      nesting
+          ? "function recurse(n) if n>0 then return arco.call('lua',{code='return "
+            "recurse('..(n-1)..')'}) end end; pcall(function() recurse(18) end); "
+          : "pcall(function() "
+            "arco.append({{role='assistant',content=string.rep('x',500000)}}) end); ";
+  code += "pcall(function() arco.call('write_file',{path='" + marker +
+          "',content='BAD'}) end)";
+  bool capacity = false;
+  try {
+    engine.turn({"", code});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    capacity = true;
+  }
+  std::size_t admissions = 0, terminals = 0;
+  for (const auto &fact : root->committed_facts()) {
+    admissions += std::holds_alternative<AttemptAdmissionEvent>(fact.event.body);
+    if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
+        o && o->phase == AttemptPhase::terminal)
+      ++terminals;
+  }
+  if (!capacity || std::filesystem::exists(marker) || context.items() != old ||
+      root->state() != JournalWriterState::live || admissions != (nesting ? 16U : 0U) ||
+      terminals != admissions)
+    throw Error{ErrorCode::corrupt};
+}
+
+void workflow_settlement_limits_test(const std::string &path, bool batch) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(97),
+                        id<AuditStreamId>(98),
+                        12,
+                        {batch ? 3762U : 3800U, batch ? 3850U : 16384U},
+                        std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {2 * 1024 * 1024, 2000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  UsageProvider provider;
+  CodingEngine engine{log, context, provider, "test"};
+  for (int i = 0; i < 5; ++i)
+    context.append({Json::object({{"role", Json{"assistant"}},
+                                  {"content", Json{std::string(500, 'x')}}})},
+                   "fixture");
+  context.append({Json::object({{"role", Json{"assistant"}},
+                                {"content", Json{std::string(100, 'y')}}})},
+                 "fixture");
+  const auto before = context.items();
+  const auto marker = path + "/forbidden";
+  bool refused = false;
+  try {
+    engine.turn(
+        {"",
+         "pcall(function() arco.append({{type='function_call',call_id='c',name='exec',"
+         "arguments='{}'}}) end); "
+         "pcall(function() arco.call('write_file',{path='" +
+             marker + "',content='BAD'}) end)"});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::capacity)
+      throw;
+    refused = true;
+  }
+  if (!refused || context.items() != before || std::filesystem::exists(marker) ||
+      root->state() != JournalWriterState::live) {
+    std::cerr << "settlement limits batch=" << batch << " refused=" << refused
+              << " changed=" << (context.items() != before)
+              << " effect=" << std::filesystem::exists(marker) << '\n';
+    throw Error{ErrorCode::corrupt};
+  }
+}
+
+void workflow_interruption_budget_test(const std::string &path) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{id<EnvironmentId>(99),
+                        id<AuditStreamId>(100),
+                        13,
+                        {4 * 1024 * 1024, 8 * 1024 * 1024},
+                        std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {8 * 1024 * 1024, 2000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  UsageProvider provider;
+  CodingEngine engine{log, context, provider, "test"};
+  bool filled = false;
+  engine.cancelled = [&] {
+    if (context.items().size() < 2000)
+      return false;
+    if (!filled) {
+      const auto floor = *root->protected_settlement();
+      auto remove = *root->journal_usage().remaining_bytes() - floor.max_file_bytes;
+      const auto overhead = 56 + journal_frame_header_size;
+      // Leave less than one further frame's room, never raise the physical cap.
+      while (remove >= overhead) {
+        const auto count = std::min<std::uint64_t>(65536, remove - overhead);
+        std::vector<std::byte> filler(count);
+        const ByteView source{filler};
+        (void)unwrap(root->append(root->cursor(), std::span{&source, 1}, {}));
+        remove -= count + overhead;
+      }
+      filled = true;
+    }
+    return true;
+  };
+  bool interrupted = false;
+  try {
+    engine.turn({"", "local items={} for i=1,2000 do items[i]={type='function_call',"
+                     "call_id='large-interrupt-'..i,name='exec',arguments='{}'} end "
+                     "arco.append(items)"});
+  } catch (const Error &e) {
+    if (e.code != ErrorCode::interrupted)
+      throw;
+    interrupted = true;
+  }
+  std::size_t outputs = 0;
+  for (const auto &item : context.items())
+    if (const auto *type = item.find("type");
+        type && *type == Json{"function_call_output"}) {
+      if (string_field(item, "output").find("turn_interrupted") == std::string::npos)
+        throw Error{ErrorCode::corrupt};
+      ++outputs;
+    }
+  engine.validate_restart(); // direct protocol validation, not a native restart
+  if (!interrupted || !filled || outputs != 2000 ||
+      root->state() != JournalWriterState::live)
+    throw Error{ErrorCode::corrupt};
+}
+
 int main() {
   char name[] = "/tmp/arco-coding-XXXXXX";
   auto path = mkdtemp(name);
   if (!path)
     return 2;
   try {
+    workflow_interruption_budget_test(std::string{path} + "/interruption-floor");
+    workflow_settlement_limits_test(std::string{path} + "/settlement-payload", false);
+    workflow_settlement_limits_test(std::string{path} + "/settlement-batch", true);
+    workflow_mutation_capacity_test(std::string{path} + "/workflow-mutation", false);
+    workflow_mutation_capacity_test(std::string{path} + "/workflow-nesting", true);
+    workflow_process_capacity_test(std::string{path} + "/workflow-process");
+    workflow_capacity_test(std::string{path} + "/workflow-bytes", false);
+    workflow_capacity_test(std::string{path} + "/workflow-records", true);
     for (int mode = 0; mode != 3; ++mode)
       atomic_admission_test(std::string{path} + "/admission-" + std::to_string(mode),
                             mode);
