@@ -46,6 +46,7 @@ public:
   TerminalState state() const;
   void draft(std::string text);
   bool palette_open() const noexcept { return palette_open_; }
+  bool slash_open() const noexcept { return slash_open_; }
   bool flush_escape();
   std::vector<std::string> palette_lines(std::size_t rows) const;
   const std::string &text() const noexcept { return text_; }
@@ -59,6 +60,7 @@ private:
   std::size_t draft_cursor_ = 0;
   std::optional<std::size_t> goal_column_;
   bool pasted_ = false, palette_open_ = false;
+  bool slash_open_ = false;
   std::string palette_query_;
   std::size_t palette_selected_ = 0;
   void palette_move(bool up);

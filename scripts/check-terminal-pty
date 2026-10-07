@@ -42,6 +42,14 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
 
     try:
         wait_for(b"Workflow reloads")
+        wait_for("╭".encode())
+        send(b"/")
+        wait_for(b"Enter run/fill")
+        wait_for(b"\x1b[1;30;46m> /help")
+        send(b"\x1b[B\t")
+        wait_for(b"> /keys")
+        send(b"\r")
+        wait_for(b"keep unsent draft")
         send(b"/hel\t")
         wait_for(b"> /help")
         send(b"\r")
@@ -494,7 +502,7 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
         wait_frame(lambda f: b'COMFORT_DRAFT' in f)
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 14, 42, 0, 0))
         current = wait_frame(lambda f: b'COMFORT_DRAFT' in f and
-            re.search(rb'\x1b\[11;\d+H\x1b\[\?25h', f) is not None)
+            re.search(rb'\x1b\[12;18H\x1b\[\?25h', f) is not None)
         assert b'\x1b[38;2;' not in current, 'narrow view must have no mascot overlay'
         cursor = re.findall(rb'\x1b\[(\d+);(\d+)H\x1b\[\?25h', current)[-1]
         assert 1 <= int(cursor[0]) <= 14 and 1 <= int(cursor[1]) <= 42, cursor

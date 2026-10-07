@@ -31,7 +31,19 @@ Vertical motion uses the existing renderer's terminal-cell rules, including wide
 
 ## Command discovery: delivered
 
-Tab completes a slash-command name at the end of the token. A unique argument-taking command adds a space; ambiguity expands only the common prefix. Completion never submits. The composer hint shows matching names or the selected command's syntax and purpose.
+Typing `/` in a fresh draft opens the inline command list. Typing filters names,
+descriptions and groups; Up/Down moves the highlighted selection. Tab fills that
+visible selection without submitting. Enter runs an argument-free selection or
+fills an argument-taking command with a trailing space. Exact complete commands
+still submit normally. Escape dismisses without changing the draft; Ctrl-C keeps
+its stop behavior. Paste, restored drafts and history recall do not open the list.
+Outside the inline list, Tab retains prefix completion at the end of the token.
+
+The composer has cyan rounded borders, grows with the draft up to six rows,
+and preserves cursor visibility. The header shows a compact session label rather
+than a full filesystem path; `/session` retains full details. A ruled status line
+separates runtime activity from the conversation. The explicit searchable palette
+below retains its separate Enter-to-load behavior.
 
 `/help`, `/keys`, `/queue` and `/cancel` are immediate local TUI controls, even while work is active. Other session/model/context commands keep their owning worker's turn-boundary semantics. `/clear` clears display only, not model context. `/queue` distinguishes pending prompts from recovered drafts, whose submission remains explicit.
 

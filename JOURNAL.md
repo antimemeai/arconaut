@@ -3839,3 +3839,28 @@ Track substantive implementation as arconaut-os3; existing tiny-window issue sta
 relevant. Discussion plan only: no product code or dependency adoption, no campaign
 restart/multiplayer launch. Documentation checked for whitespace and local links;
 production tests are not applicable to this source acquisition/design unit.
+
+## Inline slash commands and bordered terminal — 2026-10-07
+
+Operator supplies Ghostty screenshot of slash hint wall and requests concrete
+implementation. Written sub-plan docs/TUI_SLASH_SUBPLAN.md. Add automatic inline
+menu on manually typed leading slash, filter, arrow selection, highlighted result,
+Tab fill and Enter run-or-fill. Escape preserves draft, Ctrl-C stops, recalled and
+pasted text does not open menu. Modal palette remains separate and preserves its
+draft-recovery/Enter-load contract. Composer receives rounded cyan borders and
+adaptive one-to-six-row viewport; shorten session path in header and add status
+rule. Actual physical dimensions replace artificial upward clamp, with a minimal
+small-terminal composer fallback. Advanced pickers, motion and typed Markdown/tool
+rendering remain in arconaut-os3; this is not the entire TUI redesign.
+
+New composer oracle fails before implementation. Compiler rejects implicit size
+conversions; corrected types. An early test invocation raced linking and observed
+old binaries; discard those results. Completed-build checks find old Tab/common-
+prefix and fixed-row cursor expectations; update them to the deliberately changed
+visible selection and bordered adaptive geometry, keeping exact dispatch/cursor,
+scroll-anchor and recovery oracles. Review dismisses inline state on kill/cursor
+motions. Final release terminal and terminal_pty pass2/2 in9.41s, including actual
+slash opening, selected row, arrow/Tab, help dispatch, paste, active cancellation,
+editor handoff, reopen, native restart isolation and streaming scroll. No provider
+request or broad certification. Atomically install final build/release/arco as
+arco-ui for scripts/arco; existing operator process is untouched and needs relaunch.

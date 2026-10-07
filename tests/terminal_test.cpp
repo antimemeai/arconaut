@@ -23,6 +23,45 @@ InputResult feed(Composer &c, std::string_view bytes) {
   return result;
 }
 int main() {
+  {
+    Composer slash;
+    feed(slash, "/");
+    check(!slash.palette_lines(8).empty());
+    feed(slash, "stats");
+    check(slash.palette_lines(8)[1].find("/stats") != std::string::npos);
+    check(feed(slash, "\r").text == "/stats");
+    feed(slash, "/mod\t");
+    check(slash.text() == "/model ");
+    check(slash.palette_lines(8).empty());
+    slash.draft("");
+    feed(slash, "/\x1b[B\t");
+    check(slash.text() == "/keys");
+    slash.draft("");
+    feed(slash, "/\x1b");
+    check(slash.flush_escape());
+    check(slash.text() == "/" && slash.palette_lines(8).empty());
+    slash.draft("");
+    feed(slash, "\x1b[200~/stats\x1b[201~");
+    check(slash.text() == "/stats" && slash.palette_lines(8).empty());
+    slash.draft("/stats");
+    check(slash.palette_lines(8).empty());
+    slash.draft("");
+    feed(slash, "/");
+    check(feed(slash, "\x03").action == InputAction::cancel);
+    slash.draft("");
+    feed(slash, "/model\r");
+    check(slash.text() == "/model ");
+    feed(slash, "custom");
+    check(feed(slash, "\r").text == "/model custom");
+    feed(slash, "/statx\x7f");
+    check(slash.palette_lines(8)[1].find("/stats") != std::string::npos);
+    slash.draft("");
+    feed(slash, "/tmp/file");
+    check(slash.palette_lines(8).empty());
+    slash.draft("");
+    feed(slash, "/zzzz");
+    check(feed(slash, "\r").text == "/zzzz");
+  }
   try {
     (void)std::setlocale(LC_CTYPE, "en_US.UTF-8");
     Composer palette_key;
@@ -66,11 +105,12 @@ int main() {
     feed(completion, "gpt-example\t");
     check(completion.text() == "/model gpt-example");
     feed(completion, "\x15/dra\t");
-    check(completion.text() == "/draft");
+    check(completion.text() == "/drafts"); // Tab fills the visible selected row.
+    feed(completion, "\x15/draft");
     feed(completion, "\t");
     check(completion.text() == "/draft ");
     feed(completion, "\x15/co\t");
-    check(completion.text() == "/co"); // Ambiguous: never guess a command.
+    check(completion.text() == "/commands"); // Selection is shown before filling.
     feed(completion, "\x15/unknown\t");
     check(completion.text() == "/unknown");
     feed(completion, "\x15/hel\x1b[D\t");
