@@ -3716,3 +3716,11 @@ and actual support limits in papers/docs, no phux runtime qualification inferenc
 Operator requested a direct phux repository link in README as a supported partner
 tool. Added the link and attribution beside the existing launch instructions.
 Documentation-only change; checked the diff and whitespace.
+
+## Repository About description (2026-10-07)
+
+Operator requested repository presentation and a permissive license retaining
+authorship. Set GitHub About to describe the C++/Lua agent, expert operators,
+model-editable workflows, managed context and self-development. Proposed MIT
+with Patrick Beam copyright; license selection awaits clarification of whether
+commercial forks are intended to be permitted. No license added yet.
