@@ -427,6 +427,15 @@ accounts authenticated, integrations installed or dependencies adopted. The
 [synthesis](papers/integrations-2026-10-06/SYNTHESIS.md) separates inspected
 mechanisms from proposed Arconaut design and future runtime qualification.
 
+## G9 cryptographic transport decision study — 2026-10-07
+
+Ignored `quarantine/g9-security/` contains RFC8446, OpenSSL3.5.0 verification-mode
+API documentation and libsodium key-exchange documentation. Primary URLs, exact
+SHA256 identities, restoration limitations and design/testing consequences are in
+[papers/2026-10-07-peer-security-decision.md](papers/2026-10-07-peer-security-decision.md).
+Acquired as study-only text, never executed or adopted. No production dependency
+selected; G9 awaits explicit operator decision.
+
 ## phux — 2026-10-07
 
 Operator-selected general multiplexing study: https://github.com/no-phux/phux,

@@ -3634,6 +3634,56 @@ packages/github_releases.lua
 7917461c71704f2f78fcebd0e8066593375d4bac7c7cd9b301172e94574c8a96.
 Earlier unknown station path/final boundary retained, not retroactively settled.
 
+## Claude access restored (2026-10-07)
+
+Operator reauthenticated Claude. Actual existing native colleague adapter completed
+Sonnet4.6 readiness, reported210input/5output tokens, exit0/remote completed. Prior
+selected-source review120s and narrowed60s request timed out unknown/io, no output;
+not completed reviews/auth failures or settled remote requests. Direct CLI readiness
+also worked. Recorded exact distinctions in papers/2026-10-07-claude-auth-restored.md.
+Auth blocker removed; G5 useful work/source integration still pending. No core/G8
+source changes, repeat certification or credential disclosure.
+
+## Grok Build installed (2026-10-07)
+
+Operator declines Kimi resubscription for now, requests Grok Build installation to
+expand available colleagues alongside MiMo. Consulted official xAI docs/repository,
+downloaded/inspected official installer then installed stable native macOS arm64
+1.0.46 (2765805b9442). Version/full help/login help succeed; ~/.local/bin/grok on PATH,
+installer managed shell completion/PATH and external ~/.grok installation. No stored
+auth or inherited API/deployment credential; inference awaits operator grok login.
+Recorded tooling/GROK.md, hash and actual limits; no Arco provider integration claim,
+production dependency, Kimi purchase, running campaign interruption or new auth probe.
+
+## 2026-10-07 07:25–07:32 UTC — G9 security decision blocked
+
+Root working context authorizes arconaut-7iy.9 only; bead identifies two independent
+P2P E2EE peers, not another backstop unit. Clean starting checkout5b6eece; candidate
+branch `giga/g9-security-decision`, no worktree proliferation. Original whole-unit
+07:25:14.674231..08:55:14.674231UTC unchanged. Bounded requirements/source reads
+confirm crypto/key lifecycle unselected; existing provider curl is not native peer
+TLS, station source/id admission does not establish remote authentication.
+
+Delivered papers/2026-10-07-peer-security-decision.md: proposed opt-in OpenSSL
+TLS1.3 mutual authenticated/pinned direct peers; explicit benefit/cost vs libsodium
+primitive composition; out-of-band enrollment, provider/plaintext-audit and traffic
+metadata limits; exact authentication, duplicate/conflict, unknown send, paused
+intent, bounded resources and two-context useful-work oracles. Three bounded curl
+acquisitions succeeded, hashes/restoration recorded, no new dependency adopted or
+source executed. No model/reviewer/provider calls, builds or runtime qualification;
+service billing unavailable. Missing operator decision blocks implementation, not
+permission for plaintext transport or owned cryptography.
+
+Documentation hardening07:29..07:32UTC (deadline07:34, max5min inside unit): layer1
+checked API verification defaults, absent native crypto dependency, authenticated
+provenance versus station payload and receipt versus completion; fixed proposal to
+keep exact trust-store policy pending and exclude resumption/0-RTT. Layer2 one
+source/contract and staged-whitespace recheck; no third layer or old-suite reruns.
+Bead marked blocked with exact decision/next action; campaign queue and quarantine
+manifest updated. Candidate source/evidence preserved; no accepted-unit/master
+activation claim, native change or RRC. Request OpenSSL/dependency + enrollment +
+threat-model decision before further G9 implementation under the original deadline.
+
 ## Grok auth and general phux multiplexing study (2026-10-07)
 
 Operator signed into Grok. Actual grok-4.7-build readiness completed2.768s; bounded
@@ -3683,3 +3733,25 @@ and adaptations from the project grant. GitHub About already configured. Checked
 license text against the OSI MIT reference, notice, artwork boundary and whitespace.
 Documentation-only; no runtime tests required. Published accepted files to master
 without switching or merging the active campaign checkout.
+
+## Mascot and artwork withdrawn (2026-10-07)
+
+Operator requests removal from Arco after Arcoboard drafts were withdrawn. Plan:
+delete sprite header/image, rendering and animation-only wakeups; return the
+conversation to full width; remove attribution file/README credit/license carveout
+and obsolete mascot subplan/guide paragraph. Keep historical journal/literature
+and Git records. Update affected PTY checks to require no overlay in wide/narrow
+views, preserving scroll/resize/cursor/cancellation oracles. Build release and run
+only terminal and terminal_pty checks; publish accepted change and interactive
+executable. No graphics replacement, core dependency or campaign restart.
+
+## Halt and consolidation (2026-10-07)
+
+Operator halts autonomous development, defers multiplayer implementation, and
+requests unified main plus a local build. Armada admission and both registered
+jobs paused; process observation finds no matching worker/supervisor. Retain
+reservations/source/unknown outcomes, do not resume or replay. G9 security study
+is discussion, not an approved implementation. Frumentarii now independently
+study P2P transport, multiplayer state and E2EE primary literature/refimpls.
+Consolidate accepted source and historical work notes on master, reconcile current
+status and inventory unaccepted branches; do not merge candidate code blindly.

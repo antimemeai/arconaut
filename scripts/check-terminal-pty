@@ -477,11 +477,9 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
     command = 'i=1; while [ "$i" -le 80 ]; do printf "LINE_%03d\\n" "$i"; i=$((i+1)); done; sleep 2; printf "NEW_TAIL\\n"; touch ' + str(tail) + '; while [ ! -f ' + str(release) + ' ]; do sleep 0.05; done'
     try:
         wait_for(b'Workflow reloads')
-        wait_frame(lambda f: b'\x1b[1;84H' in f and b'\x1b[38;2;177;201;195m' in f)
+        assert b'\x1b[38;2;' not in frame(), 'wide view must have no mascot overlay'
         send(('/lua arco.call("exec", {command=' + json.dumps(command) + '})\r').encode())
         wait_frame(lambda f: b'LINE_080' in f)
-        wait_frame(lambda f: b'\x1b[38;2;215;235;230m' in f)
-        wait_frame(lambda f: b'\x1b[38;2;255;255;255m' in f)
         send(b'\x1b[5~')
         old = wait_frame(lambda f: b'LINE_068' in f and b'LINE_080' not in f)
         anchor = re.findall(rb'LINE_\d{3}', old)
@@ -497,7 +495,7 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 14, 42, 0, 0))
         current = wait_frame(lambda f: b'COMFORT_DRAFT' in f and
             re.search(rb'\x1b\[11;\d+H\x1b\[\?25h', f) is not None)
-        assert b'\x1b[38;2;' not in current, 'mascot must hide on narrow resize'
+        assert b'\x1b[38;2;' not in current, 'narrow view must have no mascot overlay'
         cursor = re.findall(rb'\x1b\[(\d+);(\d+)H\x1b\[\?25h', current)[-1]
         assert 1 <= int(cursor[0]) <= 14 and 1 <= int(cursor[1]) <= 42, cursor
         send(b'\x1b[6~\x1b[6~\x1b[6~')

@@ -1,6 +1,5 @@
 #include "arconaut/terminal.hpp"
 #include "arconaut/tools.hpp"
-#include "arconaut_sprite.hpp"
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -938,8 +937,6 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   unsigned short old_rows = 0, old_columns = 0;
   auto started = std::chrono::steady_clock::now();
   auto second = started, tool_started = started;
-  auto animation_tick = started;
-  std::uint64_t animation_phase = 0;
   auto start = [&](std::string prompt) {
     if (worker.joinable())
       worker.join();
@@ -1045,11 +1042,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     }
     const auto before_trim_lines =
         scroll > 0 && old_columns > 1 && transcript.size() > ui_limit
-            ? terminal_lines(
-                  transcript,
-                  static_cast<std::size_t>(
-                      old_columns - 1 -
-                      (detail::mascot_visible(old_rows, old_columns) ? 18 : 0)))
+            ? terminal_lines(transcript, static_cast<std::size_t>(old_columns - 1))
                   .size()
             : 0;
     trim_terminal_transcript(transcript);
@@ -1058,13 +1051,6 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     const auto rows = std::max<unsigned short>(dimensions.ws_row, 10);
     const auto columns = std::max<unsigned short>(dimensions.ws_col, 12);
     const auto now = std::chrono::steady_clock::now();
-    const bool show_mascot = detail::mascot_visible(rows, columns);
-    if (now - animation_tick >= std::chrono::milliseconds{500}) {
-      animation_tick = now;
-      ++animation_phase;
-      if (busy && show_mascot)
-        redraw = true;
-    }
     if (now - second >= std::chrono::seconds{1}) {
       second = now;
       if (busy)
@@ -1073,13 +1059,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     if (rows != old_rows || columns != old_columns)
       redraw = true;
     if (redraw) {
-      const bool same_width =
-          old_columns == columns &&
-          detail::mascot_visible(old_rows, old_columns) == show_mascot;
+      const bool same_width = old_columns == columns;
       old_rows = rows;
       old_columns = columns;
       redraw = false;
-      const auto width = static_cast<std::size_t>(columns - 1 - (show_mascot ? 18 : 0));
+      const auto width = static_cast<std::size_t>(columns - 1);
       const auto palette = composer.palette_lines(std::min<std::size_t>(8, rows - 9));
       const auto height = static_cast<std::size_t>(rows - 7) - palette.size();
       const auto lines = terminal_lines(transcript, width);
@@ -1150,12 +1134,6 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           break;
         cells += static_cast<std::size_t>(std::max(0, ::wcwidth(wide)));
         remain.remove_prefix(n);
-      }
-      if (show_mascot) {
-        const auto sprite = detail::arconaut_sprite(busy, animation_phase);
-        for (std::size_t row = 0; row < sprite.size(); ++row)
-          frame += "\x1b[" + std::to_string(row + 1) + ";" +
-                   std::to_string(columns - 16) + "H" + sprite[row];
       }
       const auto display_cursor_line =
           composer.palette_open() ? height + 3 : cursor_line;
