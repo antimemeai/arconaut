@@ -3301,6 +3301,12 @@ Management imported Codex context, observed core initially live then external_un
 
 TUI source69a483a integrated onto accepted core8a0e959 and pushed master05:10UTC. Actual management native restart observed PID40412 start05:09:05, executable built05:07:48; resumed provider/tool conversation successful. arconaut-n64 closed and bd backup done. Core controller continues arconaut-7iy.2 workflow continuity; colleague access blockage unchanged. UI direct checks remain settled; no further assurance pass. Next UX discussion: composer first, then navigable palette and conversation readability.
 
+## Adopted chat ergonomics baseline and composer slice
+
+Operator says chat-first/tools-secondary UX is the baseline. docs/CHAT_UX.md captures it and exact editing semantics. UI unit began05:12:29UTC,35min whole allowance and<=10min hardening, two layers only. 932ca08 pushed master with logical-line vertical navigation/sticky terminal-cell column, explicit cursor-preserving history, line/draft/word movement and bounded kill/yank. Direct red before code; affected terminal/PTY passed; one recheck fixed transient restore kill-buffer retention, direct boundary cases and actual edited/persisted Unicode draft passed. Old PTY multiline-history assumption intentionally changed to CtrlP/N. Core workflow continuity source remains separate dirty owner. Build/ui-shell used for affected checks; main compiled activation pending core scoped qualification/rebuild, not inferred from source commit. arconaut-cy3 tracks activation; bd backup done. Wrapped rows/adaptive composer/external editor and palette/readability remain next separate whole slices, not completion claims.
+
+Composer release built05:20:50UTC at build/release/arco (1011601bytes), after owned terminal/PTY checks. Concurrent workflow-repair final affected debug/release/ASan checks finished05:22:24UTC; no source changes were staged into the UI source commit. Management RRC may now activate this build; actual resumed native observation and arconaut-cy3 closure remain next. Source/debug claims stay distinct from activation. No third assurance pass.
+
 ## G2b explicit failed-custom-Lua protocol repair (2026-10-07)
 
 Unit7iy.2 start05:09:25/deadline06:39:25UTC unchanged. Source-grounded native
@@ -3323,3 +3329,5 @@ read rejections truthfully retained in guide, separate ergonomics bug arconaut-k
 Initial scoped executable excluded dirty UI; Root subsequently accepted UI through
 932ca08, final replacement includes accepted baseline. Native RRC observation,
 bead closure and checked non-force master integration next; candidate != accepted.
+
+Composer actual management activation observed PID47847 start05:23:35UTC, after own05:20:50 release build; successful resumed provider/tool conversation. Source932ca08 already onmaster, arconaut-cy3 closed and bd backup updated. Core workflow-repair773c46f separately published candidate, same-unit replacement observed PID48458 start05:25:11 after05:24:17 scoped build; core acceptance/promotion remains its continuation responsibility. UI checks remain settled, no third assurance. Baseline chat-first/tools-secondary UX adopted; next independent proposed slice external editor, then command palette.
