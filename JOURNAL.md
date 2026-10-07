@@ -3103,3 +3103,11 @@ linguist-documentation excludes paths from stats without hiding diffs. Added
 .gitattributes for papers/docs/bead backups; native sources remain unspecified.
 Direct git check-attr verifies classifications. No runtime change or product
 checks; exact updated GitHub percentages await server-side recalculation.
+
+## Milestone-one issue corrected to done
+
+Operator confirms arconaut-uaa.3 is complete. Its open state came from stale
+2026-10-02 transition/usability notes despite subsequent sustained self-development.
+Replaced current notes, closed issue on actual operator acceptance, updated README
+and implementation-plan status. No new review/test gate; remaining features and
+full-core acceptance stay in separate issues. Backup/source publication follow.

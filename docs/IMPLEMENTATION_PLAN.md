@@ -10,6 +10,10 @@ Do the work now; independent review can attack concrete code later.
 
 ## Milestone one: develop Arconaut inside Arconaut
 
+**Accepted by the operator2026-10-07; arconaut-uaa.3 is closed.** Sustained
+source/test/build and inhabited RRC now deliver useful Arconaut changes. Remaining
+usability, resilience and broader core capabilities are separately tracked work.
+
 A real model, driven by a Lua coding workflow, can read this repository, edit source,
 run its build/tests, inspect failures, and continue the conversation through a thin
 terminal client. CLM is included: inspect/edit/reorder context, run a transformation,
