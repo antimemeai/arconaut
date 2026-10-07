@@ -113,3 +113,29 @@ preserves the old selected tree in the direct index test.
 
 Both `build/durable-release/blackbird` and `build/release/blackbird` built <=j2,
 Release and BLACKBIRD_DEBUG=OFF. No installed binary changed and no session restarted.
+
+## Exact continuation edit (same milestone)
+
+S1 remains the unfinished dependency. FIRST edit: change `RecoveryIndexEntry::value`
+from a RAM-vector ordinal to an explicitly encoded checked audit locator (journal
+identity, physical sequence/batch, payload offset/length/kind/checksum, semantic
+ordinal; environment supplied by the eventual bound root). Update fixed-page size
+arithmetic and index tests. Make `RetainedState::fact`, `source` and typed `lookup`
+fetch/decode the selected authoritative frame. Change pointer-returning lookup to
+owning fallible results scoped across transition validation: no permanent historical
+cache and no dangling borrowed results when a second lookup occurs. Exact duplicate
+checks must still fetch original bytes and retain application cold-read ownership.
+Keep the independent eager/full replay path and generated transition expectations.
+
+Then migrate main:199/205/221/247, session:143/169/199/219, context:134/324,
+coding:789/825/850/1427/1515/1541, backstop:105 and station:20 to deliberate bounded
+history or typed current-state queries. Audit inspection is the one migrated reader.
+Native reconcile still enumerates admissions from all facts; migrate it to unresolved
+closure (settled terminal summaries stay indexed), and complete bounded overlay
+before claiming S1. RetainedEnvironment `load_selected` still opens every predecessor
+and reconstructs Snapshot; S3 must replace that production path, not just standalone
+RetainedState::open. S2's complete projection and S3/S4 remain unchanged requirements.
+
+No further review or assurance pass was attempted after the failed provider call.
+The final added tests are direct fault cases, not a new certification layer. No
+unit-complete marker exists. Branch checkpoints are pushed; Root owns integration.

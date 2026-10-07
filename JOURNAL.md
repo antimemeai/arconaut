@@ -4553,3 +4553,13 @@ address/content/lifetime code. References remain study-only; no dependency adopt
 Plan is a written proposal, not independently reviewed or launched. Keep one
 recovery milestone across bounded execution periods; prerequisites are not success.
 No new worker, review panel, deadline reset, code merge or primary binary change.
+
+2026-10-07 candidate durable-recovery S1 prerequisite: added checked 16KiB COW
+recovery index and explicit native indexed duplicate/source/transition/attempt and
+audit ordinal queries. Fixed inherited cold-history journal destructor on failed
+file attachment. Release/OFF affected checks passed; both candidate application
+build trees built <=j2. S1 still depends on resident fact/source ordinals; S2–S4
+not delivered and startup still fully replays predecessors. Independent review
+attempt failed provider403 with no findings; candidate inactive. Exact checks,
+limited index-fixture measurement and next locator/consumer edits are retained in
+papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md. No activation/restart.
