@@ -4359,3 +4359,16 @@ marker; expireddeadline/pause launchnochild. One90s code check findsnoactionable
 defect under nativeparent custody/marker-presence contract. Fresh resumption units
 use originalpartialsource+currentmaster, finite25min renewed byexplicitoperator
 scope, sourceplans retained; no newworktrees beyondexisting two-slotpool.
+
+Actually launched issuer-ranges-r2/startup-loading-r2 at15:02UTC from1131185
+with preserved partial02ff9ac/8e35f55, pushed bothnewcandidatebranches, reused
+poolslots0/1. Deadlines1791386844/1791386846,25minTOTAL each authorized by
+operator's keep-pushing instruction. Actor has exact missing-oracle guidance:
+issuer actualdurablereservation/sync counts and recovery/overflow checks; startup
+fixinvalidhardcoded definition/dependency benchmark before measurement, then
+actualdominantloading improvement toward100ms. No new100msclaim or hiddenacceptance.
+Supervisors and providerrequests observedlive,41/39 resourceobservations captured
+atinitialcheck. Explicit developmentdebugprofiling persists native timing perprocess
+to freshprivatecapture dirs and OSsamples/stacks; normalUI is DEBUGOFF. No active
+operator restart/kill, primaryprofilebuild leftunchanged once these runs began.
+Globalboardadmissionpaused; explicittwojobsadopted, legacycampaigns remainpaused.

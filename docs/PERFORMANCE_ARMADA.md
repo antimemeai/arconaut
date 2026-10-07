@@ -57,3 +57,13 @@ partial sources preserved/pushed02ff9ac and8e35f55, inactive. Startup's ten larg
 fixture runs all failed, so no valid latency target claim. Slots reconciled and
 released. arconaut-kut tracks continuation semantics; expired allowances were
 not renewed. Historical active counts above describe launch observations only.
+
+Update15:03UTC: operator explicitly directs continued reservation/startup work.
+Beads/timing surfaces merged; BLACKBIRD_DEBUG defaultsOFF and ordinary recipe
+excludes developer instrumentation/fixtures. Two active BBs in reused slots,
+candidate/issuer-ranges-r2-2026-10-07 and candidate/startup-loading-r2-2026-10-07,
+start currentmaster1131185 plus preserved partial source02ff9ac/8e35f55. Fixed
+25-minute renewed units have deadlines1791386844/1791386846. Shared driver has
+no arbitrary segment cap; completion or same deadline stops it. These deliberate
+development runs use explicit debug profiling with private per-process native
+span files plus OS observations; normal operator startup never enables profiling.
