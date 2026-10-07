@@ -3300,3 +3300,26 @@ Root-authored context. No later-unit code or repeated qualification here.
 Management imported Codex context, observed core initially live then external_unknown; retained prior session/remote uncertainty and resumed G2 in fresh Root-authored context with original06:13:47 unit and05:14 hardening deadlines. No repeated Linux matrix or stopped colleague access retry. UI candidate 76c401613bad81e510c23a118edd6891f220575f owns terminal discovery/local controls only; completion red-to-green, actual busy PTY help/queue/stop and existing draft/paste/resize/restart oracles passed; single recheck fixed exact /draft precedence. Separate release build/ui-shell used. Source candidate publication is not native activation; see papers/2026-10-07-tui-chat-shell.md. Core dirty changes left outside UI candidate.
 
 TUI source69a483a integrated onto accepted core8a0e959 and pushed master05:10UTC. Actual management native restart observed PID40412 start05:09:05, executable built05:07:48; resumed provider/tool conversation successful. arconaut-n64 closed and bd backup done. Core controller continues arconaut-7iy.2 workflow continuity; colleague access blockage unchanged. UI direct checks remain settled; no further assurance pass. Next UX discussion: composer first, then navigable palette and conversation readability.
+
+## G2b explicit failed-custom-Lua protocol repair (2026-10-07)
+
+Unit7iy.2 start05:09:25/deadline06:39:25UTC unchanged. Source-grounded native
+context_repair uses strict base, workflow-start unanswered-call set, full linkage
+validation and audited unknown/no-replay placeholders. It preserves existing
+results/originals, refuses live owned Child/current-workflow calls, never asserts
+general-exec or remote-effect quiescence and leaves cancellation/startup gates
+unchanged. CLM retained-original and recovery no-transparent-retry consequences
+recorded in papers/2026-10-07-workflow-repair-delivery.md. Focused red -> green
+Mac release and Linux debug/release/ASan+UBSan workflow_repair passed. Two-layer
+hardening05:14:30..05:22:24UTC, ended within25min; no third pass/old campaign rerun.
+Interrupted background Linux driver was inspected, then same remote snapshot's
+narrow target completed, not blindly rerun or labelled a result.
+
+Actual custom workflow timeout (marker written, effect unknown) -> deliberate Lua
+failure -> explicit repaired2 -> useful OpenAI model-authored operating checklist,
+original audit context/giga-campaign/g2b/actual preserved. Allowed reopen confirmed
+unknown placeholders.23301+1380=24681 tokens, costs unavailable; eight mixed-range
+read rejections truthfully retained in guide, separate ergonomics bug arconaut-k48.
+Initial scoped executable excluded dirty UI; Root subsequently accepted UI through
+932ca08, final replacement includes accepted baseline. Native RRC observation,
+bead closure and checked non-force master integration next; candidate != accepted.

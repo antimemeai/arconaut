@@ -22,8 +22,12 @@ useful operating-guide delivery. Mac affected checks and final narrow Linux
 backstop debug/release/ASan checks passed; release RRC activation observed04:41UTC.
 No crash/reopen/general-exec containment claim. Earlier exhausted incidents and
 unknown effects remain preserved. Details: [backstop delivery](../papers/2026-10-07-backstop-delivery.md).
-Primary next is G2 managed-context policy; G5 remains the isolated colleague lane,
-with Root owning integration. This note does not start either unit here.
+G2a managed-context byte policy is accepted (139b88b/8a0e959). Active G2b
+`arconaut-7iy.2` adds explicit failed-custom-Lua linkage repair: focused Mac/Linux
+oracles and an actual unknown-timeout -> repair -> useful checklist path passed.
+Candidate native RRC observation and master integration remain pending; see
+[workflow repair delivery](../papers/2026-10-07-workflow-repair-delivery.md).
+G5 remains the independent colleague lane. This note starts no later unit.
 
 ## Ordered whole units
 

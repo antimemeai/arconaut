@@ -78,6 +78,9 @@ private:
   std::string model_;
   std::string effort_ = "medium";
   Json last_request_bytes_, usage_;
+  // Calls already unanswered at workflow admission. Repair never closes calls
+  // introduced by the currently running workflow.
+  Json::Array repairable_outputs_;
   Json budget_, pending_budget_;
   std::string budget_revision_ = "initial-disabled", pending_budget_revision_;
   Json context_budget(const Json &arguments);

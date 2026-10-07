@@ -1100,6 +1100,41 @@ Json CodingEngine::call(std::string name, Json arguments) {
         throw Error{ErrorCode::invalid_range};
       return process_output_presentation(raw, arguments);
     }
+    if (name == "context_repair") {
+      if (string_field(arguments, "base") != context_.head() || operation_depth_ != 1 ||
+          detail::owned_children.load() != 0 ||
+          log_.root().state() != JournalWriterState::live)
+        throw Error{ErrorCode::conflict};
+      auto outputs =
+          ContextStore::stop_outputs(field(context_.view(), "entries").array(), false);
+      for (auto &output : outputs) {
+        const auto &id = string_field(output, "call_id");
+        if (id.empty())
+          throw Error{ErrorCode::conflict};
+        const auto eligible = std::any_of(
+            repairable_outputs_.begin(), repairable_outputs_.end(),
+            [&](const Json &old) { return string_field(old, "call_id") == id; });
+        if (!eligible)
+          throw Error{ErrorCode::conflict};
+        output = Json::object(
+            {{"type", Json{"function_call_output"}},
+             {"call_id", Json{id}},
+             {"output",
+              Json{
+                  R"({"error":"workflow_result_missing","effect_outcome":"unknown","replayed":false,"detail":"Protocol placeholder only. Inspect retained program, tool results and audit for actual effects; no automatic retry."})"}}});
+      }
+      auto candidate = context_.items();
+      candidate.insert(candidate.end(), outputs.begin(), outputs.end());
+      // Reject duplicates/orphan outputs before publishing anything.
+      validate_protocol(candidate);
+      const auto count = outputs.size();
+      if (!outputs.empty())
+        context_.append(std::move(outputs), "workflow.protocol-repair");
+      return Json::object({{"repaired", Json{JsonNumber{std::to_string(count)}}},
+                           {"base", Json{context_.head()}},
+                           {"effect_outcome", Json{"unknown"}},
+                           {"replayed", Json{false}}});
+    }
     if (name == "context_budget")
       return context_budget(arguments);
     if (name == "context_manage") {
@@ -1307,6 +1342,8 @@ void CodingEngine::turn(TurnInput input) {
   workflow_result_ = Json{};
   pending_budget_ = Json{};
   pending_budget_revision_.clear();
+  repairable_outputs_ =
+      ContextStore::stop_outputs(field(context_.view(), "entries").array(), false);
   restart_note_.reset();
   capacity_stopped_ = false;
   unretained_bytes_ = 0;

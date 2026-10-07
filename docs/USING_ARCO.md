@@ -202,9 +202,39 @@ explicit operator continuation rather than an automatic retry. Terminal drafts a
 requiring explicit submission after continuation, never automatic execution.
 Native hot replacement and outposts remain separate later capabilities.
 
-A custom Lua workflow error after a call is appended but before its result can
-leave context linkage incomplete. Repair it through `/lua`/context operations
-before the next request; arbitrary workflow-error recovery is later work.
+### Explicit failed-workflow linkage repair (B4)
+
+A custom Lua error after a call is appended but before its result can leave
+context linkage incomplete. The next provider request refuses that presentation;
+ordinary failure does not automatically repair it or replay effects. Interruption
+and capacity stops already supply their native stop placeholders.
+
+After inspecting the retained failed program, operation results and unknowns, use
+an explicit recovery workflow:
+
+```text
+/lua local r=arco.call('context_repair',{base=arco.context().base}); print(arco.json.encode(r))
+/workflow programs/turn.lua
+<your next useful request, with instructions not to replay uncertain effects>
+```
+
+`context_repair` requires the current context `base` (strict CAS). It adds one
+`workflow_result_missing` placeholder per still-unanswered call that existed at
+this workflow's start, with `effect_outcome: unknown` and `replayed: false`.
+Even a tool that completed locally can have a missing presentation result; the
+placeholder does not replace its retained actual result or establish its outcome.
+Originals, existing outputs and source/audit paths remain intact. Repeating repair
+on complete context adds nothing. Duplicate calls, orphan outputs, stale base,
+new calls introduced by the active workflow and live owned native children are
+refused. Repair is audited through ordinary native operation/context records.
+
+This is **presentation repair**, not backstop recovery, effect reconciliation,
+process containment or a new attempt authority. General exec may have escaped
+children; remote effects may remain unknown. No native lifetime reset, automatic
+request, retry, restart or unpause occurs. Explicit cancellation stays paused until
+the operator submits work. Reopen still refuses unresolved non-provider admissions;
+this tool does not bypass that recovery gate. A new explicit workflow can use
+this repair path on retained incomplete context after an ordinary allowed reopen.
 
 On reopening, unfinished provider requests are recorded as unknown without replay
 or acceptance of late response data. Context and raw streams remain retained.
