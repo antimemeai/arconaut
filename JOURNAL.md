@@ -4195,3 +4195,30 @@ and collector both exited0. Reconciledlocal slot after cleancheckout, absentmana
 PIDs and libprocbirthcheck showed all213 sampled process identities no longerlive.
 Unobserved escapedchildren/remote outcomes are not certified by those observations.
 Board records reviewgap; primary/operatorTUI unchanged.
+
+## 2026-10-07 — Restart useful autodev and flatten the real backlog
+
+Operator asks actualautodevstate: W1finished, performancewasqueuednotrunning. Started
+P1 on candidate/local-performance-2026-10-07, reusedcleanexisting slot after retaining
+pushedW1 checkpointc8498f0 and oldaudit/traces. Freshsession/context/local-performance,
+fixed25min absoluteallowance, optimizedprofileinitialharness, automaticprivateCPU/
+footprint/I/O/stack collection. Scope minimalnative localaction spans + realhistory
+scaling, not allperformance fixes or genericobservability. Actorwrites shortplan,
+usesactualreference mechanisms and directoracles, makesonebounded independentreview
+attempt, commits/pushes candidate. No mastermerge or primarybuild change.
+
+Prepared12request/tool-step successfulLua segments, <=4continuations in same session.
+This preserves normal successfulworkflow activation boundaries so model-authored
+managedcontext can takeeffect duringcampaign ratherthan waiting an entire64stepturn.
+Configured64000trigger/32000advisorytarget. Native manager enforces original25min.
+Actualsecondsegment observedrunning and119resourceobservations persisted; no claim
+that a successfulsegment means completedunit. Candidatebranch pushed and boardadopted.
+
+Operator asks byteaudit/useful openwork: sourceandmeasured audit confirmthree concrete
+fixfamilies (streamcapture/reservationcadence, singleinputreferences, preparedsuffix/
+contextindex); fourthtask isLinuxcheck only. docs/BACKLOG_NOW.md givesflat prioritized
+scope, realremaining workflow/recovery/colleague/UI/integration work, and historical
+wrapper distinction. Closed stale deliverededitor/palette, remotebranch retirement,
+and superseded W0survey entries. UpdatedTUI notes/priority to reflect removedphysical
+clamp and deliveredrename, without inventing missingPTY results. No newtests/reviews
+or taskhierarchy used merely to validate backlog bookkeeping.
