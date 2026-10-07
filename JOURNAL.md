@@ -4347,3 +4347,15 @@ affected recheck passes. Native installedCLI readonly ready/show smoke passed in
 private session; no operator task mutations. No repeated tribunal/full-suite pass.
 Beads runtime configuration remains process-local. Primary releaseUI publication
 uses normalOFF binary; active operator process not killed or silently refitted.
+
+## 2026-10-07 — Remove premature autodev segment exhaustion
+
+Operator explicitly resumes reservation/startup work after partial first units.
+Added development scripts/autodev-segments: successfulturns continue until explicit
+completionmarker, originalabsolute deadline or pause; nonzero outcome exits without
+blindreplay. Nativecandidate manager retainsfinite in-flight processgroup budget.
+No new unit budgets inferred foroldruns. Six-successful-segment fake oracle reaches
+marker; expireddeadline/pause launchnochild. One90s code check findsnoactionable
+defect under nativeparent custody/marker-presence contract. Fresh resumption units
+use originalpartialsource+currentmaster, finite25min renewed byexplicitoperator
+scope, sourceplans retained; no newworktrees beyondexisting two-slotpool.
