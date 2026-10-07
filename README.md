@@ -83,7 +83,9 @@ arco.display(arco.json.encode(state))
 
 `arco.request(options)` lets a program configure a model request, including its assembly and request-local choices. `arco.context()`, `arco.edit(...)`, `arco.manage(...)`, and `arco.inspect(...)` expose the working context and retained material. `arco.call(...)` gives Lua the same native tools used by the model. The model's Lua tool makes these interfaces available during normal work.
 
-Lua globals are ephemeral between turns. Persistent state belongs in context, files, or services. Base, coroutine, table, string, math, and UTF-8 facilities are available; host effects go through the audited interfaces. Raw `io`, `os`, `package`, and `debug` libraries are absent. Modules can be read through tools and evaluated with `load`. This arrangement keeps ordinary effects visible in the audit. It does not claim hostile-code isolation.
+Lua globals are ephemeral between turns. Persistent state belongs in context, files, or services. Base, coroutine, table, string, math, and UTF-8 facilities are available; host effects go through the audited interfaces. Raw `io`, `os`, `package`, and `debug` libraries are absent. Named modules can be staged through `program_config` and imported with
+`arco.module(name)` from retained, workflow-pinned source; explicit tool reads and
+`load` remain available for experiments. This arrangement keeps ordinary effects visible in the audit. It does not claim hostile-code isolation.
 
 The native engine underneath the program owns operation admission, observed outcomes, retained source material, and publication of accepted context. In that vocabulary, **admission** means recording an operation before dispatch. It is an internal execution record, not a request for the operator to approve a command. Dispatch, completion, failure, and an unknown outcome remain separate facts.
 

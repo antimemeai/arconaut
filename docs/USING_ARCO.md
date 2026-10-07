@@ -390,3 +390,52 @@ failures can be settled in an unavailable audit. Success outputs remain ordinary
 bounded writes; post-dispatch output overflow uses a bounded unknown terminal.
 Context compaction does not reclaim physical audit bytes. Act on early headroom
 warnings and explicitly select a successor; no automatic physical rollover exists.
+
+### Retained named modules and request configuration
+
+`program_config({})` inspects effective and pending program snapshots/revisions,
+resolved request defaults and launch fallbacks, tool registry, context policy, and
+the current governing workflow generation (its source is retained as
+`program.source`). `program_config({proposal=..., base=REV})` stages a **complete**
+snapshot; omitted base binds the current effective revision. Example in Lua:
+
+```lua
+local view = arco.call("program_config", {})
+local source = arco.call("read_file", {path="programs/maintenance.lua"}).content
+local pending = arco.call("program_config", {
+  base=view.revision,
+  proposal={modules=arco.array({{name="maintenance", source=source}}),
+            model="", effort=""}
+})
+assert(pending.staged)
+-- This workflow still sees the old snapshot. Import on a later workflow:
+-- local maintenance = arco.module("maintenance")
+```
+
+Empty model/effort use current launch defaults; nonempty defaults affect later
+requests after publication. Effort accepts low/medium/high/xhigh. Request-local
+`arco.request` options still override these defaults. Model strings do **not**
+select a different provider/adapter, authorize dependencies, or establish provider
+capability; unsupported models fail through the existing adapter.
+
+A candidate contains at most32 uniquely named modules, each at most16KiB source,
+and at most64KiB serialized configuration. Text-only syntax validation executes
+no candidate top-level code. Publication shares the durable successful-workflow
+boundary with context/tool/policy changes; workflow failure, cancellation or failed
+settlement preserves the effective snapshot and discards pending changes. Invalid
+proposals do not replace a prior valid pending proposal. Complete proposals can
+remove modules; retained history is not erased. Reopen restores published sources.
+
+`arco.module(name)` obtains source through the audited `module_source` tool,
+evaluates it on first import in that workflow, and caches its non-nil returned
+value. Late imports resolve the same effective snapshot, never pending/live-file
+bytes. Each module has a private assignment environment inheriting the ordinary
+Lua globals; shared tables and `_G` are **not hostile-code isolation**. Cycles
+fail; failed evaluation clears its loading marker. Evaluation can perform ordinary
+audited effects: an error does not roll them back and an explicit retry can repeat
+them. Use declarative top levels and put effects in returned functions.
+
+This slice does not stage a governing workflow selector or implement an atomic
+interrupt-and-apply UI. `--workflow`/`/workflow` still select the file read at turn
+admission. Cancel stays cancelled; it does not publish pending configuration.
+Native code still activates by build/restart/resume, not by module publication.

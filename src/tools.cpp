@@ -244,6 +244,8 @@ Json LocalTools::run(std::string_view name, const Json &args) {
 }
 Json tool_definitions() {
   return unwrap(parse_json(R"([
+{"type":"function","name":"program_config","description":"Inspect or stage retained named Lua modules and request defaults (model/effort; empty uses launch defaults). Proposal is complete {modules:[{name,source}],model,effort}. Compile-only validation; successful workflow boundary activation; failure/cancel preserves effective. Optional base binds revision.","parameters":{"type":"object","properties":{"proposal":{"type":"object"},"base":{"type":"string"}}}},
+{"type":"function","name":"module_source","description":"Read an effective named module's retained source and revision. Pending sources cannot resolve; arco.module(name) loads with a per-workflow cache and private environment. Top-level effects are not rollbackable.","parameters":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}},
 {"type":"function","name":"tool_define","description":"Stage a Lua tool definition (name, description, flat scalar-object parameters, source function body with args). Activates only on successful workflow boundary; failed/invalid definitions preserve effective registry. No native name replacement. Optional base binds effective registry revision.","parameters":{"type":"object","properties":{"definition":{"type":"object"},"base":{"type":"string"}},"required":["definition"]}},
 {"type":"function","name":"tool_registry","description":"Inspect effective and pending session Lua tool definitions and revisions. Source is retained; pending definitions cannot dispatch until a successful workflow boundary.","parameters":{"type":"object","properties":{}}},
 

@@ -3393,3 +3393,20 @@ checks rerun. Original unit completed well before06:59:09UTC.
 Operator requests shipping both, then manually restarting interactive UI. Separate35min units: editor05:35:15 to06:10:15UTC, palette05:41:16 to06:16:16UTC; each<=10min hardening layers1+2 only. Editor0f1019c: idle CtrlG/current draft and /edit/blank, canonical screen/termios handoff to trusted VISUAL/EDITOR/vi, private bounded regular file, failure text/cursor retention, no implicit send or editor typeahead. Direct red, helper failure/security-boundary cases, actualPTY and one cleanup-ownership recheck passed. Paletteb7436e2/70575f2: ranked local search, CtrlSpace/T, keyboard selection, Enter loads only, Escape restoresdraft, previousdraft /drafts/capacity refusal, busy modal control and bounded resize viewport. Direct unit/PTY and one recheck + new native UI ASanUBSan cases passed. Test fixture corrections and one unintended model prompt are honestly recorded in palette paper; no product failure or replay inferred. Final feedback wording distinguishes emptydraft. No third assurance loop.
 
 Coherent committed source70575f2 archived to bounded context/tui-palette/release-source, release built then installed atomically to build/release/arco05:55:44UTC (1049201bytes; source/SHA in release-ready.json). Excludes uncommitted G4 work. UI705 published master via checked nonforce fastforward from acceptedG3. Core now independently working G4; colleague access block unchanged. User interactive restart remains explicit; management development reload needed to observe compiled activation, without restarting other sessions. docs/CHAT_UX.md captures usage/limits. Beads/backups updated; checks settled.
+
+Observed shared build collision at05:58UTC: G4 replaced build/release/arco with1068977byte/e96321bc candidate before qualification. Preserved it at context/giga-campaign/g4-built-before-ui-handoff; source remains owned by core. Checked70575f2 UI executable pinned to build/release/arco-ui (23ad00fa) and restored to shared path for development reload. Operator launcher must use ARCO_EXECUTABLE pinned path to avoid later builds selecting unrelated candidates. No unknown effects replay, no G4 activation/safety claim.
+
+## G4 named retained modules/configuration candidate (2026-10-07)
+
+7iy.4 start05:54:28.679526/deadline07:24:28.679526UTC unchanged. Complete named
+module snapshot, audited source resolution, per-workflow cache/private assignments,
+compile-only candidate validation, model/effort defaults and effective/pending
+program/tool/policy inspection implemented. Durable boundary shares existing
+context publication; failed/pause candidates preserve working snapshot. No atomic
+interrupt/apply or staged workflow selector claim; first usable C2/C4 slice.
+Grounding/design consequences and direct oracle outcomes in modules-config-delivery.
+Hardening05:58..06:07:53 layers1+2 done, no third. Mac release/ASan passed; initial
+Linux timeout retained debug pass and interrupted release, remote no longer living;
+distinct targeted Linux release/ASan passed run-fpf3zpp3. No old campaign rerun.
+Release06:04:18 includes accepted UI baseline370a90f. Candidate source publication,
+RRC and actual useful maintenance-module use next before acceptance/promotion.

@@ -292,7 +292,18 @@ struct CodingEngine::Runtime {
     lua_setglobal(L, "arco");
     constexpr const char *tool_api =
         "function arco.define_tool(d) return arco.call('tool_define',"
-        "{definition=d}) end";
+        "{definition=d}) end "
+        "do local cache,loading={},{}; function arco.module(name) "
+        "if cache[name]~=nil then return cache[name] end "
+        "assert(not loading[name], 'cyclic module import: '..name); "
+        "local r=arco.call('module_source',{name=name}); "
+        "assert(r.source, 'module unavailable: '..name); "
+        "local env=setmetatable({}, {__index=_G}); "
+        "local fn=assert(load(r.source, '@module:'..name..':'..r.revision, 't', env)); "
+        "loading[name]=true; local ok,value=pcall(fn); loading[name]=nil; "
+        "if not ok then error(value) end; "
+        "assert(value~=nil, 'module must return a value'); "
+        "cache[name]=value; return value end end";
     if (luaL_loadstring(L, tool_api) != LUA_OK || lua_pcall(L, 0, 0, 0) != LUA_OK)
       return lua_error(L);
 
@@ -411,6 +422,13 @@ struct CodingEngine::Runtime {
       self->failure = Error{ErrorCode::interrupted};
       luaL_error(L, "Turn interrupted");
     }
+  }
+  bool valid_module_source(std::string_view source) {
+    const int base = lua_gettop(state);
+    const bool valid = luaL_loadbufferx(state, source.data(), source.size(),
+                                        "arco-module-candidate", "t") == LUA_OK;
+    lua_settop(state, base);
+    return valid;
   }
   bool valid_tool_source(std::string_view source) {
     const int base = lua_gettop(state);
@@ -563,6 +581,84 @@ void validate_context_budget(const Json &value) {
     throw Error{ErrorCode::invalid_range};
 }
 } // namespace
+Json CodingEngine::program_config(const Json &arguments) {
+  if (const auto *proposal = arguments.find("proposal")) {
+    if (const auto *base = arguments.find("base");
+        base && base->string() != program_revision_)
+      throw Error{ErrorCode::conflict};
+    if (proposal->object().size() != 3)
+      throw Error{ErrorCode::invalid_range};
+    const auto &model = string_field(*proposal, "model");
+    const auto &effort = string_field(*proposal, "effort");
+    if (model.size() > 256 ||
+        (!effort.empty() && effort != "low" && effort != "medium" && effort != "high" &&
+         effort != "xhigh"))
+      throw Error{ErrorCode::invalid_range};
+    const auto &modules = field(*proposal, "modules").array();
+    if (modules.size() > 32 || unwrap(dump_json(*proposal)).size() > 65536)
+      throw Error{ErrorCode::capacity};
+    std::set<std::string> names;
+    for (const auto &module : modules) {
+      const auto &name = string_field(module, "name");
+      const auto &source = string_field(module, "source");
+      if (module.object().size() != 2 || name.empty() || name.size() > 64 ||
+          !std::all_of(name.begin(), name.end(),
+                       [](char c) {
+                         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                                (c >= '0' && c <= '9') || c == '_' || c == '-' ||
+                                c == '.';
+                       }) ||
+          !names.insert(name).second || source.empty() || source.size() > 16384 ||
+          !runtime_->valid_module_source(source))
+        throw Error{ErrorCode::invalid_range};
+    }
+    // Copy/issue before publication; validation never executes candidate code.
+    auto next = *proposal;
+    auto revision =
+        hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
+    pending_program_config_ = std::move(next);
+    pending_program_revision_ = std::move(revision);
+  }
+  return Json::object(
+      {{"revision", Json{program_revision_}},
+       {"effective", program_config_},
+       {"pending", pending_program_config_},
+       {"launch_defaults",
+        Json::object({{"model", Json{model_}}, {"effort", Json{effort_}}})},
+       {"tools", tool_registry()},
+       {"request_defaults",
+        Json::object(
+            {{"model", Json{string_field(program_config_, "model").empty()
+                                ? model_
+                                : string_field(program_config_, "model")}},
+             {"effort", Json{string_field(program_config_, "effort").empty()
+                                 ? effort_
+                                 : string_field(program_config_, "effort")}}})},
+       {"context_policy", budget_view(string_field(program_config_, "model").empty()
+                                          ? model_
+                                          : string_field(program_config_, "model"),
+                                      0)},
+       {"governing_workflow",
+        Json::object(
+            {{"generation", Json{hex_identity(generation_.bytes())}},
+             {"source", Json{"retained program.source; selected workflow file is read "
+                             "at turn admission"}},
+             {"selection",
+              Json{"--workflow or /workflow; no staged selector in this API"}}})},
+       {"pending_revision",
+        pending_program_config_ == Json{} ? Json{} : Json{pending_program_revision_}},
+       {"staged", Json{arguments.find("proposal") != nullptr}},
+       {"activation", Json{"successful-workflow-boundary"}}});
+}
+Json CodingEngine::module_source(const Json &arguments) {
+  const auto &name = string_field(arguments, "name");
+  for (const auto &module : field(program_config_, "modules").array())
+    if (string_field(module, "name") == name)
+      return Json::object({{"name", Json{name}},
+                           {"source", field(module, "source")},
+                           {"revision", Json{program_revision_}}});
+  throw Error{ErrorCode::invalid_range};
+}
 Json CodingEngine::tool_registry() const {
   return Json::object(
       {{"revision", Json{tools_revision_}},
@@ -654,7 +750,10 @@ Json CodingEngine::budget_view(std::string_view model, std::size_t input_bytes) 
 }
 Json CodingEngine::context_budget(const Json &arguments) {
   if (!arguments.find("proposal"))
-    return budget_view(model_, unwrap(dump_json(Json{context_.items()})).size());
+    return budget_view(string_field(program_config_, "model").empty()
+                           ? model_
+                           : string_field(program_config_, "model"),
+                       unwrap(dump_json(Json{context_.items()})).size());
   auto proposal = field(arguments, "proposal");
   const auto *base = proposal.find("base");
   if (base && base->string() != budget_revision_)
@@ -671,7 +770,10 @@ Json CodingEngine::context_budget(const Json &arguments) {
       hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
   pending_budget_ = std::move(proposal);
   pending_budget_revision_ = std::move(revision);
-  auto result = budget_view(model_, unwrap(dump_json(Json{context_.items()})).size());
+  auto result = budget_view(string_field(program_config_, "model").empty()
+                                ? model_
+                                : string_field(program_config_, "model"),
+                            unwrap(dump_json(Json{context_.items()})).size());
   result.object().emplace_back("staged", Json{true});
   return result;
 }
@@ -690,6 +792,10 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
                          record->payload.size()}));
     const auto *label = packet.find("label");
     if (label && label->string() == "workflow-config-effective-v1") {
+      if (const auto *config = packet.find("program_config")) {
+        program_config_ = *config;
+        program_revision_ = string_field(packet, "program_revision");
+      }
       lua_tools_ = field(packet, "tools");
       tools_revision_ = string_field(packet, "tools_revision");
     }
@@ -990,12 +1096,15 @@ Json CodingEngine::request(Json options) {
   auto items = context_.items();
   validate_protocol(items);
   auto request = Json::object(
-      {{"model", Json{model_}},
+      {{"model", Json{string_field(program_config_, "model").empty()
+                          ? model_
+                          : string_field(program_config_, "model")}},
        {"instructions",
         Json{"You are Arconaut, a programmable coding colleague for an expert "
              "operator. Use local file/process tools without approval ceremony. "
              "Context is ordinary editable data: inspect it, transform it with Lua, "
-             "repair it from originals. A timed-out tool returns a result: inspect its "
+             "repair it from originals. A timed-out tool returns a result: inspect "
+             "its "
              "retained output and choose a new attempt or another approach; never "
              "blindly repeat an effect with unknown outcome. Keep tool call/result "
              "linkage valid. Governing "
@@ -1013,7 +1122,11 @@ Json CodingEngine::request(Json options) {
              "Work carefully and verify "
              "actual results. Host cwd: " +
              std::filesystem::current_path().string()}},
-       {"reasoning", Json::object({{"effort", Json{effort_}}})},
+       {"reasoning",
+        Json::object(
+            {{"effort", Json{string_field(program_config_, "effort").empty()
+                                 ? effort_
+                                 : string_field(program_config_, "effort")}}})},
        {"input", Json{std::move(items)}},
        {"tools", request_tools()},
        {"parallel_tool_calls", Json{false}},
@@ -1218,6 +1331,10 @@ Json CodingEngine::call(std::string name, Json arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
+    if (name == "program_config")
+      return program_config(arguments);
+    if (name == "module_source")
+      return module_source(arguments);
     if (name == "tool_define")
       return define_tool(arguments);
     if (name == "tool_registry")
@@ -1440,9 +1557,8 @@ Json CodingEngine::stats() const {
   result.object().emplace_back(
       "audit",
       Json::object(
-          {{"scope",
-            Json{
-                "physical observation; not admission permission or reserved headroom"}},
+          {{"scope", Json{"physical observation; not admission permission or "
+                          "reserved headroom"}},
            {"journal", Json{hex_identity(journal.prefix.journal.bytes())}},
            {"prefix_end", number(journal.prefix.end_offset)},
            {"observed_extent",
@@ -1463,8 +1579,10 @@ Json CodingEngine::stats() const {
                                                journal.extent_error->detail)}}}})
                 : Json{}}}));
   result.object().emplace_back(
-      "context_budget",
-      budget_view(model_, unwrap(dump_json(Json{context_.items()})).size()));
+      "context_budget", budget_view(string_field(program_config_, "model").empty()
+                                        ? model_
+                                        : string_field(program_config_, "model"),
+                                    unwrap(dump_json(Json{context_.items()})).size()));
   result.object().emplace_back("last_request_bytes", last_request_bytes_);
   result.object().emplace_back("usage", usage_);
   result.object().emplace_back(
@@ -1517,6 +1635,8 @@ void CodingEngine::turn(TurnInput input) {
   failed_turn_.reset();
   workflow_result_ = Json{};
   pending_budget_ = Json{};
+  pending_program_config_ = Json{};
+  pending_program_revision_.clear();
   pending_lua_tools_ = Json{};
   pending_tools_revision_.clear();
   pending_budget_revision_.clear();
@@ -1562,10 +1682,17 @@ void CodingEngine::turn(TurnInput input) {
     if (restart_note_)
       validate_protocol(context_.items());
     const auto boundary_program =
-        pending_budget_ == Json{} && pending_lua_tools_ == Json{}
+        pending_budget_ == Json{} && pending_lua_tools_ == Json{} &&
+                pending_program_config_ == Json{}
             ? Json{}
             : Json::object(
                   {{"label", Json{"workflow-config-effective-v1"}},
+                   {"program_config", pending_program_config_ == Json{}
+                                          ? program_config_
+                                          : pending_program_config_},
+                   {"program_revision", Json{pending_program_config_ == Json{}
+                                                 ? program_revision_
+                                                 : pending_program_revision_}},
                    {"policy", pending_budget_ == Json{} ? budget_ : pending_budget_},
                    {"revision",
                     Json{pending_budget_ == Json{} ? budget_revision_
@@ -1579,6 +1706,12 @@ void CodingEngine::turn(TurnInput input) {
     // Context + policy share one durable append. Everything fallible precedes
     // publication; afterward only noexcept moves and best-effort notification.
     auto settlement = context_.finish_workflow(true, boundary_program);
+    if (pending_program_config_ != Json{}) {
+      std::swap(program_config_, pending_program_config_);
+      program_revision_.swap(pending_program_revision_);
+      pending_program_config_ = Json{};
+      pending_program_revision_.clear();
+    }
     if (pending_lua_tools_ != Json{}) {
       std::swap(lua_tools_, pending_lua_tools_);
       tools_revision_.swap(pending_tools_revision_);
@@ -1601,6 +1734,8 @@ void CodingEngine::turn(TurnInput input) {
   } catch (const Error &e) {
     failed_turn_ = e;
     pending_budget_ = Json{};
+    pending_program_config_ = Json{};
+    pending_program_revision_.clear();
     pending_lua_tools_ = Json{};
     pending_tools_revision_.clear();
     pending_budget_revision_.clear();
@@ -1619,6 +1754,8 @@ void CodingEngine::turn(TurnInput input) {
   } catch (...) {
     failed_turn_ = Error{ErrorCode::external_unknown};
     pending_budget_ = Json{};
+    pending_program_config_ = Json{};
+    pending_program_revision_.clear();
     pending_lua_tools_ = Json{};
     pending_tools_revision_.clear();
     pending_budget_revision_.clear();

@@ -83,6 +83,12 @@ private:
   Json::Array repairable_outputs_;
   Json lua_tools_{Json::Array{}}, pending_lua_tools_;
   std::string tools_revision_ = "initial-empty", pending_tools_revision_;
+  Json program_config_{Json::object(
+      {{"modules", Json{Json::Array{}}}, {"model", Json{""}}, {"effort", Json{""}}})};
+  Json pending_program_config_;
+  std::string program_revision_ = "initial-empty", pending_program_revision_;
+  Json program_config(const Json &arguments);
+  Json module_source(const Json &arguments);
   Json tool_registry() const;
   Json define_tool(const Json &arguments);
   Json request_tools() const;

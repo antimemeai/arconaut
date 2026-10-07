@@ -215,3 +215,7 @@ add_test(NAME useful_feedback_regression COMMAND useful_work_test ${CMAKE_SOURCE
 add_test(NAME useful_record_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_record_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
 add_test(NAME economy_pilot COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/economy_pilot_test.lua ${CMAKE_SOURCE_DIR}/programs/economy_pilot.lua)
 set_tests_properties(economy_pilot PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+add_executable(program_config_test tests/program_config_test.cpp)
+target_link_libraries(program_config_test PRIVATE arconaut_coding)
+add_test(NAME program_config COMMAND program_config_test)
