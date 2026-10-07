@@ -285,3 +285,8 @@ set_tests_properties(issuer_ranges PROPERTIES TIMEOUT 30)
 # Scoped native startup oracle; not installed or part of the default build.
 add_executable(startup_loading_probe EXCLUDE_FROM_ALL tooling/probes/startup_loading.cpp)
 target_link_libraries(startup_loading_probe PRIVATE blackbird_coding)
+
+add_executable(journal_checkpoint_test tests/journal_checkpoint_test.cpp)
+target_link_libraries(journal_checkpoint_test PRIVATE blackbird_foundation)
+add_test(NAME journal_checkpoint COMMAND journal_checkpoint_test)
+set_tests_properties(journal_checkpoint PROPERTIES TIMEOUT 15)

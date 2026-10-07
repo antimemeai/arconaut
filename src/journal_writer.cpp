@@ -202,7 +202,8 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
       selected = std::move(other);
     if (selected) {
       journal->cursor_ = selected->cursor;
-      journal->staged_ = std::move(selected->records);
+      journal->staged_.insert(journal->staged_.end(), selected->records.begin(),
+                              selected->records.end());
       journal->used_scan_checkpoint_ = true;
     }
   }

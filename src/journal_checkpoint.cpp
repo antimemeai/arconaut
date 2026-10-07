@@ -1,6 +1,7 @@
 #include "blackbird/journal_writer.hpp"
 
 #include <array>
+#include <chrono>
 #include <limits>
 
 namespace blackbird {
@@ -78,7 +79,7 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
     const auto count = get(view.subspan(144, 8));
     const auto anchor_crc = get(view.subspan(152, 8));
     auto journal_extent = file_->extent();
-    if (!journal_extent.has_value() || end > journal_extent.value() ||
+    if (!journal_extent.has_value() ||
         end < journal_header_size + commit_size || sequence == 0 ||
         count == 0 || count != (bytes.size() - prefix_size - 4) / entry_size ||
         anchor_crc > UINT32_MAX) return ignored();
@@ -122,6 +123,9 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
     }
     if (next_sequence != sequence || next_offset > end || end - next_offset != commit_size)
       return ignored();
+    // A correctly covered identity/boundary beyond EOF is evidence of lost data,
+    // not permission to select a smaller prefix and reuse its IDs.
+    if (end > journal_extent.value()) return Answer::failure({ErrorCode::incomplete});
     std::array<std::byte, commit_size> anchor{};
     if (!read_all(*file_, next_offset, anchor) || crc32c(anchor) != anchor_crc) return ignored();
     const auto decoded = decode_journal_frame(anchor, header_.limits);
@@ -156,7 +160,7 @@ Result<void> FramedJournal::publish_scan_checkpoint() {
       previous = std::move(other);
     if (previous && previous->cursor.sequence == cursor_.sequence &&
         previous->cursor.end_offset == cursor_.end_offset && previous->records == records_)
-      return Result<void>::success();
+      return directory_.synchronize_directory(strength_);
     const unsigned slot = previous ? (previous->slot ^ 1U) : 0U;
     if (records_.size() > (std::numeric_limits<std::size_t>::max() - prefix_size - 4) / entry_size)
       return Result<void>::failure({ErrorCode::overflow});
@@ -189,7 +193,9 @@ Result<void> FramedJournal::publish_scan_checkpoint() {
     auto synced = file_->synchronize(strength_);
     if (!synced.has_value()) return synced;
     const auto target = name_ + ".scan." + std::to_string(slot);
-    const auto temporary = name_ + ".scan.tmp." + std::to_string(cursor_.sequence);
+    const auto temporary = name_ + ".scan.tmp." + std::to_string(cursor_.sequence) + "." +
+      std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "." +
+      std::to_string(++checkpoint_attempt_);
     auto created = directory_.create_exclusive(temporary);
     if (!created.has_value()) return Result<void>::failure(created.error());
     auto file = std::move(created).value();

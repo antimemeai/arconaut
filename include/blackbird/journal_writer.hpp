@@ -144,6 +144,7 @@ private:
   Result<void> write_exact(std::uint64_t offset, ByteView input);
   std::string name_;
   bool used_scan_checkpoint_ = false;
+  std::uint64_t checkpoint_attempt_ = 0;
   JournalHeader header_;
   JournalCapacity capacity_;
   SyncStrength strength_;
