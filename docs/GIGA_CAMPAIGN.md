@@ -78,6 +78,16 @@ Local-file source owns backlog/cursor; no TUI live attachment, remote-effect suc
 crash containment or scheduler claim. Exact interface [STATION](STATION.md),
 evidence/limits [station delivery](../papers/2026-10-07-station-delivery.md).
 
+G8 `arconaut-7iy.8` candidate a0d96f1: optional trusted Lua packages/public
+GitHub releases integration and thematic C++/Lua text HUD. Affected Mac embedded
+Lua/Linux5.4.8 cases passed; hardening07:08..07:10:56UTC layers1+2 complete.
+Actual native receipt/display of LLVM23.1.2/23.1.3 delivered
+[G8 HUD](G8_TOOLCHAIN_HUD.md), context/action still pending. Retained modules
+staged for successful boundary; same-unit next turn observes/imports activation
+and routes selected context/useful station work. Not accepted or master-promoted.
+Deadline08:31:37.892952UTC unchanged. [Interface](PACKAGES.md),
+[evidence/limits](../papers/2026-10-07-packages-delivery.md).
+
 ## Ordered whole units
 
 | Unit | Delivery and direct observation | Source/design starting point |

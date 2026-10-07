@@ -3599,3 +3599,6 @@ merge. Pending module revision794b42c728ab44a0aa16000000000000 compiles; success
 normal boundary publication still pending. Same-unit next turn imports retained
 modules, explicitly includes chosen item and routes useful station work. No new
 native RRC, dependency/account adoption, upgrade, G5 retry or later-unit coding.
+G8 candidate a0d96f1 committed and pushed to origin/giga/g8-packages-hud.
+Queue remains G8 active/continue, not accepted/master-promoted. Retained modules
+publish only at this successful ordinary boundary; next turn checks actual use.
