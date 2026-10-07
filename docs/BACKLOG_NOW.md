@@ -26,7 +26,9 @@ at that reconciliation. The subsequent durable-state-r1 autodev also stopped:
 pushed dce1481 is a partial opt-in physical hint implementation, inactive.
 Combined full-scan baseline on its642-fact/335.7MB fixture gave196.708ms audited
 readiness; hint path120.609ms, prompt91.3767ms, RSS352MB unchanged. These differ
-from prior1282-fact samples and do not isolate allocator gain. Zero active.
+from prior1282-fact samples and do not isolate allocator gain. Operator explicitly
+resumes: one active native BB cold-history-r2-2026-10-07 for cold payload ownership
+and integrated consumers, scoped in COLD-HISTORY-R2.md; physical hints remain inactive.
 Compact semantic state, bounded tail and demand-read history remain the next
 actual redesign; no additional review panel is queued.
 

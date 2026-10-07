@@ -9,10 +9,11 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **zero active autodevs**. Durable-state-r1 delivered a pushed
-partial physical hint implementation, inactive; semantic current-state/tail and
-demand-read history remain unfinished. Beads and debug-only timing surfaces are
-merged; earlier launch descriptions below are historical.
+Current status: **one active autodev**, cold-history-r2-2026-10-07, on the
+operator's explicit continuation. It owns cold historical payloads and integrated
+native consumers. Durable-state-r1's physical hints remain an inactive partial;
+compact current-state/tail recovery is still the destination. Beads/debug-only
+timing surfaces are merged; earlier launch descriptions below are historical.
 
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |
@@ -113,3 +114,14 @@ recheck passed. Application main build timed out; probe/test completed. No targe
 claim, varied-history/cold/live-context result or allocation census. Manager and
 collector exit0;302 sampled identities absent. Native/board reservations released;
 no budget reset or activation. Report: papers/storage-performance-2026-10-07/DURABLE-R1.md.
+
+Explicit continuation launches cold-history-r2-2026-10-07 in reusedslot0,
+candidate/cold-history-r2-2026-10-07 seed4e2fe17 frommaster25b3ff2 plus retained
+dce1481 source. One gpt-6.1-sol/medium native BB, fixed25min deadline1791400930.
+Root's COLD-HISTORY-R2.md scopes payload ownership + actual native consumers;
+another physical-hint/helper-only result is not delivery. Exact disk bytes,
+duplicates, lifetime/errors and recovery/effect fences, one new-code review/fix/
+recheck, early application build and matched memory/read-byte/readiness observations.
+Actual pinned reference mechanisms used, no new survey/dependency. Explicit
+developer capture persists profiles; primary normalDEBUGOFF untouched. Candidate
+pushed before execution, board adopted specifically authorized job; no master merge.

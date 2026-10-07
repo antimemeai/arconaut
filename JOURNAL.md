@@ -4485,3 +4485,14 @@ root/tail remains destination; this unit must at least deliver cold payloads in
 the native restoration path. Memory intentional, exact archival reads/equality,
 custody/settlement fences and owner lifetime preserved. Explicit continuation
 permits fresh bounded25min unit, one review/fix/direct recheck; no repeated survey.
+
+Actually launched cold-history-r2-2026-10-07, gpt-6.1-sol/medium nativeBB in
+reusedslot0, deadline1791400930,25minTOTAL. Pushedseed4e2fe17 combinesmaster25b3ff2
+and dce1481 source; preserved appended journal histories and root handoff report.
+Required cold payload ownership in native session/context/history readers;
+another physicalhint/helper-only result expressly excluded from delivery. Pinned
+refsource usage, exact byte equality, fallible reads/lifetimes, unknown/settlement
+fences and useful memory measured. Early full nativebuild, one NEWcode review
+and direct findingsrecheck, no oldunit recertification. Explicit development
+native/OScapture only, primarynormalDEBUGOFF unchanged. Board adopted authorized
+unit; n11/3x2 active, master integration separate.
