@@ -3410,3 +3410,12 @@ Linux timeout retained debug pass and interrupted release, remote no longer livi
 distinct targeted Linux release/ASan passed run-fpf3zpp3. No old campaign rerun.
 Release06:04:18 includes accepted UI baseline370a90f. Candidate source publication,
 RRC and actual useful maintenance-module use next before acceptance/promotion.
+
+G4 actual native RRC observed06:10:41UTC: PID69080 start06:09:51UTC, recorded
+06:04:18 release SHA matched; ordinary resumed Lua/tool conversation working.
+Staged retained maintenance module through new API, pending revision
+8358dd2ba60508bcba15000000000000; import unavailable in defining workflow.
+Normal successful boundary then useful source/docs inventory next; not accepted
+or master-promoted yet. Managed summary staged, originals/session path retained.
+Independent startup-replay dirty source/script/test/paper left untouched/excluded.
+Same deadline07:24:28.679526, hardening remains ended06:07:53/no third.

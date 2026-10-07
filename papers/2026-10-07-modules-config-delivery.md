@@ -40,3 +40,19 @@ inventory G4 source/docs for maintenance notes using programs/maintenance.lua.
 Acceptance, bead closure and checked master integration await activation/use.
 Costs: wall elapsed roughly14min through candidate notes, resource/account price
 unavailable. Model/provider usage to be recorded if supplied; no token estimates.
+
+## Actual native activation and pending first import
+
+06:10:41UTC observed same-session PID69080 started06:09:51UTC, executing
+build/release/arco --session context/giga-campaign/session-arconaut-7iy.4
+--resume-continue --resume-once; release bytes/SHA above match. Actual ordinary
+Lua -> program_config staged maintenance from bounded programs/maintenance.lua
+read, pending_revision8358dd2ba60508bcba15000000000000; effective initial-empty
+remains invisible to import in the defining workflow as required. First import
+and useful inventory await normal successful boundary, not another native restart.
+Separate startup-replay dirty changes (retained_state/test/scripts/arco/paper)
+are not part of this unit, not rebuilt here and remain untouched.
+Managed boundary summary staged to avoid carrying long implementation exchanges;
+originals/audit remain at the original session path, physical bytes not reclaimed.
+Current resumed-process usage sample65240 input+88 output=65328 tokens, cached0;
+this is one request sample, not total campaign/unit use. Account costs unavailable.
