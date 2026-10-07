@@ -3795,3 +3795,25 @@ Final serial main release terminal/terminal_pty recheck passed2/2 in8.91s; final
 local launcher generation installed, no mascot references in source/current guide
 or README. Master checkout clean after journal publication. Campaign stays paused;
 research corpus delivered, multiplayer design/implementation not launched.
+
+## Exclusive read_file selector
+
+Operator approves one range object with mode lines/bytes and start/end; omit
+range for whole file. Advertise no competing byte/line fields and reject unknown
+range keys or combined old/new selectors. Keep valid historical Lua ranges as
+unadvertised compatibility; migrate current helpers. Preserve exact originals,
+indexing, LF/EOF/binary behavior and process-output contract. Enrich invalid-range
+model results without converting audited failure to success. Direct oracles:
+canonical slice bytes/schema, malformed selectors, old valid calls, audited error
+and corrected retry, Lua helper arguments. Bound remediation/recheck to25min,
+two layers only; no autonomous campaign or multiplayer implementation.
+
+Exclusive-selector result: direct tools oracle failed on old implementation, then
+release tools/useful_work checks passed. New coding fixture initially failed because
+its audit directory lacked owner-only permissions; corrected fixture, coding passed
+12.15s. Audited failure disposition preserved and returned example successfully read
+source. Focused source/format recheck found no new defect. Actual gpt-6.1-sol medium
+turn made canonical lines1..3 and bytes0..10 reads of README.md, both completed,
+8.608s total; 6095 reported tokens across3 requests. Exact admitted arguments
+checked in retained audit; no legacy/mixed selector or retry. Install local UI, close
+both reports of the same range-mixing fault, keep campaign paused. No third layer.

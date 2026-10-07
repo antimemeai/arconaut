@@ -99,6 +99,39 @@ std::size_t range_index(const Json &args, std::string_view key, std::size_t fall
     throw Error{ErrorCode::invalid_range};
   return index;
 }
+// Normalize the single advertised selector into the existing slice machinery.
+// Historical Lua programs may still use one legacy range family.
+Json file_range(const Json &args) {
+  const auto *range = args.find("range");
+  if (!range)
+    return args;
+  if (args.find("byte_start") || args.find("byte_end") || args.find("line_start") ||
+      args.find("line_end") || !std::holds_alternative<Json::Object>(range->value()))
+    throw Error{ErrorCode::invalid_range};
+  for (const auto &[key, value] : range->object()) {
+    (void)value;
+    if (key != "mode" && key != "start" && key != "end")
+      throw Error{ErrorCode::invalid_range};
+  }
+  const auto *mode = range->find("mode");
+  if (!mode || !std::holds_alternative<std::string>(mode->value()) ||
+      (mode->string() != "lines" && mode->string() != "bytes"))
+    throw Error{ErrorCode::invalid_range};
+  const bool lines = mode->string() == "lines";
+  const auto start = range_index(*range, "start", lines ? 1 : 0);
+  const auto end = range_index(*range, "end", SIZE_MAX);
+  if ((lines && start == 0) || end < start)
+    throw Error{ErrorCode::invalid_range};
+  Json::Object normalized;
+  for (const auto key : {"start", "end"})
+    if (const auto *value = range->find(key))
+      normalized.emplace_back(std::string{lines ? "line_" : "byte_"} + key, *value);
+  // Retain mode even when both endpoints are omitted.
+  if (!range->find("start"))
+    normalized.emplace_back(lines ? "line_start" : "byte_start",
+                            Json{JsonNumber{lines ? "1" : "0"}});
+  return Json::object(std::move(normalized));
+}
 std::string file_presentation(const std::string &raw, const Json &args) {
   const bool bytes = args.find("byte_start") || args.find("byte_end");
   const bool lines = args.find("line_start") || args.find("line_end");
@@ -146,9 +179,10 @@ Json process_output_presentation(const std::string &raw, const Json &args) {
 Json LocalTools::run(std::string_view name, const Json &args) {
   captured_.clear();
   if (name == "read_file") {
+    const auto range = file_range(args);
     auto raw = read_file(string_field(args, "path"));
     capture("file.read", raw);
-    auto shown = display_bytes(file_presentation(raw, args));
+    auto shown = display_bytes(file_presentation(raw, range));
     return Json::object({{"content", std::move(shown)}});
   }
   if (name == "write_file" || name == "edit_file") {
@@ -249,7 +283,7 @@ Json tool_definitions() {
 {"type":"function","name":"tool_define","description":"Stage a Lua tool definition (name, description, flat scalar-object parameters, source function body with args). Activates only on successful workflow boundary; failed/invalid definitions preserve effective registry. No native name replacement. Optional base binds effective registry revision.","parameters":{"type":"object","properties":{"definition":{"type":"object"},"base":{"type":"string"}},"required":["definition"]}},
 {"type":"function","name":"tool_registry","description":"Inspect effective and pending session Lua tool definitions and revisions. Source is retained; pending definitions cannot dispatch until a successful workflow boundary.","parameters":{"type":"object","properties":{}}},
 
-{"type":"function","name":"read_file","description":"Read a local file; full original bytes retained. Optional byte_start/byte_end are zero-based half-open; line_start/line_end are one-based inclusive (LF retained, no phantom trailing line). Do not mix. Missing end means EOF, beyond EOF clips/returns empty.","parameters":{"type":"object","properties":{"path":{"type":"string"},"byte_start":{"type":"integer","minimum":0},"byte_end":{"type":"integer","minimum":0},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1}},"required":["path"]}},
+{"type":"function","name":"read_file","description":"Read a local file, retaining full original bytes. Omit range for whole file, or supply ONE range object: {mode:lines,start:1,end:20} (one-based inclusive) or {mode:bytes,start:0,end:256} (zero-based half-open). Missing start means first byte/line; missing end means EOF. Beyond EOF clips/returns empty. LF retained; no phantom trailing line.","parameters":{"type":"object","properties":{"path":{"type":"string"},"range":{"type":"object","properties":{"mode":{"type":"string","enum":["lines","bytes"]},"start":{"type":"integer","minimum":0},"end":{"type":"integer","minimum":0}},"required":["mode"],"additionalProperties":false}},"required":["path"],"additionalProperties":false}},
 {"type":"function","name":"write_file","description":"Write a complete local file. No command approval is required.","parameters":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}},
 {"type":"function","name":"edit_file","description":"Replace exactly one occurrence; refuses missing or ambiguous old text.","parameters":{"type":"object","properties":{"path":{"type":"string"},"old":{"type":"string"},"new":{"type":"string"}},"required":["path","old","new"]}},
 {"type":"function","name":"exec","description":"Execute a shell command or nonempty argv on the host. Nonempty argv takes precedence; empty argv uses command. Captures combined stdout/stderr and exit code. timeout_seconds defaults to 120. A deadline returns timed_out=true and effect_outcome=unknown after local child-group cleanup, with output_ref for partial output; inspect it and choose a distinct retry or another approach. Operator cancellation stops the turn. Optional output_max_bytes bounds raw prefix bytes shown to model; full original chunks remain audited. output_ref can retrieve omitted output using read_process_output.","parameters":{"type":"object","properties":{"command":{"type":"string"},"argv":{"type":"array","items":{"type":"string"}},"timeout_seconds":{"type":"integer"},"output_max_bytes":{"type":"integer","minimum":0}}}},

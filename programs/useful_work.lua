@@ -12,12 +12,12 @@ end
 function M.lines(path, first, last)
   first, last = M.number(first), M.number(last)
   assert(first>=1 and last>=first and first%1==0 and last%1==0, 'inclusive line range')
-  return arco.call('read_file',{path=path,line_start=first,line_end=last})
+  return arco.call('read_file',{path=path,range={mode='lines',start=first,['end']=last}})
 end
 function M.bytes(path, first, last)
   first, last = M.number(first), M.number(last)
   assert(first>=0 and last>=first and first%1==0 and last%1==0, 'half-open byte range')
-  return arco.call('read_file',{path=path,byte_start=first,byte_end=last})
+  return arco.call('read_file',{path=path,range={mode='bytes',start=first,['end']=last}})
 end
 -- Positional watermark avoids the real reserved-key `end` parser failure.
 function M.page(cursor, count, watermark)

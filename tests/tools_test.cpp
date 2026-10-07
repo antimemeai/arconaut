@@ -85,6 +85,41 @@ int main() {
           tools.captured()[0].bytes != read_file(file))
         throw Error{ErrorCode::corrupt};
     };
+    range(R"("range":{"mode":"lines","start":2,"end":2})", "\n");
+    range(R"("range":{"mode":"lines","start":3})", "b");
+    range(R"("range":{"mode":"bytes","start":1,"end":3})", "\r\n");
+    range(R"("range":{"mode":"bytes","start":99})", "");
+    range(R"("range":{"mode":"lines"})", "a\r\n\nb");
+    for (const auto *bad :
+         {R"("range":{"mode":"lines","bytes":{}})", R"("range":{"mode":"both"})",
+          R"("range":{"mode":"lines","start":0})",
+          R"("range":{"mode":"bytes","start":-1})",
+          R"("range":{"mode":"bytes","start":3,"end":2})",
+          R"("range":{"mode":"bytes","start":null})", R"("range":{})", R"("range":[])",
+          R"("range":null)", R"("range":{"mode":"lines"},"byte_start":0)",
+          R"("range":{"mode":"bytes"},"line_end":2)"}) {
+      bool rejected = false;
+      try {
+        range(bad, "");
+      } catch (const Error &e) {
+        rejected = e.code == ErrorCode::invalid_range;
+      }
+      if (!rejected)
+        throw Error{ErrorCode::corrupt};
+    }
+    bool canonical_schema = false;
+    const auto definitions = tool_definitions();
+    for (const auto &definition : definitions.array()) {
+      if (string_field(definition, "name") != "read_file")
+        continue;
+      const auto &schema = field(definition, "parameters");
+      const auto &properties = field(schema, "properties");
+      canonical_schema = properties.find("range") && !properties.find("byte_start") &&
+                         !properties.find("line_start") &&
+                         !std::get<bool>(field(schema, "additionalProperties").value());
+    }
+    if (!canonical_schema)
+      throw Error{ErrorCode::corrupt};
     range("\"line_start\":2,\"line_end\":2", "\n");
     range("\"line_start\":3", "b");
     range("\"line_start\":4", "");

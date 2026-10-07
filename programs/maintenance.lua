@@ -4,7 +4,7 @@ local M = {}
 function M.inventory(paths, terms, max_lines)
   local result = {}
   for _, path in ipairs(paths) do
-    local read = arco.call("read_file", {path=path, line_start=1, line_end=max_lines})
+    local read = arco.call("read_file", {path=path, range={mode="lines", start=1, ["end"]=max_lines}})
     assert(read.content, "source read failed: " .. path)
     local matches, line = {}, 0
     for text in (read.content .. "\n"):gmatch("([^\n]*)\n") do

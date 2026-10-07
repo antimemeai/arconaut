@@ -11,7 +11,7 @@ released. Research proceeds independently of harness execution.
 | Area | Current behavior | Material limit |
 | --- | --- | --- |
 | Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
-| Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Range-mixing repeatedly stalled real model work; two reports describe this same fault class. |
+| Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Read selector now has one lines/bytes mode; malformed calls return correction guidance. Historical Lua ranges stay compatible. |
 | Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
 | Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Workflow-selector staging and atomic interrupt/apply remain deferred. |
 | Orchestration | Lua sequence, branch, explicit safe retry and selected join. | Synchronous composition; no native parallel participant scheduler or general cancellation/messaging. |
@@ -43,7 +43,8 @@ unique commit ancestry alone does not establish missing functionality.
 ## Proposed next course before multiplayer
 
 1. Use this local main build for actual coding; collect concrete ergonomics and
-   failures. Fix repeated read_file range mixing as one bounded conceptual unit.
+   failures. The read_file selector unit is delivered, with both range modes used
+   successfully in a real model turn.
 2. Integrate and exercise a useful Claude collaboration, then another working
    provider permutation. Authentication readiness alone is insufficient.
 3. Close the gap between synchronous Lua orchestration and independently running

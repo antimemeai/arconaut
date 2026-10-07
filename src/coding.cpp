@@ -993,6 +993,23 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     throw Error{ErrorCode::conflict};
   Json result =
       boundary.error ? error_json(*boundary.error) : std::move(boundary.result);
+  if (name == "read_file" && boundary.error &&
+      boundary.error->code == ErrorCode::invalid_range) {
+    result.object().emplace_back(
+        "message", Json{"Use one range object with mode lines or bytes and optional "
+                        "start/end; omit range for the whole file. Lines are one-based "
+                        "inclusive, bytes zero-based half-open. Do not combine range "
+                        "with legacy byte_/line_ fields. Endpoints must be nonnegative "
+                        "integers, line start >=1, end >=start."});
+    const auto *path = input.find("path");
+    result.object().emplace_back(
+        "example",
+        Json::object({{"path", path ? *path : Json{"file"}},
+                      {"range", Json::object({{"mode", Json{"lines"}},
+                                              {"start", Json{JsonNumber{"1"}}},
+                                              {"end", Json{JsonNumber{"20"}}}})}}));
+  }
+
   const bool timed_out = boundary.error && boundary.error->code == ErrorCode::io &&
                          boundary.error->detail == ETIMEDOUT;
   if (name == "exec") {

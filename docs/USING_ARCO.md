@@ -123,8 +123,12 @@ persistent state. The model has a `lua` tool and the same APIs:
   `read_file`, `write_file`, `edit_file` access files. `exec` accepts `command` or
   `argv` and a timeout in seconds. Nonempty argv takes precedence; empty argv uses
   the command. File/process effects run without command-approval prompts.
-  `read_file` also accepts optional `byte_start`/`byte_end` (zero-based,
-  half-open) or `line_start`/`line_end` (one-based, inclusive). Do not mix modes.
+  `read_file` accepts one optional `range` object: `{mode="lines", start=1,
+  ["end"]=20}` (one-based inclusive) or `{mode="bytes", start=0, ["end"]=256}`
+  (zero-based half-open). Omit `range` for the whole file. Only one mode is possible;
+  unknown range keys and mixed selectors fail with correction guidance. Historical
+  Lua calls using one `line_start`/`line_end` or `byte_start`/`byte_end` pair remain
+  supported, but those fields are absent from the advertised model schema.
   Missing start means first byte/line; missing end means EOF. Beyond-EOF ranges
   clip or return empty; reversed, negative, noninteger ranges and line zero fail.
   LF is retained, CR is ordinary data, and a trailing LF creates no extra line.

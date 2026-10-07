@@ -1057,12 +1057,46 @@ void workflow_interruption_budget_test(const std::string &path) {
     throw Error{ErrorCode::corrupt};
 }
 
+void file_selector_test(const std::string &path) {
+  std::filesystem::create_directory(path);
+  std::filesystem::permissions(path, std::filesystem::perms::owner_all);
+  const JournalHeader h{
+      id<EnvironmentId>(91), id<AuditStreamId>(92), 3, {8192, 65536}, std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {1024 * 1024, 1000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  Scripted provider;
+  CodingEngine engine{log, context, provider, "test"};
+  const auto file = path + "/source";
+  write_file(file, "first\nsecond\n");
+  const auto bad =
+      invoke(engine, "read_file",
+             unwrap(parse_json("{\"path\":\"" + file +
+                               "\",\"range\":{\"mode\":\"lines\"},\"byte_start\":0}")));
+  if (string_field(bad, "error") != "invalid_range" ||
+      string_field(bad, "message").find("one range object") == std::string::npos)
+    throw Error{ErrorCode::corrupt};
+  const auto corrected = invoke(engine, "read_file", field(bad, "example"));
+  if (string_field(corrected, "content") != "first\nsecond\n")
+    throw Error{ErrorCode::corrupt};
+  std::size_t failed = 0;
+  for (const auto &fact : root->committed_facts())
+    if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body))
+      if (o->disposition == AttemptDisposition::failure)
+        ++failed;
+  if (failed != 1)
+    throw Error{ErrorCode::corrupt};
+}
 int main() {
   char name[] = "/tmp/arco-coding-XXXXXX";
   auto path = mkdtemp(name);
   if (!path)
     return 2;
   try {
+    file_selector_test(std::string{path} + "/file-selector");
     workflow_interruption_budget_test(std::string{path} + "/interruption-floor");
     workflow_settlement_limits_test(std::string{path} + "/settlement-payload", false);
     workflow_settlement_limits_test(std::string{path} + "/settlement-batch", true);
