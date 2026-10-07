@@ -3341,3 +3341,10 @@ Root separately appended accepted composer note0449a17; its work preserved.
 Outcome report/queue now name acceptance and remaining effect/reader limitations.
 Prepare non-force publication with fresh remote/master ancestor check; G3 next
 fresh root working context, no later unit implementation in this session.
+
+G2b publication complete05:28:28UTC: candidate source773c46f and actual-activation/
+acceptance note3971871 pushed candidate, then fresh ancestor check and checked
+non-force local/remote master fast-forward932ca08..3971871. Actual remote master
+397187116858ccf2df3d0ea0bdd1eda5928e798a observed; working tree clean. Original
+failed-session paths and unknown exec effects remain preserved. Final working intent
+accepted for arconaut-7iy.2; controller may start G3 in its new root-authored context.
