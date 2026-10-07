@@ -16,6 +16,7 @@ import importlib.util
 spec = importlib.util.spec_from_file_location('screen_oracle', Path(__file__).with_name('terminal-screen-oracle.py'))
 oracle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(oracle)
+os.environ['BLACKBIRD_GRAPHICS'] = 'off'  # Text renderer cases are capability-independent.
 class Observed(bytearray):
     def __init__(self):
         super().__init__()
@@ -482,7 +483,7 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 100, 0, 0))
     child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
         stdout=slave, stderr=slave, start_new_session=True)
-    observed.clear()
+    observed = Observed()
     def frame():
         screen = observed.screen
         return screen.text().encode() + f'\x1b[{screen.row+1};{screen.col+1}H\x1b[?25h'.encode()
@@ -552,6 +553,7 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
 print('PTY turn/tool timing, anchored streaming scroll, resize/composer cursor and outcomes pass')
 
 # Presentation is local: startup -> square avatar; tool/failure state and bounds.
+os.environ['BLACKBIRD_GRAPHICS'] = 'off'
 with tempfile.TemporaryDirectory(prefix='blackbird-avatar-') as work:
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 120, 0, 0))
@@ -569,11 +571,9 @@ with tempfile.TemporaryDirectory(prefix='blackbird-avatar-') as work:
             if ready: observed.extend(os.read(master, 65536))
         raise AssertionError(('avatar state timeout', observed.visible()))
     try:
-        wait_for(b'<___..-----')
         wait_for(b'####  #')  # BLACKBIRD is drawn as block lettering.
         send(b'\r')
-        wait_avatar(lambda: avatar_styles() == {'0;38;2;160;173;188'} and
-                    b'<___..-----' not in observed.visible())
+        wait_avatar(lambda: avatar_styles() == {'0;38;2;160;173;188'})
         send(b'/lua blackbird.call("exec", {command="sleep 1"})\r')
         wait_avatar(lambda: b'Tool' in observed.visible() and
                     avatar_styles() == {'1;38;2;222;179;113'})
@@ -596,3 +596,44 @@ with tempfile.TemporaryDirectory(prefix='blackbird-avatar-') as work:
         if child.poll() is None: child.kill(); child.wait()
         os.close(master); os.close(slave)
 print('PTY startup, square idle/tool/failure avatar and short-height bounds pass')
+
+# Actual launcher emits the exact local-file image once; placement stays local.
+for terminal_rows, terminal_columns in ((24, 80), (40, 120)):
+    with tempfile.TemporaryDirectory(prefix='blackbird-image-') as work:
+        import base64
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ,
+                    struct.pack('HHHH', terminal_rows, terminal_columns, 0, 0))
+        env = dict(os.environ, BLACKBIRD_GRAPHICS='kitty',
+                   BLACKBIRD_EXECUTABLE=str(Path(sys.argv[1]).resolve()))
+        launcher = Path(__file__).resolve().with_name('blackbird')
+        child = subprocess.Popen([str(launcher), '--session', work], stdin=slave,
+                                 stdout=slave, stderr=slave, start_new_session=True, env=env)
+        observed = Observed()
+        try:
+            wait_for(b'\x1b_Ga=p,i=72171,p=1,q=2,C=1')
+            wait_for(b';\x1b\\\x1b8\x1b[?2026l')
+            assert bytes(observed).count(b'a=t,f=100,t=f,i=72171,q=2;') == 1
+            import re
+            match = re.search(rb'a=t,f=100,t=f,i=72171,q=2;([^\x1b]+)', observed)
+            asset = Path(base64.b64decode(match[1]).decode())
+            assert asset.name == 'sr71.png' and asset.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
+            assert (observed.screen.row, observed.screen.col) == (terminal_rows-3, 4), 'image moved composer cursor'
+            if terminal_columns == 80:
+                assert b'c=24,r=12;' in observed, '80x24 startup omitted the artwork'
+            send(b'\r')
+            wait_for(b'c=12,r=6;\x1b\\\x1b8\x1b[?2026l')
+            assert b'a=t,' not in observed, 'corner change retransferred PNG'
+            assert (observed.screen.row, observed.screen.col) == (terminal_rows-3, 4)
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 6, 80, 0, 0))
+            os.kill(child.pid, signal.SIGWINCH)
+            observed.clear()
+            wait_for(b'\x1b_Ga=d,d=i,i=72171,q=2;')
+            assert b'a=t,' not in observed, 'small resize retransferred PNG'
+            send(b'/quit\r')
+            assert exit_code() == 0
+            assert b'a=d,d=I,i=72171,q=2;' in observed, 'exit retained image pixels'
+        finally:
+            if child.poll() is None: child.kill(); child.wait()
+            os.close(master); os.close(slave)
+print('Launcher PTY supplied PNG, 80x24 startup, cached corner, cursor, compact erase and exit release pass')

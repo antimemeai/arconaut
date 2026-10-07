@@ -1,5 +1,7 @@
 #include "blackbird/sprite.hpp"
 #include <array>
+#include <cstdlib>
+#include <unistd.h>
 #include <string_view>
 
 namespace blackbird {
@@ -82,25 +84,6 @@ constexpr std::array<std::string_view, 5> lettering{
     "####  #     ##### #     ###   ####    #   ####  #   #",
     "#   # #     #   # #     #  #  #   #   #   #  #  #   #",
     "####  ##### #   #  #### #   # ####  ##### #   # ####"};
-constexpr std::array<std::string_view, 18> aircraft{
-    "                                      .",
-    "                    /|            . .",
-    "                   / |         . : .",
-    "                  /  |      . :+*",
-    "             ____/   |__ .:+*",
-    "            / ___\\___/  \\                  .",
-    "           / /   /   \\   |          /|  . : .",
-    "          <_/___/_____/_.'          / |.+*",
-    "             |   _.-'  \\          /  |'",
-    "             |.-'       \\________/___|__",
-    "          _.-'  ______.-'      / ___\\   \\",
-    "       .-'  _.-'     /        / /   /\\   |",
-    "     .'  .-'  __    /     ___<_/___/  \\_.'\\",
-    "    /  .'    /_/   /  _.-'     \\___________\\",
-    "   / .'  /\\      .'--'       _.-'",
-    "  /.'    \\/   .-'      __.--'",
-    " /'________.-'__..----'",
-    "<___..-----'"};
 } // namespace
 std::vector<std::string> blackbird_startup(std::size_t columns, std::size_t rows,
                                           bool mascot) {
@@ -111,26 +94,69 @@ std::vector<std::string> blackbird_startup(std::size_t columns, std::size_t rows
     result.emplace_back(std::string_view{"BLACKBIRD"}.substr(0, columns));
     return result;
   }
-  // On wide screens the lettering sits alongside the larger aircraft.
-  if (mascot && columns >= 101 && rows >= aircraft.size()) {
-    result.reserve(aircraft.size());
-    for (std::size_t y = 0; y < aircraft.size(); ++y) {
-      std::string line{aircraft[y]};
-      if (y >= 5 && y < 5 + lettering.size()) {
-        line.resize(48, ' ');
-        line += lettering[y - 5];
-      }
-      result.push_back(std::move(line));
-    }
-  } else {
-    for (const auto line : lettering)
-      result.emplace_back(line);
-    if (mascot && rows >= lettering.size() + 1 + aircraft.size()) {
-      result.emplace_back();
-      for (const auto line : aircraft)
-        result.emplace_back(line);
-    }
+  (void)mascot; // Artwork is displayed directly by the terminal graphics path.
+  for (const auto line : lettering)
+    result.emplace_back(line);
+  return result;
+}
+} // namespace blackbird
+
+namespace blackbird {
+namespace {
+std::string_view setting(const char *name) {
+  const auto *value = std::getenv(name);
+  return value ? std::string_view{value} : std::string_view{};
+}
+std::string_view image_path() {
+  const auto override_path = setting("BLACKBIRD_SPRITE_ASSET");
+  return override_path.empty() ? std::string_view{BLACKBIRD_SPRITE_ASSET} : override_path;
+}
+std::string base64_path(std::string_view path) {
+  constexpr std::string_view alphabet =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string result;
+  result.reserve((path.size() + 2) / 3 * 4);
+  for (std::size_t i = 0; i < path.size(); i += 3) {
+    const auto a = static_cast<unsigned char>(path[i]);
+    const auto b = i + 1 < path.size() ? static_cast<unsigned char>(path[i + 1]) : 0U;
+    const auto c = i + 2 < path.size() ? static_cast<unsigned char>(path[i + 2]) : 0U;
+    result += alphabet[a >> 2];
+    result += alphabet[((a & 3U) << 4) | (b >> 4)];
+    result += i + 1 < path.size() ? alphabet[((b & 15U) << 2) | (c >> 6)] : '=';
+    result += i + 2 < path.size() ? alphabet[c & 63U] : '=';
   }
   return result;
+}
+} // namespace
+bool blackbird_graphics_available() {
+  const auto mode = setting("BLACKBIRD_GRAPHICS");
+  if (mode == "off")
+    return false;
+  if (mode != "kitty") {
+    if (!mode.empty() || !setting("SSH_CONNECTION").empty() ||
+        !setting("TMUX").empty() || !setting("STY").empty())
+      return false;
+    if (setting("TERM_PROGRAM") != "ghostty" && setting("TERM") != "xterm-ghostty" &&
+        setting("TERM") != "xterm-kitty")
+      return false;
+  }
+  const auto path = image_path();
+  return !path.empty() && path.size() <= 3072 &&
+         ::access(std::string{path}.c_str(), R_OK) == 0;
+}
+std::string blackbird_graphics_load() {
+  return "\x1b_Ga=t,f=100,t=f,i=72171,q=2;" + base64_path(image_path()) + "\x1b\\";
+}
+std::string_view blackbird_graphics_erase(bool release) {
+  return release ? "\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\"
+                 : "\x1b_Ga=d,d=i,i=72171,q=2;\x1b\\";
+}
+std::string blackbird_graphics_place(std::size_t row, std::size_t column,
+                                     std::size_t columns, std::size_t rows) {
+  if (!columns || !rows)
+    return {};
+  return "\x1b" "7\x1b[" + std::to_string(row + 1) + ";" +
+         std::to_string(column + 1) + "H\x1b_Ga=p,i=72171,p=1,q=2,C=1,c=" +
+         std::to_string(columns) + ",r=" + std::to_string(rows) + ";\x1b\\\x1b" "8";
 }
 } // namespace blackbird

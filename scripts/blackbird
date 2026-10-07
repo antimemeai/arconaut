@@ -2,6 +2,8 @@
 set -eu
 blackbird_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 blackbird_executable=${BLACKBIRD_EXECUTABLE:-${ARCO_EXECUTABLE:-"$blackbird_root/build/release/blackbird"}}
+BLACKBIRD_SPRITE_ASSET=${BLACKBIRD_SPRITE_ASSET:-"$blackbird_root/assets/sr71.png"}
+export BLACKBIRD_SPRITE_ASSET
 blackbird_probe=false
 blackbird_session="$HOME/.local/state/blackbird/default"
 if [ ! -e "$blackbird_session" ] && [ -d "$HOME/.local/state/arconaut/default" ]; then

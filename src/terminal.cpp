@@ -242,7 +242,7 @@ public:
   void suspend() {
     if (!active_)
       return;
-    terminal_control("\x18\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
+    terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
     if (tcsetattr(STDIN_FILENO, TCSANOW, &before_) != 0)
       throw std::runtime_error("Cannot restore terminal for editor");
     active_ = false;
@@ -250,7 +250,7 @@ public:
   ~TerminalMode() {
     if (active_) {
       try {
-        terminal_control("\x18\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
+        terminal_control("\x18\x1b_Ga=d,d=I,i=72171,q=2;\x1b\\\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
       } catch (...) {
       }
       (void)tcsetattr(STDIN_FILENO, TCSANOW, &before_);
@@ -1086,6 +1086,10 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   const auto *mascot_setting = std::getenv("BLACKBIRD_MASCOT");
   const bool mascot_enabled =
       !mascot_setting || std::string_view{mascot_setting} != "0";
+  const bool graphics_enabled = mascot_enabled && blackbird_graphics_available();
+  bool image_loaded = false;
+  std::array<std::size_t, 4> image_placement{};
+  std::string image_frame;
   auto started = std::chrono::steady_clock::now();
   auto second = started, tool_started = started;
   auto start = [&](std::string prompt) {
@@ -1136,6 +1140,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     mode.suspend();
     const auto edited = edit_terminal_draft(composer.text());
     mode.resume();
+    image_loaded = false;
+    image_placement = {};
     output.attach(STDOUT_FILENO);
     painter.invalidate();
     (void)tcflush(STDIN_FILENO,
@@ -1268,6 +1274,10 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         small_frame +=
             "\x1b[1;" +
             std::to_string(std::min(width, display_width(draft.back()) + 1)) + "H";
+        if (graphics_enabled && image_placement[2]) {
+          small_frame += blackbird_graphics_erase();
+          image_placement = {};
+        }
         small_frame += "\x1b[?2026l";
         pending_grid = false;
         output.start(small_frame);
@@ -1285,7 +1295,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           composer.palette_lines(std::min<std::size_t>(8, rows - 5 - draft_height));
       const auto height =
           static_cast<std::size_t>(rows - 5) - draft_height - palette.size();
-      const bool show_sprite = !welcoming && mascot_enabled && width >= 90 &&
+      const bool show_sprite = !welcoming && mascot_enabled &&
+                               width >= (graphics_enabled ? 70U : 90U) &&
                                height + 2 >= blackbird_sprite_height;
       const auto header_width =
           show_sprite ? width - blackbird_sprite_width - 2 : width;
@@ -1358,18 +1369,38 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                         : busy        ? Ink::assistant
                                       : Ink::muted;
         for (std::size_t row = 0; row < sprite.size(); ++row)
-          grid.line(row, {{sprite[row], ink}}, width - blackbird_sprite_width);
+          if (graphics_enabled)
+            grid.line(row, {{"│", ink}}, width - blackbird_sprite_width - 1);
+          else
+            grid.line(row, {{sprite[row], ink}}, width - blackbird_sprite_width);
       }
+      std::array<std::size_t, 4> placement{};
       if (welcoming) {
+        std::size_t lettering_row = 2, lettering_column = 2;
+        if (graphics_enabled) {
+          if (width >= 95 && height >= 12) {
+            const auto side = std::min(height, (width - 59) / 2);
+            placement = {2, 2, side * 2, side};
+            lettering_column = side * 2 + 6;
+            lettering_row += (side - 5) / 2;
+          } else if (height > 6) {
+            const auto side = std::min(height - 6, (width - 4) / 2);
+            placement = {8, 2, side * 2, side};
+          }
+        }
         for (std::size_t row = 0; row < std::min(height, welcome_lines.size()); ++row)
-          grid.line(row + 2, {{"  " + welcome_lines[row], Ink::assistant}});
-        if (welcome_lines.size() + 1 < height)
+          grid.line(row + lettering_row,
+                    {{welcome_lines[row], Ink::assistant}}, lettering_column);
+        if (!graphics_enabled && welcome_lines.size() + 1 < height)
           grid.line(welcome_lines.size() + 3,
                     {{"  Enter continues · / commands · Workflow reloads each turn.", Ink::muted}});
       } else
         for (std::size_t row = 0; row < height; ++row)
           if (begin + row < end)
             grid.line(row + 2, lines[begin + row]);
+      if (graphics_enabled && show_sprite)
+        placement = {0, width - blackbird_sprite_width, blackbird_sprite_width,
+                     blackbird_sprite_height};
       std::size_t menu_row = height + 2;
       for (const auto &line : palette)
         grid.line(menu_row++,
@@ -1427,7 +1458,24 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                                            std::min(display_cursor_cells, width) - 1);
       if (!packet.empty()) {
         pending_grid = true;
-        output.start(packet);
+        if (graphics_enabled && placement != image_placement) {
+          image_frame.assign(packet);
+          // Insert image commands before the existing synchronized-update close.
+          image_frame.resize(image_frame.size() - std::string_view{"\x1b[?2026l"}.size());
+          image_frame += blackbird_graphics_erase();
+          if (placement[2] && placement[3]) {
+            if (!image_loaded) {
+              image_frame += blackbird_graphics_load();
+              image_loaded = true;
+            }
+            image_frame += blackbird_graphics_place(placement[0], placement[1],
+                                                    placement[2], placement[3]);
+          }
+          image_frame += "\x1b[?2026l";
+          image_placement = placement;
+          output.start(image_frame);
+        } else
+          output.start(packet);
         if (output.flush())
           painter.commit(grid);
       }

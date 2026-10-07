@@ -77,6 +77,7 @@ target_link_libraries(blackbird-candidate PRIVATE blackbird_foundation Threads::
 add_executable(blackbird src/main.cpp)
 target_link_libraries(blackbird PRIVATE blackbird_coding)
 target_compile_definitions(blackbird PRIVATE BLACKBIRD_WORKFLOW="${CMAKE_SOURCE_DIR}/programs/turn.lua")
+target_compile_definitions(blackbird_coding PRIVATE BLACKBIRD_SPRITE_ASSET="${CMAKE_SOURCE_DIR}/assets/sr71.png")
 add_executable(chat_view_test tests/chat_view_test.cpp)
 target_link_libraries(chat_view_test PRIVATE blackbird_coding)
 add_test(NAME chat_view COMMAND chat_view_test)

@@ -16,9 +16,9 @@ cycle, see [the project stock](docs/CURRENT_STATE.md).
 
 Arconaut is now **Blackbird**. Old launch commands and the Lua `arco` API remain compatibility aliases; sessions and retained audit formats are preserved.
 
-Startup carries ASCII BLACKBIRD lettering and a large three-quarter SR-71. On
-first input it becomes a square status avatar: muted idle, cyan active, amber
-tool work, red failure, with active exhaust animation.
+Startup carries ASCII BLACKBIRD lettering and the operator-supplied SR-71 image
+in Ghostty/Kitty. First input moves the same image into a square status avatar,
+with an indicator: muted idle, cyan active, amber tool work, red failure.
 For native CPU/allocation investigation, see [Profiling](docs/PROFILING.md).
 
 ## Come aboard

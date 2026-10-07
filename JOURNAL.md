@@ -4005,3 +4005,33 @@ colors and short-height hiding. Board Lua parse, --once, and actual controlling
 PTY title/avatar/clean quit pass. Neuroses debug, release and ASan+UBSan each pass
 all three selected cases; capture context/linux/run-mrgo76i0/checks.log. One review
 round only. Release blackbird-ui and arco-ui copies are atomically refreshed.
+
+## 2026-10-07 — Use the supplied artwork
+
+The operator rejected the redraw: they had already supplied a better sprite.
+Both attachments are PNGs, including the ASCII-looking one. Stored the exact
+first attachment in assets/sr71.png; matching SHA-256 confirms unchanged bytes.
+The missing startup art was the prior height/width fallback dropping the drawing.
+
+Replaced the invented startup airplane with direct terminal image placement in
+known local Ghostty/Kitty terminals, grounded in their protocol documentation.
+Terminal-owned decode/cache; the harness only encodes a filename. The same image
+is large on startup (including80x24), then a corner square with state indicator.
+Resizing/repositioning transmits small controls, never repeated PNG payloads.
+Cursor, quiet replies, synchronized single-writer frames and owned-image cleanup
+are explicit. The board uses the same file and a distinct image ID.
+
+One bounded adversarial review found missing tiny-terminal erase and inherited
+90-column cutoff blocking80-column corner placement. Both fixed. Added DEC cursor
+save/restore and APC skipping to the existing VT oracle. Direct launcher PTYs at
+80x24 and120x40 pass: correct PNG filename, single upload, cached relocation,
+unchanged composer cursor, tiny-terminal erase and exit pixel release. Existing
+text/terminal/render checks pass as well. No production dependency adopted.
+
+Final recheck: local chat_view/render-oracle pass2/2; full native terminal PTY
+suite passes, including both forced-graphics launcher sizes. Board80x24 controlling
+PTY verifies asset filename, square placement, named image release and clean quit;
+Lua parse passes. Filename payload bounded to the protocol's4096-byte base64
+payload (3072 raw path bytes). Launcher exports the checkout's asset path, so
+moving the checkout does not depend on the compiled resource path. Atomic UI
+binary copies refreshed. Previous ASCII preview SVGs remain historical captures.

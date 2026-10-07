@@ -12,6 +12,7 @@ class Screen:
         self.style = '0'
         self.prior = None
         self.join = self.regional = False
+        self.saved_cursor = (0, 0)
         self.row = self.col = 0
         self.pending = ''
         self.decoder = codecs.getincrementaldecoder('utf-8')('replace')
@@ -23,6 +24,15 @@ class Screen:
             c = text[pos]
             if c == '\x1b':
                 if pos+1 >= len(text): break
+                if text[pos+1] in ('7','8'):
+                    if text[pos+1] == '7': self.saved_cursor = (self.row,self.col)
+                    else: self.row,self.col = self.saved_cursor
+                    self.prior = None
+                    pos += 2;continue
+                if text[pos+1] == '_':
+                    end = text.find('\x1b\\', pos+2)
+                    if end < 0: break
+                    pos = end+2;continue  # APC graphics does not occupy text cells.
                 if text[pos+1] == '[':
                     match = re.match(r'\x1b\[([0-9;?]*)([@-~])', text[pos:])
                     if not match: break
