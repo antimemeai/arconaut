@@ -3783,9 +3783,15 @@ MAIN_READY, provider2843ms,1886 reported tokens. Turn completed, then /quit exit
 and restored terminal. No user session or autonomous campaign was resumed.
 A redundant concurrent build was started after checkout consolidation. Root stopped
 only that build's identified descendants and completed serial linking successfully.
-The final main executable is byte-identical to the tested/published interactive
-generation; no repeated provider call or third testing layer.
+The final serially linked executable differed from the earlier tested generation
+and was atomically installed as arco-ui. Recheck only terminal and terminal_pty
+on this final artifact to resolve the concurrent-build uncertainty; no broad suite.
 
 Compared unique old branch commits: useful-work request-write fence already in main
 with direct regression; old TUI shell superseded by editor/palette. Colleague source
 is genuine separate candidate, explicitly not silently accepted by consolidation.
+
+Final serial main release terminal/terminal_pty recheck passed2/2 in8.91s; final
+local launcher generation installed, no mascot references in source/current guide
+or README. Master checkout clean after journal publication. Campaign stays paused;
+research corpus delivered, multiplayer design/implementation not launched.
