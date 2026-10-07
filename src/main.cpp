@@ -429,6 +429,13 @@ int main(int argc, char **argv) {
           session_store.save(candidate);
           engine.effort(value);
           effort = std::move(value);
+        } else if (prompt.starts_with("/decision ")) {
+          const auto encoded = unwrap(dump_json(unwrap(parse_json(prompt.substr(10)))));
+          std::string eq;
+          while (encoded.find("]" + eq + "]") != std::string::npos) eq += "=";
+          const auto code = "return blackbird.decide(blackbird.json.decode([" + eq + "[" + encoded + "]" + eq + "]))";
+          engine.turn({"", code});
+          emit(unwrap(dump_json(engine.workflow_result())) + "\n");
         } else if (prompt.starts_with("/beads ")) {
           auto rest = prompt.substr(7);
           Json args;

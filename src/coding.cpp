@@ -294,6 +294,7 @@ struct CodingEngine::Runtime {
     lua_setglobal(L, "blackbird");
     lua_setglobal(L, "arco"); // Compatibility alias for retained programs.
     constexpr const char *tool_api =
+        "function blackbird.decide(args) return blackbird.call('decision_model',args) end "
         "function blackbird.define_tool(d) return blackbird.call('tool_define',"
         "{definition=d}) end "
         "do local cache,loading={},{}; function blackbird.module(name) "
@@ -781,9 +782,9 @@ Json CodingEngine::context_budget(const Json &arguments) {
   return result;
 }
 CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
-                           CodingProvider &provider, std::string model)
+                           CodingProvider &provider, std::string model, DecisionModelConfig decisions)
     : log_(log), context_(context), provider_(provider), model_(std::move(model)),
-      identity_(session_identity(log)),
+      decision_models_(std::move(decisions)), identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
   budget_ = default_context_budget();
   for (const auto &fact : log_.root().committed_facts()) {
@@ -1054,7 +1055,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
   if (boundary.error &&
       (boundary.error->code == ErrorCode::capacity || name == "provider" ||
-       name == "exec" || name == "beads") &&
+       name == "exec" || name == "beads" || name == "decision_model") &&
       (boundary.error->code == ErrorCode::capacity ||
        boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
@@ -1386,6 +1387,15 @@ Json CodingEngine::call(std::string name, Json arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
+    if (name == "decision_model") {
+      decision_models_.cancelled = cancelled;
+      decision_models_.observer = [&](std::string_view label, std::string_view raw) {
+        log_.original({label, raw, Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      };
+      auto result = decision_models_.evaluate(arguments);
+      result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
+      return result;
+    }
     if (name == "beads") {
       beads_.cancelled = cancelled;
       beads_.observer = [&](std::string_view label, std::string_view raw) {

@@ -3,6 +3,7 @@
 #include "blackbird/session.hpp"
 #include "blackbird/tools.hpp"
 #include "blackbird/beads.hpp"
+#include "blackbird/decision_models.hpp"
 #include <map>
 #include <memory>
 namespace blackbird {
@@ -35,7 +36,7 @@ struct TurnInput {
 class CodingEngine {
 public:
   CodingEngine(AuditLog &log, ContextStore &context, CodingProvider &provider,
-               std::string model);
+               std::string model, DecisionModelConfig decisions = {});
   ~CodingEngine();
   CodingEngine(const CodingEngine &) = delete;
   CodingEngine &operator=(const CodingEngine &) = delete;
@@ -107,6 +108,7 @@ private:
   void present(const Json &item);
 
   BeadsAdapter beads_;
+  DecisionModels decision_models_;
   SessionIdentity identity_;
   std::optional<std::string> restart_note_;
   DefinitionGenerationId generation_;
