@@ -100,6 +100,51 @@ std::size_t next(std::string_view s, std::size_t cursor) {
     ++cursor;
   return cursor;
 }
+std::size_t line_start(std::string_view text, std::size_t cursor) {
+  const auto newline =
+      cursor == 0 ? std::string_view::npos : text.rfind('\n', cursor - 1);
+  return newline == std::string_view::npos ? 0 : newline + 1;
+}
+std::size_t line_end(std::string_view text, std::size_t cursor) {
+  const auto newline = text.find('\n', cursor);
+  return newline == std::string_view::npos ? text.size() : newline;
+}
+std::size_t display_width(std::string_view text) {
+  std::size_t cells = 0;
+  while (!text.empty()) {
+    if (text.front() == '\t') {
+      cells += 2;
+      text.remove_prefix(1);
+      continue;
+    }
+    wchar_t wide{};
+    std::mbstate_t state{};
+    const auto n = std::mbrtowc(&wide, text.data(), text.size(), &state);
+    const auto width = n != 0 && n <= text.size() ? ::wcwidth(wide) : -1;
+    cells += width < 0 ? 4 : static_cast<std::size_t>(width);
+    text.remove_prefix(width < 0 ? 1 : n);
+  }
+  return cells;
+}
+bool word_space(std::string_view text, std::size_t position) {
+  // Whitespace-delimited words, rather than imposing a language's punctuation rules.
+  const auto c = static_cast<unsigned char>(text[position]);
+  return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
+}
+std::size_t word_left(std::string_view text, std::size_t cursor) {
+  while (cursor > 0 && word_space(text, previous(text, cursor)))
+    cursor = previous(text, cursor);
+  while (cursor > 0 && !word_space(text, previous(text, cursor)))
+    cursor = previous(text, cursor);
+  return cursor;
+}
+std::size_t word_right(std::string_view text, std::size_t cursor) {
+  while (cursor < text.size() && word_space(text, cursor))
+    cursor = next(text, cursor);
+  while (cursor < text.size() && !word_space(text, cursor))
+    cursor = next(text, cursor);
+  return cursor;
+}
 class TerminalMode {
 public:
   TerminalMode() {
@@ -132,10 +177,15 @@ std::string terminal_key_help() {
          "  Enter        Send; while busy, queue for the next turn\n"
          "  Alt-Enter    Insert newline (also Ctrl-J)\n"
          "  Tab          Complete a slash-command name; ambiguity never submits\n"
-         "  Up / Down    Recall sent history / return to your draft\n"
+         "  Up / Down    Move between draft lines; history at first/last line\n"
+         "  Ctrl-P / N   Explicit history; restores your draft and cursor\n"
          "  Left / Right Move within the draft\n"
-         "  Ctrl-A / E   Start / end of draft\n"
-         "  Ctrl-U       Clear draft\n"
+         "  Ctrl-A / E   Start / end of line (also Home / End)\n"
+         "  Ctrl-Home/End Start / end of draft\n"
+         "  Alt-B / F    Back / forward word (also Ctrl-Left / Right)\n"
+         "  Ctrl-W       Delete previous word; Alt-D deletes next word\n"
+         "  Ctrl-K / Y   Kill to line end / yank last deletion\n"
+         "  Ctrl-U       Clear draft; Ctrl-Y restores it\n"
          "  Ctrl-C       Request stop and clear pending queue; keep unsent draft\n"
          "  Ctrl-Q       Stop and exit; preserve unsent draft\n"
          "  PgUp / PgDn  Scroll transcript\n"
@@ -181,6 +231,7 @@ std::string terminal_command_hint(std::string_view draft) {
                          : "Tab complete · " + matches;
 }
 void Composer::insert(char byte) {
+  goal_column_.reset();
   if (text_.size() >= 1024 * 1024)
     return;
   text_.insert(cursor_, 1, byte);
@@ -303,6 +354,12 @@ void Composer::restore(const TerminalState &state) {
   cursor_ = state.cursor;
   history_ = state.history;
   history_index_ = history_.size();
+  draft_.clear();
+  draft_cursor_ = 0;
+  killed_.clear();
+  goal_column_.reset();
+  escape_.clear();
+  pasted_ = false;
 }
 TerminalState Composer::state() const { return {text_, cursor_, history_, {}}; }
 void Composer::draft(std::string text) {
@@ -312,6 +369,59 @@ void Composer::draft(std::string text) {
   cursor_ = text_.size();
   history_index_ = history_.size();
   draft_.clear();
+  draft_cursor_ = 0;
+  goal_column_.reset();
+}
+void Composer::history(bool older) {
+  if (older) {
+    if (history_index_ == 0)
+      return;
+    if (history_index_ == history_.size()) {
+      draft_ = text_;
+      draft_cursor_ = cursor_;
+    }
+    text_ = history_[--history_index_];
+    cursor_ = text_.size();
+  } else {
+    if (history_index_ == history_.size())
+      return;
+    ++history_index_;
+    text_ = history_index_ == history_.size() ? draft_ : history_[history_index_];
+    cursor_ = history_index_ == history_.size() ? draft_cursor_ : text_.size();
+  }
+  goal_column_.reset();
+}
+void Composer::vertical(bool up) {
+  const auto begin = line_start(text_, cursor_);
+  const auto end = line_end(text_, cursor_);
+  if ((up && begin == 0) || (!up && end == text_.size())) {
+    history(up);
+    return;
+  }
+  if (!goal_column_)
+    goal_column_ =
+        display_width(std::string_view{text_}.substr(begin, cursor_ - begin));
+  const auto target_begin = up ? line_start(text_, begin - 1) : end + 1;
+  const auto target_end = line_end(text_, target_begin);
+  std::size_t position = target_begin, cells = 0;
+  while (position < target_end) {
+    const auto after = next(text_, position);
+    const auto width =
+        display_width(std::string_view{text_}.substr(position, after - position));
+    if (cells + width > *goal_column_)
+      break;
+    cells += width;
+    position = after;
+  }
+  cursor_ = position;
+}
+void Composer::kill(std::size_t begin, std::size_t end) {
+  if (begin == end)
+    return;
+  killed_ = text_.substr(begin, end - begin);
+  text_.erase(begin, end - begin);
+  cursor_ = begin;
+  goal_column_.reset();
 }
 InputResult Composer::feed(char byte) {
   const auto c = static_cast<unsigned char>(byte);
@@ -344,26 +454,41 @@ InputResult Composer::feed(char byte) {
       return {};
     if (escape_.size() >= 3 && c >= 0x30U && c <= 0x3fU)
       return {};
-    if (escape_ == "\x1b[D")
-      cursor_ = previous(text_, cursor_);
-    if (escape_ == "\x1b[C")
-      cursor_ = next(text_, cursor_);
-    if (escape_ == "\x1b[H" || escape_ == "\x1b[1~")
-      cursor_ = 0;
-    if (escape_ == "\x1b[F" || escape_ == "\x1b[4~")
-      cursor_ = text_.size();
-    if (escape_ == "\x1b[3~" && cursor_ < text_.size())
-      text_.erase(cursor_, next(text_, cursor_) - cursor_);
-    if (escape_ == "\x1b[A" && history_index_ > 0) {
-      if (history_index_ == history_.size())
-        draft_ = text_;
-      text_ = history_[--history_index_];
-      cursor_ = text_.size();
-    }
-    if (escape_ == "\x1b[B" && history_index_ < history_.size()) {
-      ++history_index_;
-      text_ = history_index_ == history_.size() ? draft_ : history_[history_index_];
-      cursor_ = text_.size();
+    const bool up = escape_ == "\x1b[A" || escape_ == "\x1bOA";
+    const bool down = escape_ == "\x1b[B" || escape_ == "\x1bOB";
+    if (up || down)
+      vertical(up);
+    else {
+      goal_column_.reset();
+      if (escape_ == "\x1b[D" || escape_ == "\x1bOD")
+        cursor_ = previous(text_, cursor_);
+      if (escape_ == "\x1b[C" || escape_ == "\x1bOC")
+        cursor_ = next(text_, cursor_);
+      if (escape_ == "\x1b[H" || escape_ == "\x1bOH" || escape_ == "\x1b[1~" ||
+          escape_ == "\x1b[7~")
+        cursor_ = line_start(text_, cursor_);
+      if (escape_ == "\x1b[F" || escape_ == "\x1bOF" || escape_ == "\x1b[4~" ||
+          escape_ == "\x1b[8~")
+        cursor_ = line_end(text_, cursor_);
+      if (escape_ == "\x1b[1;5H")
+        cursor_ = 0;
+      if (escape_ == "\x1b[1;5F")
+        cursor_ = text_.size();
+      if (escape_ == "\x1b"
+                     "b" ||
+          escape_ == "\x1b[1;5D" || escape_ == "\x1b[1;3D")
+        cursor_ = word_left(text_, cursor_);
+      if (escape_ == "\x1b"
+                     "f" ||
+          escape_ == "\x1b[1;5C" || escape_ == "\x1b[1;3C")
+        cursor_ = word_right(text_, cursor_);
+      if (escape_ == "\x1b"
+                     "d")
+        kill(cursor_, word_right(text_, cursor_));
+      if (escape_ == "\x1b\x7f" || escape_ == "\x1b\x08")
+        kill(word_left(text_, cursor_), cursor_);
+      if (escape_ == "\x1b[3~" && cursor_ < text_.size())
+        text_.erase(cursor_, next(text_, cursor_) - cursor_);
     }
     const auto action = escape_ == "\x1b[5~"   ? InputAction::page_up
                         : escape_ == "\x1b[6~" ? InputAction::page_down
@@ -379,10 +504,34 @@ InputResult Composer::feed(char byte) {
     insert(byte == '\r' ? '\n' : byte);
     return {};
   }
+  if (c == 16 || c == 14) {
+    history(c == 16);
+    return {};
+  }
+  if (c == 23) {
+    kill(word_left(text_, cursor_), cursor_);
+    return {};
+  }
+  if (c == 11) {
+    auto end = line_end(text_, cursor_);
+    if (end == cursor_ && end < text_.size())
+      ++end;
+    kill(cursor_, end);
+    return {};
+  }
+  if (c == 25) {
+    if (killed_.size() <= ui_limit - text_.size()) {
+      text_.insert(cursor_, killed_);
+      cursor_ += killed_.size();
+      goal_column_.reset();
+    }
+    return {};
+  }
   if (c == 9) {
     if (cursor_ == text_.size()) {
       text_ = complete_command(text_);
       cursor_ = text_.size();
+      goal_column_.reset();
     }
     return {};
   }
@@ -401,6 +550,8 @@ InputResult Composer::feed(char byte) {
     }
     history_index_ = history_.size();
     draft_.clear();
+    draft_cursor_ = 0;
+    goal_column_.reset();
     return {InputAction::submit, std::move(result)};
   }
   if (c == 10) {
@@ -408,25 +559,30 @@ InputResult Composer::feed(char byte) {
     return {};
   }
   if (c == 1) {
-    cursor_ = 0;
+    goal_column_.reset();
+    cursor_ = line_start(text_, cursor_);
     return {};
   }
   if (c == 5) {
-    cursor_ = text_.size();
+    goal_column_.reset();
+    cursor_ = line_end(text_, cursor_);
     return {};
   }
   if (c == 21) {
-    text_.clear();
+    kill(0, text_.size());
     cursor_ = 0;
+    goal_column_.reset();
     return {};
   }
   if (c == 127 || c == 8) {
+    goal_column_.reset();
     const auto p = previous(text_, cursor_);
     text_.erase(p, cursor_ - p);
     cursor_ = p;
     return {};
   }
   if (c == 4 && cursor_ < text_.size()) {
+    goal_column_.reset();
     text_.erase(cursor_, next(text_, cursor_) - cursor_);
     return {};
   }

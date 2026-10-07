@@ -49,6 +49,92 @@ int main() {
     check(terminal_help().find("/sessions") != std::string::npos);
     check(terminal_help().find("not model context") != std::string::npos);
     check(terminal_key_help().find("keep unsent draft") != std::string::npos);
+    Composer multiline;
+    feed(multiline, "history\r");
+    multiline.draft("abcd\nx\n12345");
+    feed(multiline, "\x1b[A");
+    check(multiline.text() == "abcd\nx\n12345" && multiline.cursor() == 6);
+    feed(multiline, "\x1b[A");
+    check(multiline.cursor() == 4); // Sticky column survives the short middle line.
+    feed(multiline, "\x1b[B\x1b[B");
+    check(multiline.cursor() == 12);
+    feed(multiline, "\x1b[1;5H");
+    check(multiline.cursor() == 0);
+    feed(multiline, "\x10"); // Explicit history, even for multiline drafts.
+    check(multiline.text() == "history");
+    feed(multiline, "\x0e");
+    check(multiline.text() == "abcd\nx\n12345" && multiline.cursor() == 0);
+    feed(multiline, "\x1b[B\x05");
+    check(multiline.cursor() == 6); // Ctrl-E ends this line, not the whole draft.
+    feed(multiline, "\x01");
+    check(multiline.cursor() == 5);
+    Composer words;
+    words.draft("one é界 two");
+    feed(words, "\x1b"
+                "b");
+    check(words.cursor() == 10);
+    feed(words, "\x17");
+    check(words.text() == "one two" && words.cursor() == 4);
+    feed(words, "\x19");
+    check(words.text() == "one é界 two" && words.cursor() == 10);
+    feed(words, "\x1b[1;5H\x1b[1;5C");
+    check(words.cursor() == 3);
+    feed(words, "\x1b"
+                "d");
+    check(words.text() == "one two");
+    words.draft("first\nsecond");
+    feed(words, "\x1b[1;5H\x05\x0b"); // At line end, kill the newline.
+    check(words.text() == "firstsecond");
+    feed(words, "\x19");
+    check(words.text() == "first\nsecond");
+    Composer columns;
+    columns.draft("a界z\nx\n1234");
+    feed(columns, "\x1b[A\x1b[A");
+    check(columns.cursor() == 5); // Four terminal cells, not four UTF-8 bytes.
+    feed(columns, "\x1b[D\x1b[B\x1b[B");
+    check(columns.cursor() ==
+          columns.text().size() - 1); // Horizontal motion resets goal.
+    columns.draft("a\n\nb");
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 2);
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 1);
+    columns.draft("abc\ndef");
+    feed(columns, "\x01\x1b[A");
+    check(columns.cursor() == 0);
+    feed(columns, "\x0b");
+    check(columns.text() == "\ndef");
+    feed(columns, "\x19");
+    check(columns.text() == "abc\ndef" && columns.cursor() == 3);
+    feed(columns, "\x15\x19");
+    check(columns.text() == "abc\ndef");
+    columns.draft("界\nx");
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 0); // Can't place the cursor inside a wide glyph.
+    feed(columns, "\x1b[B");
+    check(columns.cursor() == columns.text().size());
+    columns.draft("a\tb\n123");
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 2); // Pasted tab has the renderer's two-cell width.
+    columns.draft("éx\nab");
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 4); // Combining mark contributes no extra cell.
+    columns.draft(std::string{"\xff\nabcd", 6});
+    feed(columns, "\x1b[A");
+    check(columns.cursor() == 1); // Invalid byte is displayed as four escaped cells.
+    columns.restore({"", 0, {}, {}});
+    feed(columns, "\x19");
+    check(columns.text().empty()); // Restore does not inherit a prior kill buffer.
+    Composer full;
+    full.draft(std::string(1024 * 1024, 'a'));
+    feed(full, "\x17");
+    check(full.text().empty());
+    full.draft("b");
+    feed(full, "\x19");
+    check(full.text() == "b" && full.cursor() == 1); // Oversized yank is atomic/no-op.
+    Composer literal;
+    feed(literal, "\x1b[200~a\x17\x0b\x19\x10\x0e\x1b[201~");
+    check(literal.text() == "a\x17\x0b\x19\x10\x0e");
     Composer c;
     feed(c, "aéz");
     feed(c, "\x1b[D\x7f");

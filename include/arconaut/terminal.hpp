@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -36,9 +37,14 @@ private:
   std::string text_, escape_;
   std::size_t cursor_ = 0, history_index_ = 0;
   std::vector<std::string> history_;
-  std::string draft_;
+  std::string draft_, killed_;
+  std::size_t draft_cursor_ = 0;
+  std::optional<std::size_t> goal_column_;
   bool pasted_ = false;
   void insert(char byte);
+  void history(bool older);
+  void vertical(bool up);
+  void kill(std::size_t begin, std::size_t end);
 };
 struct TerminalScrollUpdate {
   std::size_t scroll, previous, before_trim, after_trim, height;
