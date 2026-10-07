@@ -1,0 +1,112 @@
+[
+  {
+    "path": "context/my-arco/audit",
+    "physical_bytes": 315711524,
+    "frames_scanned_to": 315711524,
+    "categories": {
+      "retained-1": {
+        "records": 14610,
+        "payload_bytes": 233760
+      },
+      "65535": {
+        "records": 29292,
+        "payload_bytes": 703008
+      },
+      "retained-14-channel-3": {
+        "records": 13,
+        "payload_bytes": 17540
+      },
+      "retained-14-channel-2": {
+        "records": 186,
+        "payload_bytes": 96072214
+      },
+      "1": {
+        "records": 13767,
+        "payload_bytes": 69804292
+      },
+      "retained-14-channel-1": {
+        "records": 13767,
+        "payload_bytes": 2533051
+      },
+      "retained-2": {
+        "records": 179,
+        "payload_bytes": 46604734
+      },
+      "retained-3": {
+        "records": 179,
+        "payload_bytes": 46570112
+      },
+      "retained-4": {
+        "records": 179,
+        "payload_bytes": 46570112
+      },
+      "retained-5": {
+        "records": 179,
+        "payload_bytes": 4296
+      },
+      "retained-11": {
+        "records": 179,
+        "payload_bytes": 6444
+      },
+      "retained-6": {
+        "records": 179,
+        "payload_bytes": 4265161
+      }
+    }
+  },
+  {
+    "path": "context/giga-campaign/session-arconaut-7iy.4/audit",
+    "physical_bytes": 91898491,
+    "frames_scanned_to": 91898491,
+    "categories": {
+      "retained-1": {
+        "records": 7974,
+        "payload_bytes": 127584
+      },
+      "65535": {
+        "records": 16022,
+        "payload_bytes": 384528
+      },
+      "retained-14-channel-3": {
+        "records": 8,
+        "payload_bytes": 6041
+      },
+      "retained-14-channel-2": {
+        "records": 140,
+        "payload_bytes": 25067914
+      },
+      "1": {
+        "records": 7285,
+        "payload_bytes": 23895928
+      },
+      "retained-14-channel-1": {
+        "records": 7285,
+        "payload_bytes": 1341171
+      },
+      "retained-2": {
+        "records": 154,
+        "payload_bytes": 12539174
+      },
+      "retained-3": {
+        "records": 154,
+        "payload_bytes": 12509270
+      },
+      "retained-4": {
+        "records": 154,
+        "payload_bytes": 12509270
+      },
+      "retained-5": {
+        "records": 154,
+        "payload_bytes": 3696
+      },
+      "retained-11": {
+        "records": 154,
+        "payload_bytes": 5544
+      },
+      "retained-6": {
+        "records": 154,
+        "payload_bytes": 2239843
+      }
+    }
+  }
+]

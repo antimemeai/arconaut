@@ -2,6 +2,10 @@
 
 #include "arconaut/journal.hpp"
 
+#include <algorithm>
+#include <memory>
+#include <utility>
+
 namespace arconaut {
 
 struct DecisionTag;
@@ -11,10 +15,39 @@ using ComplaintId = Id<ComplaintTag>;
 struct ApplicationRecordTag;
 using ApplicationRecordId = Id<ApplicationRecordTag>;
 enum class ApplicationChannel : std::uint16_t { log = 1, context = 2, program = 3 };
+// Retained application payloads never change after construction. A candidate
+// snapshot shares their bytes; it owns only its new facts and small metadata.
+class ImmutableBytes {
+public:
+  ImmutableBytes() = default;
+  ImmutableBytes(std::vector<std::byte> bytes)
+      : bytes_(std::make_shared<const std::vector<std::byte>>(std::move(bytes))) {}
+  ImmutableBytes(std::initializer_list<std::byte> bytes)
+      : ImmutableBytes(std::vector<std::byte>{bytes}) {}
+  template <typename Iterator>
+  ImmutableBytes(Iterator first, Iterator last)
+      : ImmutableBytes(std::vector<std::byte>{first, last}) {}
+  const std::byte *data() const noexcept { return value().data(); }
+  std::size_t size() const noexcept { return value().size(); }
+  bool empty() const noexcept { return value().empty(); }
+  const std::byte &operator[](std::size_t i) const noexcept { return value()[i]; }
+  auto begin() const noexcept { return value().begin(); }
+  auto end() const noexcept { return value().end(); }
+  friend bool operator==(const ImmutableBytes &a, const ImmutableBytes &b) {
+    return a.bytes_ == b.bytes_ || a.value() == b.value();
+  }
+
+private:
+  const std::vector<std::byte> &value() const noexcept {
+    static const std::vector<std::byte> empty;
+    return bytes_ ? *bytes_ : empty;
+  }
+  std::shared_ptr<const std::vector<std::byte>> bytes_;
+};
 struct ApplicationRecordEvent {
   ApplicationRecordId identity;
   ApplicationChannel channel;
-  std::vector<std::byte> payload;
+  ImmutableBytes payload;
   bool operator==(const ApplicationRecordEvent &) const = default;
 };
 struct SourceReference {
@@ -50,21 +83,21 @@ struct DecisionEvent {
   DefinitionGenerationId definition;
   ContextRevisionId context;
   std::vector<InvocationId> planned_invocations;
-  std::vector<std::byte> continuation;
+  ImmutableBytes continuation;
   bool operator==(const DecisionEvent &) const = default;
 };
 struct InvocationEvent {
   InvocationId invocation;
   DecisionId decision;
   DefinitionGenerationId definition;
-  std::vector<std::byte> input;
+  ImmutableBytes input;
   bool operator==(const InvocationEvent &) const = default;
 };
 struct AttemptAdmissionEvent {
   OperationAttemptId attempt;
   InvocationId invocation;
   DecisionId decision;
-  std::vector<std::byte> input;
+  ImmutableBytes input;
   bool operator==(const AttemptAdmissionEvent &) const = default;
 };
 struct AttemptOpenEvent {
@@ -83,7 +116,7 @@ struct AttemptObservationEvent {
   OperationAttemptId attempt;
   AttemptPhase phase;
   AttemptDisposition disposition;
-  std::vector<std::byte> observation;
+  ImmutableBytes observation;
   bool operator==(const AttemptObservationEvent &) const = default;
 };
 struct RetryEvent {
@@ -95,13 +128,13 @@ struct RetryEvent {
 struct IdentityConflictEvent {
   RetainedKind disputed_kind;
   IdentityBytes disputed_identity;
-  std::vector<std::byte> proposal;
+  ImmutableBytes proposal;
   bool operator==(const IdentityConflictEvent &) const = default;
 };
 struct ComplaintEvent {
   ComplaintId complaint;
   ParticipantId actor;
-  std::vector<std::byte> detail;
+  ImmutableBytes detail;
   bool operator==(const ComplaintEvent &) const = default;
 };
 struct RejectedSubmissionEvent {
@@ -174,7 +207,7 @@ RetainedKind retained_kind(const RetainedBody &body) noexcept;
 // transition or authorize a source dependency. RetainedState owns root checks;
 // the selected-chain owner alone validates maintenance placement and capture sets.
 Result<std::vector<std::byte>> encode_retained_event(const RetainedEvent &event,
-                                                     std::uint32_t max_payload);
+                                             std::uint32_t max_payload);
 Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_payload);
 
 } // namespace arconaut

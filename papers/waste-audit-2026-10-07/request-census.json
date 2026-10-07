@@ -1,0 +1,7 @@
+{
+  "matched_invocation_admission_inputs": 179,
+  "duplicate_blob_bytes": 46559372,
+  "decision_embeds_same_logical_input": 179,
+  "source": "context/my-arco/audit",
+  "method": "streamed frame parse, exact input blob hash/equal length; canonical JSON input comparison, not raw publication"
+}
