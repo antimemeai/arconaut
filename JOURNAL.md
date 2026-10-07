@@ -4059,3 +4059,14 @@ One narrow adversarial review found no actionable defects. Independent wcwidth
 checks confirm every wordmark glyph is one cell and all rows occupy 67 cells;
 layout bounds and exact README asset bytes were checked. Report retained in
 papers/2026-10-07-wordmark-review.md. No further assurance round added.
+
+## 2026-10-07 — Which remote branches still matter
+
+Fetched/pruned origin and queried GitHub heads/open PRs, then compared every real
+remote branch against ee8f1e3. There are 32 heads: master, 28 ancestor checkpoints,
+and three tips with one unique commit each. Only giga-colleagues has substantive
+unintegrated source. Inspected the old TUI-shell and useful-work fixes against
+current declarations, dispatch, write fence and regression: both superseded.
+The 12 economy refs all share one ancestor commit. No open PRs were reported.
+Updated docs/BRANCH_INVENTORY.md with exact tips and recommendations. No branches,
+worktrees or tags changed; no provider requests or unnecessary test reruns.

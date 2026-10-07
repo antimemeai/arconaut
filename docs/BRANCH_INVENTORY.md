@@ -1,92 +1,84 @@
-# Branch inventory — 2026-10-07
+# Remote branch assessment — 2026-10-07
 
-Master contains accepted runtime source; archived experiments and unfinished work
-are retained as references. Ahead/behind measures ancestry, not feature acceptance.
-No refs or worktrees deleted during consolidation.
+Fresh origin fetch/prune and GitHub heads list: **32 branches**, excluding the
+symbolic origin/HEAD. Comparison baseline: master `ee8f1e38daabe89fcba33f5b07f7e6143b206a8b`.
+This is an assessment; no remote branches, tags or worktrees were deleted.
 
-| Ref | Tip | Ahead of master | Behind master |
-| --- | --- | ---: | ---: |
-| `assessment/2026-09-29` | `e20ee5dbd812ad9d93541b8beee648f85e037b20` | 0 | 86 |
-| `candidate/economy-a-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-a-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-a-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-a-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-b-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-b-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-b-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-b-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-c-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-c-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-d-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/economy-d-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `candidate/giga-backstop` | `b052a4936f0ae1031499387552314ef962deb469` | 0 | 49 |
-| `candidate/giga-colleagues` | `f23368914f46f9edd2db935fb499d669c690b009` | 1 | 52 |
-| `candidate/giga-context-budget` | `8a0e959edb1d85515c4647305f7535a1bacf88c2` | 0 | 47 |
-| `candidate/giga-workflow-repair` | `397187116858ccf2df3d0ea0bdd1eda5928e798a` | 0 | 41 |
-| `candidate/history-headroom` | `72d7116086b543b99c8a5788b07b47d99ba9fe55` | 0 | 72 |
-| `candidate/live-provider-retries` | `87e06e671eac51dbf9af983ee31527f198414592` | 0 | 73 |
-| `candidate/session-successor-seed` | `10a8de49c18c15839073c7e52048f2e8259f8f95` | 0 | 71 |
-| `candidate/tui-chat-shell` | `76c401613bad81e510c23a118edd6891f220575f` | 1 | 49 |
-| `candidate/useful-range-revision` | `d2b89d7e6c33e8656b241485712092621ebe2eba` | 0 | 75 |
-| `candidate/useful-work-tools` | `7cbc088a0bae3c2971d3caaf0098c2f2cf845d4c` | 1 | 78 |
-| `giga/g3-live-lua-tools` | `370a90fba80ff3eeb3ae9273dcfbbb5f27d4294f` | 0 | 33 |
-| `giga/g4-modules-config` | `38fa47ccb417e77de357c0872f0bcb2b2fad1e37` | 0 | 17 |
-| `giga/g7-station` | `5e58d51d1df87df92016d69f4d3f7e1af001bae5` | 0 | 22 |
-| `giga/g8-packages-hud` | `d097f2e88c5dfa8d9f4955fdad09168c100136e9` | 0 | 10 |
-| `giga/g9-security-decision` | `4419a4e235146ea18030d20e19ef032129c21ee7` | 0 | 3 |
-| `master` | `1258092018b6ea287506d5535655bff32f99ee38` | 0 | 0 |
-| `reconstruction/cpp-lua-2026-10-06` | `650db43ea80b00f6b04eb85b512fd97f6529c91d` | 0 | 51 |
-| `origin` | `1258092018b6ea287506d5535655bff32f99ee38` | 0 | 0 |
-| `origin/candidate/atomic-operation-admission` | `fb2b5a51900ad084adb6de3f0afd2d94e061d7af` | 0 | 66 |
-| `origin/candidate/economy-a-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-a-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-a-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-a-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-b-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-b-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-b-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-b-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-c-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-c-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-d-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/economy-d-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 76 |
-| `origin/candidate/g6-orchestration` | `62a0a5ca7a56dc6452f0052ac593fc3c69924b9e` | 0 | 25 |
-| `origin/candidate/giga-backstop` | `b052a4936f0ae1031499387552314ef962deb469` | 0 | 49 |
-| `origin/candidate/giga-colleagues` | `f23368914f46f9edd2db935fb499d669c690b009` | 1 | 52 |
-| `origin/candidate/giga-context-budget` | `8a0e959edb1d85515c4647305f7535a1bacf88c2` | 0 | 47 |
-| `origin/candidate/giga-workflow-repair` | `397187116858ccf2df3d0ea0bdd1eda5928e798a` | 0 | 41 |
-| `origin/candidate/history-headroom` | `72d7116086b543b99c8a5788b07b47d99ba9fe55` | 0 | 72 |
-| `origin/candidate/live-provider-retries` | `87e06e671eac51dbf9af983ee31527f198414592` | 0 | 73 |
-| `origin/candidate/protected-settlement-credit` | `e0dcbe2a9306a1ff57588ee37baecf738e2fce55` | 0 | 67 |
-| `origin/candidate/session-successor-seed` | `10a8de49c18c15839073c7e52048f2e8259f8f95` | 0 | 71 |
-| `origin/candidate/tui-chat-shell` | `76c401613bad81e510c23a118edd6891f220575f` | 1 | 49 |
-| `origin/candidate/useful-range-revision` | `d2b89d7e6c33e8656b241485712092621ebe2eba` | 0 | 75 |
-| `origin/candidate/useful-work-tools` | `7cbc088a0bae3c2971d3caaf0098c2f2cf845d4c` | 1 | 78 |
-| `origin/giga/g3-live-lua-tools` | `370a90fba80ff3eeb3ae9273dcfbbb5f27d4294f` | 0 | 33 |
-| `origin/giga/g4-modules-config` | `f961248d08babbb5f27a523e7d6094a79ec35078` | 0 | 19 |
-| `origin/giga/g7-station` | `5e58d51d1df87df92016d69f4d3f7e1af001bae5` | 0 | 22 |
-| `origin/giga/g8-packages-hud` | `d097f2e88c5dfa8d9f4955fdad09168c100136e9` | 0 | 10 |
-| `origin/giga/g9-security-decision` | `4419a4e235146ea18030d20e19ef032129c21ee7` | 0 | 3 |
-| `origin/master` | `1258092018b6ea287506d5535655bff32f99ee38` | 0 | 0 |
-| `origin/reconstruction/cpp-lua-2026-10-06` | `650db43ea80b00f6b04eb85b512fd97f6529c91d` | 0 | 51 |
+**Only candidate/giga-colleagues contains substantive unintegrated work.**
+It adds the standalone colleague library/CLI, selected-context request contract,
+OpenAI/Claude adapters, truthful outcome captures and direct tests. It is one
+unique commit, f233689, 66 commits behind this baseline. Port its useful slice
+onto current master rather than merging old source blindly. Its existing live
+readiness/timeout evidence does not establish completed useful collaboration.
+No colleague source/library is currently present in master's src/include.
 
-## Retained worktrees
+Two other tips have unique commits but their behavior is superseded:
 
-```text
-/Users/patrickbeam/projects/arconaut                                        1258092 [master]
-/Users/patrickbeam/projects/arconaut/context/giga-parallel/pool/slot-0      f233689 [candidate/giga-colleagues]
-/Users/patrickbeam/projects/arconaut/context/useful-work/pilot-pool/slot-0  5e58d51 [giga/g7-station]
-```
+- candidate/tui-chat-shell (76c4016): shared command discovery, completion and
+  local responsive controls. Current master retains these and adds palette,
+  editor and conversation rendering; inspected its shared declarations and
+  /help, /keys, /queue, /cancel, /clear dispatch. No reason to integrate old UI.
+- candidate/useful-work-tools (7cbc088): refuse dispatch after an unconfirmed
+  request write. The same fence and failed-write regression are already in
+  programs/useful_work.lua and tests/useful_work_test.lua. No missing fix.
 
-The colleague candidate f233689 remains outside accepted runtime source; actual
-Claude readiness succeeded, but heterogeneous useful work and serial integration
-are unfinished. G9 contains research only; no transport implementation adopted.
+**28 non-master branches are ancestors of master.** Retiring their branch names
+loses no commits from master. This includes all 12 economy experiment refs,
+which point to the exact same 3fd4f33 commit. The remaining giga/reconstruction/
+recovery refs are historical checkpoints, not pending merges. G9's inclusion
+means its discussion is retained, not that networking implementation was shipped.
+No open GitHub PRs were reported by gh pr list.
 
-## Concrete comparison after inventory
+Recommendation: keep master and candidate/giga-colleagues; optionally create
+archive tags for the two unique superseded tips, then retire the other 30 remote
+branch names. This recommendation is not an instruction executed by this audit.
 
-The unique useful-work-tools change refuses CLI dispatch when request write is
-unconfirmed; master already contains that fence and its direct regression check.
-The old TUI-shell adds command discovery/responsive controls, subsequently expanded
-by master's editor/palette. Do not replace current source with those older files.
-The substantive standalone colleague command/library remains a bounded, qualified
-candidate awaiting serial integration and useful cross-provider work; G5 stays open.
+## Exact remote inventory
+
+Ahead/behind counts are against the comparison baseline above, not later docs
+commits. Ancestry establishes retained commits; source comparison establishes
+that the two unique superseded fixes are already implemented.
+
+| Branch | Tip | Unique commits | Behind | Recommendation |
+| --- | --- | ---: | ---: | --- |
+| `candidate/atomic-operation-admission` | `fb2b5a51900ad084adb6de3f0afd2d94e061d7af` | 0 | 80 | Retire branch: fully contained |
+| `candidate/economy-a-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-a-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-a-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-a-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-b-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-b-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-b-2-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-b-2-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-c-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-c-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-d-1-baseline` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/economy-d-1-bounded-first` | `3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6` | 0 | 90 | Retire branch: fully contained |
+| `candidate/g6-orchestration` | `62a0a5ca7a56dc6452f0052ac593fc3c69924b9e` | 0 | 39 | Retire branch: fully contained |
+| `candidate/giga-backstop` | `b052a4936f0ae1031499387552314ef962deb469` | 0 | 63 | Retire branch: fully contained |
+| `candidate/giga-colleagues` | `f23368914f46f9edd2db935fb499d669c690b009` | 1 | 66 | Retain for integration |
+| `candidate/giga-context-budget` | `8a0e959edb1d85515c4647305f7535a1bacf88c2` | 0 | 61 | Retire branch: fully contained |
+| `candidate/giga-workflow-repair` | `397187116858ccf2df3d0ea0bdd1eda5928e798a` | 0 | 55 | Retire branch: fully contained |
+| `candidate/history-headroom` | `72d7116086b543b99c8a5788b07b47d99ba9fe55` | 0 | 86 | Retire branch: fully contained |
+| `candidate/live-provider-retries` | `87e06e671eac51dbf9af983ee31527f198414592` | 0 | 87 | Retire branch: fully contained |
+| `candidate/protected-settlement-credit` | `e0dcbe2a9306a1ff57588ee37baecf738e2fce55` | 0 | 81 | Retire branch: fully contained |
+| `candidate/session-successor-seed` | `10a8de49c18c15839073c7e52048f2e8259f8f95` | 0 | 85 | Retire branch: fully contained |
+| `candidate/tui-chat-shell` | `76c401613bad81e510c23a118edd6891f220575f` | 1 | 63 | Archive unique commit; superseded |
+| `candidate/useful-range-revision` | `d2b89d7e6c33e8656b241485712092621ebe2eba` | 0 | 89 | Retire branch: fully contained |
+| `candidate/useful-work-tools` | `7cbc088a0bae3c2971d3caaf0098c2f2cf845d4c` | 1 | 92 | Archive unique commit; superseded |
+| `giga/g3-live-lua-tools` | `370a90fba80ff3eeb3ae9273dcfbbb5f27d4294f` | 0 | 47 | Retire branch: fully contained |
+| `giga/g4-modules-config` | `f961248d08babbb5f27a523e7d6094a79ec35078` | 0 | 33 | Retire branch: fully contained |
+| `giga/g7-station` | `5e58d51d1df87df92016d69f4d3f7e1af001bae5` | 0 | 36 | Retire branch: fully contained |
+| `giga/g8-packages-hud` | `d097f2e88c5dfa8d9f4955fdad09168c100136e9` | 0 | 24 | Retire branch: fully contained |
+| `giga/g9-security-decision` | `4419a4e235146ea18030d20e19ef032129c21ee7` | 0 | 17 | Retire branch: fully contained |
+| `master` | `ee8f1e38daabe89fcba33f5b07f7e6143b206a8b` | 0 | 0 | Keep: accepted source |
+| `reconstruction/cpp-lua-2026-10-06` | `650db43ea80b00f6b04eb85b512fd97f6529c91d` | 0 | 65 | Retire branch: fully contained |
+
+## Worktrees
+
+Current worktrees still include the colleague slot at
+context/giga-parallel/pool/slot-0 and the old station slot at
+context/useful-work/pilot-pool/slot-0. Git metadata names the compatibility
+arconaut path for these slots. Keep colleague work until integration; inspect
+station-slot local state before any later worktree removal. Deleting a remote
+branch does not remove these local worktrees.
