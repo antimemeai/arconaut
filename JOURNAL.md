@@ -4081,3 +4081,60 @@ only master and candidate/giga-colleagues remain, and both unique commits are
 retained by published tags. No master history rewrite, blind candidate merge,
 local worktree deletion or running process changes. Updated branch inventory
 records the disposition and preserves the original tip snapshot.
+
+## 2026-10-07 — Workflow study and renewed Blackbird autodev
+
+Operator requests fresh Hermes and a workflow offering encompassing the ecosystem.
+Acquired immutable fresh Hermes a3ed4a173070 and separate community hermes-workflows
+9fc82fe73555, preserving previous source and intact shared ZIPs; catalogs/restoration
+recorded. Read core delegation/grouped joins, cron admission/execution recovery,
+Kanban task/workflow distinction and plugin fingerprint/result seams. Independent
+reconnaissance maps 22 primary-reference systems and 12 primitives. Sources drive
+proposed orders in docs/WORKFLOW_CAMPAIGN.md; no dependency or installer adopted.
+
+Created workflow epic arconaut-3oz and W0 arconaut-3oz.1. Real gpt-6.1-sol/medium
+Blackbird research run is in a one-slot candidate pool with independent session,
+25-minute deadline and explicit report/order-sheet deliverables. It is source/design
+work, not authorization to implement speculative APIs. Existing uncertain lanes and
+operator TUI untouched. Native runner/supervisor retained; new job adopted into board.
+The external supervisor's canonical launcher/error-prefix compatibility defect was
+fixed with direct counted launches and published in evotools2cb4741.
+
+Operator then adds persistent performance capture and comparative mechanism study.
+Attached live5-second native sample and10-second Time Profiler capture; both retained
+complete with metadata under context/workflows-campaign/performance. Continuous
+resource collector attached under its own private resources directory; prior start
+gap remains explicit. Refreshed optimized/symbolized profile binaries for future
+allocation-capable launches; running release generation unchanged. Performance
+orders separate OS observations from future native action spans and compare exact
+work shapes against reference algorithms rather than treating best-in-class claims
+as measured facts. No global permission changes or telemetry service.
+
+## 2026-10-07 — Persist autodev observations and bound the stalled study
+
+W0 request context grew to roughly316KB and repeated180-second transport timeouts
+prevented any report. Stopped the local harness; its original25-minute allowance
+expired. Audit/session and captures preserved; no candidate edits. Observed manager,
+supervisor and harness gone, checkpointed unchanged source and released that slot;
+remote provider outcome is not asserted. Board records the incomplete result.
+Fresh Hermes and independent22-system/12-capability study are complete in primary.
+
+Retained complete native stack, TimeProfiler and SystemTrace windows plus520
+continuous observations. CPU, footprint/resident memory, disk I/O, process identity,
+storage growth and collector costs are persisted; unsampled children, initial gap,
+provider/network and allocation attribution remain explicit limits. New optimized
+profile build is prepared for subsequent native captures.
+
+The read-only Darwin collector received one code review; root/parent identity
+races and terminal-metadata failure paths fixed and directly checked. Automatic
+launch wrapper received one narrow review; replacement uses owned Popen handles,
+preflights capture writes before workload launch, tolerates subsequent telemetry
+failures and retains both exit outcomes. Direct CPU/exit7, signal143 and terminal
+metadata checks passed. Integration exposed systemPython3.9 missing file_digest;
+bounded128KiB streamed hashing fixed and directsystem-interpreter attachment passed.
+No second review, production dependency, global permission change or repeated suite.
+
+Operator now authorizes a distinct W1 implementation unit: shared Lua workflow
+registry, configurable slash aliases/prefix, POWERWORDS such as ultracode and TUI
+coloring, with continuous profiling from launch. Scope and directchecks are in
+WORKFLOW_REGISTRATION.md; issue arconaut-3oz.2. W0 budget is not renewed under W1.

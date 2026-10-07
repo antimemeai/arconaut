@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Development-only launcher; persist observations without governing the workload."""
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def main():
+    if len(sys.argv) < 4 or sys.argv[2] != '--':
+        raise ValueError('usage: scripts/autodev-profiled RUN_DIRECTORY -- COMMAND [ARGUMENT ...]')
+    if sys.platform != 'darwin':
+        raise ValueError('Darwin collector required; Linux capture is pending')
+    run = Path(sys.argv[1]).resolve(strict=True)
+    launch = json.loads((run / 'launch.json').read_text())
+    deadline = float(launch['deadline'])
+    if not math.isfinite(deadline) or deadline <= time.time():
+        raise ValueError('campaign deadline must be finite and in the future')
+    os.umask(0o077)
+    (run / 'performance').mkdir(exist_ok=True)
+    capture = Path(tempfile.mkdtemp(prefix='launch-', dir=run / 'performance'))
+    metadata = {'status': 'prepared', 'started_unix': time.time(),
+                'launcher_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+
+    def publish(required=False):
+        try:
+            temporary = capture / 'launcher.json.tmp'
+            with temporary.open('w') as out:
+                out.write(json.dumps(metadata, indent=2) + '\n')
+                out.flush()
+                os.fsync(out.fileno())
+            os.replace(temporary, capture / 'launcher.json')
+        except OSError as error:
+            if required:
+                raise
+            print('autodev-profiled: metadata write failed: ' + str(error), file=sys.stderr)
+
+    publish(required=True)
+    manager = None
+    pending = []
+
+    def interrupt(number, frame):
+        # Popen reaps only this child and fences sends against an already reaped
+        # PID. There is no PID-existence loop or unrelated-process termination.
+        if manager is None:
+            pending.append(number)
+        else:
+            manager.send_signal(number)
+
+    for number in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(number, interrupt)
+    scripts = Path(__file__).resolve().parent
+    collector = None
+    with (capture / 'collector.log').open('w') as log:
+        try:
+            manager = subprocess.Popen(sys.argv[3:])
+        except OSError as error:
+            metadata.update(status='launch-failed', error=str(error), finished_unix=time.time())
+            publish()
+            raise
+        for number in pending:
+            manager.send_signal(number)
+        try:
+            collector = subprocess.Popen(
+                [str(scripts / 'profile-autodev'), '--pid', str(manager.pid),
+                 '--run', str(run), '--out', str(capture / 'resources'),
+                 '--stack-seconds', '5'], stdout=log, stderr=subprocess.STDOUT,
+                start_new_session=True)
+        except OSError as error:
+            metadata['collector_launch_error'] = str(error)
+            print('autodev-profiled: collector launch failed: ' + str(error), file=sys.stderr)
+        metadata.update(status='recording', manager_pid=manager.pid,
+                        collector_pid=collector.pid if collector else None)
+        publish()
+        status = manager.wait()
+        capture_status = collector.wait() if collector else 1
+        metadata.update(status='finished', manager_returncode=status,
+                        collector_returncode=capture_status, finished_unix=time.time())
+        publish()
+    if capture_status:
+        print('autodev-profiled: collector exited %s; retained %s' %
+              (capture_status, capture), file=sys.stderr)
+    return status if status >= 0 else 128 - status
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, KeyError) as error:
+        print('autodev-profiled: ' + str(error), file=sys.stderr)
+        sys.exit(2)

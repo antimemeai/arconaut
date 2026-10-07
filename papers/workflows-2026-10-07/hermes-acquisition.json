@@ -1,0 +1,29 @@
+{
+  "acquired": "2026-10-07",
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "revision": "a3ed4a173070e981332e4d879ff6cc8b9efd57ab",
+  "download_url": "https://codeload.github.com/NousResearch/hermes-agent/zip/a3ed4a173070e981332e4d879ff6cc8b9efd57ab",
+  "archive": "../quarantine_proj/archives/blackbird-workflows-2026-10-07/hermes-agent-a3ed4a173070.zip",
+  "archive_bytes": 91464138,
+  "archive_sha256": "feb563e70a63dea70c0b65ddca3442ee43491d52216454fbb2443f8e63c80f68",
+  "archive_root": "hermes-agent-a3ed4a173070e981332e4d879ff6cc8b9efd57ab",
+  "destination": "quarantine/hermes-agent-2026-10-07",
+  "restoration": "python3 scripts/ingest_zip.py ../quarantine_proj/archives/blackbird-workflows-2026-10-07/hermes-agent-a3ed4a173070.zip quarantine/hermes-agent-2026-10-07 --root hermes-agent-a3ed4a173070e981332e4d879ff6cc8b9efd57ab --skip-symlinks",
+  "prior_revision": "cfdcea4f2226932adde690f6e53e0c8d259147ec",
+  "prior_destination": "quarantine/hermes-agent",
+  "study_only": true,
+  "symlinks_omitted": true,
+  "git_metadata_and_detritus_omitted": true,
+  "related_reference": {
+    "repository": "https://github.com/jacobhausler/hermes-workflows",
+    "revision": "9fc82fe73555145675b7947461af004980364ed2",
+    "role": "Community plugin; not Hermes core. Catalog pinned older79043f10; fresh main acquired for source study.",
+    "archive": "../quarantine_proj/archives/blackbird-workflows-2026-10-07/hermes-workflows-9fc82fe73555.zip",
+    "archive_sha256": "fe2a04952cffdfe6de84baa375f48b4e6df13fc07a66fbbe5dd74f4d40ba7d38",
+    "archive_bytes": 7458948,
+    "destination": "quarantine/hermes-workflows-2026-10-07",
+    "archive_root": "hermes-workflows-9fc82fe73555145675b7947461af004980364ed2",
+    "restoration": "python3 scripts/ingest_zip.py ../quarantine_proj/archives/blackbird-workflows-2026-10-07/hermes-workflows-9fc82fe73555.zip quarantine/hermes-workflows-2026-10-07 --root hermes-workflows-9fc82fe73555145675b7947461af004980364ed2 --skip-symlinks",
+    "study_only": true
+  }
+}

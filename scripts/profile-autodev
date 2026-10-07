@@ -1,0 +1,461 @@
+#!/usr/bin/env python3
+"""Development-only, persistent Darwin process-tree resource observations."""
+import argparse
+import ctypes as C
+import errno
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import platform
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parent.parent
+U32, U64 = C.c_uint32, C.c_uint64
+
+
+class BSD(C.Structure):
+    # Installed SDK sys/proc_info.h: struct proc_bsdinfo (MAXCOMLEN=16).
+    _fields_ = [(n, U32) for n in ('flags', 'status', 'xstatus', 'pid', 'ppid',
+                 'uid', 'gid', 'ruid', 'rgid', 'svuid', 'svgid', 'reserved')]
+    _fields_ += [('comm', C.c_char * 16), ('name', C.c_char * 32)]
+    _fields_ += [(n, U32) for n in ('nfiles', 'pgid', 'jobc', 'tdev', 'tpgid')]
+    _fields_ += [('nice', C.c_int32), ('start_sec', U64), ('start_usec', U64)]
+
+
+class Usage(C.Structure):
+    # sys/resource.h: RUSAGE_INFO_V2; CPU times are Mach ticks, not ns.
+    _fields_ = [('uuid', C.c_uint8 * 16)] + [(n, U64) for n in (
+        'user_ticks', 'system_ticks', 'idle_wakeups', 'interrupt_wakeups',
+        'pageins', 'wired_bytes', 'resident_bytes', 'footprint_bytes',
+        'start_ticks', 'exit_ticks', 'child_user_ticks', 'child_system_ticks',
+        'child_idle_wakeups', 'child_interrupt_wakeups', 'child_pageins',
+        'child_elapsed_ticks', 'disk_read_bytes', 'disk_write_bytes')]
+
+
+class Task(C.Structure):
+    _fields_ = [(n, U64) for n in ('virtual_bytes', 'resident_bytes', 'user_ticks',
+                 'system_ticks', 'threads_user_ticks', 'threads_system_ticks')]
+    _fields_ += [(n, C.c_int32) for n in ('policy', 'faults', 'pageins',
+        'cow_faults', 'messages_sent', 'messages_received', 'syscalls_mach',
+        'syscalls_unix', 'context_switches', 'threads', 'running_threads', 'priority')]
+
+
+class ManagerReused(RuntimeError):
+    pass
+
+
+class Darwin:
+    def __init__(self):
+        self.lib = C.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        self.lib.proc_pidinfo.argtypes = [C.c_int, C.c_int, U64, C.c_void_p, C.c_int]
+        self.lib.proc_pidinfo.restype = C.c_int
+        self.lib.proc_pid_rusage.argtypes = [C.c_int, C.c_int, C.c_void_p]
+        self.lib.proc_pid_rusage.restype = C.c_int
+        self.lib.proc_listchildpids.argtypes = [C.c_int, C.c_void_p, C.c_int]
+        self.lib.proc_listchildpids.restype = C.c_int
+        self.lib.proc_pidpath.argtypes = [C.c_int, C.c_void_p, U32]
+        self.lib.proc_pidpath.restype = C.c_int
+        system = C.CDLL('/usr/lib/libSystem.B.dylib')
+        class Timebase(C.Structure):
+            _fields_ = [('numer', U32), ('denom', U32)]
+        base = Timebase()
+        if system.mach_timebase_info(C.byref(base)) != 0 or not base.denom:
+            raise RuntimeError('mach_timebase_info failed')
+        self.numer, self.denom = base.numer, base.denom
+
+    def info(self, pid, flavor, cls):
+        result = cls()
+        C.set_errno(0)
+        count = self.lib.proc_pidinfo(pid, flavor, 0, C.byref(result), C.sizeof(result))
+        if count != C.sizeof(result):
+            raise OSError(C.get_errno() or errno.EIO, f'proc_pidinfo({pid},{flavor}): {count} bytes')
+        return result
+
+    def children(self, pid):
+        capacity = 64
+        while capacity <= 16384:
+            pids = (C.c_int * capacity)()
+            count = self.lib.proc_listchildpids(pid, pids, C.sizeof(pids))
+            if count < 0:
+                raise OSError(C.get_errno(), f'proc_listchildpids({pid})')
+            if count < capacity:
+                return [p for p in pids[:count] if p > 1]
+            capacity *= 2
+        raise RuntimeError(f'child list for {pid} exceeds 16384 entries')
+
+    def observe(self, pid):
+        before = self.info(pid, 3, BSD)
+        usage = Usage()
+        C.set_errno(0)
+        if self.lib.proc_pid_rusage(pid, 2, C.byref(usage)):
+            raise OSError(C.get_errno(), f'proc_pid_rusage({pid})')
+        task = self.info(pid, 4, Task)
+        path = C.create_string_buffer(4096)
+        C.set_errno(0)
+        path_result = self.lib.proc_pidpath(pid, path, len(path))
+        path_errno = C.get_errno()
+        after = self.info(pid, 3, BSD)
+        if (before.start_sec, before.start_usec) != (after.start_sec, after.start_usec):
+            raise RuntimeError(f'PID {pid} reused during observation')
+        if before.ppid != after.ppid:
+            raise RuntimeError(f'PID {pid} changed parent during observation')
+        key = f'{pid}:{before.start_sec}:{before.start_usec}'
+        result = {'identity': key, 'pid': pid, 'ppid': before.ppid,
+            'started_unix_sec': before.start_sec, 'started_unix_usec': before.start_usec,
+            'name': before.comm.decode(errors='replace'),
+            'executable': path.value.decode(errors='replace') if path_result > 0 else None,
+            'executable_path_errno': path_errno if path_result <= 0 else None,
+            'descriptor_slots': before.nfiles,
+            'resources': {n: getattr(usage, n) for n, _ in Usage._fields_ if n != 'uuid'},
+            'task': {n: getattr(task, n) for n, _ in Task._fields_}}
+        for name in ('user', 'system'):
+            result['resources'][f'{name}_ns'] = getattr(usage, f'{name}_ticks') * self.numer // self.denom
+        return result
+
+    def usage(self, pid):
+        result = Usage()
+        C.set_errno(0)
+        if self.lib.proc_pid_rusage(pid, 2, C.byref(result)):
+            raise OSError(C.get_errno(), f'proc_pid_rusage({pid})')
+        return result
+
+
+def role(item, root_pid):
+    name = Path(item['executable'] or item['name']).name
+    if item['pid'] == root_pid:
+        return 'manager'
+    if name in ('blackbird', 'blackbird-ui', 'arco', 'arco-ui', 'baseline-blackbird'):
+        return 'harness'
+    if name in ('sh', 'bash', 'zsh', 'lua', 'lua5.4', 'blackbird-candidate'):
+        return 'supervisor'
+    return 'tool'
+
+
+def observe_tree(api, root_pid, root_birth, excluded_pid):
+    observed, errors, pending, seen = [], [], [(root_pid, None, None)], set()
+    while pending:
+        pid, expected_parent, parent_birth = pending.pop()
+        if pid in seen or pid == excluded_pid:
+            continue
+        seen.add(pid)
+        try:
+            item = api.observe(pid)
+            birth = (item['started_unix_sec'], item['started_unix_usec'])
+            if pid == root_pid and birth != root_birth:
+                raise ManagerReused(f'Manager PID {pid} reused during tree traversal')
+            if expected_parent is not None:
+                if item['ppid'] != expected_parent:
+                    raise RuntimeError(f'PID {pid} no longer belongs to parent {expected_parent}')
+                parent = api.info(expected_parent, 3, BSD)
+                if (parent.start_sec, parent.start_usec) != parent_birth:
+                    raise RuntimeError(f'Parent PID {expected_parent} reused before observing child {pid}')
+            observed.append(item)
+            children = api.children(pid)
+            current = api.info(pid, 3, BSD)
+            if (current.start_sec, current.start_usec) != birth:
+                raise RuntimeError(f'PID {pid} reused while enumerating its children')
+            pending.extend((child, pid, birth) for child in children)
+        except ManagerReused:
+            raise
+        except (OSError, RuntimeError) as error:
+            errors.append({'pid': pid, 'error': str(error)})
+    return observed, errors
+
+
+def storage(path):
+    result = {'path': str(path), 'logical_bytes': 0, 'allocated_bytes': 0,
+              'files': 0, 'truncated': False, 'errors': []}
+    pending = [path]
+    visited = 0
+    while pending and visited < 10000:
+        entry = pending.pop()
+        visited += 1
+        try:
+            st = entry.lstat()
+            if entry.is_symlink():
+                continue
+            if entry.is_dir():
+                with os.scandir(entry) as entries:
+                    for child in entries:
+                        if len(pending) + visited >= 10000:
+                            result['truncated'] = True
+                            break
+                        pending.append(Path(child.path))
+            elif entry.is_file():
+                result['logical_bytes'] += st.st_size
+                result['allocated_bytes'] += st.st_blocks * 512
+                result['files'] += 1
+        except OSError as error:
+            result['errors'].append({'path': str(entry), 'error': str(error)})
+    result['truncated'] |= bool(pending)
+    return result
+
+
+def json_file(path, value):
+    temporary = path.with_suffix(path.suffix + '.tmp')
+    with temporary.open('w') as out:
+        json.dump(value, out, indent=2)
+        out.write('\n')
+        out.flush()
+        os.fsync(out.fileno())
+    os.replace(temporary, path)
+
+
+def fingerprint(path, cache):
+    try:
+        st = Path(path).stat()
+        key = (path, st.st_ino, st.st_size, st.st_mtime_ns)
+        if key not in cache:
+            with open(path, 'rb') as binary:
+                digest = hashlib.sha256()
+                while True:
+                    chunk = binary.read(128 * 1024)
+                    if not chunk:
+                        break
+                    digest.update(chunk)
+                cache[key] = {'id': len(cache), 'path': path, 'size': st.st_size,
+                              'inode': st.st_ino, 'mtime_ns': st.st_mtime_ns,
+                              'sha256': digest.hexdigest()}
+        return cache[key]
+    except OSError as error:
+        return {'path': path, 'error': str(error)}
+
+
+def main():
+    collector_started = time.monotonic()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--pid', type=int, required=True, help='Live campaign manager PID')
+    parser.add_argument('--run', type=Path, required=True, help='Campaign directory with launch.json')
+    parser.add_argument('--seconds', type=float, help='Optional shorter collection bound')
+    parser.add_argument('--interval', type=float, default=1)
+    parser.add_argument('--storage-interval', type=float, default=10)
+    parser.add_argument('--out', type=Path, help='New private output directory, never overwritten')
+    parser.add_argument('--stack-seconds', type=int, default=0, help='Optional finite sample windows, 1..10s')
+    parser.add_argument('--stack-every', type=float, default=300, help='Minimum 30 seconds between windows')
+    args = parser.parse_args()
+    if platform.system() != 'Darwin':
+        parser.error('This collector currently requires Darwin libproc; Linux is an explicit next unit')
+    if args.pid <= 1 or not 0.25 <= args.interval <= 60 or args.storage_interval < 5:
+        parser.error('PID >1, interval 0.25..60s, storage interval >=5s required')
+    if args.seconds is not None and (args.seconds <= 0 or args.seconds > 86400):
+        parser.error('--seconds must be positive and at most 86400')
+    if not 0 <= args.stack_seconds <= 10 or args.stack_every < 30:
+        parser.error('stack seconds 0..10, stack cadence >=30s required')
+    if not all(math.isfinite(value) for value in
+               (args.interval, args.storage_interval, args.stack_every)):
+        parser.error('All collection timings must be finite')
+    args.run = args.run.resolve()
+    launch = json.loads((args.run / 'launch.json').read_text())
+    deadline = float(launch['deadline'])
+    if not math.isfinite(deadline):
+        parser.error('Campaign deadline must be finite')
+    if args.seconds is not None:
+        if not math.isfinite(args.seconds):
+            parser.error('--seconds must be finite')
+        deadline = min(deadline, time.time() + args.seconds)
+    if deadline <= time.time():
+        parser.error('Campaign deadline has already passed; collection not started')
+    api = Darwin()
+    original = api.info(args.pid, 3, BSD)
+    root_usage = api.usage(args.pid)
+    root_birth = (original.start_sec, original.start_usec)
+    os.umask(0o077)
+    if args.out:
+        output = args.out.resolve()
+        output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    else:
+        parent = ROOT / 'context/profiles'
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        output = Path(tempfile.mkdtemp(prefix='autodev-', dir=parent))
+    metadata = {'schema': 1, 'status': 'recording', 'started_unix': time.time(),
+        'root_pid': args.pid, 'root_birth': root_birth, 'run': str(args.run),
+        'root_start_mach_ticks': root_usage.start_ticks,
+        'launch': launch, 'deadline_unix': deadline, 'platform': platform.platform(),
+        'uname': list(platform.uname()), 'python': sys.version, 'collector_pid': os.getpid(),
+        'command': sys.argv, 'interval_seconds': args.interval,
+        'storage_interval_seconds': args.storage_interval,
+        'mach_timebase': {'numer': api.numer, 'denom': api.denom},
+        'backend': 'libproc PROC_PIDTBSDINFO/PROC_PIDTASKINFO/RUSAGE_INFO_V2',
+        'stack_seconds': args.stack_seconds, 'stack_every_seconds': args.stack_every,
+        'source_commit': None, 'source_status': None,
+        'collector_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        'profile_wrapper_sha256': hashlib.sha256((ROOT / 'scripts/profile').read_bytes()).hexdigest(),
+        'limitations': ['Unsampled short-lived children are absent, not zero-cost.',
+            'Disappearance is not an exact exit timestamp or final resource total.',
+            'Memory gauges summed across processes can count shared pages more than once.',
+            'Disk counters exclude network bytes; task messages are Mach IPC, not application messages.',
+            'No argv/environment capture; no external providers or detached services are attributed.',
+            'Executable fingerprints describe current path bytes, not a guarantee of unchanged loaded mappings.',
+            'descriptor_slots is the allocated descriptor-table capacity, not the number of open files.',
+            'Rusage child counters are separate cumulative diagnostics; do not add them to sampled process counters.']}
+    print(f'Capture: {output}', flush=True)
+    interrupted = []
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda number, frame: interrupted.append(number))
+    known, hashes, window = {}, {}, None
+    next_storage = next_stack = next_sync = 0.0
+    tick = 0
+    status = 'failed'
+    windows = []
+    stream = None
+    try:
+        metadata['source_commit'] = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        metadata['source_status'] = subprocess.check_output(
+            ['git', 'status', '--porcelain'], cwd=ROOT, text=True)
+        json_file(output / 'capture.json', metadata)
+        stream = (output / 'resources.jsonl').open('w')
+        while True:
+            wall, cpu = time.monotonic(), time.process_time()
+            now = time.time()
+            if interrupted:
+                status = 'interrupted'
+                break
+            if now >= deadline:
+                status = 'deadline'
+                break
+            try:
+                root = api.info(args.pid, 3, BSD)
+            except OSError as error:
+                # proc_pidinfo rejects zombies, while proc_pid_rusage accepts
+                # them. Match original Mach start time before calling it exit.
+                try:
+                    ended = api.usage(args.pid)
+                    if ended.start_ticks == root_usage.start_ticks and ended.exit_ticks:
+                        status = 'manager-exited'
+                        break
+                except OSError:
+                    pass
+                try:
+                    os.kill(args.pid, 0)
+                except ProcessLookupError:
+                    status = 'manager-exited'
+                    break
+                status = 'manager-unobservable'
+                metadata['error'] = str(error)
+                break
+            if (root.start_sec, root.start_usec) != root_birth:
+                status = 'manager-pid-reused'
+                break
+            old_binary_count = len(hashes)
+            observed, errors = observe_tree(api, args.pid, root_birth, os.getpid())
+            for item in observed:
+                item['role'] = role(item, args.pid)
+                item['observed_monotonic_ns'] = time.monotonic_ns()
+                if item['executable']:
+                    binary = fingerprint(item['executable'], hashes)
+                    if 'id' in binary:
+                        item['binary_id'] = binary['id']
+                    else:
+                        item['binary_error'] = binary['error']
+            current = {p['identity']: p for p in observed}
+            events = [{'kind': 'first-observed', 'identity': key} for key in current.keys() - known.keys()]
+            events += [{'kind': 'not-observed', 'identity': key} for key in known.keys() - current.keys()]
+            events += [{'kind': 'executable-changed', 'identity': key,
+                        'before': known[key]['executable'], 'after': current[key]['executable']}
+                       for key in current.keys() & known.keys()
+                       if current[key]['executable'] != known[key]['executable']]
+            known = current
+            entry = {'tick': tick, 'unix': now, 'monotonic_ns': time.monotonic_ns(),
+                     'processes': observed, 'events': events, 'errors': errors}
+            if len(hashes) > old_binary_count:
+                entry['new_binaries'] = [b for b in hashes.values() if b['id'] >= old_binary_count]
+            if wall >= next_storage:
+                entry['storage'] = [storage(args.run / p) for p in
+                                    ('session', 'session/audit', 'output.log', 'manager.log')]
+                next_storage = wall + args.storage_interval
+            if window and window.poll() is not None:
+                windows[-1]['returncode'] = window.returncode
+                window = None
+            if args.stack_seconds and not window and wall >= next_stack:
+                natives = [p for p in observed if p['role'] == 'harness']
+                if natives:
+                    destination = output / f'stack-{len(windows):04d}'
+                    command = [str(ROOT / 'scripts/profile'), 'capture', 'sample', '--pid',
+                               str(natives[0]['pid']), '--seconds', str(args.stack_seconds), '--out', str(destination)]
+                    with (output / f'stack-{len(windows):04d}.log').open('w') as log:
+                        window = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+                    windows.append({'identity': natives[0]['identity'], 'command': command,
+                                    'started_unix': time.time()})
+                    next_stack = wall + args.stack_every
+            entry['collector'] = {'cpu_seconds_this_tick': time.process_time() - cpu,
+                'wall_seconds_this_tick': time.monotonic() - wall,
+                'self': api.observe(os.getpid())['resources']}
+            stream.write(json.dumps(entry, separators=(',', ':')) + '\n')
+            stream.flush()
+            if wall >= next_sync:
+                os.fsync(stream.fileno())
+                next_sync = wall + 10
+            tick += 1
+            remaining = min(args.interval - (time.monotonic() - wall), deadline - time.time())
+            if remaining > 0:
+                time.sleep(remaining)
+    except ManagerReused as error:
+        status = 'manager-pid-reused'
+        metadata['error'] = str(error)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
+        metadata['error'] = str(error)
+    finally:
+        try:
+            if window and window.poll() is None:
+                try:
+                    os.killpg(window.pid, signal.SIGINT)
+                except ProcessLookupError:
+                    pass
+                try:
+                    window.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(window.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    window.wait()
+                windows[-1]['returncode'] = window.returncode
+                windows[-1]['interrupted_by_collector'] = True
+            elif window:
+                windows[-1]['returncode'] = window.returncode
+        except (OSError, subprocess.SubprocessError) as error:
+            metadata['profiler_cleanup_error'] = str(error)
+            status = 'failed'
+        if stream:
+            try:
+                stream.flush()
+                os.fsync(stream.fileno())
+            except OSError as error:
+                metadata['persistence_error'] = str(error)
+                status = 'failed'
+            finally:
+                try:
+                    stream.close()
+                except OSError as error:
+                    metadata['close_error'] = str(error)
+                    status = 'failed'
+        metadata.update(status=status, samples=tick, finished_unix=time.time(),
+                        signals=interrupted, stack_windows=windows,
+                        collector_wall_seconds=time.monotonic() - collector_started,
+                        collector_cpu_seconds=time.process_time())
+        try:
+            metadata['collector_final_resources'] = api.observe(os.getpid())['resources']
+        except (OSError, RuntimeError) as error:
+            metadata['collector_resource_error'] = str(error)
+        try:
+            json_file(output / 'capture.json', metadata)
+        except OSError as error:
+            print(f'Terminal metadata could not be persisted at {output}: {error}', file=sys.stderr)
+            status = 'failed'
+    print(f'{status}: {tick} persisted observations at {output}', flush=True)
+    return 1 if status in ('failed', 'manager-unobservable') else 0
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
+        print(f'profile-autodev: {error}', file=sys.stderr)
+        sys.exit(1)

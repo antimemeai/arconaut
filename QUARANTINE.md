@@ -1,5 +1,16 @@
 # Sources and restoration
 
+## Fresh workflow study, 2026-10-07
+
+A fresh NousResearch Hermes snapshot at a3ed4a173070 and the separate community
+hermes-workflows plugin at9fc82fe73555 are retained under
+quarantine/hermes-agent-2026-10-07 and quarantine/hermes-workflows-2026-10-07.
+Older Hermes source remains intact. Exact revisions, intact archive paths and
+hashes, extraction exclusions and restoration commands are in
+[papers/workflows-2026-10-07/hermes-acquisition.json](papers/workflows-2026-10-07/hermes-acquisition.json).
+Both are study-only; no installer, runtime or upstream tests were executed, and
+no dependency selected. Archives live on the shared quarantine shelf.
+
 ## Terminal study additions, 2026-10-07
 
 Deeper chat/render study adds FTXUI, Notcurses and libvterm. Exact revisions,
