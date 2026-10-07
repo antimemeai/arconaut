@@ -3,13 +3,15 @@
 #include <clocale>
 #include <cstdlib>
 #include <iostream>
+#include <source_location>
 #include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
 using namespace arconaut;
-void check(bool good) {
+void check(bool good, std::source_location where = std::source_location::current()) {
   if (!good)
-    throw std::runtime_error("terminal contract");
+    throw std::runtime_error("terminal contract at line " +
+                             std::to_string(where.line()));
 }
 InputResult feed(Composer &c, std::string_view bytes) {
   InputResult result;
@@ -23,6 +25,35 @@ InputResult feed(Composer &c, std::string_view bytes) {
 int main() {
   try {
     (void)std::setlocale(LC_CTYPE, "en_US.UTF-8");
+    Composer palette_key;
+    palette_key.draft("unsent draft");
+    feed(palette_key, std::string_view{"\0stats", 6});
+    check(palette_key.text() == "unsent draft"); // Search never edits the hidden draft.
+    check(palette_key.palette_open());
+    check(palette_key.palette_lines(4)[1].starts_with("> /stats"));
+    const auto selected = feed(palette_key, "\r");
+    check(selected.action == InputAction::choose_command && selected.text == "/stats");
+    check(!palette_key.palette_open() && palette_key.text() == "unsent draft");
+    feed(palette_key, "\x14SESSION");
+    check(palette_key.palette_lines(4)[1].find("/session") != std::string::npos);
+    feed(palette_key, "\x1b");
+    check(palette_key.flush_escape() && !palette_key.palette_open());
+    check(palette_key.text() == "unsent draft" && palette_key.cursor() == 12);
+    feed(palette_key, std::string_view{"\0zzzz", 5});
+    check(palette_key.palette_lines(4)[1].find("No matching") != std::string::npos);
+    check(feed(palette_key, "\r").action == InputAction::none &&
+          palette_key.palette_open());
+    feed(palette_key, "\x03");
+    feed(palette_key, "\x14\x1b[200~stats\r\x07\x1b[201~");
+    check(palette_key.palette_open() && palette_key.text() == "unsent draft");
+    check(palette_key.palette_lines(1).size() == 1 &&
+          palette_key.palette_lines(2).size() == 2);
+    feed(palette_key, "\x14\x14"); // Close, reopen full catalog.
+    feed(palette_key, "\x1b[B\x1b[B");
+    const auto moved = palette_key.palette_lines(4);
+    check(moved[2].starts_with("> /commands"));
+    feed(palette_key, "\x14");
+    check(!palette_key.palette_open() && palette_key.text() == "unsent draft");
     Composer editor_key;
     feed(editor_key, "draft");
     check(feed(editor_key, "\x07").action != InputAction::none &&

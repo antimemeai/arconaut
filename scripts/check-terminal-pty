@@ -136,6 +136,107 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
     assert "Unknown command" in reopened.stdout and "[provider]" not in reopened.stderr
 print("PTY paste, resize, Lua/process interruption, continued work, restoration and reopen pass")
 
+# Searchable palette is local even while a worker is busy. Selecting loads a
+# command without sending it, and retains the original draft for explicit recovery.
+with tempfile.TemporaryDirectory(prefix="arco-palette-") as work:
+    import json
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
+                             stdout=slave, stderr=slave, start_new_session=True)
+    observed = bytearray()
+    try:
+        wait_for(b'Workflow reloads')
+        def wait_draft(expected):
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                try:
+                    state = json.loads((Path(work) / 'ui-state.json').read_text())
+                    if bytes.fromhex(state['draft']) == expected:
+                        return
+                except (OSError, ValueError):
+                    pass
+                ready, _, _ = select.select([master], [], [], 0.03)
+                if ready:
+                    observed.extend(os.read(master, 65536))
+            raise AssertionError((expected, state))
+        send(b'ORIGINAL_DRAFT\x1b[D\x1b[D\x00stats')
+        wait_for(b'Commands / stats_')
+        wait_for(b'> /stats')
+        send(b'\x1b')
+        wait_for(b'> ORIGINAL_DRAFT')
+        time.sleep(0.1)
+        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        assert bytes.fromhex(saved['draft']) == b'ORIGINAL_DRAFT' and saved['cursor'] == 12
+        send(b'\x14SESSION')
+        wait_for(b'> /session')
+        send(b'\r')
+        wait_for(b'Command loaded; Enter sends explicitly')
+        assert b'"actor"' not in observed, 'selection executed a session command'
+        wait_draft(b'/session')
+        send(b'\x15/draft 1\r')
+        wait_draft(b'ORIGINAL_DRAFT')
+        send(b'\x15')
+        wait_draft(b'')
+        pidfile = Path(work) / 'busy-pid'
+        command = f'echo $$ > {pidfile}; printf PALETTE_; printf BUSY; sleep 30'
+        send(('/lua arco.call("exec", {command=' + json.dumps(command) + '})\r').encode())
+        wait_for(b'PALETTE_BUSY')
+        busy_pid = int(pidfile.read_text())
+        send(b'BUSY_KEEP\x00help')
+        wait_for(b'Commands / help_')
+        send(b'\r')
+        wait_for(b'Command loaded; Enter sends explicitly')
+        assert b'queued 1' not in observed, 'selection queued a turn'
+        send(b'\r')
+        wait_for(b'Keyboard: /keys') # Existing immediate local help, no busy queue.
+        send(b'\x14nomatch\x03') # Modal Ctrl-C backs out, not stop the worker.
+        wait_for(b'Enter queue')
+        os.kill(busy_pid, 0)
+        send(b'\x14nomatch')
+        wait_for(b'No matching commands')
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 12, 40, 0, 0))
+        send(b'\x7f')
+        wait_for(b'Commands / nomatc_')
+        send(b'\x1b')
+        time.sleep(0.1)
+        send(b'\x03')
+        wait_for(b'interrupted')
+        send(b'\x11')
+        assert child.wait(timeout=5) == 0
+    finally:
+        if child.poll() is None:
+            child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY palette search, cancel, draft recovery, busy selection and narrow resize pass')
+
+# Palette selection must refuse replacement when the recovered-draft capacity
+# is full, rather than lose the old draft or submit anything.
+with tempfile.TemporaryDirectory(prefix="arco-palette-full-") as work:
+    import json
+    state = {'encoding': 'hex-v1', 'draft': b'KEEP_FULL'.hex(), 'cursor': 3,
+             'history': [], 'queued': [b'recovered'.hex()] * 128}
+    (Path(work) / 'ui-state.json').write_text(json.dumps(state))
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
+                             stdout=slave, stderr=slave, start_new_session=True)
+    observed = bytearray()
+    try:
+        wait_for(b'> KEEP_FULL')
+        send(b'\x00stats\r')
+        wait_for(b'Draft storage full')
+        send(b'\x11')
+        assert child.wait(timeout=5) == 0
+        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        assert bytes.fromhex(saved['draft']) == b'KEEP_FULL' and saved['cursor'] == 3
+        assert len(saved['queued']) == 128
+    finally:
+        if child.poll() is None:
+            child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY palette capacity refusal preserves original draft and cursor')
+
 # External editor handoff: canonical terminal, private temp file, explicit send,
 # failure retains draft/cursor, and busy work never launches an editor.
 with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
@@ -171,7 +272,7 @@ with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
         assert not current[3] & termios.ICANON and not current[3] & termios.ECHO
         send(b'\r')
         wait_for(b'EDIT_RUN')
-        send(b'/lua arco.call("exec", {command="printf EDITOR_BUSY; sleep 30"})\r')
+        send(b'/lua arco.call("exec", {command="printf EDITOR_; printf BUSY; sleep 30"})\r')
         wait_for(b'EDITOR_BUSY')
         send(b'BUSY_DRAFT\x07')
         wait_for(b'Editor waits for an idle turn')

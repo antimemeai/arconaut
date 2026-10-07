@@ -29,6 +29,8 @@ struct ChatCommand {
 constexpr std::array commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
+    ChatCommand{"/commands", "",
+                "Search command palette; Ctrl-Space or Ctrl-T (TUI only)", "Chat"},
     ChatCommand{
         "/edit", "",
         "Open a blank draft in $VISUAL/$EDITOR; Ctrl-G edits current draft (idle TUI)",
@@ -58,6 +60,41 @@ constexpr std::array commands{
     ChatCommand{"/restart", "NOTE", "Request native restart; build replacement first",
                 "Programs"}};
 
+std::string search_text(std::string_view text) {
+  std::string out{text};
+  for (auto &c : out)
+    if (c >= 'A' && c <= 'Z')
+      c = static_cast<char>(c + ('a' - 'A'));
+  return out;
+}
+std::vector<std::size_t> palette_matches(std::string_view query) {
+  std::vector<std::size_t> matches;
+  const auto needle = search_text(query);
+  for (std::size_t n = 0; n < commands.size(); ++n) {
+    const auto &command = commands[n];
+    const auto haystack =
+        search_text(std::string{command.name} + " " + std::string{command.description} +
+                    " " + std::string{command.group});
+    if (haystack.find(needle) != std::string::npos)
+      matches.push_back(n);
+  }
+  auto rank = [&](std::size_t n) {
+    auto name = search_text(commands[n].name);
+    auto exact = needle;
+    if (exact.starts_with("/"))
+      exact.erase(0, 1);
+    if (name.substr(1) == exact)
+      return 0;
+    if (name.find(needle) != std::string::npos)
+      return 1;
+    if (search_text(commands[n].description).find(needle) != std::string::npos)
+      return 2;
+    return 3;
+  };
+  std::stable_sort(matches.begin(), matches.end(),
+                   [&](auto a, auto b) { return rank(a) < rank(b); });
+  return matches;
+}
 bool command_token(std::string_view text) {
   return text.starts_with("/") &&
          text.find_first_of(" \t\r\n") == std::string_view::npos;
@@ -286,6 +323,7 @@ std::string terminal_key_help() {
          "  Alt-Enter    Insert newline (also Ctrl-J)\n"
          "  Tab          Complete a slash-command name; ambiguity never submits\n"
          "  Ctrl-G       Edit current draft in $VISUAL/$EDITOR (idle only)\n"
+         "  Ctrl-Space/T Search commands; arrows select, Enter loads, Esc backs out\n"
          "  Up / Down    Move between draft lines; history at first/last line\n"
          "  Ctrl-P / N   Explicit history; restores your draft and cursor\n"
          "  Left / Right Move within the draft\n"
@@ -340,6 +378,14 @@ std::string terminal_command_hint(std::string_view draft) {
                          : "Tab complete · " + matches;
 }
 void Composer::insert(char byte) {
+  if (palette_open_) {
+    if (static_cast<unsigned char>(byte) >= 32 && byte != 127 &&
+        palette_query_.size() < 128) {
+      palette_query_ += byte;
+      palette_selected_ = 0;
+    }
+    return;
+  }
   goal_column_.reset();
   if (text_.size() >= 1024 * 1024)
     return;
@@ -469,6 +515,9 @@ void Composer::restore(const TerminalState &state) {
   goal_column_.reset();
   escape_.clear();
   pasted_ = false;
+  palette_open_ = false;
+  palette_query_.clear();
+  palette_selected_ = 0;
 }
 TerminalState Composer::state() const { return {text_, cursor_, history_, {}}; }
 void Composer::draft(std::string text) {
@@ -480,6 +529,50 @@ void Composer::draft(std::string text) {
   draft_.clear();
   draft_cursor_ = 0;
   goal_column_.reset();
+}
+void Composer::palette_move(bool up) {
+  const auto matches = palette_matches(palette_query_);
+  if (matches.empty()) {
+    palette_selected_ = 0;
+    return;
+  }
+  if (up)
+    palette_selected_ -= palette_selected_ > 0 ? 1U : 0U;
+  else
+    palette_selected_ = std::min(palette_selected_ + 1, matches.size() - 1);
+}
+bool Composer::flush_escape() {
+  if (palette_open_ && escape_ == "\x1b") {
+    escape_.clear();
+    palette_open_ = false;
+    return true;
+  }
+  return false;
+}
+std::vector<std::string> Composer::palette_lines(std::size_t rows) const {
+  if (!palette_open_ || rows == 0)
+    return {};
+  const auto matches = palette_matches(palette_query_);
+  std::vector<std::string> out{"Commands / " + palette_query_ + "_"};
+  if (rows == 1)
+    return out;
+  const auto count = rows > 2 ? rows - 2 : 1;
+  if (matches.empty())
+    out.emplace_back("  No matching commands");
+  else {
+    const auto first = palette_selected_ >= count ? palette_selected_ - count + 1 : 0;
+    for (std::size_t n = first; n < matches.size() && n - first < count; ++n) {
+      const auto &command = commands[matches[n]];
+      out.push_back(
+          (n == palette_selected_ ? "> " : "  ") + std::string{command.name} +
+          (command.arguments.empty() ? "" : " " + std::string{command.arguments}) +
+          " — " + std::string{command.description});
+    }
+  }
+  if (rows > 2)
+    out.emplace_back("Type search · Up/Down select · Enter loads · Esc back");
+  out.resize(rows);
+  return out;
 }
 void Composer::history(bool older) {
   if (older) {
@@ -555,7 +648,8 @@ InputResult Composer::feed(char byte) {
       return {};
     }
     if (escape_ == "\x1b\r" || escape_ == "\x1b\n") {
-      insert('\n');
+      if (!palette_open_)
+        insert('\n');
       escape_.clear();
       return {};
     }
@@ -563,6 +657,14 @@ InputResult Composer::feed(char byte) {
       return {};
     if (escape_.size() >= 3 && c >= 0x30U && c <= 0x3fU)
       return {};
+    if (palette_open_) {
+      if (escape_ == "\x1b[A" || escape_ == "\x1bOA")
+        palette_move(true);
+      if (escape_ == "\x1b[B" || escape_ == "\x1bOB")
+        palette_move(false);
+      escape_.clear();
+      return {};
+    }
     const bool up = escape_ == "\x1b[A" || escape_ == "\x1bOA";
     const bool down = escape_ == "\x1b[B" || escape_ == "\x1bOB";
     if (up || down)
@@ -611,6 +713,34 @@ InputResult Composer::feed(char byte) {
   }
   if (pasted_) {
     insert(byte == '\r' ? '\n' : byte);
+    return {};
+  }
+  if (c == 0 || c == 20) {
+    palette_open_ = !palette_open_;
+    palette_query_.clear();
+    palette_selected_ = 0;
+    return {};
+  }
+  if (palette_open_) {
+    if (c == 3 || c == 17) {
+      palette_open_ = false;
+      return {c == 17 ? InputAction::quit : InputAction::none, {}};
+    }
+    if (c == 13) {
+      const auto matches = palette_matches(palette_query_);
+      if (!matches.empty()) {
+        const auto &command = commands[matches[palette_selected_]];
+        palette_open_ = false;
+        return {InputAction::choose_command,
+                std::string{command.name} + (command.arguments.empty() ? "" : " ")};
+      }
+    } else if (c == 16 || c == 14 || c == 9)
+      palette_move(c == 16);
+    else if (c == 127 || c == 8) {
+      palette_query_.erase(previous(palette_query_, palette_query_.size()));
+      palette_selected_ = 0;
+    } else
+      insert(byte);
     return {};
   }
   if (c == 7)
@@ -950,7 +1080,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       old_columns = columns;
       redraw = false;
       const auto width = static_cast<std::size_t>(columns - 1 - (show_mascot ? 18 : 0));
-      const auto height = static_cast<std::size_t>(rows - 7);
+      const auto palette = composer.palette_lines(std::min<std::size_t>(8, rows - 9));
+      const auto height = static_cast<std::size_t>(rows - 7) - palette.size();
       const auto lines = terminal_lines(transcript, width);
       if (scroll > 0 && same_width)
         scroll = terminal_scroll_after_output(
@@ -986,8 +1117,13 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       frame += terminal_lines(status_line, width)[0] + "\r\n";
       for (std::size_t row = 0; row < height; ++row)
         frame += "\x1b[2K" + (begin + row < end ? lines[begin + row] : "") + "\r\n";
+      for (const auto &line : palette)
+        frame += "\x1b[2K\x1b[36m" + terminal_lines(line, width)[0] + "\x1b[0m\r\n";
       auto hint = terminal_command_hint(composer.text());
-      if (hint.empty())
+      if (composer.palette_open())
+        hint = "Palette selection loads the composer; it never submits. Esc returns to "
+               "draft.";
+      else if (hint.empty())
         hint = busy ? "Enter queue · Alt-Enter newline · Ctrl-C stop · /queue · /help"
                     : "Enter send · Alt-Enter newline · Tab commands · /help";
       frame += "\x1b[2K\x1b[2m" + terminal_lines(hint, width)[0] + "\x1b[0m\r\n";
@@ -1021,8 +1157,14 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           frame += "\x1b[" + std::to_string(row + 1) + ";" +
                    std::to_string(columns - 16) + "H" + sprite[row];
       }
-      frame += "\x1b[" + std::to_string(cursor_line) + ";" +
-               std::to_string(std::min(cells + 1, width)) + "H\x1b[?25h";
+      const auto display_cursor_line =
+          composer.palette_open() ? height + 3 : cursor_line;
+      const auto display_cursor_cells =
+          composer.palette_open()
+              ? display_width(palette.front().substr(0, palette.front().size() - 1)) + 1
+              : cells + 1;
+      frame += "\x1b[" + std::to_string(display_cursor_line) + ";" +
+               std::to_string(std::min(display_cursor_cells, width)) + "H\x1b[?25h";
       std::cout << frame << std::flush;
     }
     pollfd input{STDIN_FILENO, POLLIN, 0};
@@ -1032,8 +1174,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         continue;
       throw std::runtime_error("Terminal polling failed");
     }
-    if (ready == 0)
+    if (ready == 0) {
+      if (composer.flush_escape())
+        redraw = true;
       continue;
+    }
     char bytes[512];
     const auto count = read(STDIN_FILENO, bytes, sizeof(bytes));
     if (count <= 0) {
@@ -1045,6 +1190,28 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     for (ssize_t i = 0; i < count; ++i) {
       auto result = composer.feed(bytes[i]);
       redraw = true;
+      if (result.action == InputAction::choose_command) {
+        bool load = true;
+        if (!composer.text().empty()) {
+          auto candidate = composer.state();
+          candidate.queued = recovered;
+          candidate.queued.insert(candidate.queued.end(), queued.begin(), queued.end());
+          candidate.queued.push_back(composer.text());
+          try {
+            validate_state(candidate);
+            recovered.push_back(composer.text());
+          } catch (const Error &) {
+            load = false;
+            transcript +=
+                "\nDraft storage full; original retained, command not loaded.\n";
+          }
+        }
+        if (load) {
+          composer.draft(std::move(result.text));
+          transcript +=
+              "\nCommand loaded; Enter sends explicitly. Previous draft in /drafts.\n";
+        }
+      }
       if (result.action == InputAction::edit && edit())
         break;
       if (result.action == InputAction::page_up)
@@ -1065,7 +1232,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         cancelled.store(true);
       }
       if (result.action == InputAction::submit && !result.text.empty() && !quitting) {
-        if (result.text == "/edit") {
+        if (result.text == "/commands") {
+          (void)composer.feed(0);
+        } else if (result.text == "/edit") {
           if (edit())
             break;
         } else if (result.text == "/help" || result.text == "/keys") {
