@@ -3548,3 +3548,25 @@ Read new waste audit; repeated full snapshot capture/status serialization deferr
 visibly, not fixed under a third hardening layer. Clean release5e58d51 installed
 SHA8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9.
 Same-unit native RRC next; source5e58d51 candidate pushed, acceptance/master pending.
+
+## G7 scoped acceptance / actual native activation (2026-10-07)
+
+Same-session RRC continued native PID91133 start06:59:23UTC, observed06:59:31UTC;
+installed release SHA8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9
+matched built5e58d51. G7 local-file station/control scoped accepted after actual
+source-trigger useful station map, duplicate single admission, same-actor operator
+pause/stop and completed affected checks. Eight live provider requests aggregate
+36600 input/3354 output/39954 total reported tokens; billing unavailable.
+Hardening finished06:50:16; no third layer or settled-suite rerun. Original unit
+deadline07:57:04.372475UTC unchanged. Source owns backlog, latest boundary controls
+not a command queue; unknown attempts stay unknown/no replay, no remote settlement
+or crash containment claim. Repeated snapshot/status cadence costs are separate
+bounded follow-up, not silent scope expansion. Close bead and publish via checked
+non-force master fast-forward; no later unit implementation in this session.
+
+G7 publication boundary07:00:41UTC: fresh origin/master is a82ec5a, not an
+ancestor of shared local HEAD87419ba (concurrent startup owner committed on
+this branch after08f22ea). Non-force FF prerequisite failed. STOP: no merge,
+force push or second activation. Running G7 native remains built5e58d51, not
+new local87419ba. Candidate preserves both owners' work; G7 reopened blocked
+pending explicit branch reconciliation/publication, not called campaign accepted.

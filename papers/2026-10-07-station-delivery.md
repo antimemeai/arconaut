@@ -1,4 +1,4 @@
-# G7 station/control delivery (activation pending)
+# G7 station/control delivery (qualified; master publication blocked)
 
 arconaut-7iy.7 start06:27:04.372475UTC; deadline07:57:04.372475UTC.
 Source candidate2a34415; combined accepted startup source0f01f2c in5e58d51.
@@ -29,7 +29,8 @@ as a new G7 failure-campaign prerequisite or silently marked passed.
 
 Actual foreground native station PID87484 admitted one of two identical source
 events, executed ordinary OpenAI/tool work and wrote docs/G7_NATIVE_STATION_MAP.md
-for useful operator/next-adapter planning. Elapsed112.9947s; status transitioned
+for useful operator/next-adapter planning. Elapsed112.9947s; eight provider requests reported aggregate36600 input/3354
+output/39954 total tokens (account billing unavailable); status transitioned
 idle -> operator pause, unchanged actor ac667a677022b5dc0300000000000000 and
 context head ac667a677022b5dcc105000000000000. Explicit stop exit0. Session
 context/giga-campaign/g7-worker-run1; originals/log observation retained in
@@ -43,16 +44,21 @@ sustain that background launch. Preserve unknown final process boundary; do not
 claim its effect settlement. Separately identified foreground event/session was
 an explicit distinct useful operation, not admission inheritance.
 
-## Native activation pending
+## Actual native activation
 
 Built5e58d51 clean release in existing empty pilot pool slot, avoiding initial
 foreign dirty checkout. Main source advanced by local checked fast-forward and
 built executable atomically installed at build/release/arco. SHA256:
 8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9.
 Old native PID77239 start06:27:04UTC; current session
-context/giga-campaign/session-arconaut-7iy.7. Same-unit RRC observation, acceptance,
-bead closure and checked non-force remote master promotion remain next. Never
-mistake installed bytes/candidate publication for actual activation.
+context/giga-campaign/session-arconaut-7iy.7. Same-unit RRC actually continued with
+native PID91133 start06:59:23UTC, observed06:59:31UTC; executable SHA matched above.
+No station implicit-continue admission or later-unit transition. Scoped acceptance
+uses the completed direct oracles and actual useful work, not a third review.
+Fresh remote ancestor check failed: master a82ec5a diverges from shared local
+87419ba. No merge or force push performed. Acceptance remains publication-pending;
+G7 bead reopened blocked despite completed activation and scoped qualification.
+Original attempts and unknown effects remain at their original paths.
 
 ## Preserved limits / waste follow-up
 

@@ -92,7 +92,7 @@ no automatic destructive policy implied by byte visibility.
 
 | ID | Feature | Completion condition | Status |
 | --- | --- | --- | --- |
-| D1 | Autodev control surface | View/edit queue and running objective, pause/resume and steer work at boundaries; persist direction through RRC; model retains substantial planning agency. | queued |
+| D1 | Autodev control surface | View/edit queue and running objective, pause/resume and steer work at boundaries; persist direction through RRC; model retains substantial planning agency. | G7 scoped qualified; master publication blocked (a82ec5a vs shared local87419ba): native file-station status/steer/pause/resume/stop and RRC persistence; actual source-trigger useful work and same-actor pause. Source owns queue/cursor; no live TUI/board queue editor. See STATION.md and station delivery paper. |
 | D2 | Experiment workflow | Record hypothesis, baseline, candidate, actual measurements and promotion/rollback; model-governed policy tunable from manual to autoresearch. | queued |
 | D3 | Model rageshake | Complaint captures context/revision, program, model, active effects and relevant audit references; creates bead and delivers to an external DB table when that service is selected; offline complaint retained without obligating immediate repair. | queued |
 | D4 | Audit exploration | Query/search actual retained effects, original bytes, context revisions and program/request lineage; one retention authority, derived indexes rebuildable. | queued |

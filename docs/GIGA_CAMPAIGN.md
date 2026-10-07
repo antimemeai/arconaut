@@ -65,6 +65,19 @@ G5 remains blocked on heterogeneous account/service access; G6 did not retry tho
 accounts or integrate its standalone candidate by implication. See
 [orchestration delivery](../papers/2026-10-07-orchestration-delivery.md).
 
+G7 `arconaut-7iy.7` scoped qualified, publication BLOCKED: native station/control source2a34415,
+combined with independently accepted startup0f01f2c in5e58d51. Durable admission
+before dispatch, source/id duplicate suppression, unknown/no-replay pause and
+boundary inspect/steer/pause/resume/stop preserve the native actor/context.
+Affected source2a Mac/Linux checks passed; combined5e affected Mac checks passed,
+not a blanket combined Linux claim. Hardening06:33:37..06:50:16UTC layers1+2 complete.
+Actual source event delivered [station map](G7_NATIVE_STATION_MAP.md) in112.995s,
+one admission for duplicates, same-actor operator pause, stop0. Same-session RRC
+observed06:59:31UTC: PID91133 start06:59:23 and recorded executable SHA matched.
+Local-file source owns backlog/cursor; no TUI live attachment, remote-effect success,
+crash containment or scheduler claim. Exact interface [STATION](STATION.md),
+evidence/limits [station delivery](../papers/2026-10-07-station-delivery.md).
+
 ## Ordered whole units
 
 | Unit | Delivery and direct observation | Source/design starting point |
