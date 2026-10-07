@@ -4705,3 +4705,40 @@ not delivered and startup still fully replays predecessors. Independent review
 attempt failed provider403 with no findings; candidate inactive. Exact checks,
 limited index-fixture measurement and next locator/consumer edits are retained in
 papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md. No activation/restart.
+
+## 2026-10-07 G5 independent colleague slice (candidate only)
+
+Lane start04:24:59UTC/deadline05:19:59UTC, hardening25min maximum inside55min.
+New native `arconaut_colleague` + `arco-colleague` contract using accepted OpenAI
+provider and installed Claude CLI through LocalTools, with explicit source selection,
+addresses/model/profile, predispatch capture, actual usage/model and failure/unknown
+outcomes. No core ABI/lifetime modifications, SDK adoption or primary journal edit.
+Source/design/primary-literature consequences and bounded two-layer results:
+`papers/2026-10-07-g5-colleague-lane.md`; exact contract `docs/COLLEAGUE.md`.
+Mac release/ASan and scoped Linux Clang18/libstdc++ sanitizer contract checks pass;
+scoped Clang-Tidy clean. Original red helper ambiguity fixed; expanded fixture shape
+corrected; real source diagnosis led to explicit refusal/tool-output handling.
+
+Actual OpenAI selected-source diagnosis completed (`gpt-6.1-sol`,3615 reported total
+tokens); no heterogeneous success pretended. Claude expired OAuth401, Kimi subscription
+403, MiMo free endpoint403 policy refusal and configured OpenRouter key401 expired.
+No auth/package install or effect retry. Broader G5 live cross-provider+second-combination
+requirement remains blocked. Useful native slice retained inactive/unpromoted candidate
+for Root serial integration. No third hardening layer/global suite or detached work.
+Ignored raw artifacts and exact blocked disposition retained under `context/g5`.
+
+## 2026-10-07 — operator explicitly merges all remaining source
+
+Operator: just merge what's there. Consolidate remaining source, not another
+acceptance or review gate. One25minute integration pass: resolve names/CMake/log
+conflicts; build native Release OFF <=j2; run direct affected retained/context/
+recovery/colleague and current interface checks; fix concrete integration failures
+and recheck only affected checks. No new survey, review panel or autonomous job.
+
+Merged durable-recovery87f786f including cold-historyd32a764 and physical-hintdce1481
+ancestry. Resolved append-only journal and independent CMake test targets preserving
+both. Next merge imports colleaguef233689, migrates its include/namespace/library
+names to Blackbird, keeps arco-colleague build/CLI compatibility. Existing admitted
+Jev/Beads/workflow paths and DEBUGOFF instrumentation guards retained.
+Unfinished checkpoint/native suffix delivery remains honestly unfinished in source;
+merging it does not invent missing functionality or erase prior review gaps.

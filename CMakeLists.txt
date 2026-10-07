@@ -309,3 +309,18 @@ add_executable(recovery_index_test tests/recovery_index_test.cpp)
 target_link_libraries(recovery_index_test PRIVATE blackbird_foundation)
 add_test(NAME recovery_index COMMAND recovery_index_test)
 set_tests_properties(recovery_index PROPERTIES TIMEOUT 60)
+
+# Independent colleague slice; no native core ABI or lifecycle changes.
+add_library(blackbird_colleague src/colleague.cpp)
+target_link_libraries(blackbird_colleague PUBLIC blackbird_foundation)
+add_executable(blackbird-colleague src/colleague_main.cpp)
+target_link_libraries(blackbird-colleague PRIVATE blackbird_colleague)
+add_executable(colleague_test tests/colleague_test.cpp)
+target_link_libraries(colleague_test PRIVATE blackbird_colleague)
+add_test(NAME colleague COMMAND colleague_test)
+set_tests_properties(colleague PROPERTIES TIMEOUT 15)
+
+add_custom_target(arco-colleague DEPENDS blackbird-colleague
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:blackbird-colleague> ${CMAKE_CURRENT_BINARY_DIR}/arco-colleague)
+add_custom_command(TARGET blackbird-colleague POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:blackbird-colleague> ${CMAKE_CURRENT_BINARY_DIR}/arco-colleague)
