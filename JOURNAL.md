@@ -3755,3 +3755,13 @@ is discussion, not an approved implementation. Frumentarii now independently
 study P2P transport, multiplayer state and E2EE primary literature/refimpls.
 Consolidate accepted source and historical work notes on master, reconcile current
 status and inventory unaccepted branches; do not merge candidate code blindly.
+
+## Unified master stock
+
+Merged current accepted source and accumulated study/operating notes onto master,
+resolving duplicate selective-publication conflicts with complete current versions.
+No unaccepted colleague/TUI-shell/useful-work-tools source merged. Preserved exact
+branch tips/worktrees in docs/BRANCH_INVENTORY.md and material delivery limits in
+docs/CURRENT_STATE.md. Corrected G7 publication and campaign paused status; earlier
+journal claims remain historical. Rebuild local main for operator use; no multiplayer
+implementation or autonomous resume authorized by this consolidation.

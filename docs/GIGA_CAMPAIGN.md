@@ -1,5 +1,9 @@
 # Giga: programmable, sustained, heterogeneous Arconaut
 
+**Current: paused by the operator on 2026-10-07 for consolidation and hands-on
+use. Multiplayer implementation is deferred while P2P, multiplayer networking
+and E2EE frumentarii research runs. See [current stock](CURRENT_STATE.md).**
+
 Operator approved this course2026-10-07 after the delivered interstitial. This is
 an execution brief, not a claim that the features exist. Milestone one and the
 original interstitial are accepted. Current scoped workflow-capacity protection
@@ -61,11 +65,13 @@ Successful-boundary effective revision c7d34276b2ed4987ad0b000000000000 observed
 06:24:40UTC; actual retained import generated [native ownership map](G6_NATIVE_OWNERSHIP_MAP.md)
 with41 anchors/3 files. Lua-only activation, no native RRC. No parallel scheduler,
 remote cancellation, persistent admissions or native participant messaging claim.
-G5 remains blocked on heterogeneous account/service access; G6 did not retry those
-accounts or integrate its standalone candidate by implication. See
+G5 remains unfinished. Claude native readiness succeeds; useful cross-provider
+work and source integration are pending. Kimi is unavailable and MiMo access is
+not working. Grok readiness succeeds, but the source review timed out. G6 did not
+integrate the standalone colleague candidate by implication. See
 [orchestration delivery](../papers/2026-10-07-orchestration-delivery.md).
 
-G7 `arconaut-7iy.7` scoped qualified, publication BLOCKED: native station/control source2a34415,
+G7 `arconaut-7iy.7` scoped accepted and published on master: native station/control source2a34415,
 combined with independently accepted startup0f01f2c in5e58d51. Durable admission
 before dispatch, source/id duplicate suppression, unknown/no-replay pause and
 boundary inspect/steer/pause/resume/stop preserve the native actor/context.
