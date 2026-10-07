@@ -3209,3 +3209,21 @@ child units created; existing scs reparented as first backstop unit. Research an
 library/provider decisions stay real, blocked units do not hold completed work.
 README capacity status refreshed. Prepare fresh explicit working mission, preserving
 old namespaces and unknown boundaries; no historical effect replay or seed claim.
+
+Giga controller16550 launched03:54:14UTC, first unit arconaut-scs in explicit fresh
+session-arconaut-scs, supervisor16551. Actual provider request observed and board
+shows giga-campaign supervised/running. Finite ten-unit queue, at most four normal
+boundary continuations per same unit,90min whole-unit deadline without reset.
+Model working intent controls next normal turn; exit0 alone is not acceptance.
+Nontransient native/unknown failure or blocked dirty candidate remains visible,
+not auto-replayed/reset. Native qualified backstop still first implementation.
+Temporary controller under ignored context uses development Python only; no
+production Python introduced. Two-layer25min hardening carried in native prompt
+and campaign brief, not a semantic certifier. Accepted unit master integration
+authorized directly, no Root approval bottleneck. Existing source/reports read
+instead of another scoped-capacity review/test run. External evotools e0fa941
+aligns typed provider_transport and giga-board metadata; direct fake92 eventual
+success/untypedio92 refusal and Lua syntax passed, actual board displays new run.
+Queue creation first command produced G2a before JSON parsing failed (missing
+--json); resumed by existing-title lookup, no duplicated tasks or missing intent.
+All nine later units now tracked; no source adoption/mutants/extra gate.
