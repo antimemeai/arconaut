@@ -22,6 +22,11 @@ fixes; it must not grow into a laboratory that postpones the fixes.
 
 ## Other useful product work
 
+- **Native Beads integration (arconaut-jim):** operator requests sketch/design then
+  BB autodev. docs/BEADS_DESIGN.md defines shared C++ model/Lua/slash operations,
+  lazy canonical project binding and truthful mutation outcomes. Existing bd CLI
+  is the first external backend; direct Dolt is not silently adopted.
+
 - **Workflow registry delivery (arconaut-3oz.2):** implemented/tested/pushedc8498f0;
   first substantive review found two repairs: bound palette selection after hot
   registry shrink, and latch caught invocation-limit failures. Candidate remains

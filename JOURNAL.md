@@ -4248,3 +4248,29 @@ Claude attempt yielded no report. Findings: palette selection out-of-range after
 registry shrink; caught invocation-count exhaustion bypasses failure latch.
 Report retained in papers; bead/flat backlog updated with direct repair oracles.
 Candidate inactive; no second tribunal or review-of-review requested.
+
+## 2026-10-07 — Design native Beads and preserve P1 handoff
+
+Operator asks sketch/design then BB autodev on native Beads integration. Bounded
+source research acquired exact installed0.58.0 upstream ae14933, intact archive
+and cleaned reference. Study finds public GoAPI exists but no adopted nativeABI;
+CLI supports atomic standalone claim, actual ready differs from list--ready,
+and SQL writes may commit before a failing separate Dolt version commit. Explicit
+create IDs can overwrite existing rows; no invented exactly-once retry. Child
+BEADS_DIR binds primary config/database independently of candidate checkout.
+docs/BEADS_DESIGN.md specifies shared native tools/Lua/slash facade, lazy binding,
+no startup DB work, typed command-specific JSON and truthful unknown effects.
+Existing bd external backend first; optional operator backend preference asked,
+no reply before proceeding with stated default. No new dependency/service.
+
+P1 ran four successful segments and exited0 at13:49:16, before original deadline,
+without final actor handoff/commit. Actual independent Codex review DID return
+five concrete findings; source applied fixes and direct rechecks. Root preserves
+stopped source, actual review and aggregate measurements in pushed94bc2d4,
+candidate/local-performance-2026-10-07. Four affected checks passed; four growing
+history runs show disablednooutput and privatevalid2300-record JSONL/zero drops.
+All221 sampled identities no longer match libproc; no inference about escaped
+children/remote outcomes. Native pool settled/checkpointed/released, board records
+inactive candidate, bead remains open for integration. No allowance extension,
+extra review, primary build replacement or performance-target claim. Reuse slot
+for independent Beads work after design, avoiding another permanent worktree.

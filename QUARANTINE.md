@@ -1,5 +1,14 @@
 # Sources and restoration
 
+## Beads native-integration study, 2026-10-07
+
+Matching installed bd0.58.0 source is pinned to
+ae14933db67a0f67da5a8fb69be72c2282ca0e73 under quarantine/beads-2026-10-07.
+Intact shared archive, hash, acquisition URL and exact extraction/restoration
+command are recorded in papers/2026-10-07-beads-integration-study.md. Nested Git
+metadata/detritus removed from extraction; archived instructions are historical.
+Study-only, no imported code/runtime/database dependency adopted.
+
 ## Fresh workflow study, 2026-10-07
 
 A fresh NousResearch Hermes snapshot at a3ed4a173070 and the separate community
