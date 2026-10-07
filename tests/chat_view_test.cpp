@@ -56,7 +56,7 @@ int main(int argc, char **) {
     require(blackbird_sprite(true, 0) != blackbird_sprite(true, 1),
             "busy exhaust static");
     ChatGrid sprite_grid;
-    sprite_grid.reset(40, 2);
+    sprite_grid.reset(40, blackbird_sprite_height);
     sprite_grid.line(0, {{"HEADER", Ink::normal}});
     for (std::size_t y = 0; y < idle_sprite.size(); ++y)
       sprite_grid.line(y, {{idle_sprite[y], Ink::assistant}}, 22);
@@ -64,7 +64,7 @@ int main(int argc, char **) {
             "sprite blit overwrites header");
     sprite_grid.line(0, {{idle_sprite[0], Ink::assistant}}, 40);
     require(sprite_grid.cells[0].scalar == U'H', "offscreen sprite corrupts cells");
-    sprite_grid.reset(40, 2);
+    sprite_grid.reset(40, blackbird_sprite_height);
     sprite_grid.line(0, {{"界x", Ink::normal}});
     sprite_grid.line(0, {{"h", Ink::normal}}, 1);
     require(sprite_grid.cells[0].scalar == U' ' && sprite_grid.cells[0].width == 1 &&
@@ -76,6 +76,16 @@ int main(int argc, char **) {
     require(sprite_grid.cells[1].width == 2 && sprite_grid.cells[2].width == 0 &&
                 sprite_grid.cells[3].width == 1,
             "overlapping wide-cell blit leaves stale continuation");
+    for (const auto &[width, height] :
+         std::array<std::pair<std::size_t, std::size_t>, 4>{{{40, 12}, {80, 18},
+                                                          {80, 30}, {120, 20}}}) {
+      const auto startup = blackbird_startup(width, height);
+      require(startup.size() <= height, "startup art exceeds viewport height");
+      for (const auto &line : startup)
+        require(line.size() <= width, "startup art exceeds viewport width");
+    }
+    require(blackbird_startup(80, 30, false).size() == 5,
+            "disabled mascot draws startup aircraft");
     ChatView view;
     view.append(ChatKind::user, "hola");
     view.begin(ChatKind::assistant);

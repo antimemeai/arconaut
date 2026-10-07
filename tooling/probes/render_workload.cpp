@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
       if (scenario == "stream" && frames % 8 == 0)
         view.stream("Retained context · 界 · é · 👩‍💻 · " +
                     std::to_string(frames) + "\n");
-      const auto &rows = view.rows(120);
+      const auto &rows = view.rows(100);
       grid.reset(120, 40);
       grid.line(0, {{"Blackbird · renderer workload", Ink::assistant}});
       grid.line(1, {{"Frame " + std::to_string(frames), Ink::muted}});

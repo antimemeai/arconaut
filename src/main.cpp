@@ -1,6 +1,7 @@
 #include "blackbird/backstop.hpp"
 #include "blackbird/coding.hpp"
 #include "blackbird/station.hpp"
+#include "blackbird/sprite.hpp"
 #include "blackbird/terminal.hpp"
 #include <atomic>
 #include <csignal>
@@ -587,6 +588,9 @@ int main(int argc, char **argv) {
           resume_turn ? "continue" : "", session / "ui-state.json");
       return restart_pending.load() ? 75 : 0;
     }
+    if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))
+      for (const auto &line : blackbird_startup(80, 24, false))
+        std::cout << line << '\n';
     std::cout << "Blackbird · " << model << " · " << effort << " · " << session.string()
               << "\n/help lists commands; /quit or /exit exits.\n";
     if (resume_turn)

@@ -1069,6 +1069,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   };
 
   ChatView transcript;
+  bool welcoming = initial.empty();
+  std::vector<std::string> welcome_lines;
   ChatGrid grid;
   ChatPainter painter;
   std::string activity = "Ready", observed_usage, small_frame;
@@ -1087,6 +1089,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   auto started = std::chrono::steady_clock::now();
   auto second = started, tool_started = started;
   auto start = [&](std::string prompt) {
+    welcoming = false;
     if (worker.joinable())
       worker.join();
     busy = true;
@@ -1160,6 +1163,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       incoming.swap(messages_);
     }
     for (const auto &message : incoming) {
+      if (message.kind == Kind::text || message.kind == Kind::process ||
+          message.kind == Kind::failure)
+        welcoming = false;
       if (message.kind == Kind::text)
         transcript.append(turn_failed ? ChatKind::error : ChatKind::assistant,
                           message.text, true);
@@ -1251,6 +1257,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       redraw = true;
     if (redraw && !output.pending()) {
       const bool same_width = old_columns == columns;
+      const bool geometry_changed = old_columns != columns || old_rows != rows;
       old_rows = rows;
       old_columns = columns;
       redraw = false;
@@ -1278,7 +1285,16 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           composer.palette_lines(std::min<std::size_t>(8, rows - 5 - draft_height));
       const auto height =
           static_cast<std::size_t>(rows - 5) - draft_height - palette.size();
-      const auto &lines = transcript.rows(width);
+      const bool show_sprite = !welcoming && mascot_enabled && width >= 90 &&
+                               height + 2 >= blackbird_sprite_height;
+      const auto header_width =
+          show_sprite ? width - blackbird_sprite_width - 2 : width;
+      // The square occupies a right gutter, including beside the first chat rows.
+      // Wrap into the remaining columns so a sprite can never overwrite content.
+      const auto &lines = transcript.rows(header_width);
+      if (welcoming && (geometry_changed || welcome_lines.empty()))
+        welcome_lines = blackbird_startup(width - 4, height > 2 ? height - 2 : 0,
+                                         mascot_enabled);
       if (display_generation != transcript.generation()) {
         scroll =
             0; // Evicted display history: return to live tail, never a false anchor.
@@ -1300,9 +1316,6 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       if (path != std::string::npos)
         title = title.substr(0, path) + " · " +
                 std::filesystem::path(title.substr(path + 4)).filename().string();
-      const bool show_sprite = mascot_enabled && width >= 90;
-      const auto header_width =
-          show_sprite ? width - blackbird_sprite_width - 2 : width;
       grid.line(0,
                 {{" " + terminal_lines(title, header_width - 1)[0], Ink::assistant}});
       std::string status_line;
@@ -1340,13 +1353,23 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       grid.line(1, {{status_text, busy ? Ink::user : Ink::muted}, {rule, Ink::border}});
       if (show_sprite) {
         const auto &sprite = blackbird_sprite(busy, phase / 2);
+        const auto ink = turn_failed ? Ink::failure
+                        : tool_active ? Ink::user
+                        : busy        ? Ink::assistant
+                                      : Ink::muted;
         for (std::size_t row = 0; row < sprite.size(); ++row)
-          grid.line(row, {{sprite[row], busy ? Ink::assistant : Ink::muted}},
-                    width - blackbird_sprite_width);
+          grid.line(row, {{sprite[row], ink}}, width - blackbird_sprite_width);
       }
-      for (std::size_t row = 0; row < height; ++row)
-        if (begin + row < end)
-          grid.line(row + 2, lines[begin + row]);
+      if (welcoming) {
+        for (std::size_t row = 0; row < std::min(height, welcome_lines.size()); ++row)
+          grid.line(row + 2, {{"  " + welcome_lines[row], Ink::assistant}});
+        if (welcome_lines.size() + 1 < height)
+          grid.line(welcome_lines.size() + 3,
+                    {{"  Enter continues · / commands · Workflow reloads each turn.", Ink::muted}});
+      } else
+        for (std::size_t row = 0; row < height; ++row)
+          if (begin + row < end)
+            grid.line(row + 2, lines[begin + row]);
       std::size_t menu_row = height + 2;
       for (const auto &line : palette)
         grid.line(menu_row++,
@@ -1444,6 +1467,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     for (ssize_t i = 0; i < count; ++i) {
       const bool was_escape = composer.escape_pending();
       auto result = composer.feed(bytes[i]);
+      welcoming = false; // First operator input reveals retained chat and the avatar.
       if (!was_escape && composer.escape_pending())
         escape_deadline =
             std::chrono::steady_clock::now() + std::chrono::milliseconds(50);

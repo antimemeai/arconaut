@@ -3975,3 +3975,33 @@ Redrew the original 36x8 bit silhouette in the harness and external board, showi
 swept wings, separated nacelles, and two animated exhaust trails. Cached frames,
 header footprint and idle behavior remain unchanged. Release rebuild and the
 chat_view/chat_render_oracle checks pass (2/2); board Lua parsing and --once pass.
+
+## 2026-10-07 — Startup aircraft and square status avatar
+
+Operator supplied a better front-three-quarter SR-71 reference and requested
+large startup art with ASCII BLACKBIRD lettering, shrinking into a square in the
+upper-right corner. Its color should communicate operational state. The plan:
+keep both drawings code-native; render a local welcome view, dismiss on first
+operator input without touching retained chat/context, and reserve a right gutter
+for a cached 24x24-bit / 12x6-cell square. Small terminals adapt or hide the avatar.
+Colors use existing inks: idle muted, active cyan, tool amber, failed red; exhaust
+uses the existing busy clock. The board shares geometry and observed fleet states.
+
+One bounded principal-engineer review found short-height/composer overlap and
+manual resume skipping startup; both were fixed. The avatar requires enough space
+above the composer/palette. Restored chat stays behind welcome until operator input;
+automatic continuation bypasses welcome. No rereview or new dependency.
+
+PTY verification also exposed stale-screen synchronization in the existing reopen
+fixture: clearing observed bytes retained the previous child's screen, allowing
+an old composer/help marker to satisfy a fresh-launch wait. Each launched process
+now gets a fresh screen oracle. New avatar assertions wait for state changes,
+rather than previously visible help/border text. Actual-cell startup and avatar
+SVG previews are retained under papers. Final check results follow below.
+
+Final checks: local chat_view/chat_render_oracle pass2/2; actual native terminal
+PTY checks pass, including large startup -> square avatar, idle/tool/failure
+colors and short-height hiding. Board Lua parse, --once, and actual controlling
+PTY title/avatar/clean quit pass. Neuroses debug, release and ASan+UBSan each pass
+all three selected cases; capture context/linux/run-mrgo76i0/checks.log. One review
+round only. Release blackbird-ui and arco-ui copies are atomically refreshed.

@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
                     if error.errno != errno.EIO:
                         raise
                     break
-        raise AssertionError(f"terminal did not show {needle!r}; tail={bytes(observed[-1500:])!r}")
+        raise AssertionError(f"terminal did not show {needle!r}; visible={observed.visible()!r}; tail={bytes(observed[-1500:])!r}")
 
     def send(data):
         observed.clear()
@@ -366,6 +366,7 @@ with tempfile.TemporaryDirectory(prefix="arco-ui-state-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 100, 0, 0))
     def launch(resume=False):
         observed.clear()
+        observed.screen = oracle.Screen()  # A new process starts a new VT generation.
         args = [binary, '--session', session, '--workflow', str(workflow)]
         if resume: args.append('--resume-continue')
         return subprocess.Popen(args, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
@@ -454,7 +455,7 @@ with tempfile.TemporaryDirectory(prefix="arco-ui-state-") as work:
         send(b'\x11')
         assert exit_code() == 0
         child = launch()
-        wait_for(b'Workflow reloads')
+        wait_for('╭'.encode())  # Composer is stable even when restored history scrolls.
         state_file = Path(session) / 'ui-state.json'
         prior_file = Path(session) / 'prior-ui-state.json'
         state_file.rename(prior_file)
@@ -549,3 +550,49 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
             if child.poll() is None: child.kill(); child.wait()
         os.close(master); os.close(slave)
 print('PTY turn/tool timing, anchored streaming scroll, resize/composer cursor and outcomes pass')
+
+# Presentation is local: startup -> square avatar; tool/failure state and bounds.
+with tempfile.TemporaryDirectory(prefix='blackbird-avatar-') as work:
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 120, 0, 0))
+    child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
+                             stdout=slave, stderr=slave, start_new_session=True)
+    observed = Observed()
+    def avatar_styles():
+        return {observed.screen.styles.get(key) for key, value in observed.screen.cells.items()
+                if value and 0x2800 <= ord(value[0]) <= 0x28ff and key[1] >= 107}
+    def wait_avatar(predicate, seconds=5):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if predicate(): return
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready: observed.extend(os.read(master, 65536))
+        raise AssertionError(('avatar state timeout', observed.visible()))
+    try:
+        wait_for(b'<___..-----')
+        wait_for(b'####  #')  # BLACKBIRD is drawn as block lettering.
+        send(b'\r')
+        wait_avatar(lambda: avatar_styles() == {'0;38;2;160;173;188'} and
+                    b'<___..-----' not in observed.visible())
+        send(b'/lua blackbird.call("exec", {command="sleep 1"})\r')
+        wait_avatar(lambda: b'Tool' in observed.visible() and
+                    avatar_styles() == {'1;38;2;222;179;113'})
+        wait_avatar(lambda: b'Turn completed' in observed.visible() and
+                    avatar_styles() == {'0;38;2;160;173;188'})
+        send(b'/lua error("AVATAR_FAILURE")\r')
+        wait_avatar(lambda: b'Turn failed' in observed.visible() and
+                    avatar_styles() == {'1;38;2;242;137;137'})
+        import signal
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 8, 120, 0, 0))
+        os.kill(child.pid, signal.SIGWINCH)
+        observed.clear()
+        # This oracle has no terminal-resize event; check the new visible composer
+        # position instead of its retained offscreen cells from the taller screen.
+        wait_avatar(lambda: observed.screen.cells.get((4, 0)) == '╭' and
+                    not avatar_styles())
+        send(b'/quit\r')
+        assert exit_code() == 0
+    finally:
+        if child.poll() is None: child.kill(); child.wait()
+        os.close(master); os.close(slave)
+print('PTY startup, square idle/tool/failure avatar and short-height bounds pass')
