@@ -4313,3 +4313,13 @@ inferred. Clean native slots checkpointed/released; board/beads updated. No
 restart, new review or build activation. Added arconaut-kut for fixing future
 continuation until explicit completion or SAME deadline, with honest partial
 handoff. Successful turn boundaries must not be confused with finished units.
+
+## 2026-10-07 — P1 local timing candidate checkpoint
+
+Opt-in fixed-buffer local wall/thread-CPU spans, representative append/request
+preparation and growing-history fixture implemented by BB. Four affected checks
+passed; one independent Codex review reported five findings, fixes/direct
+rechecks performed. Four successful segments ended before deadline without
+final marker/commit. Root preserves useful source, actual review and aggregate
+results in papers/2026-10-07-p1-measurements.md; no target/activation claim.
+Candidate remains separate from master; raw records retained privately.

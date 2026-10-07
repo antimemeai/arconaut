@@ -1,3 +1,4 @@
+#include "blackbird/local_timing.hpp"
 #include "blackbird/terminal.hpp"
 #include "blackbird/sprite.hpp"
 #include "blackbird/tools.hpp"
@@ -1107,7 +1108,14 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     operations.clear();
     scroll = 0;
     activity = "Starting";
-    worker = std::jthread([&, prompt = std::move(prompt)] {
+    // Turns are serialized: the previous worker is joined above; engine access
+    // on the UI thread is idle-only. Borrow the process sink for this turn.
+    auto *const timing = local_timing_sink;
+    worker = std::jthread([&, timing, prompt = std::move(prompt)] {
+      local_timing_sink = timing;
+      struct UnbindTiming {
+        ~UnbindTiming() { local_timing_sink = nullptr; }
+      } unbind_timing;
       try {
         perform(prompt);
       } catch (const std::exception &e) {
