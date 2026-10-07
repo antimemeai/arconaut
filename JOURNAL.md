@@ -3654,3 +3654,32 @@ installer managed shell completion/PATH and external ~/.grok installation. No st
 auth or inherited API/deployment credential; inference awaits operator grok login.
 Recorded tooling/GROK.md, hash and actual limits; no Arco provider integration claim,
 production dependency, Kimi purchase, running campaign interruption or new auth probe.
+
+## 2026-10-07 07:25–07:32 UTC — G9 security decision blocked
+
+Root working context authorizes arconaut-7iy.9 only; bead identifies two independent
+P2P E2EE peers, not another backstop unit. Clean starting checkout5b6eece; candidate
+branch `giga/g9-security-decision`, no worktree proliferation. Original whole-unit
+07:25:14.674231..08:55:14.674231UTC unchanged. Bounded requirements/source reads
+confirm crypto/key lifecycle unselected; existing provider curl is not native peer
+TLS, station source/id admission does not establish remote authentication.
+
+Delivered papers/2026-10-07-peer-security-decision.md: proposed opt-in OpenSSL
+TLS1.3 mutual authenticated/pinned direct peers; explicit benefit/cost vs libsodium
+primitive composition; out-of-band enrollment, provider/plaintext-audit and traffic
+metadata limits; exact authentication, duplicate/conflict, unknown send, paused
+intent, bounded resources and two-context useful-work oracles. Three bounded curl
+acquisitions succeeded, hashes/restoration recorded, no new dependency adopted or
+source executed. No model/reviewer/provider calls, builds or runtime qualification;
+service billing unavailable. Missing operator decision blocks implementation, not
+permission for plaintext transport or owned cryptography.
+
+Documentation hardening07:29..07:32UTC (deadline07:34, max5min inside unit): layer1
+checked API verification defaults, absent native crypto dependency, authenticated
+provenance versus station payload and receipt versus completion; fixed proposal to
+keep exact trust-store policy pending and exclude resumption/0-RTT. Layer2 one
+source/contract and staged-whitespace recheck; no third layer or old-suite reruns.
+Bead marked blocked with exact decision/next action; campaign queue and quarantine
+manifest updated. Candidate source/evidence preserved; no accepted-unit/master
+activation claim, native change or RRC. Request OpenSSL/dependency + enrollment +
+threat-model decision before further G9 implementation under the original deadline.

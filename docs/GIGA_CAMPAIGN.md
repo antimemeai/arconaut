@@ -192,3 +192,15 @@ Production remains C++/Lua; kernels/databases/shared services are consumed, neve
 made Arco's control plane. Library adoption requires operator discussion. Existing
 Codex auth is explicit scaffolding. External board stays in evotools. Raw audits,
 credentials, context, reference archives and PDFs are not source publication.
+
+## G9 decision-blocked candidate (2026-10-07)
+
+`arconaut-7iy.9` is BLOCKED, not accepted. Current requirements and build have
+no selected cryptographic implementation. The [security decision proposal](../papers/2026-10-07-peer-security-decision.md)
+recommends discussing opt-in OpenSSL TLS1.3 mutual pinned-certificate direct
+peers, with concrete costs, libsodium alternative tradeoffs, source restoration,
+authentication/replay/pause oracles and a real two-context useful-work exercise.
+No dependency, plaintext fallback, native transport or cryptographic code adopted;
+no rebuild/RRC or runtime security qualification. Next: explicit operator decision
+on dependency, out-of-band enrollment and limited threat/metadata model. Existing
+unit deadline08:55:14.674231UTC and hardening ceiling do not reset on resumption.
