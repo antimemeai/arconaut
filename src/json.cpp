@@ -1,5 +1,6 @@
 #include "blackbird/json.hpp"
 #include <stdexcept>
+#include <algorithm>
 
 namespace blackbird {
 const Json *Json::find(std::string_view key) const noexcept {
@@ -67,7 +68,8 @@ void scalar_utf8(std::string &out, unsigned scalar) {
 }
 class Parser {
 public:
-  Parser(std::string_view input, JsonLimits bounds) : text(input), limits(bounds) {}
+  Parser(std::string_view input, JsonLimits bounds, std::span<const std::string_view> omit = {})
+      : text(input), limits(bounds), omitted(omit) {}
   Json run() {
     if (text.size() > limits.bytes)
       full();
@@ -81,6 +83,7 @@ public:
 private:
   std::string_view text;
   JsonLimits limits;
+  std::span<const std::string_view> omitted;
   std::size_t pos = 0, nodes = 0;
   void space() {
     while (pos < text.size() && (text[pos] == ' ' || text[pos] == '\n' ||
@@ -116,9 +119,38 @@ private:
     }
     return value;
   }
-  std::string string() {
+  std::string string(bool retain = true) {
     if (take() != '"')
       bad();
+    // Validate the common unescaped case directly in retained input. Escaped
+    // strings use the same scalar decoder as before (including discarded ones).
+    const auto start = pos;
+    bool non_ascii = false;
+    while (pos < text.size()) {
+      // Fixed-size reductions are vectorizable without reading past input.
+      // A mixed block falls back to the scalar decoder below.
+      if (text.size() - pos >= 16) {
+        unsigned special = 0;
+        for (std::size_t i = 0; i < 16; ++i) {
+          const auto byte = static_cast<unsigned char>(text[pos + i]);
+          special |= static_cast<unsigned>(byte < 32 || byte >= 128 ||
+                                            byte == '"' || byte == '\\');
+        }
+        if (special == 0) { pos += 16; continue; }
+      }
+      const auto c = static_cast<unsigned char>(text[pos]);
+      if (c == '"') {
+        const auto value = text.substr(start, pos - start);
+        ++pos;
+        if (non_ascii && !utf8(value)) bad();
+        return retain ? std::string{value} : std::string{};
+      }
+      if (c < 32) bad();
+      if (c == '\\') break;
+      non_ascii = non_ascii || c >= 128;
+      ++pos;
+    }
+    pos = start;
     std::string out;
     while (true) {
       const auto c = take();
@@ -175,9 +207,9 @@ private:
     }
     if (!utf8(out))
       bad();
-    return out;
+    return retain ? std::move(out) : std::string{};
   }
-  Json number() {
+  Json number(bool retain) {
     const auto start = pos;
     (void)eat('-');
     if (!eat('0')) {
@@ -202,9 +234,9 @@ private:
       if (before == pos)
         bad();
     }
-    return Json{JsonNumber{std::string{text.substr(start, pos - start)}}};
+    return retain ? Json{JsonNumber{std::string{text.substr(start, pos - start)}}} : Json{};
   }
-  Json item(std::size_t depth) {
+  Json item(std::size_t depth, bool retain = true) {
     if (depth > limits.depth || nodes == limits.nodes)
       full();
     ++nodes;
@@ -212,14 +244,15 @@ private:
     if (pos == text.size())
       bad();
     if (text[pos] == '"')
-      return Json{string()};
+      return Json{string(retain)};
     if (eat('[')) {
       Json::Array values;
       space();
       if (eat(']'))
         return Json{std::move(values)};
       do {
-        values.push_back(item(depth + 1));
+        auto value = item(depth + 1, retain);
+        if (retain) values.push_back(std::move(value));
         space();
         if (eat(']'))
           return Json{std::move(values)};
@@ -240,7 +273,10 @@ private:
         space();
         if (!eat(':'))
           bad();
-        fields.emplace_back(std::move(key), item(depth + 1));
+        const bool keep = retain && !(depth == 0 &&
+            std::find(omitted.begin(), omitted.end(), key) != omitted.end());
+        auto value = item(depth + 1, keep);
+        fields.emplace_back(std::move(key), keep ? std::move(value) : Json{});
         space();
         if (eat('}'))
           return Json::object(std::move(fields));
@@ -254,7 +290,7 @@ private:
         return literal == "null" ? Json{} : Json{literal == "true"};
       }
     }
-    return number();
+    return number(retain);
   }
 };
 class Writer {
@@ -346,6 +382,19 @@ private:
 Result<Json> parse_json(std::string_view input, JsonLimits limits) {
   try {
     return Result<Json>::success(Parser{input, limits}.run());
+  } catch (const Error &e) {
+    return Result<Json>::failure(e);
+  } catch (const std::bad_alloc &) {
+    return Result<Json>::failure({ErrorCode::allocation});
+  } catch (const std::length_error &) {
+    return Result<Json>::failure({ErrorCode::capacity});
+  }
+}
+Result<Json> parse_json_projection(std::string_view input,
+                                   std::span<const std::string_view> omitted,
+                                   JsonLimits limits) {
+  try {
+    return Result<Json>::success(Parser{input, limits, omitted}.run());
   } catch (const Error &e) {
     return Result<Json>::failure(e);
   } catch (const std::bad_alloc &) {

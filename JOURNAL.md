@@ -4593,3 +4593,11 @@ batch from jev-1.13.0 returned all three question types:385input/63output tokens
 288234us adapter elapsed. This is one observation, not calibration or p95 evidence.
 Private audit/results retained. Candidate awaits explicit master integration;
 primary runtime unchanged. Tracking arconaut-1ma.
+
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial durable range allocator/test edits. Four-segment cap exhausted after~12minutes; no direct count measurements, finished test result, independent review or actor completion report. Planned1024 range reduction is NOT measured delivery.
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial lazy historical JSON restoration. Context/workflow_repair checks passed; one static Codex review found no substantive defect within inspected diff. All10 large-fixture benchmark runs exited1/error20, so timing/memory output is not a valid ready-operation measurement. Under100ms NOT demonstrated. Four-segment cap exhausted before final report/commit.
+Candidate inactive, original allowance expired; checkpoint not acceptance.

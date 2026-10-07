@@ -126,6 +126,7 @@ public:
   std::span<const RetainedFact> committed_facts() const noexcept {
     return committed_.facts;
   }
+  // Durable/pending upper reservation bound, not the volatile last-issued ID.
   std::uint64_t issuer_counter() const noexcept;
   // Surviving RAM originals, not committed sources or permission. Borrow ends
   // at the next mutation; reopening cannot recreate lost process memory.
@@ -199,6 +200,10 @@ private:
   Snapshot committed_;
   std::optional<Snapshot> prepared_;
   std::optional<PendingProposal> pending_proposal_;
+  // Never restored: reopening burns all unused counters in the durable range.
+  std::uint64_t allocation_namespace_ = 0;
+  std::uint64_t allocation_cursor_ = 0;
+  std::uint64_t allocation_limit_ = 0;
   std::uint64_t pending_counter_ = 0;
   std::uint64_t pending_namespace_ = 0;
   bool reconciled_ = true;

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -73,6 +74,7 @@ struct StorageState {
   bool fail_sync = false;
   bool fail_directory = false;
   std::size_t sync_calls = 0;
+  std::function<void()> on_sync;
   std::size_t fail_sync_call = 0;
   std::size_t allocate_after_sync_call = 0;
   std::size_t fail_after = SIZE_MAX;
@@ -127,6 +129,7 @@ public:
   Result<void> synchronize(SyncStrength strength) override {
     CHECK(strength == SyncStrength::full);
     ++state_->sync_calls;
+    if (state_->on_sync) state_->on_sync();
     if (state_->fail_sync || state_->sync_calls == state_->fail_sync_call) {
       return Result<void>::failure({ErrorCode::io, 5});
     }
@@ -691,27 +694,106 @@ void root_refuses_continuation_records() {
     CHECK(effect.calls == 0);
   }
 }
+std::uint64_t identity_counter(const IdentityBytes &bytes) {
+  std::uint64_t value = 0;
+  for (unsigned i = 0; i < 8; ++i)
+    value |= std::uint64_t(std::to_integer<unsigned char>(bytes[i + 8])) << (8 * i);
+  return value;
+}
+void issuer_count_and_credit() {
+  auto storage = std::make_shared<StorageState>();
+  auto state = create(storage);
+  const auto syncs = storage->sync_calls;
+  for (std::uint64_t i = 1; i <= 14610; ++i)
+    CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == i);
+  CHECK(state->issuer_counter() == 15360);
+  CHECK(state->committed_facts().size() == 15);
+  CHECK(storage->sync_calls == syncs + 15);
+  for (std::size_t i = 0; i < 15; ++i)
+    CHECK(std::get<IssuerReservationEvent>(state->committed_facts()[i].event.body).counter ==
+          (i + 1) * 1024);
+  const auto usage = state->journal_usage();
+  auto scope = require(state->protect_settlement(
+      {*usage.remaining_bytes(), usage.remaining_records()}));
+  const auto before = storage->bytes;
+  const auto credit = *state->protected_settlement();
+  // Already durable IDs consume no audit capacity or protected credit.
+  for (std::uint64_t i = 14611; i <= 15360; ++i)
+    CHECK(identity_counter(require(state->issue<DecisionId>()).bytes()) == i);
+  CHECK(storage->bytes == before && storage->sync_calls == syncs + 15);
+  CHECK(state->protected_settlement()->max_file_bytes == credit.max_file_bytes);
+  CHECK(state->protected_settlement()->max_records == credit.max_records);
+  error_is(state->issue<DecisionId>(), ErrorCode::capacity);
+  CHECK(storage->bytes == before);
+  scope.reset();
+  CHECK(identity_counter(require(state->issue<DecisionId>()).bytes()) == 15361);
+  std::puts("issuer fake: issued=14610 reservations=15 sync_delta=15 highwater=15360");
+}
 void issuer() {
   auto storage = std::make_shared<StorageState>();
   auto state = create(storage);
-  const auto participant = require(state->issue<ParticipantId>());
-  const auto workflow = require(state->issue<WorkflowId>());
-  CHECK(participant.bytes()[0] == std::byte{8} &&
-        participant.bytes()[7] == std::byte{1});
-  CHECK(participant.bytes()[8] == std::byte{1} && workflow.bytes()[8] == std::byte{2});
-  CHECK(participant.bytes() != workflow.bytes());
+  const auto syncs = storage->sync_calls;
+  for (std::uint64_t i = 1; i <= 1024; ++i) {
+    const auto identity = require(state->issue<ParticipantId>());
+    CHECK(identity_counter(identity.bytes()) == i);
+    CHECK(identity.bytes()[0] == std::byte{8} && identity.bytes()[7] == std::byte{1});
+  }
+  CHECK(storage->sync_calls == syncs + 1);
+  CHECK(state->issuer_counter() == 1024 && state->committed_facts().size() == 1);
   storage->fail_sync = true;
   error_is(state->issue<InvocationId>(), ErrorCode::io);
+  error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
   state.reset();
   storage->fail_sync = false;
   state = open(storage);
-  CHECK(state->issuer_counter() == 3);
+  CHECK(state->issuer_counter() == 2048);
+  error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
   require(state->confirm_recovery());
   Custody custody;
   require(state->reconcile(custody));
-  CHECK(require(state->issue<InvocationId>()).bytes()[8] == std::byte{4});
-  require(state->submit({{}, IssuerReservationEvent{UINT64_MAX}}));
+  CHECK(identity_counter(require(state->issue<InvocationId>()).bytes()) == 2049);
+  state.reset();
+  state = open(storage);
+  require(state->confirm_recovery());
+  require(state->reconcile(custody));
+  CHECK(identity_counter(require(state->issue<WorkflowId>()).bytes()) == 3073);
+  // External highwater burns the cached remainder; final range is shortened.
+  require(state->submit({{}, IssuerReservationEvent{UINT64_MAX - 2}}));
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX - 1);
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX);
   error_is(state->issue<ParticipantId>(), ErrorCode::overflow);
+  // Reentrant issue during submission cannot dispense cached durable space.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  require(state->issue<ParticipantId>());
+  bool checked = false;
+  storage->on_sync = [&] {
+    error_is(state->issue<ParticipantId>(), ErrorCode::busy);
+    checked = true;
+  };
+  require(state->submit({{}, IssuerReservationEvent{2048}}));
+  CHECK(checked);
+  storage->on_sync = {};
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == 2049);
+  // Successful refill synchronization can itself close admission: no ID escapes.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  storage->on_sync = [&] { state->block_admission(); };
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
+  CHECK(state->issuer_counter() == 1024 && state->committed_facts().size() == 1);
+  storage->on_sync = {};
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
+  state.reset();
+  state = open(storage);
+  require(state->confirm_recovery());
+  require(state->reconcile(custody));
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == 1025);
+  // A cached range cannot bypass a host admission block.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  require(state->issue<ParticipantId>());
+  state->block_admission();
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
 }
 void rejected_batch_and_suffix() {
   auto storage = std::make_shared<StorageState>();
@@ -1106,19 +1188,19 @@ void torn_reservation_burn() {
   require(state->issue<ParticipantId>());
   state.reset();
   const auto payload =
-      require(encode_retained_event({{}, IssuerReservationEvent{77}}, 1024));
+      require(encode_retained_event({{}, IssuerReservationEvent{1077}}, 1024));
   const auto frame = require(
       encode_journal_frame(FrameKind::semantic, 3, 3, payload, header().limits));
   storage->bytes.insert(storage->bytes.end(), frame.begin(), frame.end());
   state = open(storage);
-  CHECK(state->issuer_counter() == 77);
+  CHECK(state->issuer_counter() == 1077);
   const auto bytes = storage->bytes;
   const auto inspected = require(state->read_original_range(0, bytes.size()));
   CHECK(inspected.bytes == bytes && inspected.journal == header().journal);
   const auto report = state->recovery_report();
   CHECK(report.problem && report.problem->code == ErrorCode::incomplete);
   require(state->confirm_recovery());
-  CHECK(state->state() == JournalWriterState::blocked && state->issuer_counter() == 77);
+  CHECK(state->state() == JournalWriterState::blocked && state->issuer_counter() == 1077);
   error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
 }
 void rejection_preflight_limits() {
@@ -1456,6 +1538,7 @@ int main() {
     pending_proposal_clean_outcomes();
     rejected_wrong_cursor_owns_caller_packet();
     root_refuses_continuation_records();
+    issuer_count_and_credit();
     issuer();
     rejected_batch_and_suffix();
     receipt_settlement_and_failures();

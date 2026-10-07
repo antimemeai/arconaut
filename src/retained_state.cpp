@@ -1128,14 +1128,38 @@ std::uint64_t RetainedState::issuer_counter() const noexcept {
                   visible().counter);
 }
 Result<IdentityBytes> RetainedState::reserve_identity() {
-  if (issuer_counter() == UINT64_MAX) {
-    return Result<IdentityBytes>::failure({ErrorCode::overflow});
+  // Cached durable space is not permission to bypass recovery/poison fences.
+  if (in_transaction_) {
+    return Result<IdentityBytes>::failure({ErrorCode::busy});
   }
-  const auto counter = issuer_counter() + 1;
-  const auto reserved = submit({{}, IssuerReservationEvent{counter}});
-  if (!reserved.has_value()) {
-    return Result<IdentityBytes>::failure(reserved.error());
+  if (state() != JournalWriterState::live) {
+    return Result<IdentityBytes>::failure({ErrorCode::audit_unavailable});
   }
+  const auto ns_current = journal_->header().issuer_namespace;
+  const auto highwater = issuer_counter();
+  if (allocation_namespace_ != ns_current || allocation_limit_ != highwater ||
+      allocation_cursor_ == allocation_limit_) {
+    // External reservations, reopen and namespace changes burn cached space.
+    if (highwater == UINT64_MAX) {
+      return Result<IdentityBytes>::failure({ErrorCode::overflow});
+    }
+    constexpr std::uint64_t range_size = 1024;
+    const auto limit = highwater + std::min(range_size, UINT64_MAX - highwater);
+    const auto reserved = submit({{}, IssuerReservationEvent{limit}});
+    if (!reserved.has_value()) {
+      return Result<IdentityBytes>::failure(reserved.error());
+    }
+    // A storage/custody callback may close admission during an acknowledged
+    // refill. Durable space is burned, not permission for an ID to escape.
+    if (state() != JournalWriterState::live) {
+      return Result<IdentityBytes>::failure({ErrorCode::audit_unavailable});
+    }
+    // Publish volatile allocation only after ordinary durable acknowledgement.
+    allocation_namespace_ = ns_current;
+    allocation_cursor_ = highwater;
+    allocation_limit_ = limit;
+  }
+  const auto counter = ++allocation_cursor_; // cursor < limit, including at MAX.
   IdentityBytes bytes{};
   auto ns = journal_->header().issuer_namespace;
   auto value = counter;
