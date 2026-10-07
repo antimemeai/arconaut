@@ -614,7 +614,14 @@ FramedJournal::read_payload(const PhysicalJournalRecord &record) {
     return Result<std::vector<std::byte>>::failure({ErrorCode::busy});
   }
   const auto contains = [&](const auto &records) {
-    return std::find(records.begin(), records.end(), record) != records.end();
+    // Sequence order is preserved by append, scan and suffix recovery moves.
+    // Still compare the complete handle: sequence alone cannot authorize reads.
+    const auto found = std::lower_bound(
+        records.begin(), records.end(), record.sequence,
+        [](const auto &candidate, std::uint64_t sequence) {
+          return candidate.sequence < sequence;
+        });
+    return found != records.end() && *found == record;
   };
   if (!contains(records_) && !contains(staged_) && !contains(pending_)) {
     return Result<std::vector<std::byte>>::failure({ErrorCode::stale_handle});

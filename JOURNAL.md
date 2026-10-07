@@ -3501,3 +3501,21 @@ once keeps development release, explicit executable override wins. Actual operat
 session reopened successfully to prompt in12.0578s; startup still has measured work
 remaining, not called instantaneous. Original audit unchanged except normal appended
 session/identity facts. Native/profile source locators retained in context/startup-replay.
+
+## Remaining operator startup latency (2026-10-07)
+
+Operator explicitly reopens optimization scope:12s unacceptable. Same-session12.1236s
+reproduced; sampled2041/2127 frames in bit-serial CRC. Studied quarantined LevelDB
+CRC design and qualified compiler arm_acle intrinsics; implemented generated portable
+slicing-by-8 plus compile-target-guaranteed ARM CRC acceleration, no library. Also
+replaced payload handle linear membership scans with binary sequence search and full
+handle comparison; record sequence gaps remain allowed. All checksum/recovery/unknown
+fences retained, no audit copying/cache/history deletion. Initial table generation
+ordering bug directly caught by RFC/fixed-wire oracles and corrected before activation.
+Exact bit-serial/seed/offset/split oracle covers both hardware and forced portable
+builds; forged physical handles rejected. Five affected release/ASan checks pass.
+Measured315MB retained operator session1.3661s to prompt, previously4.4377s portable
+and12.1236s original. Ordinary cache/load uncontrolled, not cold-start guarantee.
+Published checked UI archive binary atomically to arco-ui; real TUI reopened preserved
+conversation and /quit works. Live G7 dev loop observed independently, executable
+untouched. Publish scoped source on candidate and master excluding G7 candidate code.

@@ -1,6 +1,11 @@
 #include "arconaut/journal.hpp"
 
 #include <algorithm>
+#include <cstring>
+
+#if defined(__ARM_FEATURE_CRC32) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#include <arm_acle.h>
+#endif
 
 namespace arconaut {
 
@@ -64,14 +69,61 @@ template <typename IdType> Result<IdType> decode_identity(ByteView bytes) {
 }
 } // namespace
 
-std::uint32_t crc32c(ByteView bytes, std::uint32_t previous) noexcept {
-  auto state = previous ^ UINT32_MAX;
-  for (const auto byte : bytes) {
-    state ^= std::to_integer<std::uint32_t>(byte);
-    for (unsigned int bit = 0; bit < 8; ++bit) {
-      state = (state >> 1) ^ ((state & 1) != 0 ? 0x82f63b78U : 0U);
+#if !defined(__ARM_FEATURE_CRC32) || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+namespace {
+// Reflected Castagnoli polynomial. Generate eight byte-position tables rather
+// than doing eight polynomial steps for every retained byte at runtime.
+constexpr auto crc_tables = [] {
+  std::array<std::array<std::uint32_t, 256>, 8> tables{};
+  for (std::size_t i = 0; i < 256; ++i) {
+    auto state = static_cast<std::uint32_t>(i);
+    for (unsigned bit = 0; bit < 8; ++bit)
+      state = (state >> 1) ^ ((state & 1) ? 0x82f63b78U : 0U);
+    tables[0][i] = state;
+  }
+  for (std::size_t slice = 1; slice < tables.size(); ++slice) {
+    for (std::size_t i = 0; i < 256; ++i) {
+      const auto state = tables[slice - 1][i];
+      tables[slice][i] = (state >> 8) ^ tables[0][state & 255];
     }
   }
+  return tables;
+}();
+} // namespace
+#endif
+
+std::uint32_t crc32c(ByteView bytes, std::uint32_t previous) noexcept {
+  auto state = previous ^ UINT32_MAX;
+#if defined(__ARM_FEATURE_CRC32) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+  // Enabled only when the compiler's target guarantees the CRC extension.
+  // memcpy permits unaligned bytes without aliasing violations.
+  while (bytes.size() >= sizeof(std::uint64_t)) {
+    std::uint64_t word;
+    std::memcpy(&word, bytes.data(), sizeof(word));
+    state = __crc32cd(state, word);
+    bytes = bytes.subspan(sizeof(word));
+  }
+  for (auto byte : bytes)
+    state = __crc32cb(state, std::to_integer<std::uint8_t>(byte));
+#else
+  while (bytes.size() >= 8) {
+    // Explicit byte loads work for unaligned input and either host byte order.
+    for (unsigned i = 0; i < 4; ++i)
+      state ^= std::to_integer<std::uint32_t>(bytes[i]) << (8 * i);
+    state = crc_tables[7][state & 255] ^
+            crc_tables[6][(state >> 8) & 255] ^
+            crc_tables[5][(state >> 16) & 255] ^
+            crc_tables[4][state >> 24] ^
+            crc_tables[3][std::to_integer<unsigned>(bytes[4])] ^
+            crc_tables[2][std::to_integer<unsigned>(bytes[5])] ^
+            crc_tables[1][std::to_integer<unsigned>(bytes[6])] ^
+            crc_tables[0][std::to_integer<unsigned>(bytes[7])];
+    bytes = bytes.subspan(8);
+  }
+  for (const auto byte : bytes)
+    state = (state >> 8) ^
+            crc_tables[0][(state ^ std::to_integer<unsigned>(byte)) & 255];
+#endif
   return state ^ UINT32_MAX;
 }
 

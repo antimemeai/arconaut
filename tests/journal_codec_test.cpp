@@ -53,6 +53,36 @@ void checksum_vectors() {
   CHECK(crc32c({}) == 0);
 }
 
+void checksum_specification() {
+  const auto bit_serial = [](ByteView bytes, std::uint32_t previous) {
+    auto value = ~previous;
+    for (auto byte : bytes) {
+      value ^= std::to_integer<std::uint32_t>(byte);
+      for (unsigned bit = 0; bit < 8; ++bit)
+        value = (value & 1) ? (value >> 1) ^ 0x82f63b78U : value >> 1;
+    }
+    return ~value;
+  };
+  std::array<std::byte, 1040> storage{};
+  std::uint32_t random = 0x179ae051;
+  for (auto &byte : storage) {
+    random = random * 1664525U + 1013904223U;
+    byte = static_cast<std::byte>(random >> 24);
+  }
+  for (std::size_t offset = 0; offset < 8; ++offset) {
+    for (std::size_t length = 0; length <= 1024; ++length) {
+      const auto bytes = ByteView{storage}.subspan(offset, length);
+      for (auto seed : {0U, 1U, 0xffffffffU, 0x193ad502U}) {
+        const auto expected = bit_serial(bytes, seed);
+        CHECK(crc32c(bytes, seed) == expected);
+        const auto split = length / 2;
+        CHECK(crc32c(bytes.subspan(split), crc32c(bytes.first(split), seed)) ==
+              expected);
+      }
+    }
+  }
+}
+
 void headers() {
   const JournalLimits limits{65536, 1048576};
   const JournalHeader root{id<EnvironmentId>(1), id<AuditStreamId>(2),
@@ -172,6 +202,7 @@ void frames() {
 int main() {
   try {
     checksum_vectors();
+    checksum_specification();
     headers();
     frames();
     std::puts("PASS journal CRC vectors, headers and bounded frame bytes");
