@@ -8,7 +8,7 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
-| arconaut-fsp | Minimal native local-action timing and actual short/long history measurements | Running BB on candidate/local-performance-2026-10-07 with automatic resource/stack collection; narrowly instrument append/preparation before selecting first optimization. |
+| arconaut-fsp | Minimal native local-action timing and actual short/long history measurements | Candidate94bc2d4 pushed with checks/review fixes/measurements; inactive pending integration, slot released. |
 | arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | BB now implements durable identity ranges; old measured session:13,767 captures and14,610 reservations for179 admissions. Capture batching remains separate if necessary. |
 | arconaut-n11 | Startup below100ms with large retained history/context | BB studies indexed restoration and demand loading; measure prompt and audited-request readiness, preserving originals and recovery fences. |
 | arconaut-1v0 | Store invocation input once and reference it from semantic records | Old census measured46,559,372 duplicated blob bytes between invocation/admission alone; decision repeats logicalinput. Requires versioned references and historical readability, not history deletion. |
@@ -25,7 +25,8 @@ fixes; it must not grow into a laboratory that postpones the fixes.
 - **Native Beads integration (arconaut-jim):** operator requests sketch/design then
   BB autodev. docs/BEADS_DESIGN.md defines shared C++ model/Lua/slash operations,
   lazy canonical project binding and truthful mutation outcomes. Existing bd CLI
-  is the first external backend; direct Dolt is not silently adopted.
+  is the first external backend; direct Dolt is not silently adopted. B1 running
+  on candidate/native-beads-2026-10-07 with profiling in the reused P1 slot.
 
 - **Workflow registry delivery (arconaut-3oz.2):** implemented/tested/pushedc8498f0;
   first substantive review found two repairs: bound palette selection after hot

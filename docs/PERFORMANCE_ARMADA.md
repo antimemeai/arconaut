@@ -43,3 +43,10 @@ queued rather than expanding these unit scopes.
 Private context/ run directories retain missions, deadlines, process observations,
 audit, raw profiles and eventual completion markers. Candidate notes retain code,
 direct checks and aggregate measurements. A bound is not a success criterion.
+
+Update14:01UTC: P1 stopped after four segments; useful code/checks/review fixes and
+measurements preserved in pushed94bc2d4, inactive pending integration. All221
+sampled identities absent on reconciliation; its slot released. Operator then
+requested native Beads design/autodev. candidate/native-beads-2026-10-07 now uses
+that freed slot under a fresh independent B1 unit, fixeddeadline1791383181. Current
+three active BBs: issuer, startup, Beads. See BEADS_DESIGN.md; no added worktree.

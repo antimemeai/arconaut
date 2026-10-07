@@ -4282,3 +4282,13 @@ so BB promises no initiated migration, not absolute foreign-backend nonmutation.
 B1 targets the installed0.58 CLI, probes version before database commands and
 uses deterministic fake backends for strict mutation/isolation oracles. Read-only
 delivery is a coherent fallback if truthful native mutation settlement cannot fit.
+
+B1 autodev launched on candidate/native-beads-2026-10-07 from0e51e11 after design
+corrections, manager67681, absolute deadline1791383181. Reused freed P1 slot0,
+fixed25-minute allowance, <=8successful12-round segments under same deadline,
+gpt-6.1-sol/medium and automatic private profiling. New branch pushed. Actual
+supervisor running/provider request and28resource observations verified. Full
+typed operation surface preferred; safe whole read-path fallback is explicit.
+No new dependencies, live mutation tests or startup backend probes authorized.
+Board adopts B1 alongside active issuer/startup lanes; old campaigns paused.
+Beads backup and journal/design/research checkpoints pushed on master.
