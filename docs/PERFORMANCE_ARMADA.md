@@ -9,9 +9,10 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **zero active autodevs**. The launch descriptions below are
-historical. Beads and debug-only timing surfaces are merged; the renewed issuer
-and startup candidates completed, were pushed, and await serial integration.
+Current status: **one active autodev**, durable-state-r1-2026-10-07. It owns the
+new compact-state/publication/recovery unit, seeded with the delivered allocator
+and projection changes in a candidate branch. Beads and debug-only timing surfaces
+are merged; earlier launch descriptions below are historical.
 
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |
@@ -87,3 +88,17 @@ Both branches pushed, clean, inactive; primary runtime unchanged. Manager and
 collector exit0; all160 issuer /214 startup sampled identities absent via libproc.
 Native slots and board reservations released, private profiles/artifacts retained.
 No new allowance, extra certification round, or implicit master merge.
+
+Operator explicitly launches durable-state-r1-2026-10-07 after the cross-domain
+source study. candidate/durable-state-r1-2026-10-07 seeded1072613 combines reviewed
+allocator/projection with currentmasterbc69391 and operator memory clarification.
+Root resolves independent CMake targets and preserves both journal histories.
+One native BB gpt-6.1-sol/medium, reusedslot0, absolute deadline1791391681,
+25min TOTAL including provider/build/review waits; no segment cap. One coherent
+owner for current-state publication and tail recovery, with direct state/fault
+oracles and one review/fix/recheck. Substantial memory welcome when intentional
+and justified; arbitrary1MiB/32MiB goals withdrawn. Explicit development captures
+persist resources/stacks/native spans, normal DEBUGOFF runtime unchanged.
+No master merge/primary replacement; design note precedes implementation, using
+the actual pinned source study rather than a fresh survey. Global admission paused,
+this specifically authorized job adopted. Old expired runs remain stopped.

@@ -21,7 +21,9 @@ The three implementation byte tasks come from the actual
 catch sync and retained metadata work. P1 is small instrumentation serving those
 fixes; it must not grow into a laboratory that postpones the fixes.
 
-Both renewed performance autodevs completed within their allowances; zero active.
+Both renewed performance autodevs completed within their allowances; zero active
+at that reconciliation. Operator now launches one new durable-state autodev,
+candidate/durable-state-r1-2026-10-07, seeded with both delivered improvements.
 Next useful step is serial integration of their delivered changes and a matched
 combined startup measurement. The allocator may reduce admission cost; that
 interaction has not been measured. No additional review panel is queued.
@@ -31,7 +33,8 @@ proposes compact durable current state, bounded recovery tail and on-demand disk
 history. This addresses n11/3x2 structurally: constant live state/tail should have
 essentially flat reopen/private-memory cost as archived payload volume increases.
 Fault model, complete hot-state schema, publication protocol and historical query
-APIs require design before coding. No new dependency or autodev launched by this study.
+APIs receive a concrete design note before coding in that same native BB unit.
+No new dependency. Memory is intentional and justified, without arbitrary RSS ceilings.
 
 ## Other useful product work
 

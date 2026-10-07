@@ -4435,3 +4435,15 @@ Prepare one native BB owner for compact working state, bounded tail recovery and
 on-demand historical reads, seeded by the inspected source study and delivered
 allocator/projection candidates. Root keeps master integration separate; ordinary
 runtime profiling remainsOFF. No additional design-survey or approval gate.
+
+Actually launched native BB durable-state-r1-2026-10-07 in reusedperformance slot0,
+gpt-6.1-sol/medium, absolute deadline1791391681 (25minTOTAL). Candidate seed1072613
+combines e0e0b98/35413f3 with bc69391; both source branches already reviewed,
+append-only journal conflicts preserved and independent CMake fixture additions
+retained. New candidate pushed before execution. Native finite parent and shared
+segment driver; explicit development wrapper persists per-process spans and OS
+resource/stack data. One coherent publication/recovery owner, source-grounded
+design note then useful code/direct checks, one review/fix/recheck. Completion
+marker reports actual behavior/measurements/gaps; no arbitrary memory ceiling,
+extra survey, primary rebuild/restart or master integration. Board adopted this
+specifically authorized unit, old admission stayspaused. Issues n11/3x2 active.
