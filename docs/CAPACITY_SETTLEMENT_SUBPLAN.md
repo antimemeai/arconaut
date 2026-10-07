@@ -178,3 +178,9 @@ propagation. Same oracle rerun, no layer3 review. Layer2 done subject to final a
 coding checks and activation. No consensus/review of recheck sought.
 Final affected coding all3 Mac and Linux(run-6vzxt08r) passed; existing other affected
 passes stay settled. Source19a067e pushed. One native activation pending observation.
+
+Scoped closure: one native activation observed main PID14481 started03:43:10Z
+(binary03:37:51Z), ordinary resumed provider/tool response and live managed-summary
+publication observed. No predecessor settlement inferred. .14.3 closes under ROOT's
+bounded envelope; unattended rollover/backstop and targeted old-original resolution
+are separately queued, not delivery claims of this unit. Physical caps unchanged.

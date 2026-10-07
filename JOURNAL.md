@@ -3177,3 +3177,21 @@ release/arco built23:37:51-0400 (=03:37:51Z) with final native/policy changes.
 One native replacement next; activation requires observing resumed process/request,
 not inferred from binary build or staged proposal. ROOT's shortened disk allowance
 25min total ends03:53:55Z; remediation/recheck complete inside it. bd backup done.
+
+Activation observed03:43:55Z: main PID14481, start03:43:10Z, binary03:37:51Z;
+ordinary resumed accepted provider/tool response, provider usage available in new
+process. Live ContextStore view contains published managed summary exactly once;
+132-entry proposal is no longer merely staged. Physical extent161543993 bytes of
+unchanged536870912 at observation; no physical reclamation claimed. Working view
+was92 entries225985 serialized bytes at that check (includes pinned instructions).
+
+Close .14.3 ONLY under ROOT's scoped capacity-unit acceptance. Root-authored fresh
+session-workflow-protection remains a working continuation, NOT a verified/imported
+predecessor settlement. Prior two exhausted audits stay untouched; their final
+unknown boundaries are not retroactively established. Existing declared seed path
+and early warning suffice this scoped continuation; unattended assess/pivot backstop
+arconaut-scs and targeted predecessor-original resolver remain separately queued.
+Automatic physical rollover, full old-byte resolution/replay-cost optimization and
+filesystem-unavailable settlement are NOT delivered by this unit. No more reviewer,
+host recheck or native replacement; complete inside shortened25min bound. Root owns
+README/master promotion/retirement and launch of giga; none performed here.
