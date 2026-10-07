@@ -198,3 +198,13 @@ add_test(NAME useful_feedback_regression COMMAND useful_work_test ${CMAKE_SOURCE
 add_test(NAME useful_record_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_record_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
 add_test(NAME economy_pilot COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/economy_pilot_test.lua ${CMAKE_SOURCE_DIR}/programs/economy_pilot.lua)
 set_tests_properties(economy_pilot PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Independent colleague slice; no native core ABI or lifecycle changes.
+add_library(arconaut_colleague src/colleague.cpp)
+target_link_libraries(arconaut_colleague PUBLIC arconaut_foundation)
+add_executable(arco-colleague src/colleague_main.cpp)
+target_link_libraries(arco-colleague PRIVATE arconaut_colleague)
+add_executable(colleague_test tests/colleague_test.cpp)
+target_link_libraries(colleague_test PRIVATE arconaut_colleague)
+add_test(NAME colleague COMMAND colleague_test)
+set_tests_properties(colleague PROPERTIES TIMEOUT 15)
