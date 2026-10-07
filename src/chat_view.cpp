@@ -1,0 +1,517 @@
+#include "arconaut/chat_view.hpp"
+#include "arconaut/terminal.hpp"
+#include <algorithm>
+#include <array>
+#include <cerrno>
+#include <climits>
+#include <clocale>
+#include <cwchar>
+#include <fcntl.h>
+#include <limits>
+#include <stdexcept>
+#include <unistd.h>
+
+namespace arconaut {
+namespace {
+constexpr std::size_t display_limit = 64 * 1024;
+constexpr std::size_t line_limit = 2048;
+std::string_view color(Ink ink) {
+  constexpr std::array colors{"\x1b[0m",
+                              "\x1b[0;38;2;160;173;188m",
+                              "\x1b[1;38;2;222;179;113m",
+                              "\x1b[1;38;2;114;215;211m",
+                              "\x1b[1;38;2;232;227;217m",
+                              "\x1b[0;38;2;188;168;239;48;2;37;40;51m",
+                              "\x1b[1;38;2;188;168;239;48;2;37;40;51m",
+                              "\x1b[0;38;2;155;213;172;48;2;37;40;51m",
+                              "\x1b[0;38;2;155;213;172m",
+                              "\x1b[1;38;2;242;137;137m",
+                              "\x1b[1;30;46m",
+                              "\x1b[0;38;2;85;142;151m"};
+  return colors[static_cast<std::size_t>(ink)];
+}
+void utf8(std::string &out, char32_t cp) {
+  if (cp < 0x80)
+    out += static_cast<char>(cp);
+  else if (cp < 0x800) {
+    out += static_cast<char>(0xc0 | (cp >> 6));
+    out += static_cast<char>(0x80 | (cp & 63));
+  } else if (cp < 0x10000) {
+    out += static_cast<char>(0xe0 | (cp >> 12));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 63));
+    out += static_cast<char>(0x80 | (cp & 63));
+  } else {
+    out += static_cast<char>(0xf0 | (cp >> 18));
+    out += static_cast<char>(0x80 | ((cp >> 12) & 63));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 63));
+    out += static_cast<char>(0x80 | (cp & 63));
+  }
+}
+struct Rune {
+  char32_t scalar;
+  std::size_t bytes;
+  unsigned width;
+};
+Rune rune(std::string_view s) {
+  const auto byte = static_cast<unsigned char>(s[0]);
+  if (byte < 128)
+    return {byte, 1, 1};
+  wchar_t wide{};
+  std::mbstate_t state{};
+  const auto n = std::mbrtowc(&wide, s.data(), s.size(), &state);
+  if (n == 0 || n > s.size())
+    return {U'?', 1, 1};
+  const int width = ::wcwidth(wide);
+  return {static_cast<char32_t>(wide), n, static_cast<unsigned>(std::max(0, width))};
+}
+// Shared display-cluster scanner for both wrapping and rasterization.
+Rune cluster(std::string_view s) {
+  auto result = rune(s);
+  auto rest = s.substr(result.bytes);
+  bool join = result.scalar == 0x200d;
+  bool regional = result.scalar >= 0x1f1e6 && result.scalar <= 0x1f1ff;
+  while (!rest.empty()) {
+    const auto r = rune(rest);
+    const bool region = r.scalar >= 0x1f1e6 && r.scalar <= 0x1f1ff;
+    const bool modifier = r.scalar >= 0x1f3fb && r.scalar <= 0x1f3ff;
+    if (r.width && !modifier && !join && !(region && regional))
+      break;
+    if (join || (region && regional) || r.scalar == 0xfe0f || r.scalar == 0x20e3)
+      result.width = 2;
+    result.bytes += r.bytes;
+    join = r.scalar == 0x200d;
+    regional = region && !regional;
+    rest.remove_prefix(r.bytes);
+  }
+  result.width = std::max(1U, result.width);
+  return result;
+}
+ChatRow inline_text(std::string_view text, Ink base) {
+  ChatRow out;
+  std::string pending;
+  Ink current = base;
+  auto flush = [&] {
+    if (!pending.empty()) {
+      out.push_back({std::move(pending), current});
+      pending.clear();
+    }
+  };
+  bool bold = false, code = false;
+  while (!text.empty()) {
+    if (text.starts_with("**") && !code) {
+      flush();
+      bold = !bold;
+      current = bold ? Ink::heading : base;
+      text.remove_prefix(2);
+    } else if (text.front() == '`') {
+      flush();
+      code = !code;
+      current = code ? Ink::code : (bold ? Ink::heading : base);
+      text.remove_prefix(1);
+    } else {
+      pending += text.front();
+      text.remove_prefix(1);
+    }
+  }
+  flush();
+  return out;
+}
+ChatRow syntax(std::string_view text) {
+  ChatRow out;
+  std::size_t pos = 0;
+  constexpr std::array words{"auto", "const", "return", "if",       "else",
+                             "for",  "while", "class",  "struct",   "void",
+                             "int",  "bool",  "local",  "function", "end",
+                             "true", "false", "nil",    "nullptr"};
+  while (pos < text.size()) {
+    const auto begin = pos;
+    Ink ink = Ink::code;
+    if (text[pos] == '"' || text[pos] == '\'') {
+      const auto quote = text[pos++];
+      while (pos < text.size()) {
+        const auto c = text[pos++];
+        if (c == '\\' && pos < text.size())
+          ++pos;
+        else if (c == quote)
+          break;
+      }
+      ink = Ink::string;
+    } else if ((text[pos] >= 'a' && text[pos] <= 'z') ||
+               (text[pos] >= 'A' && text[pos] <= 'Z') || text[pos] == '_') {
+      do {
+        ++pos;
+      } while (pos < text.size() &&
+               ((text[pos] >= 'a' && text[pos] <= 'z') ||
+                (text[pos] >= 'A' && text[pos] <= 'Z') ||
+                (text[pos] >= '0' && text[pos] <= '9') || text[pos] == '_'));
+      const auto word = text.substr(begin, pos - begin);
+      if (std::find(words.begin(), words.end(), word) != words.end())
+        ink = Ink::keyword;
+    } else
+      pos += rune(text.substr(pos)).bytes;
+    if (!out.empty() && out.back().ink == ink)
+      out.back().text.append(text.substr(begin, pos - begin));
+    else
+      out.push_back({std::string{text.substr(begin, pos - begin)}, ink});
+  }
+  return out;
+}
+void wrap(std::vector<ChatRow> &rows, const ChatRow &content, std::size_t width,
+          Ink rail) {
+  ChatRow row{{"  │ ", rail}};
+  std::size_t cells = 0;
+  std::string pending;
+  Ink previous = Ink::normal;
+  auto flush = [&] {
+    if (!pending.empty()) {
+      row.push_back({std::move(pending), previous});
+      pending.clear();
+    }
+  };
+  for (const auto &span : content) {
+    if (span.ink != previous) {
+      flush();
+      previous = span.ink;
+    }
+    auto s = std::string_view{span.text};
+    while (!s.empty()) {
+      const auto r = cluster(s);
+      if (cells && cells + r.width > width) {
+        flush();
+        rows.push_back(std::move(row));
+        row = {{"  │ ", rail}};
+        cells = 0;
+      }
+      pending.append(s.substr(0, r.bytes));
+      cells += r.width;
+      s.remove_prefix(r.bytes);
+    }
+  }
+  flush();
+  rows.push_back(std::move(row));
+}
+bool equal(const ChatGrid &a, const ChatGrid &b, std::size_t i) {
+  const auto &x = a.cells[i], &y = b.cells[i];
+  return x.scalar == y.scalar && x.ink == y.ink && x.width == y.width &&
+         std::string_view{a.tails}.substr(x.tail, x.length) ==
+             std::string_view{b.tails}.substr(y.tail, y.length);
+}
+} // namespace
+std::string chat_plain(const ChatRow &row) {
+  std::string text;
+  for (const auto &s : row)
+    text += s.text;
+  return text;
+}
+void ChatView::trim() {
+  bool removed = false;
+  if (newlines_ > 2048 && !blocks_.empty()) {
+    while (blocks_.size() > 1 && newlines_ > 1536) {
+      newlines_ -= static_cast<std::size_t>(
+          std::count(blocks_.front().text.begin(), blocks_.front().text.end(), '\n'));
+      bytes_ -= blocks_.front().text.size();
+      blocks_.pop_front();
+      removed = true;
+    }
+    if (newlines_ > 2048) {
+      auto &text = blocks_.front().text;
+      std::size_t cut = 0;
+      while (newlines_ > 1536) {
+        cut = text.find('\n', cut) + 1;
+        --newlines_;
+      }
+      text.erase(0, cut);
+      bytes_ = text.size();
+      removed = true;
+    }
+  }
+  while (blocks_.size() > 1 && (bytes_ > display_limit || blocks_.size() > 1024)) {
+    bytes_ -= blocks_.front().text.size();
+    newlines_ -= static_cast<std::size_t>(
+        std::count(blocks_.front().text.begin(), blocks_.front().text.end(), '\n'));
+    blocks_.pop_front();
+    removed = true;
+  }
+  if (bytes_ > display_limit && !blocks_.empty()) {
+    auto &s = blocks_.front().text;
+    auto cut = s.size() - display_limit * 3 / 4;
+    while (cut < s.size() && (static_cast<unsigned char>(s[cut]) & 0xc0) == 0x80)
+      ++cut;
+    newlines_ -= static_cast<std::size_t>(
+        std::count(s.begin(), s.begin() + static_cast<std::ptrdiff_t>(cut), '\n'));
+    s.erase(0, cut);
+    bytes_ = s.size();
+    removed = true;
+  }
+  if (removed) {
+    width_ = 0;
+    ++generation_;
+    clipped_ = true;
+    dirty_ = true;
+  }
+}
+void ChatView::append(ChatKind kind, std::string_view text, bool merge) {
+  if (!merge || blocks_.empty() || blocks_.back().kind != kind)
+    blocks_.push_back({kind, {}, true, 0, 0, false, false});
+  auto &block = blocks_.back();
+  bool changed = block.dirty;
+  for (const char c : text) {
+    if (c == '\n') {
+      block.text += c;
+      ++bytes_;
+      block.line_bytes = 0;
+      ++newlines_;
+      changed = true;
+    } else if (block.line_bytes < line_limit ||
+               (block.line_bytes < line_limit + 4 &&
+                (static_cast<unsigned char>(c) & 0xc0) == 0x80)) {
+      block.text += c;
+      ++bytes_;
+      ++block.line_bytes;
+      changed = true;
+    } else if (!clipped_) {
+      clipped_ = true;
+      width_ = 0;
+      changed = true;
+    }
+  }
+  block.dirty = block.dirty || changed;
+  dirty_ = dirty_ || changed;
+  trim();
+}
+void ChatView::begin(ChatKind kind) {
+  stream_kind_ = kind;
+  append(kind, {});
+}
+void ChatView::stream(std::string_view text) { append(stream_kind_, text, true); }
+ChatView &ChatView::operator+=(std::string_view notice) {
+  append(ChatKind::notice, notice, true);
+  return *this;
+}
+void ChatView::clear() {
+  blocks_.clear();
+  rows_.clear();
+  bytes_ = 0;
+  newlines_ = 0;
+  clipped_ = false;
+  ++generation_;
+  width_ = 0;
+  dirty_ = true;
+}
+const std::vector<ChatRow> &ChatView::rows(std::size_t width) {
+  width = std::max<std::size_t>(width, 8);
+  if (width != width_) {
+    rows_.clear();
+    if (clipped_)
+      rows_.push_back(
+          {{"  Display clipped; full content remains in audit.", Ink::muted}});
+    for (auto &b : blocks_) {
+      b.dirty = true;
+      b.initialized = false;
+      b.committed = 0;
+      b.in_code = false;
+    }
+    width_ = width;
+    dirty_ = true;
+  }
+  if (!dirty_)
+    return rows_;
+  for (auto &b : blocks_) {
+    if (!b.dirty)
+      continue;
+    ++reflows_;
+    const auto rail = b.kind == ChatKind::user        ? Ink::user
+                      : b.kind == ChatKind::error     ? Ink::failure
+                      : b.kind == ChatKind::assistant ? Ink::assistant
+                                                      : Ink::muted;
+    if (!b.initialized) {
+      if (!rows_.empty())
+        rows_.push_back({});
+      const auto label = b.kind == ChatKind::user        ? "YOU"
+                         : b.kind == ChatKind::assistant ? "ARCO"
+                         : b.kind == ChatKind::tool      ? "ACTIVITY"
+                         : b.kind == ChatKind::error     ? "ERROR"
+                         : b.kind == ChatKind::summary   ? "TURN"
+                                                         : "";
+      if (label[0])
+        rows_.push_back({{"  " + std::string{label}, rail}});
+      b.stable_rows = rows_.size();
+      b.initialized = true;
+    }
+    rows_.resize(b.stable_rows);
+    auto remaining = std::string_view{b.text}.substr(b.committed);
+    while (!remaining.empty()) {
+      const auto lf = remaining.find('\n');
+      const auto length = lf == std::string_view::npos ? remaining.size() : lf;
+      const auto raw = remaining.substr(0, length);
+      const auto safe = terminal_lines(raw, display_limit).front();
+      bool code = b.in_code;
+      if (safe.starts_with("```")) {
+        if (!code)
+          wrap(rows_, {{"─ " + safe.substr(3) + " ─", Ink::code}}, width - 4, rail);
+        code = !code;
+      } else if (code)
+        wrap(rows_, syntax(safe), width - 4, rail);
+      else if (safe.starts_with("#")) {
+        const auto start = safe.find_first_not_of("# ");
+        wrap(rows_,
+             {{start == std::string::npos ? "" : safe.substr(start), Ink::heading}},
+             std::min<std::size_t>(width - 4, 92), rail);
+      } else
+        wrap(rows_,
+             inline_text(safe, b.kind == ChatKind::summary ? Ink::muted
+                               : b.kind == ChatKind::error ? Ink::failure
+                                                           : Ink::normal),
+             std::min<std::size_t>(width - 4, 92), rail);
+      if (lf == std::string_view::npos)
+        break;
+      b.committed += length + 1;
+      b.stable_rows = rows_.size();
+      b.in_code = code;
+      remaining.remove_prefix(length + 1);
+    }
+    b.dirty = false;
+  }
+  dirty_ = false;
+  return rows_;
+}
+void ChatGrid::reset(std::size_t columns, std::size_t rows) {
+  if (!columns || !rows || columns > 4096 || rows > 4096 ||
+      rows > 1024 * 1024 / columns)
+    throw std::length_error("terminal geometry exceeds bounded grid");
+  width = columns;
+  height = rows;
+  cells.resize(width * height);
+  std::fill(cells.begin(), cells.end(), ChatCell{});
+  tails.clear();
+}
+void ChatGrid::line(std::size_t row, const ChatRow &content) {
+  if (row >= height)
+    return;
+  std::size_t column = 0;
+  for (const auto &span : content) {
+    auto text = std::string_view{span.text};
+    while (!text.empty()) {
+      const auto r = cluster(text);
+      if (column + r.width > width)
+        return;
+      auto &cell = cells[row * width + column];
+      cell = ChatCell{};
+      cell.scalar = r.scalar;
+      cell.ink = span.ink;
+      cell.width = static_cast<std::uint8_t>(r.width);
+      const auto first = rune(text).bytes;
+      // Oversized clusters are visibly replaced, never an exception from output.
+      if (r.bytes > 4096) {
+        cell.scalar = U'�';
+      } else if (r.bytes > first) {
+        cell.tail = static_cast<std::uint32_t>(tails.size());
+        cell.length = static_cast<std::uint16_t>(r.bytes - first);
+        tails.append(text.substr(first, r.bytes - first));
+      }
+      column += r.width;
+      if (r.width == 2) {
+        cells[row * width + column - 1] = ChatCell{};
+        cells[row * width + column - 1].width = 0;
+      }
+      text.remove_prefix(r.bytes);
+    }
+  }
+}
+const std::string &ChatPainter::prepare(const ChatGrid &next, std::size_t cursor_row,
+                                        std::size_t cursor_column, bool full) {
+  packet_.clear();
+  touched_ = 0;
+  cursor_row = std::min(cursor_row, next.height - 1);
+  cursor_column = std::min(cursor_column, next.width - 1);
+  const bool all = full || !valid_ || previous_.width != next.width ||
+                   previous_.height != next.height;
+  for (std::size_t y = 0; y < next.height; ++y) {
+    std::size_t first = next.width, last = 0;
+    for (std::size_t x = 0; x < next.width; ++x)
+      if (all || !equal(next, previous_, y * next.width + x)) {
+        first = std::min(first, x);
+        last = x + 1;
+      }
+    if (first == next.width)
+      continue;
+    if (first && (next.cells[y * next.width + first].width == 0 ||
+                  (!all && previous_.cells[y * next.width + first].width == 0)))
+      --first;
+    if (last < next.width &&
+        (next.cells[y * next.width + last].width == 0 ||
+         (!all && previous_.cells[y * next.width + last].width == 0)))
+      ++last;
+    if (packet_.empty())
+      packet_ = "\x1b[?2026h\x1b[?25l";
+    packet_ += "\x1b[" + std::to_string(y + 1) + ";" + std::to_string(first + 1) + "H";
+    Ink active = Ink::normal;
+    bool styled = false;
+    for (auto x = first; x < last; ++x) {
+      const auto &cell = next.cells[y * next.width + x];
+      ++touched_;
+      if (!cell.width)
+        continue;
+      if (!styled || active != cell.ink) {
+        styled = true;
+        packet_ += color(cell.ink);
+        active = cell.ink;
+      }
+      utf8(packet_, cell.scalar);
+      packet_.append(next.tails, cell.tail, cell.length);
+    }
+  }
+  if (!packet_.empty() || !valid_ || cursor_row != cursor_row_ ||
+      cursor_column != cursor_column_) {
+    if (packet_.empty())
+      packet_ = "\x1b[?2026h";
+    packet_ += "\x1b[0m\x1b[" + std::to_string(cursor_row + 1) + ";" +
+               std::to_string(cursor_column + 1) + "H\x1b[?25h\x1b[?2026l";
+  }
+  cursor_row_ = cursor_row;
+  cursor_column_ = cursor_column;
+  return packet_;
+}
+void ChatPainter::commit(const ChatGrid &next) {
+  previous_ = next;
+  valid_ = true;
+}
+ChatOutput::~ChatOutput() { detach(); }
+void ChatOutput::detach() noexcept {
+  if (descriptor_ >= 0)
+    (void)::fcntl(descriptor_, F_SETFL, flags_);
+  descriptor_ = -1;
+  packet_ = {};
+  offset_ = 0;
+}
+void ChatOutput::attach(int descriptor) {
+  if (descriptor_ >= 0)
+    throw std::logic_error("output already attached");
+  const auto flags = ::fcntl(descriptor, F_GETFL);
+  if (flags < 0 || ::fcntl(descriptor, F_SETFL, flags | O_NONBLOCK) < 0)
+    throw std::runtime_error("cannot configure terminal output");
+  descriptor_ = descriptor;
+  flags_ = flags;
+}
+void ChatOutput::start(std::string_view packet) {
+  if (pending())
+    throw std::logic_error("cannot replace an in-flight terminal packet");
+  packet_ = packet;
+  offset_ = 0;
+}
+bool ChatOutput::flush() {
+  for (unsigned call = 0; pending() && call < 8; ++call) {
+    const auto count = ::write(descriptor_, packet_.data() + offset_,
+                               std::min<std::size_t>(packet_.size() - offset_, 8192));
+    if (count > 0)
+      offset_ += static_cast<std::size_t>(count);
+    else if (count < 0 && errno == EINTR)
+      continue;
+    else if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+      return false;
+    else
+      throw std::runtime_error("terminal output transport failed");
+  }
+  return !pending();
+}
+} // namespace arconaut

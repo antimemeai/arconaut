@@ -6,6 +6,7 @@
 #include <charconv>
 #include <chrono>
 #include <clocale>
+#include <csignal>
 #include <cstdlib>
 #include <cwchar>
 #include <fcntl.h>
@@ -22,6 +23,15 @@
 extern char **environ;
 namespace arconaut {
 namespace {
+volatile sig_atomic_t resize_pipe = -1;
+void resize_signal(int) {
+  const int saved = errno;
+  if (resize_pipe >= 0) {
+    const char byte = 1;
+    (void)::write(resize_pipe, &byte, 1);
+  }
+  errno = saved;
+}
 struct ChatCommand {
   std::string_view name, arguments, description, group;
 };
@@ -191,12 +201,31 @@ std::size_t word_right(std::string_view text, std::size_t cursor) {
     cursor = next(text, cursor);
   return cursor;
 }
+// Control handoffs use a bounded writer too. CAN cancels an abandoned CSI.
+void terminal_control(std::string_view bytes) {
+  ChatOutput writer;
+  writer.attach(STDOUT_FILENO);
+  writer.start(bytes);
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::milliseconds(150);
+  while (!writer.flush()) {
+    if (std::chrono::steady_clock::now() >= deadline)
+      throw std::runtime_error("Terminal control handoff timed out");
+    pollfd fd{STDOUT_FILENO, POLLOUT, 0};
+    (void)::poll(&fd, 1, 10);
+  }
+}
 class TerminalMode {
 public:
   TerminalMode() {
     if (tcgetattr(STDIN_FILENO, &before_) != 0)
       throw std::runtime_error("Cannot read terminal mode");
-    resume();
+    try {
+      resume();
+    } catch (...) {
+      (void)tcsetattr(STDIN_FILENO, TCSANOW, &before_);
+      throw;
+    }
   }
   void resume() {
     auto raw = before_;
@@ -207,19 +236,22 @@ public:
     if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0)
       throw std::runtime_error("Cannot set terminal mode");
     active_ = true;
-    std::cout << "\x1b[?1049h\x1b[?2004h" << std::flush;
+    terminal_control("\x18\x1b[?1049h\x1b[?2004h");
   }
   void suspend() {
     if (!active_)
       return;
-    std::cout << "\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h" << std::flush;
+    terminal_control("\x18\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
     if (tcsetattr(STDIN_FILENO, TCSANOW, &before_) != 0)
       throw std::runtime_error("Cannot restore terminal for editor");
     active_ = false;
   }
   ~TerminalMode() {
     if (active_) {
-      std::cout << "\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h" << std::flush;
+      try {
+        terminal_control("\x18\x1b[?2026l\x1b[0m\x1b[?2004l\x1b[?1049l\x1b[?25h");
+      } catch (...) {
+      }
       (void)tcsetattr(STDIN_FILENO, TCSANOW, &before_);
     }
   }
@@ -927,12 +959,34 @@ std::vector<std::string> terminal_lines(std::string_view text, std::size_t colum
 }
 void TerminalUI::post(Kind kind, std::string_view text) {
   const std::lock_guard lock{mutex_};
-  messages_.push_back({kind, std::string{text}});
+  if (!messages_.empty() && messages_.back().kind == kind &&
+      (kind == Kind::text || kind == Kind::process))
+    messages_.back().text.append(text);
+  else
+    messages_.push_back({kind, std::string{text}});
+  if (notification_ >= 0) {
+    const char byte = 1;
+    (void)::write(notification_, &byte, 1);
+  }
 }
 void TerminalUI::text(std::string_view value) { post(Kind::text, value); }
+void TerminalUI::notice(std::string_view value) { post(Kind::notice, value); }
+void TerminalUI::process_output(std::string_view value) { post(Kind::process, value); }
+void TerminalUI::restore_message(ChatKind kind, std::string_view value) {
+  post(kind == ChatKind::user ? Kind::user : Kind::assistant, value);
+}
+void TerminalUI::usage(std::string_view value) { post(Kind::usage, value); }
+void TerminalUI::operation_started(bool provider) {
+  post(provider ? Kind::provider_start : Kind::tool_start, {});
+}
 void TerminalUI::status(std::string_view value) { post(Kind::status, value); }
-void TerminalUI::operation_completed(std::string_view value) {
-  post(Kind::operation_complete, value);
+void TerminalUI::operation_completed(std::string_view value, Ink outcome) {
+  const std::lock_guard lock{mutex_};
+  messages_.push_back({Kind::operation_complete, std::string{value}, outcome});
+  if (notification_ >= 0) {
+    const char byte = 1;
+    (void)::write(notification_, &byte, 1);
+  }
 }
 void TerminalUI::failed() { post(Kind::failure, {}); }
 void TerminalUI::title(std::string_view value) { post(Kind::title, value); }
@@ -942,6 +996,38 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                      std::filesystem::path state_path) {
   (void)std::setlocale(LC_CTYPE, "");
   TerminalMode mode;
+  ChatOutput output;
+  output.attach(STDOUT_FILENO);
+  int notifications[2];
+  if (::pipe(notifications) != 0)
+    throw std::runtime_error("cannot create terminal wakeup");
+  for (const auto fd : notifications) {
+    (void)::fcntl(fd, F_SETFD, FD_CLOEXEC);
+    (void)::fcntl(fd, F_SETFL, O_NONBLOCK);
+  }
+  struct WakeCleanup {
+    TerminalUI &ui;
+    int read, write;
+    struct sigaction before{};
+    ~WakeCleanup() {
+      resize_pipe = -1;
+      (void)::sigaction(SIGWINCH, &before, nullptr);
+      const std::lock_guard lock{ui.mutex_};
+      ui.notification_ = -1;
+      ::close(read);
+      ::close(write);
+    }
+  } wake{*this, notifications[0], notifications[1]};
+  struct sigaction action{};
+  action.sa_handler = resize_signal;
+  sigemptyset(&action.sa_mask);
+  if (::sigaction(SIGWINCH, &action, &wake.before) != 0)
+    throw std::runtime_error("cannot install terminal resize wakeup");
+  resize_pipe = notifications[1];
+  {
+    const std::lock_guard lock{mutex_};
+    notification_ = notifications[1];
+  }
   Composer composer;
   std::jthread worker;
   struct StopOnExit {
@@ -981,10 +1067,18 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     }
   };
 
-  std::string transcript, activity = "Ready";
+  ChatView transcript;
+  ChatGrid grid;
+  ChatPainter painter;
+  std::string activity = "Ready", observed_usage, small_frame;
+  bool live_provider = false;
+  std::vector<bool> operations;
   bool busy = false, quitting = false, redraw = true, tool_active = false,
        turn_failed = false;
   std::size_t scroll = 0, previous_lines = 0;
+  std::uint64_t display_generation = 0;
+  bool pending_grid = false;
+  auto escape_deadline = std::chrono::steady_clock::time_point::max();
   unsigned short old_rows = 0, old_columns = 0;
   auto started = std::chrono::steady_clock::now();
   auto second = started, tool_started = started;
@@ -996,7 +1090,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     turn_failed = false;
     cancelled.store(false);
     started = std::chrono::steady_clock::now();
-    transcript += "\nYou\n" + prompt + "\n\nArco\n";
+    transcript.append(ChatKind::user, prompt);
+    observed_usage.clear();
+    operations.clear();
     scroll = 0;
     activity = "Starting";
     worker = std::jthread([&, prompt = std::move(prompt)] {
@@ -1017,11 +1113,24 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       transcript += "\nEditor waits for an idle turn; draft retained.\n";
       return false;
     }
+    const auto handoff_deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(150);
+    while (output.pending() && !output.flush()) {
+      if (std::chrono::steady_clock::now() >= handoff_deadline) {
+        transcript += "\nTerminal busy; editor handoff deferred. Draft retained.\n";
+        return false;
+      }
+      pollfd fd{STDOUT_FILENO, POLLOUT, 0};
+      (void)::poll(&fd, 1, 10);
+    }
     if (!persist())
       return false;
+    output.detach();
     mode.suspend();
     const auto edited = edit_terminal_draft(composer.text());
     mode.resume();
+    output.attach(STDOUT_FILENO);
+    painter.invalidate();
     (void)tcflush(STDIN_FILENO,
                   TCIFLUSH); // Editor typeahead must never send the returned draft.
     if (edited.accepted && edited.text != composer.text())
@@ -1035,6 +1144,12 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   if (!initial.empty())
     start(std::move(initial));
   while (true) {
+    if (output.pending() && output.flush()) {
+      if (pending_grid)
+        painter.commit(grid);
+      else
+        painter.invalidate();
+    }
     std::vector<Message> incoming;
     {
       const std::lock_guard lock{mutex_};
@@ -1042,16 +1157,39 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     }
     for (const auto &message : incoming) {
       if (message.kind == Kind::text)
+        transcript.append(turn_failed ? ChatKind::error : ChatKind::assistant,
+                          message.text, true);
+      if (message.kind == Kind::notice)
         transcript += message.text;
+      if (message.kind == Kind::process)
+        transcript.append(ChatKind::tool, message.text, true);
+      if (message.kind == Kind::user || message.kind == Kind::assistant)
+        transcript.append(message.kind == Kind::user ? ChatKind::user
+                                                     : ChatKind::assistant,
+                          message.text);
+      if (message.kind == Kind::usage)
+        observed_usage = message.text;
+      if (message.kind == Kind::provider_start || message.kind == Kind::tool_start) {
+        live_provider = message.kind == Kind::provider_start;
+        operations.push_back(live_provider);
+      }
       if (message.kind == Kind::status) {
         activity = message.text;
         tool_started = std::chrono::steady_clock::now();
-        tool_active = true;
+        tool_active = !live_provider;
+        if (!live_provider)
+          transcript.append(ChatKind::tool, "▸ " + message.text + "\n");
       }
       if (message.kind == Kind::operation_complete) {
         activity = message.text;
         tool_active = false;
-        transcript += "\n[" + message.text + "]\n";
+        if (!live_provider)
+          transcript.append(
+              message.outcome == Ink::failure ? ChatKind::error : ChatKind::tool,
+              (message.outcome == Ink::success ? "✓ " : "• ") + message.text);
+        if (!operations.empty())
+          operations.pop_back();
+        live_provider = !operations.empty() && operations.back();
       }
       if (message.kind == Kind::failure)
         turn_failed = true;
@@ -1070,7 +1208,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                                        std::chrono::steady_clock::now() - started)
                                        .count()) +
                     "s";
-        transcript += "\n[" + activity + "]\n";
+        transcript.append(turn_failed ? ChatKind::error : ChatKind::summary,
+                          activity +
+                              (observed_usage.empty() ? "" : " · " + observed_usage));
       }
       redraw = true;
     }
@@ -1091,12 +1231,6 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       }
       redraw = true;
     }
-    const auto before_trim_lines =
-        scroll > 0 && old_columns > 1 && transcript.size() > ui_limit
-            ? terminal_lines(transcript, static_cast<std::size_t>(old_columns - 1))
-                  .size()
-            : 0;
-    trim_terminal_transcript(transcript);
     winsize dimensions{};
     (void)ioctl(STDOUT_FILENO, TIOCGWINSZ, &dimensions);
     const auto rows =
@@ -1104,14 +1238,14 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     const auto columns =
         dimensions.ws_col ? dimensions.ws_col : static_cast<unsigned short>(80);
     const auto now = std::chrono::steady_clock::now();
-    if (now - second >= std::chrono::seconds{1}) {
+    if (now - second >= std::chrono::milliseconds{80}) {
       second = now;
       if (busy)
         redraw = true;
     }
     if (rows != old_rows || columns != old_columns)
       redraw = true;
-    if (redraw) {
+    if (redraw && !output.pending()) {
       const bool same_width = old_columns == columns;
       old_rows = rows;
       old_columns = columns;
@@ -1119,10 +1253,15 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       const auto width = static_cast<std::size_t>(columns > 1 ? columns - 1 : 1);
       if (rows < 8 || columns < 12) {
         const auto draft = terminal_lines("> " + composer.text(), width);
-        std::string frame = "\x1b[H\x1b[2K" + draft.back();
-        frame += "\x1b[1;" +
-                 std::to_string(std::min(width, display_width(draft.back()) + 1)) + "H";
-        std::cout << frame << std::flush;
+        small_frame = "\x1b[?2026h\x1b[H\x1b[2K" + draft.back();
+        small_frame +=
+            "\x1b[1;" +
+            std::to_string(std::min(width, display_width(draft.back()) + 1)) + "H";
+        small_frame += "\x1b[?2026l";
+        pending_grid = false;
+        output.start(small_frame);
+        (void)output.flush();
+        painter.invalidate();
         continue;
       }
       const auto inner_width = width - 4;
@@ -1135,25 +1274,29 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           composer.palette_lines(std::min<std::size_t>(8, rows - 5 - draft_height));
       const auto height =
           static_cast<std::size_t>(rows - 5) - draft_height - palette.size();
-      const auto lines = terminal_lines(transcript, width);
+      const auto &lines = transcript.rows(width);
+      if (display_generation != transcript.generation()) {
+        scroll =
+            0; // Evicted display history: return to live tail, never a false anchor.
+        display_generation = transcript.generation();
+      }
       if (scroll > 0 && same_width)
-        scroll = terminal_scroll_after_output(
-            {.scroll = scroll,
-             .previous = previous_lines,
-             .before_trim = before_trim_lines ? before_trim_lines : lines.size(),
-             .after_trim = lines.size(),
-             .height = height});
+        scroll = terminal_scroll_after_output({.scroll = scroll,
+                                               .previous = previous_lines,
+                                               .before_trim = lines.size(),
+                                               .after_trim = lines.size(),
+                                               .height = height});
       previous_lines = lines.size();
       scroll = std::min(scroll, lines.size() > height ? lines.size() - height : 0);
       const auto end = lines.size() - scroll;
       const auto begin = end > height ? end - height : 0;
+      grid.reset(width, rows);
       auto title = title_;
       const auto path = title.rfind(" · /");
       if (path != std::string::npos)
         title = title.substr(0, path) + " · " +
                 std::filesystem::path(title.substr(path + 4)).filename().string();
-      std::string frame = "\x1b[?25l\x1b[H\x1b[2K\x1b[1;36m " +
-                          terminal_lines(title, width - 1)[0] + "\x1b[0m\r\n\x1b[2K";
+      grid.line(0, {{" " + terminal_lines(title, width - 1)[0], Ink::assistant}});
       std::string status_line;
       if (busy)
         status_line = "Turn " +
@@ -1172,44 +1315,57 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       if (scroll > 0)
         status_line += "Up " + std::to_string(scroll) + " · ";
       status_line += activity;
-      const auto status_text = terminal_lines(" " + status_line + " ", width)[0];
-      frame += "\x1b[2m" + status_text;
+      constexpr std::array<std::string_view, 10> spinner{"⠋", "⠙", "⠹", "⠸", "⠼",
+                                                         "⠴", "⠦", "⠧", "⠇", "⠏"};
+      const auto phase =
+          static_cast<std::size_t>(
+              std::chrono::duration_cast<std::chrono::milliseconds>(now - started)
+                  .count() /
+              80) %
+          spinner.size();
+      const auto status_text = terminal_lines(
+          std::string{busy ? spinner[phase] : "·"} + " " + status_line + " ", width)[0];
+      std::string rule;
       for (auto n = display_width(status_text); n < width; ++n)
-        frame += "─";
-      frame += "\x1b[0m\r\n";
+        rule += "─";
+      grid.line(1, {{status_text, busy ? Ink::user : Ink::muted}, {rule, Ink::border}});
       for (std::size_t row = 0; row < height; ++row)
-        frame += "\x1b[2K" + (begin + row < end ? lines[begin + row] : "") + "\r\n";
-      for (const auto &line : palette) {
-        const bool selected = line.starts_with("> ");
-        frame += "\x1b[2K" + std::string{selected ? "\x1b[1;30;46m" : "\x1b[36m"} +
-                 terminal_lines(line, width)[0] + "\x1b[0m\r\n";
-      }
+        if (begin + row < end)
+          grid.line(row + 2, lines[begin + row]);
+      std::size_t menu_row = height + 2;
+      for (const auto &line : palette)
+        grid.line(menu_row++,
+                  {{terminal_lines(line, width)[0],
+                    line.starts_with("> ") ? Ink::selected : Ink::assistant}});
       auto hint = composer.palette_open() ? " command palette "
                   : composer.slash_open() ? " commands "
                   : busy                  ? " Enter queue · Ctrl-C stop "
                                           : " Enter send · / commands · Ctrl-G editor ";
-      auto border = [&](std::string_view left, std::string_view right,
+      auto border = [&](std::pair<std::string_view, std::string_view> corners,
                         std::string_view label) {
-        std::string out{left};
+        std::string out{corners.first};
         const auto clipped = terminal_lines(label, width - 2)[0];
         out += clipped;
         for (auto n = display_width(clipped); n < width - 2; ++n)
           out += "─";
-        return out + std::string{right};
+        return out + std::string{corners.second};
       };
-      frame += "\x1b[2K\x1b[36m" + border("╭", "╮", hint) + "\x1b[0m\r\n";
+      grid.line(menu_row++, {{border({"╭", "╮"}, hint), Ink::border}});
       const auto cursor_row = prefix.size() - 1;
       const auto draft_begin =
           cursor_row >= draft_height ? cursor_row - draft_height + 1 : 0;
       for (std::size_t row = 0; row < draft_height; ++row) {
         const auto line =
             draft_begin + row < composed.size() ? composed[draft_begin + row] : "";
-        frame +=
-            "\x1b[2K\x1b[36m│\x1b[0m " + line +
-            std::string(inner_width - std::min(inner_width, display_width(line)), ' ') +
-            " \x1b[36m│\x1b[0m\r\n";
+        grid.line(menu_row++,
+                  {{"│ ", Ink::border},
+                   {line, Ink::normal},
+                   {std::string(
+                        inner_width - std::min(inner_width, display_width(line)), ' ') +
+                        " │",
+                    Ink::border}});
       }
-      frame += "\x1b[2K\x1b[36m" + border("╰", "╯", "") + "\x1b[0m\x1b[J";
+      grid.line(menu_row, {{border({"╰", "╯"}, ""), Ink::border}});
       const auto cursor_line = height + palette.size() + 4 + cursor_row - draft_begin;
       // Derive cursor cells with the same terminal width rules, including UTF-8.
       std::size_t cells = 0;
@@ -1229,19 +1385,36 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           composer.palette_open()
               ? display_width(palette.front().substr(0, palette.front().size() - 1)) + 1
               : cells + 3;
-      frame += "\x1b[" + std::to_string(display_cursor_line) + ";" +
-               std::to_string(std::min(display_cursor_cells, width)) + "H\x1b[?25h";
-      std::cout << frame << std::flush;
+      const auto &packet = painter.prepare(grid, display_cursor_line - 1,
+                                           std::min(display_cursor_cells, width) - 1);
+      if (!packet.empty()) {
+        pending_grid = true;
+        output.start(packet);
+        if (output.flush())
+          painter.commit(grid);
+      }
     }
-    pollfd input{STDIN_FILENO, POLLIN, 0};
-    const auto ready = poll(&input, 1, 50);
+    std::array<pollfd, 3> inputs{
+        {{STDIN_FILENO, POLLIN, 0},
+         {notifications[0], POLLIN, 0},
+         {STDOUT_FILENO, static_cast<short>(output.pending() ? POLLOUT : 0), 0}}};
+    const auto ready = poll(inputs.data(), inputs.size(),
+                            composer.escape_pending() ? 50
+                            : busy                    ? 40
+                                                      : 1000);
     if (ready < 0) {
       if (errno == EINTR)
         continue;
       throw std::runtime_error("Terminal polling failed");
     }
-    if (ready == 0) {
-      if (composer.flush_escape())
+    if (inputs[1].revents & POLLIN) {
+      char bytes[128];
+      while (::read(notifications[0], bytes, sizeof(bytes)) > 0) {
+      }
+    }
+    if (!(inputs[0].revents & (POLLIN | POLLHUP | POLLERR))) {
+      if (std::chrono::steady_clock::now() >= escape_deadline &&
+          composer.flush_escape())
         redraw = true;
       continue;
     }
@@ -1254,7 +1427,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       continue;
     }
     for (ssize_t i = 0; i < count; ++i) {
+      const bool was_escape = composer.escape_pending();
       auto result = composer.feed(bytes[i]);
+      if (!was_escape && composer.escape_pending())
+        escape_deadline =
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(50);
       redraw = true;
       if (result.action == InputAction::choose_command) {
         bool load = true;

@@ -46,8 +46,13 @@ public:
   ContextStore &context() noexcept { return context_; }
   void model(std::string name) { model_ = std::move(name); }
   std::function<void(std::string_view)> display;
+  std::function<void(std::string_view)> diagnostic;
+  std::function<void(std::string_view)> notice;
+  std::function<void(const Json &)> observed_usage;
+  std::function<void(std::string_view)> operation_started;
   std::function<void(std::string_view)> status;
   std::function<void(std::string_view)> operation_completed;
+  std::function<void(std::string_view, AttemptDisposition)> operation_outcome;
   std::function<void(std::string_view)> process_output;
   std::function<bool()> cancelled;
   // Optional native effect restriction for a scoped workflow (e.g. recovery

@@ -1,4 +1,5 @@
 #pragma once
+#include "arconaut/chat_view.hpp"
 #include <atomic>
 #include <filesystem>
 #include <functional>
@@ -47,6 +48,7 @@ public:
   void draft(std::string text);
   bool palette_open() const noexcept { return palette_open_; }
   bool slash_open() const noexcept { return slash_open_; }
+  bool escape_pending() const noexcept { return !escape_.empty(); }
   bool flush_escape();
   std::vector<std::string> palette_lines(std::size_t rows) const;
   const std::string &text() const noexcept { return text_; }
@@ -79,8 +81,13 @@ class TerminalUI {
 public:
   explicit TerminalUI(std::string title) : title_(std::move(title)) {}
   void text(std::string_view text);
+  void notice(std::string_view text);
+  void process_output(std::string_view text);
+  void restore_message(ChatKind kind, std::string_view text);
+  void usage(std::string_view text);
+  void operation_started(bool provider);
   void status(std::string_view text);
-  void operation_completed(std::string_view text);
+  void operation_completed(std::string_view text, Ink outcome = Ink::muted);
   void failed();
   void title(std::string_view text);
   void run(const std::function<void(std::string_view)> &perform,
@@ -89,12 +96,28 @@ public:
            std::filesystem::path state_path = {});
 
 private:
-  enum class Kind { text, status, title, complete, operation_complete, failure };
+  enum class Kind {
+    text,
+    notice,
+    process,
+    user,
+    assistant,
+    usage,
+    provider_start,
+    tool_start,
+    status,
+    title,
+    complete,
+    operation_complete,
+    failure
+  };
   struct Message {
     Kind kind;
     std::string text;
+    Ink outcome = Ink::muted;
   };
   std::mutex mutex_;
+  int notification_ = -1;
   std::vector<Message> messages_;
   std::string title_;
   void post(Kind kind, std::string_view text);

@@ -924,6 +924,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     protect_workflow(field(context_.view(), "entries").array(),
                      context_.pending_proposal());
   const auto began = std::chrono::steady_clock::now();
+  if (operation_started)
+    operation_started(name);
   if (status) {
     std::string description{name};
     for (const auto key : {"path", "command", "argv"}) {
@@ -1083,7 +1085,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                                  {bounded_raw.begin(), bounded_raw.end()}}});
   }
   (void)unwrap(std::move(recorded));
-  if (operation_completed) {
+  if (operation_completed || operation_outcome) {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::steady_clock::now() - began)
                              .count();
@@ -1094,8 +1096,12 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
         : boundary.error && boundary.error->code == ErrorCode::interrupted
             ? "interrupted (recorded failure)"
             : "failed";
-    operation_completed(std::string{name} + " " + outcome + " · " +
-                        std::to_string(elapsed) + "ms");
+    const auto completion =
+        std::string{name} + " " + outcome + " · " + std::to_string(elapsed) + "ms";
+    if (operation_outcome)
+      operation_outcome(completion, disposition);
+    if (operation_completed)
+      operation_completed(completion);
   }
   if (boundary.error && name != "provider" && process_output)
     process_output("\n[" + std::string{name} + ": " + error_name(boundary.error->code) +
@@ -1219,8 +1225,9 @@ Json CodingEngine::request(Json options) {
   last_request_bytes_ =
       Json{JsonNumber{std::to_string(unwrap(dump_json(request)).size())}};
   usage_ = Json{};
-  if (display)
-    display("\n[request " + last_request_bytes_.number().text + " JSON bytes]\n");
+  if (diagnostic || display)
+    (diagnostic ? diagnostic : display)(
+        "\n[request " + last_request_bytes_.number().text + " JSON bytes]\n");
   const auto origin = context_.head();
   // One live request group; each failed attempt stays independently recorded.
   const auto retry_group =
@@ -1242,8 +1249,8 @@ Json CodingEngine::request(Json options) {
           "context compaction does not reclaim audit history";
       if (status)
         status(warning);
-      if (display)
-        display("\n[" + warning + "]\n");
+      if (notice || display)
+        (notice ? notice : display)("\n[" + warning + "]\n");
     }
     ResponsePreview preview;
     previewed_.clear();
@@ -1297,8 +1304,8 @@ Json CodingEngine::request(Json options) {
                      Json::object({{"retry_group", Json{retry_group}}})});
       if (status)
         status(message);
-      if (display)
-        display("\n[" + message + "]\n");
+      if (notice || display)
+        (notice ? notice : display)("\n[" + message + "]\n");
       const auto until =
           std::chrono::steady_clock::now() + std::chrono::milliseconds{delay_ms};
       while (std::chrono::steady_clock::now() < until) {
@@ -1335,8 +1342,11 @@ Json CodingEngine::request(Json options) {
     }
     if (!selected.empty()) {
       usage_ = Json::object(std::move(selected));
-      if (display)
-        display("\n[provider usage " + unwrap(dump_json(usage_)) + "]\n");
+      if (observed_usage)
+        observed_usage(usage_);
+      if (diagnostic || display)
+        (diagnostic ? diagnostic : display)("\n[provider usage " +
+                                            unwrap(dump_json(usage_)) + "]\n");
     }
   }
   if (context_.head() != origin)
@@ -1621,8 +1631,9 @@ void CodingEngine::present(const Json &item) {
   auto found = previewed_.find(id ? id->string() : "");
   if (found != previewed_.end()) {
     if (!text.starts_with(found->second)) {
-      if (display)
-        display("\n[Final response differs from streamed preview]\n");
+      if (notice || display)
+        (notice ? notice
+                : display)("\n[Final response differs from streamed preview]\n");
     } else
       text.erase(0, found->second.size());
     previewed_.erase(found);

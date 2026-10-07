@@ -12,6 +12,19 @@ import tempfile
 import termios
 import time
 from pathlib import Path
+import importlib.util
+spec = importlib.util.spec_from_file_location('screen_oracle', Path(__file__).with_name('terminal-screen-oracle.py'))
+oracle = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(oracle)
+class Observed(bytearray):
+    def __init__(self):
+        super().__init__()
+        self.screen = oracle.Screen()
+    def extend(self, data):
+        self.screen.feed(data)
+        super().extend(data)
+    def visible(self):
+        return self.screen.text().encode()
 
 with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
     master, slave = pty.openpty()
@@ -19,12 +32,12 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], "--session", work], stdin=slave,
                              stdout=slave, stderr=slave, start_new_session=True)
-    observed = bytearray()
+    observed = Observed()
 
     def wait_for(needle, seconds=5):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
-            if needle in observed:
+            if observed and (needle in observed if b"\x1b" in needle else needle in observed.visible()):
                 return
             readable, _, _ = select.select([master], [], [], 0.05)
             if readable:
@@ -98,7 +111,7 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         observed.clear()
         wait_for(b"interrupted", 3)
         assert time.monotonic() - started < 3
-        assert b"UNSUBMITTED_DRAFT" in observed, "interruption destroyed the draft"
+        assert b"UNSUBMITTED_DRAFT" in observed.visible(), "interruption destroyed the draft"
         os.write(master, b"\x15")
         try:
             os.kill(pid, 0)
@@ -152,7 +165,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
                              stdout=slave, stderr=slave, start_new_session=True)
-    observed = bytearray()
+    observed = Observed()
     try:
         wait_for(b'Workflow reloads')
         def wait_draft(expected):
@@ -229,7 +242,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-full-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
                              stdout=slave, stderr=slave, start_new_session=True)
-    observed = bytearray()
+    observed = Observed()
     try:
         wait_for(b'> KEEP_FULL')
         send(b'\x00stats\r')
@@ -254,7 +267,8 @@ with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
     calls = Path(work) / 'calls'
     action.write_text('ok')
     editor.write_text("#!/usr/bin/env python3\n"
-        "import os,sys,termios,pathlib\n"
+        "import os,sys,termios,pathlib,fcntl\n"
+        "assert not fcntl.fcntl(1,fcntl.F_GETFL) & os.O_NONBLOCK\n"
         "t=termios.tcgetattr(0)\n"
         "assert t[3] & termios.ICANON and t[3] & termios.ECHO\n"
         "p=pathlib.Path(sys.argv[1]); assert p.stat().st_mode & 0o777 == 0o600\n"
@@ -269,7 +283,7 @@ with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
                              stdout=slave, stderr=slave, env=env, start_new_session=True)
-    observed = bytearray()
+    observed = Observed()
     try:
         wait_for(b'Workflow reloads')
         send(b'original\x07\r') # Pre-editor typeahead must not send the returned draft.
@@ -287,6 +301,7 @@ with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
         assert calls.read_text() == 'X', 'busy turn launched editor'
         send(b'\x03')
         wait_for(b'interrupted')
+        wait_for(b'Turn cancelled') # Settlement must finish before editor handoff.
         action.write_text('fail')
         send(b'\x15KEEP_CURSOR\x1b[D\x1b[D\x07')
         wait_for(b'Editor cancelled or failed')
@@ -313,7 +328,7 @@ with tempfile.TemporaryDirectory(prefix="arco-composer-") as work:
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], "--session", work], stdin=slave,
                              stdout=slave, stderr=slave, start_new_session=True)
-    observed = bytearray()
+    observed = Observed()
     try:
         wait_for(b"Workflow reloads")
         send(b'/lua print("COMPOSER_" .. "HISTORY")\r')
@@ -468,11 +483,8 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
         stdout=slave, stderr=slave, start_new_session=True)
     observed.clear()
     def frame():
-        raw = bytes(observed)
-        end = raw.rfind(b'\x1b[?25h')
-        if end < 0: return b''
-        start = raw.rfind(b'\x1b[?25l', 0, end)
-        return raw[start:end+6]
+        screen = observed.screen
+        return screen.text().encode() + f'\x1b[{screen.row+1};{screen.col+1}H\x1b[?25h'.encode()
     def wait_frame(predicate, seconds=6):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
@@ -489,7 +501,7 @@ with tempfile.TemporaryDirectory(prefix='arco-comfort-') as work:
         send(('/lua arco.call("exec", {command=' + json.dumps(command) + '})\r').encode())
         wait_frame(lambda f: b'LINE_080' in f)
         send(b'\x1b[5~')
-        old = wait_frame(lambda f: b'LINE_068' in f and b'LINE_080' not in f)
+        old = wait_frame(lambda f: b'LINE_080' not in f and b'LINE_' in f)
         anchor = re.findall(rb'LINE_\d{3}', old)
         deadline = time.monotonic() + 4
         while not tail.exists() and time.monotonic() < deadline:

@@ -313,18 +313,53 @@ int main(int argc, char **argv) {
     };
     refresh_info();
     engine.display = emit;
-    engine.process_output = emit;
+    engine.process_output = [&](std::string_view text) {
+      if (tui)
+        ui.process_output(text);
+      else
+        emit(text);
+    };
+    engine.operation_started = [&](std::string_view operation) {
+      if (tui)
+        ui.operation_started(operation == "provider");
+    };
+    engine.diagnostic = [&](std::string_view text) {
+      if (!tui)
+        emit(text);
+    };
+    engine.notice = [&](std::string_view text) {
+      if (tui)
+        ui.notice(text);
+      else
+        emit(text);
+    };
+    engine.observed_usage = [&](const Json &usage) {
+      if (!tui)
+        return;
+      std::string summary;
+      for (const auto &[key, suffix] :
+           {std::pair{"input_tokens", " in"}, std::pair{"output_tokens", " out"}}) {
+        if (const auto *value = usage.find(key)) {
+          if (!summary.empty())
+            summary += " · ";
+          summary += value->number().text + suffix;
+        }
+      }
+      ui.usage(summary);
+    };
     engine.status = [&](std::string_view text) {
       if (tui) {
         ui.status(text);
-        if (text != "provider")
-          ui.text("\n[" + std::string{text} + "]\n");
+
       } else
         std::cerr << '[' << safe(text) << "]\n";
     };
-    engine.operation_completed = [&](std::string_view text) {
+    engine.operation_outcome = [&](std::string_view text, AttemptDisposition outcome) {
       if (tui)
-        ui.operation_completed(text);
+        ui.operation_completed(text,
+                               outcome == AttemptDisposition::success   ? Ink::success
+                               : outcome == AttemptDisposition::unknown ? Ink::muted
+                                                                        : Ink::failure);
       else
         std::cerr << '[' << safe(text) << "]\n";
     };
@@ -527,7 +562,7 @@ int main(int argc, char **argv) {
       return restart_pending.load() ? 75 : 0;
     }
     if (tui) {
-      ui.text("/help lists commands. Workflow reloads each turn.\n");
+      ui.notice("/help lists commands. Workflow reloads each turn.\n");
       for (const auto &item : context.items()) {
         const auto *role = item.find("role");
         if (!role || !std::holds_alternative<std::string>(role->value()))
@@ -543,7 +578,10 @@ int main(int argc, char **argv) {
             if (const auto *part_text = part.find("text");
                 part_text && std::holds_alternative<std::string>(part_text->value()))
               text += part_text->string();
-        ui.text("\n" + role->string() + "\n" + text + "\n");
+        if (role->string() != "user" && role->string() != "assistant")
+          continue;
+        ui.restore_message(
+            role->string() == "user" ? ChatKind::user : ChatKind::assistant, text);
       }
       ui.run(
           perform, cancelled, [&] { return restart_pending.load(); },

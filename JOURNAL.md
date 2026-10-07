@@ -3890,3 +3890,39 @@ full-repaint/raw/capability fallbacks and direct comparative performance oracles
 No language-superiority claim, no production dependency adoption, no product code
 or test execution/qualification claim. Campaign remains paused. Update arconaut-os3
 with proposal links; local link/XML/whitespace checks only for this document unit.
+
+## Native chat renderer and one tribunal — 2026-10-07
+
+Implement approved first chat presentation unit from the studied Notcurses,
+libvterm, FTXUI and harness references: typed roles/notice/tool/usage callbacks,
+prose hierarchy, styled fenced code, restrained rails, activity motion and footer.
+Viewport cells hold inline scalar plus pooled tails (12 bytes); cached chat rows
+avoid idle/animation history reflow. Damage painter emits changed cell runs inside
+synchronized updates, committing only after its nonblocking packet is written.
+Worker/self-pipe and SIGWINCH wake the terminal. Preserve audit and plain mode.
+
+Operator requests exactly one adversarial tribunal. Three reports in papers:
+chat-review-memory, chat-review-io, chat-review-render. Fix their concrete Unicode,
+cluster overwrite/fallback, source/derived expansion, unfinished-line cost,
+output handoff, Escape deadline, tiny-frame invalidation, outcome and restored
+role issues. Add styled stream/cold comparisons and independent full/delta VT
+oracle. Bounded projection chooses line clipping/eviction rather than unbounded
+parser complexity; audit originals remain intact. On eviction explicitly return
+to live tail; surviving-anchor preservation remains backlog. Dispositions and
+actual measurement limits in papers/2026-10-07-chat-review-disposition.md.
+
+Release focused 5/5 pass in32.93s; ASan chat_view passes. Local painter microfixture
+1000 updates34,981us/67,932bytes, not end-to-end latency. Actual undrained PTY quit
+177ms restores configured termios and fd flags; macOS kernel PENDIN explains an
+initial overly strict whole-structure assertion. Actual provider-free native TUI
+capture docs/design/chat-native-preview.svg. No second review, campaign restart,
+new production dependency, or premature Blackbird rename.
+
+Configured release rigor: all42tests pass115.40s. Repository-wide formatting then
+fails on older retained-events/backstop/candidate/tool source/tests. Changed files
+pass formatting. Targeted analysis identified new wrap-copy/enum-sentinel/border-
+parameter diagnostics; fix these without suppression. Older editor-cleanup
+analyzer/schema-parameter warnings remain backlog. Do not claim full rigor green.
+Final new-renderer clang-tidy clean; final renderer/VT/terminal/PTY recheck4/4 in
+11.34s. Record old lint debt arconaut-lh1. Publish qualified native binary atomically
+as build/release/arco-ui for scripts/arco; operator's running process untouched.
