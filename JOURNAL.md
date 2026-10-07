@@ -4174,3 +4174,24 @@ activate at successfulworkflowcompletion; longcurrentLua turn has no midrunbound
 Thus configured131KBtrigger did not bound487KBrequest. Captured firstlook in papers;
 allocationtrace recorded but peractiontotals not yet analysed. NativeInstruments
 metadata includes environment, so rawtraces/privateexport stay ignored/local.
+
+## 2026-10-07 — Local responsiveness governs the performance campaign
+
+Operator requires ruthless speed on everything outside providercalls. Updated
+PERFORMANCE_CAMPAIGN: active local action latency and p50/p95/p99/max, historysize
+scaling, memory/copy costs and exact write/synccadence are first-class. LowaverageCPU
+or providerdominated elapsedtime cannot establish localresponsiveness. Sourceand
+stack evidence identify committedSnapshot vectorcopy, live linearfact lookup,
+repeated requestmaterialization and durabilitysync as specific targets. Preserve
+required durableacknowledgment/uncertaineffects; native instrumentation and matched
+workload comparison precede selecting the largest local optimization. QueuedP1 as
+arconaut-fsp; no speculative latency number or newdependency adopted.
+
+W1 completed at13:09:05 and pushedc8498f0 within originalallowance. Four affected
+checks passed. IndependentClaude review timedout90s withoutoutput; no rerun or
+W1 allowance renewal. Candidate inactive/unmerged with outstandingreview already
+authorized, not waiting for newpermission. Captureretains1390 observations; launcher
+and collector both exited0. Reconciledlocal slot after cleancheckout, absentmanager
+PIDs and libprocbirthcheck showed all213 sampled process identities no longerlive.
+Unobserved escapedchildren/remote outcomes are not certified by those observations.
+Board records reviewgap; primary/operatorTUI unchanged.

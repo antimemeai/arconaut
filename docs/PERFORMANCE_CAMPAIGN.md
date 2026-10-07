@@ -6,6 +6,49 @@ of work, and derive performance/reliability improvements from actual mechanisms.
 This is a measurement and comparative engineering campaign, not a new library
 selection or an assurance gate on unrelated development.
 
+## Local latency is the objective
+
+Operator2026-10-07: be ruthlessly snappy on everything outside upstream provider
+calls. Provider latency is reported separately; low whole-run CPU utilization is
+not evidence of responsive local actions. Account for request preparation, response
+decoding and result retention as local work even though they surround a provider.
+
+Measure action wall/thread CPU, p50/p95/p99/max, processed/allocated/copied bytes,
+syscall and sync cadence, and peak live/transient memory where available. Persist
+workload size and history length: a fast short session can conceal a worsening
+long-session path. For input/rendering, measure input arrival through native paint
+submission against the chosen frame cadence; terminal/display presentation is a
+separate boundary. Stream display and cancellation must remain responsive during
+other admitted local work. Describe actual coverage rather than claiming every
+allocation or display frame is already measured.
+
+Initial source-backed targets from the W1 run:
+
+- `RetainedState::append_impl` copies the committed Snapshot for candidate
+  validation; its vectors contain the retained prefix. Immutable payload sharing
+  does not make copying/scanning all record metadata constant work.
+- `RetainedState::existing` uses linear fact lookup when its optional replay
+  index is absent. Measure live admission/reconciliation costs as history grows.
+- Provider preparation repeatedly projects, validates and serializes growing
+  context. The long64-step turn crosses no successful compaction boundary until
+  it finishes; separate campaign continuation from one enormous turn.
+- Audit durability sync appears in the sampled active paths. Measure exact
+  acknowledgment boundaries and write/sync counts before choosing safe batching.
+
+These are candidates, not yet ranked by complete local action timings. First add
+the smallest useful spans and history-scaling fixtures, then remove the largest
+measured cost as one unit. Use suffix staging/indexed lookup/streaming patterns from
+the retained-state and workflow references where they satisfy our fault contracts.
+No whole-history copy per small append, busy polling, keystroke filesystem scans,
+or rereading/recompiling an unchanged workflow should become accepted convention.
+
+Preserve durable acknowledgment, uncertain-effect handling and required originals.
+Bound work and memory before adding redundancy; extra representations and fallback
+paths must address a concrete fault. Profiling, automated checks and review remain
+bounded development tools, not another perpetual hot-path workload or assurance
+loop. Set numerical budgets from representative measured cases before implementing
+each improvement; don't invent one magic latency limit for unrelated operations.
+
 ## Capture first
 
 Use [autodev collection](AUTODEV_PROFILING.md) and the existing
