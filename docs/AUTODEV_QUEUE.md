@@ -264,3 +264,11 @@ privacy oracles green. Completed narrow Kimi wrapper/child0 findings integrated;
 final changed-source Mac+Neuroses debug/release/ASan audit+coding2/2 each. Native
 quiet activation/live tool and bead verification next, not implied by source commit.
 .14 remains in_progress; .14.1 and Lua diagnosis/comparison/transfer remain work.
+
+## Operator correction: two hardening layers, never three
+
+The2026-10-07 instruction supersedes open-ended tribunal/recheck language above.
+[BOUNDED_HARDENING](BOUNDED_HARDENING.md) defines layer1 remediation/fix and
+layer2 one recheck/fix, named direct oracles and an upfront allowance. No third
+assurance layer, repeated full-suite recertification or silent budget reset.
+Backstop/old-history ergonomics do not expand current capacity promotion scope.

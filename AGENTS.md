@@ -130,3 +130,11 @@ the current research or implementation question. The operator expressly authoriz
 subscription-backed Kimi and Jev development calls through existing authentication.
 Keep credential contents private. Acquired agent implementations remain study-only;
 that review authorization does not ask us to execute them with the operator's accounts.
+
+Operator2026-10-07 explicitly bounds hardening to TWO layers: remediation tasks
+and fixes; then one recheck and fixes. Never a third assurance layer. Read
+[BOUNDED_HARDENING](docs/BOUNDED_HARDENING.md). Declare defects/direct checks and
+time/resource allowance before work. Do not review reviews, certify rechecks,
+reopen settled checks without relevant changes, or reset budgets under new labels.
+At the bound retain unsafe candidate inactive and move to independent useful work.
+Current remaining capacity envelope and deferred scope are in that note.

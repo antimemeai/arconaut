@@ -3051,3 +3051,19 @@ Arco, unmodified by this inquiry. Proposed docs/BACKSTOP_RECOVERY.md and source
 study saved; local links checked. arconaut-scs consumes .14.3, no extra promotion
 gate. Native provider_transport/legacy externalclassifier mismatch also recorded
 for bridge integration; not changed on a live supervisor by guesswork.
+
+## Operator correction: hardening bounded to two layers
+
+Operator explicitly rejects hours of recursive certification: layer1 remediation
+tasks/fix; layer2 recheck/fix; never layer3. Root interrupted verified provider-only
+boundary (native8201 had curl child, no local tool), allowing clean cancellation
+before injecting steer. Active capacity source retained, not reverted.
+BOUNDED_HARDENING bounds remaining unit to two actual review defects (physical
+payload/batch feasibility and longer interrupted-linkage reserve), existing affected
+oracles and one recheck.30min remediation+15min recheck includes waiting; no silent
+reset. Automatic backstop/targeted old resolver deferred outside promotion scope.
+AGENTS/queue updated; default native provider instruction adds the two-layer rule,
+with no new checker/certifier. Source policy staged separately from Arco's active
+implementation; runtime activation awaits rebuilt image. No tests for prompt prose;
+diff whitespace and exact staged scope checked. Unsafe candidate remains inactive
+at bound, never correctness-by-expired-budget.

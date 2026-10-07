@@ -661,6 +661,14 @@ Json CodingEngine::request(Json options) {
              "Lua workflow changes activate next turn. For compiled changes, build "
              "build/release/arco and request restart with a note listing changes, "
              "checks and next steps; the same session will resume with continue. "
+             "Bound hardening before starting: list concrete remediation tasks, "
+             "direct checks and a time/resource allowance. Layer one: remediate "
+             "and fix. Layer two: one recheck and fix its findings within that "
+             "allowance. Never a third assurance layer: no reviews of reviews, "
+             "certifying rechecks, unrelated full-suite reruns or silent budget "
+             "resets. Settled checks stay settled absent relevant change or new "
+             "defect evidence. If blocked at the bound, retain the unsafe candidate "
+             "inactive and continue independent useful work; do not call it safe. "
              "Work carefully and verify "
              "actual results. Host cwd: " +
              std::filesystem::current_path().string()}},
