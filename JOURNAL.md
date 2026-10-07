@@ -4372,3 +4372,28 @@ atinitialcheck. Explicit developmentdebugprofiling persists native timing perpro
 to freshprivatecapture dirs and OSsamples/stacks; normalUI is DEBUGOFF. No active
 operator restart/kill, primaryprofilebuild leftunchanged once these runs began.
 Globalboardadmissionpaused; explicittwojobsadopted, legacycampaigns remainpaused.
+
+## 2026-10-07 — Renewed performance units delivered
+
+Both native BB units completed before their fixed deadlines and pushed clean
+candidates: issuer e0e0b98, startup35413f3. Issuer real file-backed14610-ID workload
+observed15 durable reservations/syncs versus14610 in width1 reference, timed
+issue interval0.063762s versus88.372045s. Five affected checks passed. One review
+found admission could close during refill synchronization; fixed post-submit
+live-state recheck with no-ID/reopen oracle, then direct recheck. Stream capture
+cadence unchanged. No application-throughput or startup inference from this run.
+
+Startup projection validates historical JSON and skips unused candidate-value
+materialization, preserving audited originals/publication checks. Repaired actual
+CodingEngine admission probe; all ten matched warm runs succeeded on335,783,054
+history bytes with37 live-input bytes. Median audited readiness1394.550→265.961ms;
+prompt180.675ms. Under100ms NOT achieved: replay160.891ms, engine/admission85.965ms
+remain; large live context unmeasured. Three affected checks passed after one
+review/fix/recheck. Combined allocator/startup behavior remains unmeasured.
+
+Observed both manager/collector exit0 and all160/214 sampled identities absent
+via libproc. Reconciled clean pushed checkpoints, released native slots and board
+reservations, retained raw profiles privately. Zero active autodevs. No additional
+unit allowance, assurance layer, primary rebuild or implicit master merge.
+Native Beads and debug-only instrumentation already integrated; ordinary
+BLACKBIRD_DEBUG=OFF runtime remains unchanged and recording remains opt-in.

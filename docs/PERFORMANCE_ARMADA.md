@@ -9,6 +9,10 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
+Current status: **zero active autodevs**. The launch descriptions below are
+historical. Beads and debug-only timing surfaces are merged; the renewed issuer
+and startup candidates completed, were pushed, and await serial integration.
+
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |
 | arconaut-fsp / candidate/local-performance-2026-10-07 | Opt-in local timing, representative append/context/request hooks and scaling fixture | Local wall/CPU, disabled-path cost and matched short/long histories |
@@ -67,3 +71,19 @@ start currentmaster1131185 plus preserved partial source02ff9ac/8e35f55. Fixed
 no arbitrary segment cap; completion or same deadline stops it. These deliberate
 development runs use explicit debug profiling with private per-process native
 span files plus OS observations; normal operator startup never enables profiling.
+
+Update15:35UTC: both renewed units completed before their fixed deadlines.
+Issuer e0e0b98 issued14610 IDs with15 durable reservations/syncs versus14610
+for a width1 reference; matched issue intervals0.063762s versus88.372045s.
+Five affected checks passed; one review finding fixed and directly rechecked.
+Stream-capture cadence remains unchanged; these figures are not startup claims.
+Startup35413f3 validates historical JSON while avoiding materialization of unused
+candidate fields. Five successful warm runs per variant on335,783,054 history
+bytes gave median audited-request readiness1394.550ms baseline /265.961ms
+candidate; usable prompt180.675ms candidate. Target<100ms is NOT met. Replay
+160.891ms and engine/admission85.965ms remain dominant; large live context was
+not measured. Three affected checks passed after one review/fix/recheck.
+Both branches pushed, clean, inactive; primary runtime unchanged. Manager and
+collector exit0; all160 issuer /214 startup sampled identities absent via libproc.
+Native slots and board reservations released, private profiles/artifacts retained.
+No new allowance, extra certification round, or implicit master merge.

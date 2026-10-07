@@ -9,8 +9,8 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
 | arconaut-fsp | Native timing surfaces and real history measurements | Merged; debug-only build machinery, defaultOFF, runtime recording also explicit. Issue closed. |
-| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | Operator-authorized resumed BB candidate/issuer-ranges-r2-2026-10-07 completes02ff9ac and actual count/failure oracles. Stream batching separate. |
-| arconaut-n11 | Startup below100ms with large retained history/context | Resumed candidate/startup-loading-r2-2026-10-07 repairs failed fixture, measures actual loading costs and continues8e35f55. No target claim yet. |
+| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | Pushed e0e0b98:14610 IDs require15 reservations/syncs versus14610; five affected checks and one review/fix/recheck passed. Candidate awaits integration; stream batching remains separate. |
+| arconaut-n11 | Startup below100ms with large retained history/context | Pushed35413f3: warm335.8MB-history fixture audited readiness1394.550→265.961ms, prompt180.675ms. Target missed; replay160.891ms + engine/admission85.965ms remain. Large live context unmeasured. Candidate awaits integration. |
 | arconaut-kut | Continue unfinished units until completion or same deadline | Fixed shared driver with direct six-segment/deadline/pause checks, no budget renewal or blind replay; closed. |
 | arconaut-1v0 | Store invocation input once and reference it from semantic records | Old census measured46,559,372 duplicated blob bytes between invocation/admission alone; decision repeats logicalinput. Requires versioned references and historical readability, not history deletion. |
 | arconaut-3x2 | Stop copying complete metadata/context history on small appends | Current append copies Snapshot vectors; live lookup scans facts; ContextStore copies/serializes cumulative state. Split retained suffix storage and context indexing at their real ownership boundaries. |
@@ -20,6 +20,11 @@ The three implementation byte tasks come from the actual
 [waste audit](../papers/2026-10-07-waste-audit.md). Native profile windows now also
 catch sync and retained metadata work. P1 is small instrumentation serving those
 fixes; it must not grow into a laboratory that postpones the fixes.
+
+Both renewed performance autodevs completed within their allowances; zero active.
+Next useful step is serial integration of their delivered changes and a matched
+combined startup measurement. The allocator may reduce admission cost; that
+interaction has not been measured. No additional review panel is queued.
 
 ## Other useful product work
 
