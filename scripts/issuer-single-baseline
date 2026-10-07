@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+"""Build-only mechanism isolation: same native caller, sole allocator width=1.
+No production runtime knobs; takes a configured/built release directory.
+"""
+import json, pathlib, shlex, subprocess, sys
+build = pathlib.Path(sys.argv[1]).resolve()
+entries = json.loads((build / 'compile_commands.json').read_text())
+source_entry = next(e for e in entries if e['file'].endswith('/src/retained_state.cpp'))
+fixture_entry = next(e for e in entries if e['file'].endswith('/tests/issuer_ranges_test.cpp'))
+source = pathlib.Path(source_entry['file']).read_text()
+needle = 'constexpr std::uint64_t range_size = 1024;'
+assert source.count(needle) == 1
+alternate = build / 'issuer-width-one.cpp'
+alternate.write_text(source.replace(needle, 'constexpr std::uint64_t range_size = 1;'))
+# Archive replacement must retain the original object basename.
+folder = build / 'issuer-width-one'
+folder.mkdir(exist_ok=True)
+obj = folder / 'retained_state.cpp.o'
+args = shlex.split(source_entry['command'])
+for option in ('-o', '-MT', '-MF'):
+    if option not in args:
+        continue
+    i = args.index(option)
+    args[i + 1] = str(obj) + ('.d' if option == '-MF' else '')
+args[args.index(source_entry['file'])] = str(alternate)
+subprocess.run(args, cwd=source_entry['directory'], check=True)
+archive = folder / 'libblackbird_foundation.a'
+archive.write_bytes((build / 'libblackbird_foundation.a').read_bytes())
+subprocess.run(['/usr/bin/ar', 'r', str(archive), str(obj)], check=True)
+subprocess.run(['/usr/bin/ranlib', str(archive)], check=True)
+fixture_args = shlex.split(fixture_entry['command'])
+compiler = fixture_args[0]
+sysroot = fixture_args[fixture_args.index('-isysroot') + 1]
+subprocess.run([compiler, '-arch', 'arm64', '-isysroot', sysroot, '-o', str(folder / 'issuer_ranges_test'),
+               str(build / 'CMakeFiles/issuer_ranges_test.dir/tests/issuer_ranges_test.cpp.o'),
+               str(archive)], check=True)
+print(folder / 'issuer_ranges_test')

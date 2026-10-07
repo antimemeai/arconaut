@@ -4435,3 +4435,7 @@ Prepare one native BB owner for compact working state, bounded tail recovery and
 on-demand historical reads, seeded by the inspected source study and delivered
 allocator/projection candidates. Root keeps master integration separate; ordinary
 runtime profiling remainsOFF. No additional design-survey or approval gate.
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial durable range allocator/test edits. Four-segment cap exhausted after~12minutes; no direct count measurements, finished test result, independent review or actor completion report. Planned1024 range reduction is NOT measured delivery.
+Candidate inactive, original allowance expired; checkpoint not acceptance.
