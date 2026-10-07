@@ -2,6 +2,7 @@
 #include "arconaut/tools.hpp"
 #include "arconaut_sprite.hpp"
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <charconv>
 #include <chrono>
@@ -16,6 +17,71 @@
 #include <unistd.h>
 namespace arconaut {
 namespace {
+struct ChatCommand {
+  std::string_view name, arguments, description, group;
+};
+constexpr std::array commands{
+    ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
+    ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
+    ChatCommand{"/queue", "", "Show pending prompts (TUI only)", "Chat"},
+    ChatCommand{"/cancel", "", "Request stop and clear pending queue (TUI only)",
+                "Chat"},
+    ChatCommand{"/clear", "", "Clear display, not model context (TUI only)", "Chat"},
+    ChatCommand{"/drafts", "", "List recovered drafts (TUI only)", "Chat"},
+    ChatCommand{"/draft", "NUMBER",
+                "Load a recovered draft; explicit Enter sends (TUI only)", "Chat"},
+    ChatCommand{"/quit", "", "Stop work and exit; preserve draft", "Chat"},
+    ChatCommand{"/exit", "", "Alias for /quit", "Chat"},
+    ChatCommand{"/model", "NAME", "Change model at the next available boundary",
+                "Session"},
+    ChatCommand{"/effort", "LEVEL", "Set low, medium, high or xhigh", "Session"},
+    ChatCommand{"/session", "", "Current session and settings", "Session"},
+    ChatCommand{"/sessions", "", "List neighbouring sessions", "Session"},
+    ChatCommand{"/stats", "", "Context bytes and observed provider usage", "Session"},
+    ChatCommand{"/context", "", "Inspect editable model context", "Context"},
+    ChatCommand{"/originals", "", "Retained context originals", "Context"},
+    ChatCommand{"/compact", "JSON", "Managed context transformation", "Context"},
+    ChatCommand{"/inspect", "JSON", "Bounded retained context inspection", "Context"},
+    ChatCommand{"/restore", "ENTRY", "Restore an original context entry", "Context"},
+    ChatCommand{"/lua", "CODE", "Run a Lua workflow", "Programs"},
+    ChatCommand{"/workflow", "FILE", "Select the turn workflow", "Programs"},
+    ChatCommand{"/restart", "NOTE", "Request native restart; build replacement first",
+                "Programs"}};
+
+bool command_token(std::string_view text) {
+  return text.starts_with("/") &&
+         text.find_first_of(" \t\r\n") == std::string_view::npos;
+}
+std::string complete_command(std::string_view text) {
+  if (!command_token(text))
+    return std::string{text};
+  // An exact command wins over longer names (/draft versus /drafts).
+  for (const auto &command : commands)
+    if (command.name == text)
+      return std::string{text} + (command.arguments.empty() ? "" : " ");
+  std::string prefix;
+  const ChatCommand *only = nullptr;
+  std::size_t count = 0;
+  for (const auto &command : commands) {
+    if (!command.name.starts_with(text))
+      continue;
+    if (count++ == 0) {
+      prefix = command.name;
+      only = &command;
+    } else {
+      std::size_t n = 0;
+      while (n < prefix.size() && n < command.name.size() &&
+             prefix[n] == command.name[n])
+        ++n;
+      prefix.resize(n);
+    }
+  }
+  if (count == 0)
+    return std::string{text};
+  if (count == 1 && !only->arguments.empty())
+    prefix += ' ';
+  return prefix;
+}
 bool continuation(char byte) {
   return (static_cast<unsigned char>(byte) & 0xc0U) == 0x80U;
 }
@@ -61,6 +127,59 @@ private:
   bool active_ = false;
 };
 } // namespace
+std::string terminal_key_help() {
+  return "Keyboard\n"
+         "  Enter        Send; while busy, queue for the next turn\n"
+         "  Alt-Enter    Insert newline (also Ctrl-J)\n"
+         "  Tab          Complete a slash-command name; ambiguity never submits\n"
+         "  Up / Down    Recall sent history / return to your draft\n"
+         "  Left / Right Move within the draft\n"
+         "  Ctrl-A / E   Start / end of draft\n"
+         "  Ctrl-U       Clear draft\n"
+         "  Ctrl-C       Request stop and clear pending queue; keep unsent draft\n"
+         "  Ctrl-Q       Stop and exit; preserve unsent draft\n"
+         "  PgUp / PgDn  Scroll transcript\n"
+         "  Paste        Multiline text stays literal; Enter sends explicitly\n";
+}
+std::string terminal_help() {
+  std::string out = "Arco command guide\n";
+  std::string_view group;
+  for (const auto &command : commands) {
+    if (command.group != group) {
+      group = command.group;
+      out += "\n" + std::string{group} + "\n";
+    }
+    out += "  " + std::string{command.name};
+    if (!command.arguments.empty())
+      out += " " + std::string{command.arguments};
+    out += " — " + std::string{command.description} + "\n";
+  }
+  out +=
+      "\nLocal TUI controls run immediately, even during work. Other commands queue\n"
+      "behind the active turn; they do not mutate an in-flight provider request.\n\n";
+  return out +
+         "Keyboard: /keys · Tab completes commands · PgUp/PgDn browse this guide\n";
+}
+std::string terminal_command_hint(std::string_view draft) {
+  if (!draft.starts_with("/") || draft.find_first_of("\r\n") != std::string_view::npos)
+    return {};
+  const auto token = draft.substr(0, draft.find_first_of(" \t"));
+  std::string matches;
+  for (const auto &command : commands) {
+    if (command.name == token) {
+      return std::string{command.name} +
+             (command.arguments.empty() ? "" : " " + std::string{command.arguments}) +
+             " — " + std::string{command.description};
+    }
+    if (command.name.starts_with(token) && token == draft) {
+      if (!matches.empty())
+        matches += " · ";
+      matches += command.name;
+    }
+  }
+  return matches.empty() ? "Unknown command · /help lists commands"
+                         : "Tab complete · " + matches;
+}
 void Composer::insert(char byte) {
   if (text_.size() >= 1024 * 1024)
     return;
@@ -258,6 +377,13 @@ InputResult Composer::feed(char byte) {
   }
   if (pasted_) {
     insert(byte == '\r' ? '\n' : byte);
+    return {};
+  }
+  if (c == 9) {
+    if (cursor_ == text_.size()) {
+      text_ = complete_command(text_);
+      cursor_ = text_.size();
+    }
     return {};
   }
   if (c == 3) {
@@ -573,11 +699,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       frame += terminal_lines(status_line, width)[0] + "\r\n";
       for (std::size_t row = 0; row < height; ++row)
         frame += "\x1b[2K" + (begin + row < end ? lines[begin + row] : "") + "\r\n";
-      frame += "\x1b[2K" +
-               terminal_lines("Enter send · Alt-Enter newline · Ctrl-C stop · Ctrl-Q "
-                              "exit · PgUp/PgDn scroll · /help",
-                              width)[0] +
-               "\r\n";
+      auto hint = terminal_command_hint(composer.text());
+      if (hint.empty())
+        hint = busy ? "Enter queue · Alt-Enter newline · Ctrl-C stop · /queue · /help"
+                    : "Enter send · Alt-Enter newline · Tab commands · /help";
+      frame += "\x1b[2K\x1b[2m" + terminal_lines(hint, width)[0] + "\x1b[0m\r\n";
       const auto composed = terminal_lines("> " + composer.text(), width);
       const auto prefix =
           terminal_lines("> " + composer.text().substr(0, composer.cursor()), width);
@@ -650,9 +776,30 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         cancelled.store(true);
       }
       if (result.action == InputAction::submit && !result.text.empty() && !quitting) {
-        if (result.text == "/clear")
+        if (result.text == "/help" || result.text == "/keys") {
+          transcript +=
+              "\n" + (result.text == "/help" ? terminal_help() : terminal_key_help());
+          scroll = 0;
+        } else if (result.text == "/queue") {
+          transcript += "\nPending prompts: " + std::to_string(queued.size()) + "\n";
+          for (std::size_t n = 0; n < queued.size(); ++n)
+            transcript += std::to_string(n + 1) + ": " + queued[n] + "\n";
+          transcript += "Recovered drafts: " + std::to_string(recovered.size()) +
+                        " (use /drafts)\n";
+          scroll = 0;
+        } else if (result.text == "/cancel") {
+          queued.clear();
+          if (busy) {
+            cancelled.store(true);
+            activity = "Stopping";
+          }
+          transcript += busy ? "\nStop requested; pending queue cleared.\n"
+                             : "\nNo active turn; pending queue cleared.\n";
+          scroll = 0;
+        } else if (result.text == "/clear") {
           transcript.clear();
-        else if (result.text == "/drafts") {
+          scroll = 0;
+        } else if (result.text == "/drafts") {
           transcript +=
               "\nRecovered drafts: " + std::to_string(recovered.size()) + "\n";
           for (std::size_t n = 0; n < recovered.size(); ++n)

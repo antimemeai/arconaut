@@ -17,6 +17,10 @@ struct TerminalState {
   std::size_t cursor = 0;
   std::vector<std::string> history, queued;
 };
+// Shared command discovery; local-only commands are labelled in help.
+std::string terminal_help();
+std::string terminal_key_help();
+std::string terminal_command_hint(std::string_view draft);
 TerminalState load_terminal_state(const std::filesystem::path &path);
 void save_terminal_state(const std::filesystem::path &path, const TerminalState &state);
 class Composer {

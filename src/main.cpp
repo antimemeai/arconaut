@@ -299,14 +299,7 @@ int main(int argc, char **argv) {
       interrupted.store(false, std::memory_order_relaxed);
       try {
         if (prompt == "/help") {
-          emit("/model NAME · /effort low|medium|high|xhigh · /context · /stats · "
-               "/originals\n"
-               "/compact JSON · /inspect JSON · /restore ENTRY · /lua CODE · /workflow "
-               "FILE · /session · /restart NOTE\n"
-               "/clear · /quit or /exit\n"
-               "Paste multiline text; Enter submits, Alt-Enter adds a line.\n"
-               "Type during work to queue another prompt. Ctrl-C stops and clears the "
-               "queue.\n");
+          emit(terminal_help());
         } else if (prompt == "continue" && resume_turn) {
           resume_turn = false;
           engine.turn({"", read_file(workflow)});
