@@ -3434,3 +3434,20 @@ G4 publication06:16:03UTC: fresh remote ancestor check then non-force master
 70575f2 -> d52c40f succeeded; local master updated with expected-old CAS, no active
 checkout switch. Independent startup-replay dirty work still untouched. G4 closed;
 unit-state accepted at ordinary boundary, no later unit work in this invocation.
+
+## G6 bounded synchronous orchestration candidate (2026-10-07)
+
+7iy.6 original06:16:52.385066..07:46:52.385066UTC unchanged. Read doctrine,
+campaign/current participant brief, existing workflow study and blocked G5 contract.
+Implemented ordinary Lua sequential/selected branch/join/explicit safe retry with
+owner/identity, immutable snapshots, finite counts and local pause. No async worker,
+remote cancellation, native quiescence or replay claim. Red missing-module then
+direct counted Mac/Linux Lua5.4.8 cases passed. Hardening06:20:42..06:21:52 layers1+2
+complete; sparse join/contradictory unknown fixed, one formatting finding fixed,
+no third assurance. Existing independent startup-replay dirty files left untouched.
+Actual owned composition read current selected source, used existing G5 independent
+candidate OpenAI context-only CLI once, joined completed outcomes and wrote useful
+docs/G6_ORCHESTRATION_MAP.md; reported5085 tokens, billing unavailable. G5 external
+heterogeneous account blockers unchanged/not retried. Named module staged revision
+c7d34276b2ed4987ad0b000000000000; ordinary boundary then actual retained import/use
+next, not accepted yet. Lua-only boundary activation; no native harness replacement.
