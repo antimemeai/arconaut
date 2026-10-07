@@ -4359,3 +4359,8 @@ marker; expireddeadline/pause launchnochild. One90s code check findsnoactionable
 defect under nativeparent custody/marker-presence contract. Fresh resumption units
 use originalpartialsource+currentmaster, finite25min renewed byexplicitoperator
 scope, sourceplans retained; no newworktrees beyondexisting two-slotpool.
+
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial lazy historical JSON restoration. Context/workflow_repair checks passed; one static Codex review found no substantive defect within inspected diff. All10 large-fixture benchmark runs exited1/error20, so timing/memory output is not a valid ready-operation measurement. Under100ms NOT demonstrated. Four-segment cap exhausted before final report/commit.
+Candidate inactive, original allowance expired; checkpoint not acceptance.

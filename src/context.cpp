@@ -109,6 +109,11 @@ bool ContextStore::valid_entries(const Json &entries) const {
   }
   return true;
 }
+ContextStore::HistoryRecord ContextStore::history_record(const Json &packet) {
+  const auto encoded = unwrap(dump_json(packet));
+  const auto *begin = reinterpret_cast<const std::byte *>(encoded.data());
+  return {ImmutableBytes{begin, begin + encoded.size()}, string_field(packet, "revision")};
+}
 ContextStore::ContextStore(AuditLog &log) : log_(log) {
   for (const auto &fact : log.root().committed_facts()) {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
@@ -119,7 +124,7 @@ ContextStore::ContextStore(AuditLog &log) : log_(log) {
     if (string_field(packet, "revision") != revision ||
         string_field(packet, "observed") != head_)
       throw Error{ErrorCode::corrupt};
-    history_.push_back(packet);
+    history_.push_back({record->payload, revision});
     const auto op = string_field(packet, "op");
     if (op != "append" && op != "edit" && op != "managed")
       throw Error{ErrorCode::corrupt};
@@ -346,7 +351,7 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
   if (lineage)
     packet.object().emplace_back("lineage", *lineage);
   auto history = history_;
-  history.push_back(packet);
+  history.push_back(history_record(packet));
   auto captured = captured_;
   for (const auto &entry : field(packet, "originals").array())
     captured.push_back(entry);
@@ -390,7 +395,7 @@ Json ContextStore::edit(const Json &candidate) {
                               {"entries", entries == nullptr ? Json{} : *entries},
                               {"outcome", outcome}});
   auto history = history_;
-  history.push_back(packet);
+  history.push_back(history_record(packet));
   if (protect)
     protect(publishes ? next : entries_, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
@@ -507,7 +512,7 @@ Json ContextStore::reject_managed(const Json &proposal, std::string_view why) {
                               {"candidate", proposal},
                               {"outcome", outcome}});
   auto history = history_;
-  history.push_back(packet);
+  history.push_back(history_record(packet));
   log_.record(identity, ApplicationChannel::context, packet);
   history_.swap(history);
   return outcome;
@@ -806,7 +811,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
                               {"originals", Json{fresh}},
                               {"outcome", outcome}});
   auto history = history_;
-  history.push_back(packet);
+  history.push_back(history_record(packet));
   if (protect)
     protect(next, proposal);
   log_.record_boundary(identity, packet, boundary_program);
@@ -820,7 +825,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
 Json ContextStore::inspect(const Json &query) const {
   const auto &kind = string_field(query, "kind");
   const auto &snapshot = kind == "history" && !history_.empty()
-                             ? string_field(history_.back(), "revision")
+                             ? history_.back().revision
                              : head_;
   if (query.find("revision") && string_field(query, "revision") != snapshot)
     throw Error{ErrorCode::conflict};
@@ -853,8 +858,18 @@ Json ContextStore::inspect(const Json &query) const {
     }
     emit("]");
   };
-  if (kind == "history")
-    emit_array(history_);
+  if (kind == "history") {
+    emit("[");
+    bool first = true;
+    for (const auto &record : history_) {
+      if (!first)
+        emit(",");
+      first = false;
+      // Preserve canonical serialized history, including noncanonical audit JSON.
+      emit(unwrap(dump_json(unwrap(parse_json(text(record.payload))))));
+    }
+    emit("]");
+  }
   else if (kind == "index") {
     emit("[");
     std::size_t capture_index = 0;
