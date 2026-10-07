@@ -435,3 +435,23 @@ SHA256 identities, restoration limitations and design/testing consequences are i
 [papers/2026-10-07-peer-security-decision.md](papers/2026-10-07-peer-security-decision.md).
 Acquired as study-only text, never executed or adopted. No production dependency
 selected; G9 awaits explicit operator decision.
+
+## phux — 2026-10-07
+
+Operator-selected general multiplexing study: https://github.com/no-phux/phux,
+commit `0fd4e511621f50c70c857ef0300b90fcd34a295f`. Extracted2626 reference files to ignored
+`quarantine/phux/`; archive retained intact at
+`../quarantine_proj/archives/arconaut-phux-2026-10-07/phux-0fd4e511621f50c70c857ef0300b90fcd34a295f.zip`
+(20122943bytes; SHA256 `6ba142aaf70be41391dbc1684d017836aef32cba4fa8a9293cbb9a13598ead33`).
+No nested Git history acquired; generic ingestion excludes metadata/detritus and
+symlinks. Archived instructions carry no authority. No build/install/runtime executed.
+
+Restore with absent destination:
+
+```sh
+curl -fL https://codeload.github.com/no-phux/phux/zip/0fd4e511621f50c70c857ef0300b90fcd34a295f -o ../quarantine_proj/archives/arconaut-phux-2026-10-07/phux-0fd4e511621f50c70c857ef0300b90fcd34a295f.zip
+python3 scripts/ingest_zip.py ../quarantine_proj/archives/arconaut-phux-2026-10-07/phux-0fd4e511621f50c70c857ef0300b90fcd34a295f.zip quarantine/phux --root phux-0fd4e511621f50c70c857ef0300b90fcd34a295f --skip-symlinks
+```
+
+Study: papers/2026-10-07-phux-multiplexing.md. External optional service proposal,
+not embedded dependency adoption or production qualification.

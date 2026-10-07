@@ -3683,3 +3683,16 @@ Bead marked blocked with exact decision/next action; campaign queue and quaranti
 manifest updated. Candidate source/evidence preserved; no accepted-unit/master
 activation claim, native change or RRC. Request OpenSSL/dependency + enrollment +
 threat-model decision before further G9 implementation under the original deadline.
+
+## Grok auth and general phux multiplexing study (2026-10-07)
+
+Operator signed into Grok. Actual grok-4.7-build readiness completed2.768s; bounded
+CRC review60s returned no output/unknown after local termination, not a review.
+Recorded both without credential contents. Operator then selected phall's phux for
+Arco multiplexing generally. Acquired intact20MB source archive/extracted reference,
+read resource/lifecycle/terminal-control/remote source, bounded AgentSession retention
+and reported benchmark boundaries. Recommendation external optional service: Arco
+TUI lives in phux pane, compact lifecycle projection, shared terminal orchestration,
+Arcoboard consumption; shared server unaffected by individual refit. Arco audit/task
+semantics remain distinct. No install/dependency adoption or empirical phux claim.
+Study papers/2026-10-07-phux-multiplexing.md and QUARANTINE restoration retained.

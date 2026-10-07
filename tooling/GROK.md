@@ -28,3 +28,11 @@ adoption, Kimi resubscription or inference purchase.
 Primary docs: https://docs.x.ai/build/overview and
 https://docs.x.ai/build/cli/reference; source https://github.com/xai-org/grok-build.
 Installer/raw captures ignored in context/grok-install/. Credentials remain private.
+
+Operator authenticated immediately after installation. Actual bounded no-tool,
+one-turn readiness completed2.768s with READY, modelUsage grok-4.7-build. Reported
+usage input14606/cache-read1152/output53/reasoning52/total15811; CLI overhead remains
+present despite minimal selected context. Monetary field is provider-reported, not
+independent subscription billing. A separate CRC source review reached60s outer bound,
+exit143/no output; remote result unknown, not a completed review. Captures in ignored
+context/grok-install/{readiness,crc-review}.json. No native Grok adapter delivered.
