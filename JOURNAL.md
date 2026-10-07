@@ -3967,3 +3967,11 @@ final6/6 and actual profiler failure/interruption/reaping checks pass. Missing
 compatibility executable is restored by its target. Install blackbird-ui and
 legacy arco-ui atomically. Board update committed/pushed separately in evotools.
 One review round only; existing general lint debt remains explicitly open.
+
+## 2026-10-07 — Banking SR-71
+
+Operator requested a banking three-quarter mascot rather than the side profile.
+Redrew the original 36x8 bit silhouette in the harness and external board, showing
+swept wings, separated nacelles, and two animated exhaust trails. Cached frames,
+header footprint and idle behavior remain unchanged. Release rebuild and the
+chat_view/chat_render_oracle checks pass (2/2); board Lua parsing and --once pass.

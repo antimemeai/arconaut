@@ -4,13 +4,17 @@
 
 namespace blackbird {
 namespace {
-// Nose right; swept fin, long chines, delta wing and twin-engine exhaust left.
+// Banking three-quarter view: nose upper right, swept wings and twin nacelles.
 // One bit per pixel, 36x8. No image decoder, texture or terminal graphics protocol.
 constexpr std::array<std::string_view, 8> silhouette{
-    "....................................", "..........#.........................",
-    ".........##.........................", "........###.........................",
-    "......######################........", ".....###############################",
-    "......########################......", "..........############.............."};
+    "...............###.................#",
+    "..............#####...........#####.",
+    "..........#########......########...",
+    ".........####...###############.....",
+    "........####################........",
+    "......##################............",
+    ".....####...########................",
+    "........#######....................."};
 static_assert([] {
   for (const auto row : silhouette)
     if (row.size() != blackbird_sprite_width * 2)
@@ -27,8 +31,9 @@ std::array<std::string, 2> encode(unsigned flame) {
       for (std::size_t dy = 0; dy < 4; ++dy)
         for (std::size_t dx = 0; dx < 2; ++dx) {
           const auto px = x * 2 + dx, py = y * 4 + dy;
-          const bool exhaust = flame && py >= 4 && py <= 6 && px < 5 &&
-                               px >= 5 - flame && (py == 5 || px % 2 == 0);
+          const bool exhaust = flame &&
+                               ((py == 3 && px < 9 && px >= 9 - flame) ||
+                                (py == 6 && px < 5 && px >= 5 - flame));
           if (silhouette[py][px] == '#' || exhaust)
             mask |= 1U << dots[dy][dx];
         }
