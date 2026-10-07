@@ -3624,3 +3624,12 @@ Actual9 calls20377 input/918 output/21295 total reported tokens, billing unavail
 No compiler/library adoption, settled qualification rerun, native RRC or later
 unit work. Hardening still completed07:10:56/no third. Production sourcea0d96f1
 unchanged; final scoped acceptance/master publication next after ancestor check.
+G8 scoped acceptance publication07:24:01UTC: closed arconaut-7iy.8 and bd backup;
+committed/pushed5b6eece, fresh origin/master38fa47c ancestor check passed,
+non-force fast-forward remote master38fa47c ->5b6eece succeeded and fetched
+identity matched. No dirty native source, rebuild/restart or later-unit work.
+Production source SHA256 programs/packages.lua
+c719f382cd106aae8d8f0694badf6ca063a3c1b734b564cba919aa436663bddf;
+packages/github_releases.lua
+7917461c71704f2f78fcebd0e8066593375d4bac7c7cd9b301172e94574c8a96.
+Earlier unknown station path/final boundary retained, not retroactively settled.

@@ -114,3 +114,9 @@ Production Lua source remains exactly a0d96f1; only interface/evidence/HUD/decis
 artifacts changed after completed hardening. Checks stay settled, no third layer.
 Candidate a0d96f1/bcb5c05 pushed; final accepted-source publication is recorded
 in JOURNAL/GIGA_CAMPAIGN after fresh ancestor check and non-force master update.
+
+Accepted publication07:24:01UTC: bead CLOSED/backup complete, candidate5b6eece
+pushed; checked non-force remote master38fa47c ->5b6eece completed, fetched
+remote identity matched. No later-unit code. Production source SHA256:
+packages manager c719f382cd106aae8d8f0694badf6ca063a3c1b734b564cba919aa436663bddf;
+GitHub adapter7917461c71704f2f78fcebd0e8066593375d4bac7c7cd9b301172e94574c8a96.
