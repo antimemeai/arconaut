@@ -77,3 +77,42 @@ A restart continues the selected executable; it does not magically select a file
 compiled under a different name. Development campaign's --once launcher still uses
 release/arco. Old installed UI pin preserved by build archive/report; source commit
 and selected binary generation are separate recorded facts.
+
+## Operator-directed continuation: remaining startup latency
+
+Explicit operator scope:12s remains unacceptable; keep digging. Actual same-session
+reopen12.1236s, three-second macOS sample2041/2127 samples in bit-serial CRC32C.
+Study local LevelDB util/crc32c.cc: chunked table processing and incremental checksum
+semantics; no dependency/code adoption. Implement compile-time generated slicing-by-8
+Castagnoli tables (8KiB read-only, no allocation), preserving complemented prior/final
+CRC and all checks. Independent bit-serial specification over varied lengths, offsets,
+seeds and incremental splits plus existing RFC3720 vectors/corruption oracles.
+FramedJournal payload handles currently scan every record. Its three record vectors
+are maintained in sequence order through scan/append/suffix rejection/restage/swap;
+binary-search sequence then compare the entire physical handle, preserving forged/
+stale rejection without a second index. Existing journal batch/recovery/crash tests.
+Bound25minutes remediation/recheck, no third assurance; isolated accepted UI archive
+build again, no campaign executable collision. Measure real reopen after changes;
+if another dominant cost remains, state it rather than claim the whole audit solved.
+
+Continuation result: portable slicing-by-8 + binary physical-handle lookup reduced
+same-session startup to4.4377s. A subsequent sample still shows checksum work dominant
+in scan/replay. Local qualified Clang target defines __ARM_FEATURE_CRC32; compiler's
+arm_acle.h supplies __crc32cd/__crc32cb Castagnoli instructions. Use those only for
+compiler-guaranteed CRC targets with little-endian loads via memcpy (unaligned safe).
+Other targets keep portable slicing-by-8. Hardware build omits unused8KiB tables.
+Actual same315MB session reopen1.3661s to prompt/EOF exit0. Timings are ordinary local
+reopens with cache/load uncontrolled; no cold-start or universal timing guarantee.
+No cache sidecar, weakened checksum, truncated history or restored/copied audit.
+
+Direct RFC/bit-serial/split/unusual seed/unaligned length oracles caught an initial
+constexpr table initialization ordering defect before activation: later slices must
+be built only after the entire first table exists. Corrected; fixed-frame golden bytes
+and corruption checks pass. Forged same-sequence offset and absent commit-sequence
+handles remain stale. Final affected release/ASan+UBSan journal_codec, journal_batch,
+journal_crash, retained_state, retained_state_crash pass. Additionally compiled the
+final codec with __ARM_FEATURE_CRC32 undefined: portable fallback passes exact same
+specification oracle. No Linux qualification claim. Both production paths checked,
+no third assurance layer. Interactive arco-ui atomically published; campaign release
+unchanged. Remaining work is ordinary journal I/O/decode/context reconstruction and
+forward metadata copies; no second authority or architectural bypass introduced.

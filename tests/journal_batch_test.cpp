@@ -217,6 +217,12 @@ void commitment() {
   CHECK(directory.state->submitted == directory.state->synchronized);
   const auto bytes = require(writer->read_payload(writer->physical_records()[0]));
   CHECK(std::equal(original.begin(), original.end(), bytes.begin(), bytes.end()));
+  auto forged = writer->physical_records()[0];
+  ++forged.payload_offset;
+  error_is(writer->read_payload(forged), ErrorCode::stale_handle);
+  forged = writer->physical_records()[0];
+  ++forged.sequence; // Commit sequence is deliberately absent from payload records.
+  error_is(writer->read_payload(forged), ErrorCode::stale_handle);
   // Commit follows a 35-byte source: first=1, count=1, reserved=0.
   const auto &stored = directory.state->synchronized;
   CHECK(stored[153] == std::byte{255} && stored[154] == std::byte{255});
