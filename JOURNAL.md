@@ -3035,3 +3035,19 @@ under session-workflow-protection. Prior control metadata archived, supervisor
 restarted. Direction prioritizes integrated workflow protection, early headroom
 action and useful outcomes over additional isolated primitives or certification.
 No pilot/B1 rerun, cap increase, old-effect replay, promotion or giga.
+
+## Backstop recovery inquiry and operating design
+
+Operator requests stuck/quiescent step-back, assessment, pivot and continued useful
+work. Root studied actual session recovery/native Child/external supervisor seams,
+acquired auto-harness briefing+recovery and agentchat lifecycle sources, and primary
+Crash-Only2003/Microreboot2004 papers (PDFs ignored under papers/recovery).
+Concrete consequence: independent small recovery conversation/audit, native-confirmed
+local quiescence separate from unknown remote/effect outcomes, selected explicit
+lineage and changed next action, finite outcome-driven pivots. Current leader exit
+and supervisor text parsing do not establish required quiescence. No implementation
+or actual backstop recovery claim; .14.3 integrated workflow source remains with
+Arco, unmodified by this inquiry. Proposed docs/BACKSTOP_RECOVERY.md and source
+study saved; local links checked. arconaut-scs consumes .14.3, no extra promotion
+gate. Native provider_transport/legacy externalclassifier mismatch also recorded
+for bridge integration; not changed on a live supervisor by guesswork.
