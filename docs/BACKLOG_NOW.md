@@ -9,8 +9,9 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
 | arconaut-fsp | Minimal native local-action timing and actual short/long history measurements | Candidate94bc2d4 pushed with checks/review fixes/measurements; inactive pending integration, slot released. |
-| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | BB now implements durable identity ranges; old measured session:13,767 captures and14,610 reservations for179 admissions. Capture batching remains separate if necessary. |
-| arconaut-n11 | Startup below100ms with large retained history/context | BB studies indexed restoration and demand loading; measure prompt and audited-request readiness, preserving originals and recovery fences. |
+| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | Partial range allocator02ff9ac retained after segment cap; measurement/checks/review incomplete. Original stream batching remains separate. |
+| arconaut-n11 | Startup below100ms with large retained history/context | Partial lazy-history8e35f55; two checks/static review completed, all ten large benchmarks failed. No readiness/speedup claim. |
+| arconaut-kut | Continue unfinished units until completion or same deadline | Four-segment cap silently stopped two unfinished units; fix future continuation without budget renewal/blind replay. |
 | arconaut-1v0 | Store invocation input once and reference it from semantic records | Old census measured46,559,372 duplicated blob bytes between invocation/admission alone; decision repeats logicalinput. Requires versioned references and historical readability, not history deletion. |
 | arconaut-3x2 | Stop copying complete metadata/context history on small appends | Current append copies Snapshot vectors; live lookup scans facts; ContextStore copies/serializes cumulative state. Split retained suffix storage and context indexing at their real ownership boundaries. |
 | arconaut-ayg | Scoped Linux check of already-delivered startup changes | Useful portability check on Neuroses; no new productfeature, blanket recertification or blocker on unrelated work. |
@@ -25,8 +26,8 @@ fixes; it must not grow into a laboratory that postpones the fixes.
 - **Native Beads integration (arconaut-jim):** operator requests sketch/design then
   BB autodev. docs/BEADS_DESIGN.md defines shared C++ model/Lua/slash operations,
   lazy canonical project binding and truthful mutation outcomes. Existing bd CLI
-  is the first external backend; direct Dolt is not silently adopted. B1 running
-  on candidate/native-beads-2026-10-07 with profiling in the reused P1 slot.
+  is the first external backend; direct Dolt is not silently adopted. B1 delivered
+  pushed47bb9be with review/fixes/checks, inactive pending primary integration.
 
 - **Workflow registry delivery (arconaut-3oz.2):** implemented/tested/pushedc8498f0;
   first substantive review found two repairs: bound palette selection after hot

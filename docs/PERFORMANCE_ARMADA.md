@@ -50,3 +50,10 @@ sampled identities absent on reconciliation; its slot released. Operator then
 requested native Beads design/autodev. candidate/native-beads-2026-10-07 now uses
 that freed slot under a fresh independent B1 unit, fixeddeadline1791383181. Current
 three active BBs: issuer, startup, Beads. See BEADS_DESIGN.md; no added worktree.
+
+Update14:39UTC: zero active. Beads delivered/pushed47bb9be; P1 candidate94bc2d4
+awaits integration. Issuer/startup stopped at four-segment cap without completion;
+partial sources preserved/pushed02ff9ac and8e35f55, inactive. Startup's ten large
+fixture runs all failed, so no valid latency target claim. Slots reconciled and
+released. arconaut-kut tracks continuation semantics; expired allowances were
+not renewed. Historical active counts above describe launch observations only.

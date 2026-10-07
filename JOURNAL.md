@@ -4292,3 +4292,24 @@ typed operation surface preferred; safe whole read-path fallback is explicit.
 No new dependencies, live mutation tests or startup backend probes authorized.
 Board adopts B1 alongside active issuer/startup lanes; old campaigns paused.
 Beads backup and journal/design/research checkpoints pushed on master.
+
+## 2026-10-07 — Fleet status and stopped candidate reconciliation
+
+Operator asks live status at14:36UTC. ZERO autodev runners active; manager and
+supervisor PIDs absent, all16 observed native Blackbird identities absent.
+B1 finished/pushed47bb9be at14:18 with one Codex review/fixes/directchecks; primary
+integration pending. P1 retained94bc2d4 likewise inactive pending integration.
+
+Reservation and startup exhausted four successful segments before completion,
+at13:58:55 and14:06:50, leaving dirty partial code without handoffs. This is
+Root's prepared-runner limit, not completion or a reason to renew expired units.
+Reservation has no delivered count/performance oracle or review. Startup has two
+passing context/workflow_repair checks and one static review with no substantive
+findings; ALL10 large-fixture measurements exit1/error20, so no startup readiness
+or speedup claim, especially not100ms. Preserved partial branches in pushed
+02ff9ac and8e35f55 with candid reports/actual review. All106/209/147 sampled
+identities respectively absent; unobserved descendants/remote outcomes not
+inferred. Clean native slots checkpointed/released; board/beads updated. No
+restart, new review or build activation. Added arconaut-kut for fixing future
+continuation until explicit completion or SAME deadline, with honest partial
+handoff. Successful turn boundaries must not be confused with finished units.
