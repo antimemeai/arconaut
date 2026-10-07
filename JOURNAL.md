@@ -3643,3 +3643,14 @@ not completed reviews/auth failures or settled remote requests. Direct CLI readi
 also worked. Recorded exact distinctions in papers/2026-10-07-claude-auth-restored.md.
 Auth blocker removed; G5 useful work/source integration still pending. No core/G8
 source changes, repeat certification or credential disclosure.
+
+## Grok Build installed (2026-10-07)
+
+Operator declines Kimi resubscription for now, requests Grok Build installation to
+expand available colleagues alongside MiMo. Consulted official xAI docs/repository,
+downloaded/inspected official installer then installed stable native macOS arm64
+1.0.46 (2765805b9442). Version/full help/login help succeed; ~/.local/bin/grok on PATH,
+installer managed shell completion/PATH and external ~/.grok installation. No stored
+auth or inherited API/deployment credential; inference awaits operator grok login.
+Recorded tooling/GROK.md, hash and actual limits; no Arco provider integration claim,
+production dependency, Kimi purchase, running campaign interruption or new auth probe.
