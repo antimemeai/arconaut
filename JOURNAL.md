@@ -4359,3 +4359,8 @@ marker; expireddeadline/pause launchnochild. One90s code check findsnoactionable
 defect under nativeparent custody/marker-presence contract. Fresh resumption units
 use originalpartialsource+currentmaster, finite25min renewed byexplicitoperator
 scope, sourceplans retained; no newworktrees beyondexisting two-slotpool.
+
+## 2026-10-07 — Root preserves partial stopped unit
+
+Partial durable range allocator/test edits. Four-segment cap exhausted after~12minutes; no direct count measurements, finished test result, independent review or actor completion report. Planned1024 range reduction is NOT measured delivery.
+Candidate inactive, original allowance expired; checkpoint not acceptance.
