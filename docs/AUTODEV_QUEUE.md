@@ -82,9 +82,9 @@ no automatic destructive policy implied by byte visibility.
 | ID | Feature | Completion condition | Status |
 | --- | --- | --- | --- |
 | C1 | Lua tool registry | Model/operator define schemas and implementations dynamically; calls and definitions audited; native effects still admitted through core. | queued |
-| C2 | Program modules | Audited module loading, named configuration and source/version inspection; reload at turn/workflow boundary; failed candidates keep working generation. | G4 candidate015836b; native activation/use pending |
+| C2 | Program modules | Audited module loading, named configuration and source/version inspection; reload at turn/workflow boundary; failed candidates keep working generation. | G4 scoped accepted015836b; actual native RRC + retained maintenance import/source-map delivered; see G4_PROGRAM_MAP.md |
 | C3 | Expressive workflow control | Compose sequential/branch/retry/join programs with explicit cancellation and uncertainty semantics; no automatic retry of unknown side effects. | queued |
-| C4 | Hot configuration | Inspect queued versus effective model/tool/workflow settings; default turn/workflow conclusion activation; interrupt-and-apply operation. | G4 candidate staged request defaults + combined inspection; workflow-selector/atomic interrupt-apply deferred |
+| C4 | Hot configuration | Inspect queued versus effective model/tool/workflow settings; default turn/workflow conclusion activation; interrupt-and-apply operation. | G4 scoped accepted staged request defaults + combined inspection; workflow-selector/atomic interrupt-apply deferred |
 | C5 | Shared service clients | Connect to external DB/kernel/service through audited tools, retain client/result identities; lifecycle belongs to service owner. | queued |
 | C6 | Skill discovery | Small metadata inventory and on-demand source loading, project/operator precedence explicit; no massive instruction dump. | queued |
 

@@ -36,13 +36,19 @@ fast-forward published through b7436e2, including the independently accepted UI
 palette source that arrived at the shared branch boundary. The G3 executable does
 not yet include that palette; UI activation remains its owner's action. See
 [Lua tools delivery](../papers/2026-10-07-lua-tools-delivery.md).
-G4 `arconaut-7iy.4` candidate015836b implements retained named module snapshots,
-staged model/effort defaults, combined effective/pending inspection and successful
-workflow-boundary publication. Affected Mac/Linux checks passed (initial Linux
-timeout and partial debug evidence retained). Native RRC and actual useful module
-use remain pending; not accepted or advanced to master yet. Scope/limitations:
-[modules/config delivery](../papers/2026-10-07-modules-config-delivery.md).
-G4 continues with original07:24:28.679526UTC deadline; G5 stays its independent lane.
+G4 `arconaut-7iy.4` scoped delivery accepted: source015836b implements retained
+named module snapshots, staged model/effort defaults, combined effective/pending
+inspection and successful workflow-boundary publication. Affected Mac/Linux checks
+passed (initial Linux timeout/partial debug evidence retained); native RRC observed
+06:10:41UTC, PID69080 start06:09:51, recorded release SHA matched. Actual ordinary
+Lua staged `maintenance`, a later workflow imported published revision
+8358dd2ba60508bcba15000000000000 and generated the useful [maintenance source map](G4_PROGRAM_MAP.md).
+First inventory used nonexistent guessed paths and returned external_unknown;
+no completion or replay claim. Correct-path inventory delivered57 matches/4 files.
+Workflow-selector staging and atomic interrupt/apply remain deferred, not delivered.
+Scope/limitations: [modules/config delivery](../papers/2026-10-07-modules-config-delivery.md).
+Checked non-force master promotion follows this acceptance checkpoint; original
+07:24:28.679526UTC deadline and completed two-layer hardening are unchanged.
 
 ## Ordered whole units
 

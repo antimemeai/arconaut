@@ -3419,3 +3419,13 @@ Normal successful boundary then useful source/docs inventory next; not accepted
 or master-promoted yet. Managed summary staged, originals/session path retained.
 Independent startup-replay dirty source/script/test/paper left untouched/excluded.
 Same deadline07:24:28.679526, hardening remains ended06:07:53/no third.
+
+G4 scoped accepted after actual ordinary published maintenance import, revision
+8358dd2ba60508bcba15000000000000: useful docs/G4_PROGRAM_MAP.md written via native
+Lua/tool path,57 matches/4 actual source/docs/test paths. First inventory used
+nonexistent guessed paths/external_unknown; retained failure, no completion/replay
+claim. Acceptance uses settled Mac/Linux oracles + observed native activation/use,
+not another hardening layer. C2 delivered; C4 request defaults/effective-pending view
+slice delivered; staged governing workflow and atomic interrupt/apply deferred.
+Remote/master70575f2 fetched/ancestor candidate; final FF follows this checkpoint.
+Independent dirty startup-replay source/script/test/paper excluded and untouched.

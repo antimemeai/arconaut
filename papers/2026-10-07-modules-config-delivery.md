@@ -56,3 +56,27 @@ Managed boundary summary staged to avoid carrying long implementation exchanges;
 originals/audit remain at the original session path, physical bytes not reclaimed.
 Current resumed-process usage sample65240 input+88 output=65328 tokens, cached0;
 this is one request sample, not total campaign/unit use. Account costs unavailable.
+
+## Actual published import, useful delivery and scoped acceptance
+
+After the successful ordinary boundary, module_source and arco.module resolved
+revision8358dd2ba60508bcba15000000000000. First inventory invoked guessed absent
+paths include/arco/program_config.hpp/src/program_config.cpp: external_unknown
+returned. That failed call is retained; no useful completion or effect replay is
+claimed. Commit source map supplied actual paths; a distinct read-only inventory
+succeeded, then imported maintenance generated docs/G4_PROGRAM_MAP.md (57 matches,
+4 files), written through native audited write_file. The map supplies concrete
+change routes for loader, API, reopening/defaults, durable publication and direct
+oracle; it is usable maintenance work, not a certification ledger. No settled
+checks reopened. Workflow failure does not erase effects or the failed call.
+
+Scoped C2 and first usable C4 delivery accepted on existing focused checks plus
+actual RRC and ordinary stage -> later import -> useful source map. No governing
+workflow-selector staging, atomic interrupt/apply, hostile sandbox or cross-provider
+request-default qualification claimed. Hardening ended06:07:53/layers1+2 unchanged.
+Actual elapsed through acceptance about22minutes, within original90min unit budget;
+account costs and aggregate usage unavailable. Remote/master70575f263e4106d4aede7639870e797dc4667a98
+was fetched and observed ancestor of candidate292ce9d; final checked fast-forward
+publication follows acceptance commit. Separate dirty startup-replay files remain
+untouched and excluded from publication; current executable is still the recorded
+single replacement, not those unbuilt dirty changes.
