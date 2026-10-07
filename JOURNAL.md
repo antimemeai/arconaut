@@ -4138,3 +4138,56 @@ Operator now authorizes a distinct W1 implementation unit: shared Lua workflow
 registry, configurable slash aliases/prefix, POWERWORDS such as ultracode and TUI
 coloring, with continuous profiling from launch. Scope and directchecks are in
 WORKFLOW_REGISTRATION.md; issue arconaut-3oz.2. W0 budget is not renewed under W1.
+
+## 2026-10-07 — W1 callable workflow implementation (arconaut-3oz.2)
+
+Fresh authorized implementation in candidate/workflow-core-2026-10-07, slot-0;
+fixed deadline 1791378646, no expired research effects replayed. Source-grounded
+subplan written before code in docs/W1_IMPLEMENTATION.md: Hermes single cached
+catalog/copy semantics and definition identity, ecosystem P1/P10/P11. Added owned
+bounded registry under retained program_config, aliases/prefix/bare lookup, shared
+model/Lua tools and terminal menu/help/completion; successful outer boundary only.
+Powerwords case-sensitive exact identifier tokens on submitted operator text,
+multiple-target conflict rejection, full prompt and argument suffix retained;
+configured existing palette inks on composer and user cells, including wrapping.
+Default useful ultracode coding turn; no new dependencies/scheduler/upstream run.
+Provider-selected calls execute sequentially after tool outputs in this turn, not
+inside an unresolved provider call. Source/config/invocation retained via existing
+audited effects. Implementation includes bounded continuation/nesting counts.
+
+Initial direct fake-provider/Lua/audit/colored-cell checks passed; affected existing
+chat_view, terminal, coding checks also passed (4 tests, 16.86s total; workflow
+oracle 1.51s). Built build/release/blackbird only in this checkout. No throughput
+claim: caching avoids source reads/compilation in composer, and unchanged-cell
+oracle observes zero touched cells. Independent review and findings recheck to be
+recorded below; not yet treated as qualified or merged.
+
+W1 checkpoint: the one independent Claude Sonnet CLI review command was limited
+90 seconds, timed out and yielded no reviewer text; retained output inspected,
+no review replay/retry. Independent review remains a delivery gap, not a passed
+check. Candidate stays inactive/unmerged pending that review.
+
+One bounded findings recheck corrected false cross-domain alias collisions,
+malformed-type rejection, highlighting before control escaping, retained source
+identity at selection even before deferred execution, and restart/cancel guards.
+Affected existing chat_view/terminal/coding checks passed in the recheck batch
+(0.42s/0.36s/12.30s). The new workflow oracle initially failed in a nested Lua
+fixture because its test-only long-string delimiter appeared inside embedded
+JSON; fixed delimiter selection and ran only that direct oracle successfully.
+No settled checks rerun after that fixture-only correction; no third assurance
+layer. Workflow oracle covers exact args/prompt, prefixed/unprefixed/bare aliases,
+collisions, token/case/nonASCII boundaries, conflict precedence, registry discovery,
+completion/help, wrapped colored cells and unchanged painting, fake-provider
+ultracode/model invocation, successful staging/failed turn preservation, malformed
+Lua, child failure despite ignored tool error, cancellation and reconstruction.
+
+Release binary is build/release/blackbird in slot-0 only; primary build untouched.
+Remaining: obtain independent review of the candidate (outside this exhausted
+review allowance), address its concrete findings in a separately authorized unit,
+then perform qualified candidate RRC if activation is wanted. No master merge or
+candidate activation here. Managed context summarization attempts were rejected;
+policy explicitly deferred shrinking rather than dropping live linkage. Raw review
+attempt files remain ignored under context/w1; public behavior is in
+ docs/CALLABLE_WORKFLOWS.md. No throughput or external-collector measurements
+invented; source-free cached discovery and zero unchanged painted cells are the
+actual performance observations.

@@ -1,7 +1,7 @@
 #include "blackbird/backstop.hpp"
 #include "blackbird/coding.hpp"
-#include "blackbird/station.hpp"
 #include "blackbird/sprite.hpp"
+#include "blackbird/station.hpp"
 #include "blackbird/terminal.hpp"
 #include <atomic>
 #include <csignal>
@@ -363,6 +363,7 @@ int main(int argc, char **argv) {
       else
         std::cerr << '[' << safe(text) << "]\n";
     };
+    publish_workflows(engine.workflows());
     auto perform = [&](std::string_view prompt) {
       interrupted.store(false, std::memory_order_relaxed);
       try {
@@ -427,11 +428,14 @@ int main(int argc, char **argv) {
           effort = std::move(value);
         } else if (prompt.starts_with("/lua "))
           engine.turn({"", prompt.substr(5)});
-        else if (prompt.starts_with("/"))
+        else if (engine.operator_turn(
+                     prompt, prompt.starts_with("/") ? "" : read_file(workflow))) {
+          publish_workflows(engine.workflows());
+        } else if (prompt.starts_with("/"))
           emit("Unknown command: " + std::string{prompt} +
                ". /help lists commands; /quit or /exit closes Blackbird.\n");
-        else if (!prompt.empty())
-          engine.turn({prompt, read_file(workflow)});
+
+        publish_workflows(engine.workflows());
         if (prompt != "/sessions")
           refresh_info();
         if (auto note = engine.take_restart_note(); note && !restart_pending.load()) {

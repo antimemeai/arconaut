@@ -2,6 +2,7 @@
 #include "blackbird/openai.hpp"
 #include "blackbird/session.hpp"
 #include "blackbird/tools.hpp"
+#include "blackbird/workflows.hpp"
 #include <map>
 #include <memory>
 namespace blackbird {
@@ -39,6 +40,8 @@ public:
   CodingEngine(const CodingEngine &) = delete;
   CodingEngine &operator=(const CodingEngine &) = delete;
   void turn(TurnInput input);
+  bool operator_turn(std::string_view prompt, std::string_view fallback);
+  std::shared_ptr<const WorkflowRegistry> workflows() const { return workflows_; }
   // One cooperative failure ticket, consumed before creating a recovery audit.
   // A reopened/crashed engine has no such authority.
   Error claim_backstop();
@@ -90,6 +93,17 @@ private:
   std::string tools_revision_ = "initial-empty", pending_tools_revision_;
   Json program_config_{Json::object(
       {{"modules", Json{Json::Array{}}}, {"model", Json{""}}, {"effort", Json{""}}})};
+  std::shared_ptr<const WorkflowRegistry> workflows_, pending_workflows_;
+  unsigned workflow_depth_ = 0, workflow_invocations_ = 0;
+  struct WorkflowContinuation {
+    Json definition, arguments;
+    std::string revision, selection_attempt;
+  };
+  std::vector<WorkflowContinuation> workflow_continuations_;
+  bool draining_workflows_ = false;
+  std::optional<Error> workflow_failure_;
+  Json execute_workflow(const WorkflowContinuation &invocation);
+  void drain_workflows();
   Json pending_program_config_;
   std::string program_revision_ = "initial-empty", pending_program_revision_;
   Json program_config(const Json &arguments);

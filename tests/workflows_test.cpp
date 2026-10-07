@@ -1,0 +1,320 @@
+#include "blackbird/coding.hpp"
+#include "blackbird/terminal.hpp"
+#include "blackbird/tools.hpp"
+#include <clocale>
+#include <iostream>
+#include <source_location>
+#include <unistd.h>
+using namespace blackbird;
+void check(bool good, std::source_location loc = std::source_location::current()) {
+  if (!good)
+    throw std::runtime_error("workflow oracle line " + std::to_string(loc.line()));
+}
+template <class T> T id(unsigned char n) {
+  IdentityBytes b{};
+  b[0] = std::byte{n};
+  return unwrap(T::from_bytes(b));
+}
+void set(Json &j, std::string_view key, Json value) {
+  for (auto &[k, v] : j.object())
+    if (k == key) {
+      v = std::move(value);
+      return;
+    }
+  j.object().emplace_back(key, std::move(value));
+}
+Json definition(std::string name = "research", std::string token = "ultracode",
+                std::string source = "return args") {
+  return Json::object(
+      {{"name", Json{name}},
+       {"description", Json{"Research procedure"}},
+       {"source", Json{source}},
+       {"aliases", Json{Json::Array{Json{name}, Json{name + "-alias"}}}},
+       {"bare", Json{true}},
+       {"powerwords", Json{Json::Array{Json::object(
+                          {{"token", Json{token}}, {"color", Json{"keyword"}}})}}}});
+}
+Json config(Json::Array defs, std::string prefix = "wf-") {
+  return Json::object({{"modules", Json{Json::Array{}}},
+                       {"model", Json{""}},
+                       {"effort", Json{""}},
+                       {"workflows", Json{std::move(defs)}},
+                       {"workflow_prefix", Json{prefix}}});
+}
+std::string literal(const Json &j) {
+  const auto json = unwrap(dump_json(j));
+  std::string delimiter = "==";
+  while (json.find("]" + delimiter + "]") != std::string::npos)
+    delimiter += "=";
+  return "blackbird.json.decode([" + delimiter + "[" + json + "]" + delimiter + "])";
+}
+Json eval(CodingEngine &engine, std::string code) {
+  engine.turn({"", code});
+  return engine.workflow_result();
+}
+struct FakeProvider : CodingProvider {
+  unsigned calls = 0;
+  bool model_invoke = false, fail = false;
+  Json last_request;
+  Json respond(const Json &r,
+               const std::function<void(std::string_view)> &capture) override {
+    ++calls;
+    last_request = r;
+    if (fail)
+      throw Error{ErrorCode::interrupted};
+    Json::Array output;
+    if (model_invoke && calls == 1)
+      output.push_back(Json::object(
+          {{"type", Json{"function_call"}},
+           {"call_id", Json{"choose-workflow"}},
+           {"name", Json{"workflow_invoke"}},
+           {"arguments",
+            Json{
+                R"({"name":"ultracode","prompt":"model selected; not operator trigger"})"}}}));
+    auto response = Json::object({{"output", Json{std::move(output)}}});
+    capture(unwrap(dump_json(response)));
+    return response;
+  }
+};
+int main() {
+  std::setlocale(LC_ALL, "en_US.UTF-8");
+  auto c = config({definition()});
+  auto registry = std::make_shared<WorkflowRegistry>(c, "r1");
+  check(registry->select("/wf-research \tA\nB")->arguments == " \tA\nB");
+  check(registry->select("/wf-research-alias x")->definition == definition());
+  check(registry->select("research\tbare")->arguments == "\tbare");
+  check(!registry->select("/research"));
+  for (const auto text : {"notultracode", "ULTRACODE", "ultracode_", "xultracode",
+                          "éultracode", "ultracodeé"})
+    check(!registry->select(text));
+  for (const auto text :
+       {"ultracode", "(ultracode)", "a ultracode!", "ultracode ultracode"})
+    check(registry->select(text).has_value());
+  check(registry->select("a ultracode!")->arguments == "a ultracode!");
+  check(!registry->select("/unknown ultracode"));
+  check(WorkflowRegistry{config({definition()}, ""), "r0"}
+            .select("/research")
+            .has_value());
+  auto reject = [](const Json &candidate) {
+    try {
+      WorkflowRegistry bad{candidate, "bad"};
+      (void)bad;
+    } catch (const Error &) {
+      return true;
+    }
+    return false;
+  };
+  auto collision = definition();
+  set(collision, "aliases", Json{Json::Array{Json{"help"}}});
+  check(reject(config({collision}, "")));
+  check(reject(config({collision}, "wf-"))); // bare collides too
+  check(reject(config({definition(), definition("other", "another")}, "")) == false);
+  auto duplicate = definition("other", "another");
+  set(duplicate, "aliases", field(definition(), "aliases"));
+  check(reject(config({definition(), duplicate})));
+  check(reject(config({definition(), definition("other")})));
+  WorkflowRegistry conflict{config({definition(), definition("other", "another")}),
+                            "r2"};
+  bool refused = false;
+  try {
+    (void)conflict.select("ultracode another");
+  } catch (const Error &e) {
+    refused = e.code == ErrorCode::conflict;
+  }
+  check(refused);
+  check(conflict.select("/wf-research another")->trigger == "/wf-research");
+  check(field(registry->discover(), "definitions").array().front() ==
+        registry->select("/wf-research")->definition);
+  publish_workflows(registry);
+  check(terminal_help().find("/wf-research") != std::string::npos);
+  Composer composer;
+  for (char byte : std::string{"/wf-resea\t"})
+    composer.feed(byte);
+  check(composer.text() ==
+        "/wf-research "); // slash menu selects the shared catalog entry
+  composer.draft("/wf-research");
+  composer.feed('\t');
+  check(composer.text() == "/wf-research ");
+  check(terminal_command_hint("/wf-research x").find("Research procedure") !=
+        std::string::npos);
+  ChatGrid grid;
+  grid.reset(40, 1);
+  grid.line(0, registry->color("notultracode ultracode!"));
+  check(grid.cells[13].ink == Ink::keyword);
+  check(grid.cells[0].ink == Ink::normal);
+  const auto wrapped = terminal_powerword_lines("xx ultracode notultracode", 5);
+  std::string joined;
+  std::size_t colored = 0;
+  for (const auto &row : wrapped)
+    for (const auto &span : row) {
+      joined += span.text;
+      if (span.ink == Ink::keyword)
+        colored += span.text.size();
+    }
+  check(joined == "xx ultracode notultracode");
+  check(colored == 9);
+  ChatView user;
+  user.append(ChatKind::user, "# ultracode\n```\nultracode\n```", true);
+  bool color_found = false;
+  for (const auto &row : user.rows(30))
+    for (const auto &span : row)
+      color_found |= span.ink == Ink::keyword;
+  check(color_found);
+  ChatView assistant;
+  assistant.append(ChatKind::assistant, "ultracode", true);
+  for (const auto &row : assistant.rows(30))
+    for (const auto &span : row)
+      check(span.ink != Ink::keyword);
+  ChatPainter painter;
+  painter.prepare(grid, 0, 0);
+  painter.commit(grid);
+  painter.prepare(grid, 0, 0);
+  check(painter.touched() == 0);
+  char path[] = "/tmp/blackbird-workflows-XXXXXX";
+  check(mkdtemp(path) != nullptr);
+  const JournalHeader h{id<EnvironmentId>(71),
+                        id<AuditStreamId>(72),
+                        3,
+                        {1048576, 4194304},
+                        std::nullopt};
+  auto root =
+      unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                       unwrap(NativeJournalDirectory::open(path))),
+                                   "audit", h, {64 * 1024 * 1024, 10000}));
+  AuditLog log{*root};
+  ContextStore context{log};
+  FakeProvider provider;
+  CodingEngine engine{log, context, provider, "fake"};
+  check(engine.workflows()->named("ultracode").find("source") != nullptr);
+  const auto initial = engine.workflows();
+  auto proposal = Json::object({{"proposal", c}});
+  eval(engine,
+       "local r=blackbird.call('program_config'," + literal(proposal) +
+           "); assert(r.staged); local d=blackbird.call('workflow_registry',{}); "
+           "assert(d.definitions[1].name=='ultracode'); return d");
+  check(engine.workflows() != initial);
+  check(engine.workflows()->select("/wf-research").has_value());
+  const std::string prompt = "/wf-research \tA\nB";
+  check(engine.operator_turn(prompt, "error('fallback must not execute')"));
+  check(string_field(engine.workflow_result(), "arguments") == " \tA\nB");
+  check(string_field(engine.workflow_result(), "prompt") == prompt);
+  check(string_field(context.items().back(), "content") == prompt);
+  check(!engine.operator_turn("/missing ultracode", ""));
+  auto result = eval(
+      engine, "return blackbird.call('workflow_invoke',{name='research',arguments='lua "
+              "args'})");
+  check(string_field(result, "arguments") == "lua args");
+  const auto effective = engine.workflows();
+  auto changed = config({definition("new", "newword")});
+  bool failed = false;
+  try {
+    eval(engine, "blackbird.call('program_config'," +
+                     literal(Json::object({{"proposal", changed}})) +
+                     "); error('stop')");
+  } catch (const Error &) {
+    failed = true;
+  }
+  check(failed);
+  check(engine.workflows() == effective);
+  result = eval(
+      engine, "return blackbird.call('program_config'," +
+                  literal(Json::object({{"proposal", config({collision}, "")}})) + ")");
+  check(string_field(result, "error") == "conflict");
+  check(engine.workflows() == effective);
+  auto invalid = definition();
+  set(invalid, "source", Json{"this is invalid Lua!"});
+  result =
+      eval(engine, "return blackbird.call('program_config'," +
+                       literal(Json::object({{"proposal", config({invalid})}})) + ")");
+  check(string_field(result, "error") == "invalid_range");
+  check(engine.workflows() == effective);
+  // Successful registration and provider use of the same useful ultracode definition.
+  eval(engine, "return blackbird.call('program_config'," +
+                   literal(Json::object(
+                       {{"proposal", config(default_workflows().array(), "")}})) +
+                   ")");
+  provider.calls = 0;
+  check(engine.operator_turn("ultracode build useful code", "error('wrong route')"));
+  check(provider.calls == 1);
+  check(
+      string_field(
+          field(provider.last_request, "input").array().at(context.items().size() - 2),
+          "content")
+          .find("ultracode") != std::string::npos);
+  provider.calls = 0;
+  provider.model_invoke = true;
+  eval(engine, R"lua(for step=1,4 do
+    local r=blackbird.request(); local count=0
+    for _,item in ipairs(r.output) do if item.type=='function_call' then
+      count=count+1; local result=blackbird.call(item.name,item.arguments)
+      assert(result.status=='accepted')
+      blackbird.append({{type='function_call_output',call_id=item.call_id,output=blackbird.json.encode(result)}})
+    end end
+    if count==0 then return end
+  end error('budget'))lua");
+  check(provider.calls ==
+        3); // parent selection, selected workflow request, parent continuation
+  check(ContextStore::stop_outputs(field(context.view(), "entries").array(), false)
+            .empty());
+  bool source_retained = false;
+  for (const auto &fact : root->committed_facts())
+    if (const auto *event = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+        event && event->channel == ApplicationChannel::program) {
+      auto j = unwrap(parse_json(
+          std::string_view{reinterpret_cast<const char *>(event->payload.data()),
+                           event->payload.size()}));
+      if (j.find("definition") && j.find("revision") && j.find("invocation"))
+        source_retained = true;
+    }
+  check(source_retained);
+  // Recheck findings: raw control escaping does not alter color/matching;
+  // malformed scalar types reject clearly; no cross-domain alias ambiguity.
+  auto malformed = definition();
+  set(malformed, "bare", Json{"not boolean"});
+  check(reject(config({malformed})));
+  auto first = definition();
+  set(first, "bare", Json{false});
+  auto second = definition("wf-research", "secondword");
+  check(!reject(config({first, second})));
+  auto escaped = terminal_powerword_lines(std::string{"\x1b"} + "ultracode", 40);
+  check(escaped.front().back().ink == Ink::keyword);
+  check(escaped.front().back().text == "ultracode");
+  // A registered workflow that stages config and then fails cannot activate it,
+  // even when the outer caller ignores the returned error.
+  const auto before_failure = engine.workflows();
+  auto doomed = definition("doomed", "doomedword",
+                           "blackbird.call('program_config'," +
+                               literal(Json::object({{"proposal", changed}})) +
+                               "); error('child failure')");
+  eval(engine, "return blackbird.call('program_config'," +
+                   literal(Json::object({{"proposal", config({doomed})}})) + ")");
+  const auto doomed_effective = engine.workflows();
+  failed = false;
+  try {
+    eval(engine,
+         "blackbird.call('workflow_invoke',{name='doomed'}); return 'ignored failure'");
+  } catch (const Error &) {
+    failed = true;
+  }
+  check(failed);
+  check(engine.workflows() == doomed_effective);
+  check(engine.workflows() != before_failure);
+  // Cancellation similarly preserves the effective definition, never queued replay.
+  engine.cancelled = [] { return true; };
+  failed = false;
+  try {
+    engine.operator_turn("/wf-doomed", "");
+  } catch (const Error &) {
+    failed = true;
+  }
+  engine.cancelled = {};
+  check(failed);
+  check(engine.workflows() == doomed_effective);
+  // Reconstruction uses only committed effective configuration.
+  CodingEngine restored{log, context, provider, "fake"};
+  check(restored.workflows()->discover() == engine.workflows()->discover());
+  publish_workflows({});
+  std::filesystem::remove_all(path);
+  std::cout << "workflow registry, boundary, fake provider, completion and "
+               "colored-cell oracles passed\n";
+}

@@ -1,5 +1,6 @@
 #include "blackbird/chat_view.hpp"
 #include "blackbird/terminal.hpp"
+#include "blackbird/workflows.hpp"
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -346,7 +347,11 @@ const std::vector<ChatRow> &ChatView::rows(std::size_t width) {
       const auto raw = remaining.substr(0, length);
       const auto safe = terminal_lines(raw, display_limit).front();
       bool code = b.in_code;
-      if (safe.starts_with("```")) {
+      const auto registry = displayed_workflows();
+      if (b.kind == ChatKind::user && registry) {
+        wrap(rows_, terminal_powerword_lines(raw, display_limit).front(), width - 4,
+             rail);
+      } else if (safe.starts_with("```")) {
         if (!code)
           wrap(rows_, {{"─ " + safe.substr(3) + " ─", Ink::code}}, width - 4, rail);
         code = !code;

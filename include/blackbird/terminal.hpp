@@ -76,6 +76,8 @@ struct TerminalScrollUpdate {
 };
 std::size_t terminal_scroll_after_output(const TerminalScrollUpdate &update);
 void trim_terminal_transcript(std::string &text);
+std::vector<ChatRow> terminal_powerword_lines(std::string_view text,
+                                              std::size_t columns);
 std::vector<std::string> terminal_lines(std::string_view text, std::size_t columns);
 class TerminalUI {
 public:
