@@ -168,8 +168,9 @@ private:
                       std::uint64_t maintenance_end = 0);
   bool has_room(const Snapshot &snapshot, std::size_t count) const noexcept;
   FramedJournal *segment(AuditStreamId identity) const noexcept;
+  struct ReplayIndex;
   Result<void> apply(Snapshot &snapshot, RetainedEvent event, RecordReference record,
-                     RetainedEvidence evidence);
+                     RetainedEvidence evidence, ReplayIndex *index = nullptr);
   Result<JournalCursor> append_impl(JournalCursor expected,
                                     std::span<const ByteView> sources,
                                     std::span<const RetainedEvent> events,
@@ -181,7 +182,8 @@ private:
                                 Error reason, const RetainedEvent *conflict);
   const RetainedFact *
   existing(const Snapshot &snapshot, const RetainedEvent &event,
-           std::optional<std::uint64_t> issuer_namespace = std::nullopt) const;
+           std::optional<std::uint64_t> issuer_namespace = std::nullopt,
+           const ReplayIndex *index = nullptr) const;
   const RetainedFact *existing_uncertain(
       const Snapshot &snapshot, const RetainedEvent &event,
       std::optional<std::uint64_t> issuer_namespace = std::nullopt) const;

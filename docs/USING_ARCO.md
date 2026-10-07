@@ -469,3 +469,13 @@ context-only colleague usage, and [G6_NATIVE_OWNERSHIP_MAP](G6_NATIVE_OWNERSHIP_
 for current stop/cancellation anchors. Direct checks: `lua tests/orchestration_test.lua`
 with Lua5.4.8. G5's independent colleague candidate is not automatically integrated
 by importing this module; select an actually configured adapter/call path explicitly.
+
+### Operator executable during concurrent development
+
+Interactive `scripts/arco` prefers `build/release/arco-ui` when that published
+executable exists. Unattended `--once` / `--resume-once` uses `build/release/arco`;
+`ARCO_EXECUTABLE=/absolute/path` overrides either. This prevents a campaign build
+from silently changing the interactive generation. Native self-development in an
+interactive session must install the checked executable atomically to `arco-ui`
+before `/restart`, or explicitly select its executable when launching. A restart
+continues the selected path. Startup reports the session before reopening history.

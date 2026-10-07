@@ -422,7 +422,7 @@ void captured_positions_under_narrow_profile() {
                                              "journal.00000000000000000000000000000002",
                                              root(), root_capacity));
   auto large_decision = decision();
-  large_decision.continuation.assign(600, std::byte{42});
+  large_decision.continuation = std::vector<std::byte>(600, std::byte{42});
   const RetainedEvent known{{{root().journal, 1}}, large_decision};
   const auto known_bytes = require(encode_retained_event(known, 1024));
   CHECK(known_bytes.size() == 752);
@@ -674,8 +674,13 @@ JournalHeader malformed_capture_fixture(const TemporaryDirectory &temporary,
   }
   require(head->publish_initial(SyncStrength::full));
   auto captured_event = valid;
-  if (fault == CaptureFault::changed_committed)
-    std::get<DecisionEvent>(captured_event.body).continuation[0] = std::byte{1};
+  if (fault == CaptureFault::changed_committed) {
+    auto &value = std::get<DecisionEvent>(captured_event.body);
+    auto changed_bytes =
+        std::vector<std::byte>(value.continuation.begin(), value.continuation.end());
+    changed_bytes[0] = std::byte{1};
+    value.continuation = std::move(changed_bytes);
+  }
   const std::array encoded{require(encode_retained_event(captured_event, 1024))};
   const std::array sources{ByteView{original}};
   auto expected = first->cursor();
@@ -765,7 +770,13 @@ JournalHeader malformed_capture_fixture(const TemporaryDirectory &temporary,
   }
   if (fault == CaptureFault::changed_uncertain) {
     auto changed = valid;
-    std::get<DecisionEvent>(changed.body).continuation[0] = std::byte{1};
+    {
+      auto &value = std::get<DecisionEvent>(changed.body);
+      auto changed_bytes =
+          std::vector<std::byte>(value.continuation.begin(), value.continuation.end());
+      changed_bytes[0] = std::byte{1};
+      value.continuation = std::move(changed_bytes);
+    }
     const std::array changed_bytes{require(encode_retained_event(changed, 1024))};
     const auto later_packet =
         require(encode_retained_proposal(second->cursor(), {}, changed_bytes, 32768));
@@ -1261,7 +1272,7 @@ void dedup_before_narrowed_profile() {
                                              "journal.00000000000000000000000000000002",
                                              root(), root_capacity));
   auto long_decision = decision();
-  long_decision.continuation.assign(600, std::byte{42});
+  long_decision.continuation = std::vector<std::byte>(600, std::byte{42});
   const RetainedEvent event{{{root().journal, 1}}, long_decision};
   const auto payload = require(encode_retained_event(event, 1024));
   CHECK(payload.size() == 752);

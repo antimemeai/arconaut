@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace arconaut {
 namespace {
@@ -75,6 +77,26 @@ private:
 };
 } // namespace
 
+struct RetainedState::ReplayIndex {
+  struct FactHash {
+    std::size_t operator()(const EventKey &k) const noexcept {
+      std::size_t h = static_cast<std::size_t>(k.kind);
+      for (auto byte : k.identity)
+        h = (h * 131) ^ std::to_integer<unsigned char>(byte);
+      return h;
+    }
+  };
+  struct SourceHash {
+    std::size_t operator()(const SourceReference &k) const noexcept {
+      std::size_t h = static_cast<std::size_t>(k.sequence);
+      for (auto byte : k.journal.bytes())
+        h = (h * 131) ^ std::to_integer<unsigned char>(byte);
+      return h;
+    }
+  };
+  std::unordered_map<EventKey, std::size_t, FactHash> facts;
+  std::unordered_set<SourceReference, SourceHash> sources;
+};
 void RetainedState::Snapshot::swap(Snapshot &other) noexcept {
   facts.swap(other.facts);
   sources.swap(other.sources);
@@ -163,9 +185,14 @@ bool RetainedState::has_identity(const RetainedEvent &event) {
 }
 const RetainedFact *
 RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
-                        std::optional<std::uint64_t> issuer_namespace) const {
+                        std::optional<std::uint64_t> issuer_namespace,
+                        const ReplayIndex *index) const {
   const auto identity =
       key(event.body, issuer_namespace.value_or(snapshot.issuer_namespace));
+  if (identity && index) {
+    const auto found = index->facts.find(*identity);
+    return found == index->facts.end() ? nullptr : &snapshot.facts[found->second];
+  }
   if (identity) {
     for (const auto &fact : snapshot.facts) {
       const auto *origin = segment(fact.record.journal);
@@ -230,12 +257,13 @@ bool RetainedState::has_room(const Snapshot &snapshot,
   return count <= remaining;
 }
 Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
-                                  RecordReference record, RetainedEvidence evidence) {
+                                  RecordReference record, RetainedEvidence evidence,
+                                  ReplayIndex *index) {
   if (std::holds_alternative<RecoveryChoiceEvent>(event.body) ||
       std::holds_alternative<ProvisionalCaptureEvent>(event.body)) {
     return Result<void>::failure({ErrorCode::unsupported});
   }
-  if (const auto *previous = existing(snapshot, event)) {
+  if (const auto *previous = existing(snapshot, event, std::nullopt, index)) {
     return previous->event == event ? Result<void>::success()
                                     : Result<void>::failure({ErrorCode::conflict});
   }
@@ -244,6 +272,11 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
   if (!has_room(snapshot, 1))
     return Result<void>::failure({ErrorCode::capacity});
   for (const auto &dependency : event.dependencies) {
+    if (index) {
+      if (!index->sources.contains(dependency))
+        return Result<void>::failure({ErrorCode::conflict});
+      continue;
+    }
     const auto source = std::find_if(snapshot.sources.begin(), snapshot.sources.end(),
                                      [&](const auto &candidate) {
                                        return candidate.journal == dependency.journal &&
@@ -370,6 +403,12 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
     return validated;
   }
   snapshot.facts.push_back({record, std::move(event), evidence});
+  if (index) {
+    const auto *origin = segment(record.journal);
+    if (const auto identity =
+            key(snapshot.facts.back().event.body, origin->header().issuer_namespace))
+      index->facts.emplace(*identity, snapshot.facts.size() - 1);
+  }
   return Result<void>::success();
 }
 
@@ -386,6 +425,15 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
                                    std::span<const SourceReference> capture_only,
                                    std::uint64_t maintenance_end) {
   try {
+    ReplayIndex lookup;
+    for (std::size_t i = 0; i < staging.facts.size(); ++i) {
+      const auto &fact = staging.facts[i];
+      const auto *origin = segment(fact.record.journal);
+      if (const auto identity = key(fact.event.body, origin->header().issuer_namespace))
+        lookup.facts.emplace(*identity, i);
+    }
+    for (const auto &source : staging.sources)
+      lookup.sources.insert({source.journal, source.sequence});
     const auto records = journal.staged_records();
     std::size_t first = 0;
     while (first < records.size()) {
@@ -394,7 +442,38 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
              records[end].batch_first == records[first].batch_first) {
         ++end;
       }
-      auto candidate = staging;
+      // Replay is prepared state. This path only appends sources/facts and
+      // advances counter: preserve a batch checkpoint, never clone the payload
+      // prefix. The guard restores the valid prefix on rejection or any return.
+      struct BatchRollback {
+        Snapshot &snapshot;
+        RetainedState &owner;
+        ReplayIndex &lookup;
+        std::size_t facts;
+        std::size_t sources;
+        std::uint64_t counter;
+        bool accepted = false;
+        ~BatchRollback() {
+          if (accepted)
+            return;
+          while (snapshot.facts.size() > facts) {
+            const auto &fact = snapshot.facts.back();
+            const auto *origin = owner.segment(fact.record.journal);
+            if (const auto identity =
+                    key(fact.event.body, origin->header().issuer_namespace))
+              lookup.facts.erase(*identity);
+            snapshot.facts.pop_back();
+          }
+          while (snapshot.sources.size() > sources) {
+            const auto &source = snapshot.sources.back();
+            lookup.sources.erase({source.journal, source.sequence});
+            snapshot.sources.pop_back();
+          }
+          snapshot.counter = counter;
+        }
+      } rollback{
+          staging,        *this, lookup, staging.facts.size(), staging.sources.size(),
+          staging.counter};
       for (std::size_t index = first; index < end; ++index) {
         if (records[index].kind == FrameKind::source) {
           const SourceReference reference{records[index].journal,
@@ -402,13 +481,14 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
           if (std::find(capture_only.begin(), capture_only.end(), reference) !=
               capture_only.end())
             continue;
-          if (!has_room(candidate, 1))
+          if (!has_room(staging, 1))
             return Result<void>::failure({ErrorCode::capacity});
           const auto checked = journal.read_payload(records[index]);
           if (!checked.has_value()) {
             return Result<void>::failure(checked.error());
           }
-          candidate.sources.push_back(records[index]);
+          staging.sources.push_back(records[index]);
+          lookup.sources.insert({records[index].journal, records[index].sequence});
         }
       }
       std::optional<Error> invalid;
@@ -430,9 +510,9 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
           invalid = decoded.error();
           break;
         }
-        const auto applied = apply(candidate, std::move(decoded).value(),
+        const auto applied = apply(staging, std::move(decoded).value(),
                                    {records[index].journal, records[index].sequence},
-                                   RetainedEvidence::recovered_pending);
+                                   RetainedEvidence::recovered_pending, &lookup);
         if (!applied.has_value()) {
           if (applied.error().code == ErrorCode::capacity)
             return applied;
@@ -448,7 +528,7 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
         }
         break;
       }
-      staging.swap(candidate);
+      rollback.accepted = true;
       first = end;
     }
     for (const auto &record : journal.pending_records()) {

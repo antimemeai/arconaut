@@ -138,3 +138,12 @@ time/resource allowance before work. Do not review reviews, certify rechecks,
 reopen settled checks without relevant changes, or reset budgets under new labels.
 At the bound retain unsafe candidate inactive and move to independent useful work.
 Current remaining capacity envelope and deferred scope are in that note.
+
+Operator2026-10-07 requires a waste-conscious native implementation: treat every
+byte as valuable. Read papers/2026-10-07-waste-audit.md. Immutable retained payloads
+share storage; a forward candidate stages new state over the retained prefix, and
+replay reconstructs derived state without cloning prior history per batch. Account
+for ownership, lifetime, copies, representation duplication, allocation/I/O cadence
+and actual hot-path complexity. Measure real byte/work costs before optimization;
+do not invent performance claims or add a perpetual performance certification gate.
+Preserve originals, exact request/effect linkage, recovery fences and model agency.

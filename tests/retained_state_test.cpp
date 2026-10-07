@@ -13,8 +13,12 @@
 using namespace arconaut;
 namespace {
 std::atomic<std::ptrdiff_t> allocation_cut{-1};
-}
+std::atomic_bool measure_allocation{false};
+std::atomic_size_t allocated_bytes{0};
+} // namespace
 void *operator new(std::size_t size) {
+  if (measure_allocation.load())
+    allocated_bytes.fetch_add(size);
   if (allocation_cut.load() >= 0 && allocation_cut.fetch_sub(1) == 0) {
     throw std::bad_alloc{};
   }
@@ -367,6 +371,59 @@ void uncertain_open() {
   CHECK(inspected.evidence == RetainedEvidence::uncertain);
   CHECK(inspected.reconciliation_required);
 }
+void replay_avoids_prefix_payload_copies() {
+  auto storage = std::make_shared<StorageState>();
+  {
+    MemoryDirectory directory{storage};
+    auto journal =
+        require(FramedJournal::create(directory, "journal", header(), capacity));
+    for (unsigned char i = 1; i <= 64; ++i) {
+      const auto payload = require(encode_retained_event(
+          {{},
+           ApplicationRecordEvent{id<ApplicationRecordId>(i), ApplicationChannel::log,
+                                  std::vector<std::byte>(768, std::byte{i})}},
+          1024));
+      const std::array batch{JournalDraft{FrameKind::semantic, payload}};
+      require(journal->append(batch));
+    }
+  }
+  allocated_bytes.store(0);
+  measure_allocation.store(true);
+  auto reopened = open(storage);
+  measure_allocation.store(false);
+  const auto bytes = allocated_bytes.load();
+  std::fprintf(stderr, "replay allocations %zu for %zu journal bytes\n", bytes,
+               storage->bytes.size());
+  CHECK(bytes < storage->bytes.size() * 24 + 262144);
+  require(reopened->confirm_recovery());
+  CHECK(reopened->committed_facts().size() == 64);
+  Custody custody;
+  require(reopened->reconcile(custody));
+  const auto *prefix =
+      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
+          .payload.data();
+  allocated_bytes.store(0);
+  measure_allocation.store(true);
+  for (int i = 0; i < 32; ++i)
+    require(reopened->issue<ParticipantId>());
+  measure_allocation.store(false);
+  std::fprintf(stderr, "forward allocations %zu for %zu journal bytes\n",
+               allocated_bytes.load(), storage->bytes.size());
+  CHECK(std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
+            .payload.data() == prefix);
+  // The alias oracle establishes sharing of immutable bytes; total allocation
+  // also includes metadata and this fixture's in-memory journal writes.
+  const auto copy =
+      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body);
+  CHECK(copy.payload.data() == prefix);
+  for (std::size_t i = 0; i < 64; ++i) {
+    const auto &fact =
+        std::get<ApplicationRecordEvent>(reopened->committed_facts()[i].event.body);
+    CHECK(fact.identity == id<ApplicationRecordId>(static_cast<unsigned char>(i + 1)));
+    CHECK(fact.payload ==
+          std::vector<std::byte>(768, std::byte{static_cast<unsigned char>(i + 1)}));
+  }
+}
 void sources_and_invalid_replay() {
   auto storage = std::make_shared<StorageState>();
   auto state = create(storage);
@@ -539,7 +596,10 @@ void pending_proposal_clean_outcomes() {
     auto state = create(storage);
     require(state->submit({{}, decision()}));
     auto changed = decision();
-    changed.continuation.push_back(std::byte{33});
+    auto continuation = std::vector<std::byte>(changed.continuation.begin(),
+                                               changed.continuation.end());
+    continuation.push_back(std::byte{33});
+    changed.continuation = std::move(continuation);
     error_is(state->submit({{}, changed}), ErrorCode::conflict);
     CHECK(!state->pending_proposal());
     CHECK(state->state() == JournalWriterState::live);
@@ -1388,6 +1448,7 @@ int main() {
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();
+    replay_avoids_prefix_payload_copies();
     sources_and_invalid_replay();
     pending_source_inspection();
     pending_proposal_owns_originals();

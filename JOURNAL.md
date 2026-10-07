@@ -3472,3 +3472,32 @@ needed. Concurrent dirty startup-replay source remains its owner's candidate wor
 excluded from source publication and not represented as accepted by this unit.
 No later unit started. Remaining G6 unavailable async/native participant features
 are explicit in queue/docs; G5 cross-provider access stays independently blocked.
+
+## Operator startup and waste audit (2026-10-07)
+
+Operator reports launcher silent after ergonomics work; first confirmed real dev
+loop alive G4, subsequently accepted G6 and advanced to G7. Reproduced315MB operator
+session reopening; sampled full retained prefix cloning in replay and forward issue.
+Written subplan/startup paper before code, direct allocation and byte-alias oracles,
+semantic/crash/allocation tests, immutable shared payloads and batch-local replay
+rollback. Replay-only identity/source index eliminates repeated prefix scans without
+becoming a second authority. Mac release/ASan four affected checks passed. Tests'
+private API fixture and inappropriate total allocation bound corrected honestly;
+no source conclusion from those invalid oracles. No additional certification loop.
+
+Operator asks for Carmack-style waste audit: source/actual session census identifies
+exact46.56MB duplicated invocation/admission inputs, all179 decisions embed same
+logical input,96MB context packets,14,610 reservations/13,767 captures for179 admissions.
+Ten ranked findings and bounded course in papers/2026-10-07-waste-audit.md; persistent
+byte discipline added to AGENTS. No new libraries/auth, history deletion, production
+Python or invented universal speed/heap/cost numbers. Audit scripts ignored context;
+published aggregate sizes/counts only. Next source-addressed inputs/capture cadence,
+prepared suffix/context index, then measured provider/UI work. Linux scoped check
+explicit follow-up; no blanket validation gate.
+
+Published isolated accepted UI70575f2 plus retained fixes to arco-ui, excluding
+concurrent candidate source. Interactive launcher selects published UI; unattended
+once keeps development release, explicit executable override wins. Actual operator
+session reopened successfully to prompt in12.0578s; startup still has measured work
+remaining, not called instantaneous. Original audit unchanged except normal appended
+session/identity facts. Native/profile source locators retained in context/startup-replay.
