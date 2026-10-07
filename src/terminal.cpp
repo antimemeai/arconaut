@@ -1378,14 +1378,19 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       if (welcoming) {
         std::size_t lettering_row = 2, lettering_column = 2;
         if (graphics_enabled) {
-          if (width >= 95 && height >= 12) {
-            const auto side = std::min(height, (width - 59) / 2);
+          std::size_t lettering_width = 0;
+          for (const auto &line : welcome_lines)
+            lettering_width = std::max(lettering_width, display_width(line));
+          const auto lettering_height = welcome_lines.size();
+          const auto reserved = lettering_width + 6;
+          if (width >= reserved + 24 && height >= std::max<std::size_t>(12, lettering_height)) {
+            const auto side = std::min(height, (width - reserved) / 2);
             placement = {2, 2, side * 2, side};
             lettering_column = side * 2 + 6;
-            lettering_row += (side - 5) / 2;
-          } else if (height > 6) {
-            const auto side = std::min(height - 6, (width - 4) / 2);
-            placement = {8, 2, side * 2, side};
+            lettering_row += (side - lettering_height) / 2;
+          } else if (height > lettering_height + 1) {
+            const auto side = std::min(height - lettering_height - 1, (width - 4) / 2);
+            placement = {lettering_row + lettering_height + 1, 2, side * 2, side};
           }
         }
         for (std::size_t row = 0; row < std::min(height, welcome_lines.size()); ++row)

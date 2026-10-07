@@ -571,7 +571,7 @@ with tempfile.TemporaryDirectory(prefix='blackbird-avatar-') as work:
             if ready: observed.extend(os.read(master, 65536))
         raise AssertionError(('avatar state timeout', observed.visible()))
     try:
-        wait_for(b'####  #')  # BLACKBIRD is drawn as block lettering.
+        wait_for('██████╗'.encode())  # BLACKBIRD is drawn as block lettering.
         send(b'\r')
         wait_avatar(lambda: avatar_styles() == {'0;38;2;160;173;188'})
         send(b'/lua blackbird.call("exec", {command="sleep 1"})\r')
@@ -620,7 +620,7 @@ for terminal_rows, terminal_columns in ((24, 80), (40, 120)):
             assert asset.name == 'sr71.png' and asset.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
             assert (observed.screen.row, observed.screen.col) == (terminal_rows-3, 4), 'image moved composer cursor'
             if terminal_columns == 80:
-                assert b'c=24,r=12;' in observed, '80x24 startup omitted the artwork'
+                assert b'c=22,r=11;' in observed, '80x24 startup omitted the artwork'
             send(b'\r')
             wait_for(b'c=12,r=6;\x1b\\\x1b8\x1b[?2026l')
             assert b'a=t,' not in observed, 'corner change retransferred PNG'

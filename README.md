@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/blackbird-readme.png" alt="Blackbird — pixel-art SR-71 in afterburner" width="560">
+</p>
+
 # Blackbird
 
 **A programmable coding agent for an operator who intends to use the whole machine.**
@@ -16,7 +20,7 @@ cycle, see [the project stock](docs/CURRENT_STATE.md).
 
 Arconaut is now **Blackbird**. Old launch commands and the Lua `arco` API remain compatibility aliases; sessions and retained audit formats are preserved.
 
-Startup carries ASCII BLACKBIRD lettering and the operator-supplied SR-71 image
+Startup carries a solid block BLACKBIRD wordmark and the operator-supplied SR-71 image
 in Ghostty/Kitty. First input moves the same image into a square status avatar,
 with an indicator: muted idle, cyan active, amber tool work, red failure.
 For native CPU/allocation investigation, see [Profiling](docs/PROFILING.md).

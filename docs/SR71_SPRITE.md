@@ -5,7 +5,7 @@ The second supplied attachment looked like ASCII, but was also a PNG. The earlie
 hand redraw is no longer the startup artwork.
 
 Ghostty and Kitty display the supplied image directly. At startup it is large,
-alongside ASCII BLACKBIRD lettering or below it on narrower screens. Standard
+alongside a six-row solid block BLACKBIRD wordmark or below it on narrower screens. Standard
 80x24 terminals show it. First operator input moves the cached image into a
 12x6-cell square in the upper-right corner. Retained chat stays intact; the startup
 presentation never enters model context or audit history. Automatic continuation

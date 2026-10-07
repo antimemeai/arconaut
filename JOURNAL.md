@@ -4035,3 +4035,27 @@ Lua parse passes. Filename payload bounded to the protocol's4096-byte base64
 payload (3072 raw path bytes). Launcher exports the checkout's asset path, so
 moving the checkout does not depend on the compiled resource path. Atomic UI
 binary copies refreshed. Previous ASCII preview SVGs remain historical captures.
+
+## 2026-10-07 — Modern wordmark and README badge
+
+Replaced the five-row hash lettering with a six-row solid block BLACKBIRD wordmark
+and double-line shadow edges. Its 67-cell width is checked at compile time;
+startup fit uses cell dimensions, not UTF-8 byte length. Terminal image geometry
+now follows the actual wordmark: wide screens put it beside the square aircraft,
+80x24 stacks it above an 11-row square. The exact supplied startup PNG remains
+unchanged and retains its single-upload/cached-placement behavior.
+
+Placed the operator's Claude-supplied pixel-art badge at the top of README as
+assets/blackbird-readme.png, unchanged from the attachment (SHA-256
+6184d61caffc0d8ca44dee3f28335925b9fb90f9c7338cc02ae8a73ba569d0e3).
+The untracked art bundle remains local; no scripts or dependencies adopted.
+
+Direct test first rejected the old five-row lettering. After implementation,
+release chat_view, render-oracle and terminal_pty pass 3/3, including launcher
+80x24 and 120x40, composer cursor, cached corner relocation and pixel release.
+Atomic blackbird-ui and arco-ui release aliases refreshed.
+
+One narrow adversarial review found no actionable defects. Independent wcwidth
+checks confirm every wordmark glyph is one cell and all rows occupy 67 cells;
+layout bounds and exact README asset bytes were checked. Report retained in
+papers/2026-10-07-wordmark-review.md. No further assurance round added.

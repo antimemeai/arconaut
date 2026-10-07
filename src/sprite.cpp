@@ -78,19 +78,31 @@ blackbird_sprite(bool active, std::size_t phase) {
 
 namespace blackbird {
 namespace {
-constexpr std::array<std::string_view, 5> lettering{
-    "####  #      ###   #### #   # ####  ##### ####  ####",
-    "#   # #     #   # #     #  #  #   #   #   #   # #   #",
-    "####  #     ##### #     ###   ####    #   ####  #   #",
-    "#   # #     #   # #     #  #  #   #   #   #  #  #   #",
-    "####  ##### #   #  #### #   # ####  ##### #   # ####"};
+// Solid strokes and double-line shadow; every scalar here occupies one cell.
+constexpr std::array<std::string_view, blackbird_lettering_height> lettering{
+    "██████╗ ██╗      █████╗  ██████╗██╗  ██╗██████╗ ██╗██████╗ ██████╗ ",
+    "██╔══██╗██║     ██╔══██╗██╔════╝██║ ██╔╝██╔══██╗██║██╔══██╗██╔══██╗",
+    "██████╔╝██║     ███████║██║     █████╔╝ ██████╔╝██║██████╔╝██║  ██║",
+    "██╔══██╗██║     ██╔══██║██║     ██╔═██╗ ██╔══██╗██║██╔═██╗ ██║  ██║",
+    "██████╔╝███████╗██║  ██║╚██████╗██║  ██╗██████╔╝██║██║  ██╗██████╔╝",
+    "╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═════╝ "};
+static_assert([] {
+  for (const auto line : lettering) {
+    std::size_t cells = 0;
+    for (const char byte : line)
+      cells += (static_cast<unsigned char>(byte) & 0xc0U) != 0x80U;
+    if (cells != blackbird_lettering_width)
+      return false;
+  }
+  return true;
+}());
 } // namespace
 std::vector<std::string> blackbird_startup(std::size_t columns, std::size_t rows,
                                           bool mascot) {
   std::vector<std::string> result;
   if (!columns || !rows)
     return result;
-  if (columns < 53 || rows < 5) {
+  if (columns < blackbird_lettering_width || rows < blackbird_lettering_height) {
     result.emplace_back(std::string_view{"BLACKBIRD"}.substr(0, columns));
     return result;
   }

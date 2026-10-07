@@ -26,3 +26,15 @@ and editor/exit. One bounded adversarial review of the change.
 References:
 - https://sw.kovidgoyal.net/kitty/graphics-protocol/
 - https://ghostty.org/docs/features
+
+## Modern startup wordmark
+
+Replace the hash font with a six-row solid Unicode block wordmark and double-line
+shadow edges. It occupies 67 terminal cells, irrespective of UTF-8 byte length.
+Fit the complete wordmark or fall back to the plain label; never clip a glyph.
+Derive image geometry from the displayed wordmark's cell width and row count:
+side by side when there is room for at least a 24-column square, otherwise stack
+with one blank row. Preserve the exact supplied aircraft and cached-image path.
+Check cell fitting and the actual 80x24/120x40 launcher layout, with one narrow
+review. This visual unit gets a 15-minute allowance and no new dependency.
+The operator's Claude-supplied pixel-art badge belongs at the top of README only.

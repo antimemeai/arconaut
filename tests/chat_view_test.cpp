@@ -1,5 +1,6 @@
 #include "blackbird/chat_view.hpp"
 #include "blackbird/sprite.hpp"
+#include "blackbird/terminal.hpp"
 #include <cerrno>
 #include <chrono>
 #include <clocale>
@@ -82,10 +83,11 @@ int main(int argc, char **) {
       const auto startup = blackbird_startup(width, height);
       require(startup.size() <= height, "startup art exceeds viewport height");
       for (const auto &line : startup)
-        require(line.size() <= width, "startup art exceeds viewport width");
+        require(terminal_lines(line, width) == std::vector<std::string>{line},
+                "startup art exceeds terminal cell width");
     }
-    require(blackbird_startup(80, 30, false).size() == 5,
-            "disabled mascot draws startup aircraft");
+    require(blackbird_startup(80, 30, false).size() == 6,
+            "startup wordmark must have six rows");
     ChatView view;
     view.append(ChatKind::user, "hola");
     view.begin(ChatKind::assistant);
