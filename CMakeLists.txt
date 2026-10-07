@@ -276,3 +276,7 @@ if(BLACKBIRD_DEBUG)
   add_executable(local_history_profile tooling/probes/local_history.cpp)
   target_link_libraries(local_history_profile PRIVATE blackbird_foundation)
 endif()
+
+# Scoped native startup oracle; not installed or part of the default build.
+add_executable(startup_loading_probe EXCLUDE_FROM_ALL tooling/probes/startup_loading.cpp)
+target_link_libraries(startup_loading_probe PRIVATE blackbird_coding)

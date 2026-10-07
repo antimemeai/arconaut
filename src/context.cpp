@@ -119,7 +119,8 @@ ContextStore::ContextStore(AuditLog &log) : log_(log) {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (record == nullptr || record->channel != ApplicationChannel::context)
       continue;
-    const auto packet = unwrap(parse_json(text(record->payload)));
+    constexpr std::array<std::string_view, 1> omitted{"candidate"};
+    const auto packet = unwrap(parse_json_projection(text(record->payload), omitted));
     const auto revision = hex_identity(record->identity.bytes());
     if (string_field(packet, "revision") != revision ||
         string_field(packet, "observed") != head_)
