@@ -4138,3 +4138,23 @@ Operator now authorizes a distinct W1 implementation unit: shared Lua workflow
 registry, configurable slash aliases/prefix, POWERWORDS such as ultracode and TUI
 coloring, with continuous profiling from launch. Scope and directchecks are in
 WORKFLOW_REGISTRATION.md; issue arconaut-3oz.2. W0 budget is not renewed under W1.
+
+## 2026-10-07 — W1 launched with automatic collection
+
+Published research/profiling unit8342bb1 on master. Archived incomplete W0 without
+renewing its allowance and reused the clean existing slot for a distinct W1 branch,
+candidate/workflow-core-2026-10-07, pushed before work. New fresh session at
+context/workflows-core; gpt-6.1-sol/medium, absolute25-minute allowance. Uses optimized
+profile executable with profile-only attach entitlement. Mission includes brief/source
+reading, short subplan, real implementation, direct checks, one bounded independent
+review and explicit candidate commit/push. Shared registry, configurable slash
+commands and exact-token colored POWERWORDS are operator-authorized deliverables.
+
+Native candidate runner launches scripts/autodev-profiled automatically. Verified
+real supervisor/harness/curl descendants and persisted observations from launch;
+first request16.5KB, subsequent observed57.8KB. Enabled native opt-in context budget
+131072-byte trigger/65536-byte advisory target in setup. Five-second native stack
+window completed; finite allocation capture attached to the real profile harness.
+Board adopted workflows-core; old lanes unchanged. Direct launch fault checks show
+preflight failure starts no workload and later telemetry failure still waits the
+command and retains terminal exit7. No extra review layer or budget reset.
