@@ -3376,3 +3376,14 @@ built build/g3-release/arco (SHA25663f26f8a9b219b71eb77898a32dc1c7919a990edcc138
 including accepted editor parent0f1019c, excluding dirty concurrent palette. Install
 at build/release/arco and same-unit RRC next; whole deadline06:59:09UTC preserved.
 Master remains de22bb2 until activation observation/checked FF; no accepted claim.
+
+G3 accepted after actual same-session RRC observation05:52:18UTC: PID60700 started
+05:51:05, build/release/arco SHA25663f26f8a9b219b71eb77898a32dc1c7919a990edcc13848d87adb2a02dc2bcdd.
+Native tool_registry active; no tool inheritance from separate g3/actual session.
+Source-map publication/reopen anchors used for operating notes (known mixed-range
+read again handled with bounded Lua/native read; not fixed). Checked ancestors and
+non-force master FF de22bb2..b7436e2 pushed. Concurrent qualified palette b7436e2
+arrived at shared branch boundary; no dirty UI overwritten, G3 binary does NOT
+include palette activation, which stays separate owner. Bead7iy.3 closed; bd backup
+complete. G4 queued next fresh unit, not started. No third hardening or settled
+checks rerun. Original unit completed well before06:59:09UTC.

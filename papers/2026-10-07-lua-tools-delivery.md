@@ -91,3 +91,25 @@ Coherent release built from clean archived fdd8511 at build/g3-release/arco
 SHA256 `63f26f8a9b219b71eb77898a32dc1c7919a990edcc13848d87adb2a02dc2bcdd`.
 The accepted editor parent0f1019c is included; dirty palette paths are not. This is
 a replacement build, not another assurance layer. Activation observation is next.
+
+## Acceptance / actual native activation
+
+Observed05:52:18UTC after same-session RRC: PID60700 started05:51:05UTC, executable
+build/release/arco resumed context/giga-campaign/session-arconaut-7iy.3, replacement
+SHA25663f26f8a9b219b71eb77898a32dc1c7919a990edcc13848d87adb2a02dc2bcdd.
+New native tool_registry returned initial-empty effective registry in this distinct
+main session. No inheritance of the separate actual-use session's tool was claimed.
+The delivered map was used to locate publication/reopen anchors for the final
+operating notes; it is still not a recheck/correctness receipt. One main read again
+hit known mixed-range interface behavior, handled by Lua->native bounded byte read.
+
+Checked remote/master and local master ancestors; non-force local fetch/push
+advanced de22bb2..b7436e2. Concurrent independently qualified palette source arrived
+on the shared candidate branch at05:52:59UTC, between ancestor observation and
+branch fetch; this FF includes it and accepted editor source. These unrelated UI
+sources remain their owner's delivery/activation claims. G3 replacement contains
+editor but not palette; no palette native activation inferred. No dirty UI paths
+were overwritten. G3 is CLOSED/accepted with its own observed native feature.
+Final notes/backups published as a separate normal checkpoint. No later unit
+implemented or started; original90minute deadline and completed hardening bound
+were not reset.
