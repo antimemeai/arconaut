@@ -46,9 +46,13 @@ run-471gqhr2 passed backstop/coding in debug, release and ASan+UBSan. No settled
 unrelated tests rerun. A relevant lifetime finding during this layer was that
 request() leaves the recovery cancellation closure on a shared provider adapter;
 RAII now restores the old callback. Direct Mac backstop verifies restoration.
-Final affected Linux callback-fix run is recorded separately, not inferred from
-the earlier source snapshot. Release binary is built; native activation still
-requires actual RRC observation before acceptance.
+Final affected Linux callback-fix run-8a3_ybjx passed the narrow backstop test in
+debug/release/ASan+UBSan, observed04:41:49UTC. No third assurance layer was added.
+Release binary built04:38:13UTC (990712bytes); actual RRC activation observed
+04:41:05UTC: PID26902 started04:40:14UTC from build/release/arco, resumed the same
+Root-authored recovery session and completed a provider request with actual usage
+available. No inherited settlement or new allowance is claimed. Hardening ended
+04:41:49UTC, inside the original conservative25minute total bound.
 
 Old read-only retained-state inspections timed out without output; no reconciliation
 was inferred. A distinct read-only physical frame decoder inspected original bytes:

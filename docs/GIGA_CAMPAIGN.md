@@ -14,6 +14,17 @@ integrations, station feeds and two independent network peers exercise that core
 The campaign does real Arconaut work throughout; it does not first construct a
 universal evolution platform or a new proof-of-acceleration experiment.
 
+## Current delivery
+
+G1 `arconaut-scs` delivered the cooperative native backstop slice: same-lifetime
+custody, independent fresh assessment, explicit selected native-file pivot and actual
+useful operating-guide delivery. Mac affected checks and final narrow Linux
+backstop debug/release/ASan checks passed; release RRC activation observed04:41UTC.
+No crash/reopen/general-exec containment claim. Earlier exhausted incidents and
+unknown effects remain preserved. Details: [backstop delivery](../papers/2026-10-07-backstop-delivery.md).
+Primary next is G2 managed-context policy; G5 remains the isolated colleague lane,
+with Root owning integration. This note does not start either unit here.
+
 ## Ordered whole units
 
 | Unit | Delivery and direct observation | Source/design starting point |
