@@ -1,0 +1,80 @@
+{
+  "scope": "14610 sequential issue<ParticipantId>() calls on fresh native file-backed journal, no reopen inside timed interval",
+  "build": "Release, BLACKBIRD_DEBUG=OFF; separate lane binary, primary untouched",
+  "baseline": "same caller/library with only build-only allocator range_size changed from 1024 to 1 by scripts/issuer-single-baseline; mechanism isolation, not a historical/application benchmark",
+  "range": {
+    "issued": 14610,
+    "width": 1024,
+    "reservations": 15,
+    "sync_delta": 15,
+    "seconds": 0.06376175
+  },
+  "single": {
+    "issued": 14610,
+    "width": 1,
+    "reservations": 14610,
+    "sync_delta": 14610,
+    "seconds": 88.372044708
+  },
+  "process_resources": {
+    "range": {
+      "real_seconds": 0.1,
+      "user_seconds": 0.0,
+      "system_seconds": 0.0,
+      "max_resident_bytes": 1949696,
+      "block_input_operations": 0,
+      "block_output_operations": 0
+    },
+    "single": {
+      "real_seconds": 88.59,
+      "user_seconds": 11.03,
+      "system_seconds": 3.19,
+      "max_resident_bytes": 233947136,
+      "block_input_operations": 0,
+      "block_output_operations": 0
+    }
+  },
+  "stack": {
+    "sample_exit": 0,
+    "pid": 57962,
+    "duration_seconds": 1
+  },
+  "host": "macOS-26.6-arm64-arm-64bit",
+  "evidence": [
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-final-measure/range.jsonl",
+      "sha256": "098998bd437a28a898a103b0815711e0c1128b14a6e247bd8812e97aa8e2f816"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-final-measure/single.jsonl",
+      "sha256": "060b894984f885124eb880589ffc2d5a503a23dfe9e06a3583d5110649ccb186"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-final-measure/range-resources.log",
+      "sha256": "6391b53969f781b3372022215ffa25f343633bd2289b6d6f28fb4527567e1c84"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-final-measure/single-resources.log",
+      "sha256": "a8cdddda06eae35d7ab5f3f2c53c73c3e2dc49f52716d7f77e935c26ec3bb419"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-final-measure/single-stack.txt",
+      "sha256": "d9652846620435892641125b39f815384bc711d7fb1a7f46c53ec61e821667e8"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-layer2-checks.log",
+      "sha256": "dd0d4263cf7efaf4afb565ff77474c4994015e65ba2025a1c7b99b7b025e7198"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0/build/issuer-review/result.txt",
+      "sha256": "249faa8eb6e2d2509d8b2173b7bb44d702e0da54229383475de20188e6473406"
+    }
+  ],
+  "gaps": [
+    "No candidate native timing instrumentation: chosen Release OFF observation; primary timing traces unchanged.",
+    "OS block input/output counters are zero, not total I/O bytes; no allocation/copied-byte census.",
+    "Range whole-process resources include reopen/crash/namespace properties; single includes reopen, so whole-process CPU/memory are descriptive, not matched interval ratios.",
+    "Range process too short for live stack sampling; baseline one-second stack persisted.",
+    "No startup latency measurement or claim; no full suite or certification."
+  ]
+}

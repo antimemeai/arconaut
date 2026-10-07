@@ -1149,6 +1149,11 @@ Result<IdentityBytes> RetainedState::reserve_identity() {
     if (!reserved.has_value()) {
       return Result<IdentityBytes>::failure(reserved.error());
     }
+    // A storage/custody callback may close admission during an acknowledged
+    // refill. Durable space is burned, not permission for an ID to escape.
+    if (state() != JournalWriterState::live) {
+      return Result<IdentityBytes>::failure({ErrorCode::audit_unavailable});
+    }
     // Publish volatile allocation only after ordinary durable acknowledgement.
     allocation_namespace_ = ns_current;
     allocation_cursor_ = highwater;

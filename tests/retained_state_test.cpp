@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -73,6 +74,7 @@ struct StorageState {
   bool fail_sync = false;
   bool fail_directory = false;
   std::size_t sync_calls = 0;
+  std::function<void()> on_sync;
   std::size_t fail_sync_call = 0;
   std::size_t allocate_after_sync_call = 0;
   std::size_t fail_after = SIZE_MAX;
@@ -127,6 +129,7 @@ public:
   Result<void> synchronize(SyncStrength strength) override {
     CHECK(strength == SyncStrength::full);
     ++state_->sync_calls;
+    if (state_->on_sync) state_->on_sync();
     if (state_->fail_sync || state_->sync_calls == state_->fail_sync_call) {
       return Result<void>::failure({ErrorCode::io, 5});
     }
@@ -697,6 +700,35 @@ std::uint64_t identity_counter(const IdentityBytes &bytes) {
     value |= std::uint64_t(std::to_integer<unsigned char>(bytes[i + 8])) << (8 * i);
   return value;
 }
+void issuer_count_and_credit() {
+  auto storage = std::make_shared<StorageState>();
+  auto state = create(storage);
+  const auto syncs = storage->sync_calls;
+  for (std::uint64_t i = 1; i <= 14610; ++i)
+    CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == i);
+  CHECK(state->issuer_counter() == 15360);
+  CHECK(state->committed_facts().size() == 15);
+  CHECK(storage->sync_calls == syncs + 15);
+  for (std::size_t i = 0; i < 15; ++i)
+    CHECK(std::get<IssuerReservationEvent>(state->committed_facts()[i].event.body).counter ==
+          (i + 1) * 1024);
+  const auto usage = state->journal_usage();
+  auto scope = require(state->protect_settlement(
+      {*usage.remaining_bytes(), usage.remaining_records()}));
+  const auto before = storage->bytes;
+  const auto credit = *state->protected_settlement();
+  // Already durable IDs consume no audit capacity or protected credit.
+  for (std::uint64_t i = 14611; i <= 15360; ++i)
+    CHECK(identity_counter(require(state->issue<DecisionId>()).bytes()) == i);
+  CHECK(storage->bytes == before && storage->sync_calls == syncs + 15);
+  CHECK(state->protected_settlement()->max_file_bytes == credit.max_file_bytes);
+  CHECK(state->protected_settlement()->max_records == credit.max_records);
+  error_is(state->issue<DecisionId>(), ErrorCode::capacity);
+  CHECK(storage->bytes == before);
+  scope.reset();
+  CHECK(identity_counter(require(state->issue<DecisionId>()).bytes()) == 15361);
+  std::puts("issuer fake: issued=14610 reservations=15 sync_delta=15 highwater=15360");
+}
 void issuer() {
   auto storage = std::make_shared<StorageState>();
   auto state = create(storage);
@@ -730,6 +762,32 @@ void issuer() {
   CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX - 1);
   CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX);
   error_is(state->issue<ParticipantId>(), ErrorCode::overflow);
+  // Reentrant issue during submission cannot dispense cached durable space.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  require(state->issue<ParticipantId>());
+  bool checked = false;
+  storage->on_sync = [&] {
+    error_is(state->issue<ParticipantId>(), ErrorCode::busy);
+    checked = true;
+  };
+  require(state->submit({{}, IssuerReservationEvent{2048}}));
+  CHECK(checked);
+  storage->on_sync = {};
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == 2049);
+  // Successful refill synchronization can itself close admission: no ID escapes.
+  storage = std::make_shared<StorageState>();
+  state = create(storage);
+  storage->on_sync = [&] { state->block_admission(); };
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
+  CHECK(state->issuer_counter() == 1024 && state->committed_facts().size() == 1);
+  storage->on_sync = {};
+  error_is(state->issue<ParticipantId>(), ErrorCode::audit_unavailable);
+  state.reset();
+  state = open(storage);
+  require(state->confirm_recovery());
+  require(state->reconcile(custody));
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == 1025);
   // A cached range cannot bypass a host admission block.
   storage = std::make_shared<StorageState>();
   state = create(storage);
@@ -1480,6 +1538,7 @@ int main() {
     pending_proposal_clean_outcomes();
     rejected_wrong_cursor_owns_caller_packet();
     root_refuses_continuation_records();
+    issuer_count_and_credit();
     issuer();
     rejected_batch_and_suffix();
     receipt_settlement_and_failures();

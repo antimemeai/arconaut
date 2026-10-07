@@ -244,7 +244,7 @@ void atomic_admission_test(const std::string &path, int mode) {
     before = counts();
     if (mode != 2) {
       const auto usage = root->journal_usage();
-      JournalCapacity credit{1, usage.remaining_records() - 5};
+      JournalCapacity credit{1, usage.remaining_records() - 2};
       if (mode == 0) {
         std::optional<DecisionEvent> prior;
         for (const auto &fact : root->committed_facts())
@@ -263,8 +263,6 @@ void atomic_admission_test(const std::string &path, int mode) {
         const auto encoded_size = [&](const RetainedEvent &event) {
           return unwrap(encode_retained_event(event, h.limits.max_payload)).size();
         };
-        const auto issuer = 56 + journal_frame_header_size +
-                            encoded_size({{}, IssuerReservationEvent{1}});
         const auto decision = encoded_size({{},
                                             DecisionEvent{id<DecisionId>(51),
                                                           prior->actor,
@@ -279,9 +277,10 @@ void atomic_admission_test(const std::string &path, int mode) {
                                                               id<DecisionId>(51),
                                                               prior->definition,
                                                               {in.begin(), in.end()}}});
-        // Exactly enough for three issuer reservations and two old transactions.
+        // Cached durable IDs add no records/bytes; leave room for the two old
+        // transactions, but not their atomic admission/settlement envelope.
         const auto room =
-            3 * issuer + 2 * (56 + journal_frame_header_size) + decision + invocation;
+            2 * (56 + journal_frame_header_size) + decision + invocation;
         if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
           throw Error{ErrorCode::corrupt};
         credit = {*usage.remaining_bytes() - room, 1};

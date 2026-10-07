@@ -614,7 +614,8 @@ void captured_reservation_does_not_burn_active_namespace() {
   expected[0] = std::byte{13};
   expected[8] = std::byte{1};
   CHECK(issued.bytes() == expected);
-  const auto active = require(owner->submit(reservation));
+  // Issuance reserves a durable range, not the last issued counter.
+  const auto active = require(owner->submit({{}, IssuerReservationEvent{1024}}));
   CHECK(active.existing && active.record == RecordReference{child.journal, 6} &&
         active.evidence == RetainedEvidence::live);
   const std::array events{reservation};
