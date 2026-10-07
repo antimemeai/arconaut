@@ -11,6 +11,9 @@ enum class FileAccess : std::uint8_t { read_only, read_write };
 class JournalFile : public Storage {
 public:
   virtual Result<void> lock_writer() = 0;
+  // Memory adapters have no lease; descriptor decorators must forward release.
+  // Reader references retain storage ownership, not writer ownership.
+  virtual void release_writer() noexcept {}
 };
 class JournalDirectory {
 public:
@@ -36,6 +39,7 @@ public:
   Result<std::uint64_t> extent() override;
   Result<void> synchronize(SyncStrength strength) override;
   Result<void> lock_writer() override;
+  void release_writer() noexcept override;
 
 private:
   friend class NativeJournalDirectory;

@@ -19,6 +19,7 @@ struct ProbeIO {
 class ProbeFile final : public JournalFile {
 public:
   ProbeFile(std::unique_ptr<JournalFile> file, ProbeIO &io) : file_(std::move(file)), io_(io) {}
+  void release_writer() noexcept override { file_->release_writer(); }
   Result<std::size_t> read_at(std::uint64_t offset, MutableByteView bytes) override {
     auto result = file_->read_at(offset, bytes);
     if (result.has_value()) io_.read_bytes += result.value();
@@ -105,6 +106,14 @@ int main(int argc, char **argv) {
     replay_timing.finish();
     const auto initial_bytes=std::filesystem::file_size(path/"audit");
     const auto initial_facts=root->committed_facts().size();
+    std::size_t resident_payload = 0, cold_payload = 0;
+    for (const auto &fact : root->committed_facts())
+      if (const auto *app = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
+        resident_payload += app->payload.resident_bytes();
+        if (app->payload.is_cold()) cold_payload += app->payload.size();
+      }
+    std::cerr << "resident_application_bytes=" << resident_payload
+              << " cold_application_bytes=" << cold_payload << '\n';
     const auto replay=std::chrono::steady_clock::now();
     LocalSpan context_timing{"startup.context", "tooling/probes/startup_loading.cpp"};
     AuditLog log{*root}; ContextStore context{log};

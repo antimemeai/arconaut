@@ -36,6 +36,11 @@ public:
     count(bytes.size());
     raw(bytes);
   }
+  void blob(const ImmutableBytes &bytes) {
+    auto owned = bytes.read();
+    if (!owned.has_value()) throw owned.error();
+    blob(ByteView{owned.value()});
+  }
   Result<std::vector<std::byte>> finish() && {
     return failed_ ? Result<std::vector<std::byte>>::failure({ErrorCode::capacity})
                    : Result<std::vector<std::byte>>::success(std::move(bytes_));
@@ -392,6 +397,8 @@ Result<std::vector<std::byte>> encode_retained_event(const RetainedEvent &event,
     }
     std::visit([&](const auto &body) { encode_body(encoder, body); }, event.body);
     return std::move(encoder).finish();
+  } catch (const Error &error) {
+    return Result<std::vector<std::byte>>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
   }

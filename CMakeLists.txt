@@ -290,3 +290,7 @@ add_executable(journal_checkpoint_test tests/journal_checkpoint_test.cpp)
 target_link_libraries(journal_checkpoint_test PRIVATE blackbird_foundation)
 add_test(NAME journal_checkpoint COMMAND journal_checkpoint_test)
 set_tests_properties(journal_checkpoint PROPERTIES TIMEOUT 15)
+
+add_executable(cold_history_test tests/cold_history_test.cpp)
+target_link_libraries(cold_history_test PRIVATE blackbird_coding)
+add_test(NAME cold_history COMMAND cold_history_test)

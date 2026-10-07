@@ -402,23 +402,18 @@ void replay_avoids_prefix_payload_copies() {
   CHECK(reopened->committed_facts().size() == 64);
   Custody custody;
   require(reopened->reconcile(custody));
-  const auto *prefix =
-      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
-          .payload.data();
+  const auto prefix =
+      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body).payload;
+  CHECK(prefix.is_cold() && prefix.resident_bytes() == 0);
   allocated_bytes.store(0);
   measure_allocation.store(true);
   for (int i = 0; i < 32; ++i)
     require(reopened->issue<ParticipantId>());
   measure_allocation.store(false);
-  std::fprintf(stderr, "forward allocations %zu for %zu journal bytes\n",
-               allocated_bytes.load(), storage->bytes.size());
-  CHECK(std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
-            .payload.data() == prefix);
-  // The alias oracle establishes sharing of immutable bytes; total allocation
-  // also includes metadata and this fixture's in-memory journal writes.
   const auto copy =
       std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body);
-  CHECK(copy.payload.data() == prefix);
+  CHECK(copy.payload.is_cold() && copy.payload.resident_bytes() == 0);
+  CHECK(copy.payload == prefix);
   for (std::size_t i = 0; i < 64; ++i) {
     const auto &fact =
         std::get<ApplicationRecordEvent>(reopened->committed_facts()[i].event.body);

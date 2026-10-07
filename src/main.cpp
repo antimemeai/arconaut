@@ -225,9 +225,7 @@ int main(int argc, char **argv) {
         if (record == nullptr || record->channel != ApplicationChannel::log ||
             fact.event.dependencies.empty())
           continue;
-        const std::string_view meta{
-            reinterpret_cast<const char *>(record->payload.data()),
-            record->payload.size()};
+        const auto meta = read_text(record->payload);
         std::cout << safe(meta) << '\n';
         for (const auto reference : fact.event.dependencies) {
           const auto bytes = unwrap(root->source(reference));
@@ -250,8 +248,7 @@ int main(int argc, char **argv) {
         const auto *r = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         if (!r || r->channel != ApplicationChannel::program)
           continue;
-        const auto p = unwrap(parse_json(std::string_view{
-            reinterpret_cast<const char *>(r->payload.data()), r->payload.size()}));
+        const auto p = unwrap(parse_json(read_text(r->payload)));
         const auto *label = p.find("label");
         if (label && std::holds_alternative<std::string>(label->value()) &&
             label->string() == "station.profile")

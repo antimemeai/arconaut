@@ -4,6 +4,7 @@
 #include "blackbird/journal_storage.hpp"
 #include <algorithm>
 #include <string>
+#include <functional>
 
 namespace blackbird {
 
@@ -92,7 +93,10 @@ public:
        bool use_scan_checkpoint = false);
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
+  using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
+  Result<PayloadReader> payload_reader(const PhysicalJournalRecord &record);
   bool used_scan_checkpoint() const noexcept { return used_scan_checkpoint_; }
+  ~FramedJournal() { file_->release_writer(); }
   FramedJournal(const FramedJournal &) = delete;
   FramedJournal &operator=(const FramedJournal &) = delete;
   Result<JournalCursor> append(std::span<const JournalDraft> drafts);
@@ -149,7 +153,7 @@ private:
   JournalCapacity capacity_;
   SyncStrength strength_;
   JournalDirectory &directory_;
-  std::unique_ptr<JournalFile> file_;
+  std::shared_ptr<JournalFile> file_;
   std::vector<PhysicalJournalRecord> records_;
   std::vector<PhysicalJournalRecord> staged_;
   std::vector<PhysicalJournalRecord> pending_;

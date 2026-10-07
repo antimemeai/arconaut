@@ -513,6 +513,23 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
           invalid = decoded.error();
           break;
         }
+        if (auto *application = std::get_if<ApplicationRecordEvent>(&decoded.value().body)) {
+          auto reader = journal.payload_reader(records[index]);
+          if (!reader.has_value()) return Result<void>::failure(reader.error());
+          const auto offset = std::size_t{30} + decoded.value().dependencies.size() * 24;
+          const auto size = application->payload.size();
+          if (offset > payload.value().size() || size != payload.value().size() - offset)
+            return Result<void>::failure({ErrorCode::corrupt});
+          application->payload = ImmutableBytes::cold(size,
+            [reader = std::move(reader).value(), offset, size]() {
+              auto bytes = reader();
+              if (!bytes.has_value()) return bytes;
+              if (offset > bytes.value().size() || size != bytes.value().size() - offset)
+                return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+              bytes.value().erase(bytes.value().begin(), bytes.value().begin() + static_cast<std::ptrdiff_t>(offset));
+              return bytes;
+            });
+        }
         const auto applied = apply(staging, std::move(decoded).value(),
                                    {records[index].journal, records[index].sequence},
                                    RetainedEvidence::recovered_pending, &lookup);
@@ -555,6 +572,8 @@ Result<void> RetainedState::replay(Snapshot &staging, FramedJournal &journal,
       }
     }
     return Result<void>::success();
+  } catch (const Error &error) {
+    return Result<void>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<void>::failure({ErrorCode::allocation});
   }
@@ -796,6 +815,8 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
     }
     timing.outcome("success");
     return written;
+  } catch (const Error &error) {
+    return Result<JournalCursor>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<JournalCursor>::failure({ErrorCode::allocation});
   }
@@ -940,6 +961,7 @@ Result<Submission> RetainedState::submit(const RetainedEvent &event) {
 }
 Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
                                               bool settlement) {
+  try {
   if (const auto *previous = existing(visible(), event);
       previous && previous->event == event) {
     return Result<Submission>::success({true, previous->record, previous->evidence});
@@ -949,7 +971,6 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
     return Result<Submission>::success(
         {true, previous->record, RetainedEvidence::uncertain});
   }
-  try {
     const auto current = cursor();
     const std::array events{event};
     const auto written = append_impl(current, {}, events, false, settlement);
@@ -958,6 +979,8 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
     }
     return Result<Submission>::success(
         {false, {current.journal, current.sequence + 1}, RetainedEvidence::live});
+  } catch (const Error &error) {
+    return Result<Submission>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<Submission>::failure({ErrorCode::allocation});
   }
