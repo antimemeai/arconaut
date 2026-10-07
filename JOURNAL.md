@@ -4492,3 +4492,64 @@ Partial durable range allocator/test edits. Four-segment cap exhausted after~12m
 
 Partial lazy historical JSON restoration. Context/workflow_repair checks passed; one static Codex review found no substantive defect within inspected diff. All10 large-fixture benchmark runs exited1/error20, so timing/memory output is not a valid ready-operation measurement. Under100ms NOT demonstrated. Four-segment cap exhausted before final report/commit.
 Candidate inactive, original allowance expired; checkpoint not acceptance.
+
+
+Actually launched cold-history-r2-2026-10-07, gpt-6.1-sol/medium nativeBB in
+reusedslot0, deadline1791400930,25minTOTAL. Pushedseed4e2fe17 combinesmaster25b3ff2
+and dce1481 source; preserved appended journal histories and root handoff report.
+Required cold payload ownership in native session/context/history readers;
+another physicalhint/helper-only result expressly excluded from delivery. Pinned
+refsource usage, exact byte equality, fallible reads/lifetimes, unknown/settlement
+fences and useful memory measured. Early full nativebuild, one NEWcode review
+and direct findingsrecheck, no oldunit recertification. Explicit development
+native/OScapture only, primarynormalDEBUGOFF unchanged. Board adopted authorized
+unit; n11/3x2 active, master integration separate.
+
+## 2026-10-07 — cold-history R2 result, native ownership improved, recovery pending
+
+Native BB completed before its fixed deadline and pushed d32a764 to
+candidate/cold-history-r2-2026-10-07. Historical application payloads now retain
+checked descriptor-backed disk references; context/session/coding/audit native
+consumers use explicit fallible reads. Current data remains purposefully owned;
+non-application blobs remain eager. No current-state checkpoint/tail recovery.
+Reference-grounded design and result preserved under papers/storage-performance-2026-10-07.
+
+Matched Release/DEBUGOFF applications built. Native ownership/eager-cold/duplicate/
+lifetime/fault checks and affected context/session/recovery checks passed after
+fixing the retained writer lease and replacing the obsolete eager alias oracle.
+One authenticated Codex review timed out without final findings, no retry.
+Candidate remains inactive/unintegrated; primary executable unchanged.
+
+Same656-fact335769848byte archive,37 live bytes, three warm samples per variant:
+request-ready RSS352.68–352.73MB→5.54–6.75MB, median readiness197.987→244.600ms;
+reads671502960→1007256581bytes. Cold ownership removes historical residency but
+context restoration adds another full byte pass. Under100ms missed; restore
+current state plus subsequent tail remains the next architecture step. No forced
+cold-cache or complete native allocation/private-mapped breakdown was measured.
+
+Manager/collector completed exit0; all254 sampled identities absent via Darwin
+libproc, launcher identities absent. Checkout clean/pushed/checkpointed, native
+slot and board reservation released; zero active autodevs, raw evidence retained.
+No implicit allowance renewal, further review round or master code integration.
+
+## 2026-10-07 — operator challenges missing plan and premature partial endpoints
+
+Inspected STUDY, R2 direction/design and native candidate source. Research/source
+grounding is real, but complete state schema and reader migration were left as
+future design. Root allowed physical hints then explicitly cold ownership to
+substitute for the recovery milestone. BB delivered the smaller authorized scope,
+not saved-state/suffix recovery. This was Root's sequencing error. R2 log records
+69 completed provider responses totaling990.297s, consuming most of its bounded
+execution period; a25minute total allowance was not a credible whole-redesign scope.
+
+Wrote docs/DURABLE_STATE_PLAN.md: actual saved-state schema/14-kind reduction,
+RetainedEnvironment predecessor recovery, typed paged COW lookup, native consumer
+census, data-before-root publication, unchanged audit/explicit fallback, recovery
+fences, bounded-tail/settlement maintenance, and dependency-ordered endpoints with
+exact state/fault/readiness discriminators. Re-read relevant pinned LMDB root/split,
+Aeron snapshot-position, SQLite selected read, Bitcask metadata/fallback and TB
+address/content/lifetime code. References remain study-only; no dependency adopted.
+
+Plan is a written proposal, not independently reviewed or launched. Keep one
+recovery milestone across bounded execution periods; prerequisites are not success.
+No new worker, review panel, deadline reset, code merge or primary binary change.

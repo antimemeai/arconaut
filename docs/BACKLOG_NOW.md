@@ -6,11 +6,16 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 
 ## Immediate performance work
 
+Remaining recovery implementation follows [DURABLE_STATE_PLAN](DURABLE_STATE_PLAN.md):
+one owner, indexed queries → native current-state projection → checkpoint/suffix
+reopen → bounded maintenance/direct delivery. Written proposal, not yet reviewed
+or launched. Cold ownership/physical hints are prerequisites, not the finish line.
+
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
 | arconaut-fsp | Native timing surfaces and real history measurements | Merged; debug-only build machinery, defaultOFF, runtime recording also explicit. Issue closed. |
 | arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | Pushed e0e0b98:14610 IDs require15 reservations/syncs versus14610; five affected checks and one review/fix/recheck passed. Candidate awaits integration; stream batching remains separate. |
-| arconaut-n11 | Startup below100ms with large retained history/context | Pushed35413f3: warm335.8MB-history fixture audited readiness1394.550→265.961ms, prompt180.675ms. Target missed; replay160.891ms + engine/admission85.965ms remain. Large live context unmeasured. Candidate awaits integration. |
+| arconaut-n11 | Startup below100ms with large retained history/context | Latest pushed d32a764 removes historical application residency, but matched warm335.8MB fixture readiness198→245ms regresses. Target missed. Current-state restoration plus tail is next; candidate inactive, review timed out. |
 | arconaut-kut | Continue unfinished units until completion or same deadline | Fixed shared driver with direct six-segment/deadline/pause checks, no budget renewal or blind replay; closed. |
 | arconaut-1v0 | Store invocation input once and reference it from semantic records | Old census measured46,559,372 duplicated blob bytes between invocation/admission alone; decision repeats logicalinput. Requires versioned references and historical readability, not history deletion. |
 | arconaut-3x2 | Stop copying complete metadata/context history on small appends | Current append copies Snapshot vectors; live lookup scans facts; ContextStore copies/serializes cumulative state. Split retained suffix storage and context indexing at their real ownership boundaries. |
@@ -26,7 +31,12 @@ at that reconciliation. The subsequent durable-state-r1 autodev also stopped:
 pushed dce1481 is a partial opt-in physical hint implementation, inactive.
 Combined full-scan baseline on its642-fact/335.7MB fixture gave196.708ms audited
 readiness; hint path120.609ms, prompt91.3767ms, RSS352MB unchanged. These differ
-from prior1282-fact samples and do not isolate allocator gain. Zero active.
+from prior1282-fact samples and do not isolate allocator gain. Operator explicitly
+resumed cold-history-r2-2026-10-07, which delivered pushed d32a764 and stopped.
+Historical application ownership is now cold through native consumers: matched
+335.8MB fixture request-ready RSS353MB→6–7MB, median warm readiness198ms→245ms.
+Direct ownership/context/recovery checks passed; one review timed out. Candidate
+remains inactive. Zero active autodevs; physical hints remain inactive.
 Compact semantic state, bounded tail and demand-read history remain the next
 actual redesign; no additional review panel is queued.
 
