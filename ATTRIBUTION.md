@@ -20,3 +20,7 @@ the original character and artwork are from Caves of Qud.
 - [Freehold Games on itch.io](https://freeholdgames.itch.io/cavesofqud)
 
 Credits checked against the official Caves of Qud press kit on2026-10-07.
+
+The original Caves of Qud artwork and adaptations of it are not covered by
+Arconaut's MIT license. Rights remain with their respective creators; attribution
+does not grant permission to redistribute the artwork.
