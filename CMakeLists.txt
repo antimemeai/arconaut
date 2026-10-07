@@ -210,6 +210,10 @@ target_include_directories(useful_work_test SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
 target_link_libraries(useful_work_test PRIVATE arconaut_build ${LUA_LIBRARIES})
 add_test(NAME useful_work COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_work_test.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
 
+# Optional packages are Lua-only; reuse the existing embedded 5.4.8 runner.
+add_test(NAME packages COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/packages_test.lua ${CMAKE_SOURCE_DIR}/programs/packages.lua)
+set_tests_properties(packages PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} TIMEOUT 30)
+
 # Useful products from the finite economy pilot; exercise real Lua helpers.
 add_test(NAME useful_feedback_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_feedback_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)
 add_test(NAME useful_record_regression COMMAND useful_work_test ${CMAKE_SOURCE_DIR}/tests/useful_record_regression.lua ${CMAKE_SOURCE_DIR}/programs/useful_work.lua)

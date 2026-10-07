@@ -1,0 +1,12 @@
+{
+  "contract": 1,
+  "id": "github-releases",
+  "source": "packages/github_releases.lua",
+  "module": "github_releases",
+  "requires": ["native exec", "native JSON", "existing curl with HTTPS"],
+  "operations": ["public release snapshot", "thematic text HUD", "selected context", "prepared station event"],
+  "default_enabled": false,
+  "credentials": "none; public resources only",
+  "limits": {"releases": 8, "response_bytes": 524288, "fetch_seconds": 25},
+  "revision_semantics": "published release tag; not a body-edit digest or complete event cursor"
+}

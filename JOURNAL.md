@@ -3581,3 +3581,21 @@ was append-only JOURNAL; retained both owners entries. Identical startup source
 changes deduplicated by Git; no G8 dirty/untracked work admitted. Existing G7 scoped
 checks and useful station observation retained, no third certification. Checked
 non-force merged-source publication, no running binary replacement.
+
+## G8 optional packages/HUD candidate (2026-10-07)
+
+arconaut-7iy.8 only,07:01:37.892952..08:31:37.892952UTC. Inert optional
+Lua package contract plus public GitHub releases adapter/metadata; thematic
+C++/Lua text HUD, explicit selected context and prepared station event routes.
+Native number/library source inspection corrected tagged JSON/no-os assumptions
+before activation. Direct Mac embedded Lua and Linux5.4.8 cases passed;
+hardening07:08..07:10:56UTC layers1+2 complete, no third. Actual native receipt
+794b42c728ab44a0f612000000000000 fetched LLVM23.1.2/23.1.3; HUD displayed/written,
+context0/action0 honestly distinct. Source consequences/restoration and interface
+in G8_PACKAGES_SUBPLAN/PACKAGES; limits/evidence in packages-delivery paper.
+Fresh remote master38fa47c was strict descendant, protected dirty candidate and
+checked FF, restored on giga/g8-packages-hud. No conflict, force or known-defective
+merge. Pending module revision794b42c728ab44a0aa16000000000000 compiles; successful
+normal boundary publication still pending. Same-unit next turn imports retained
+modules, explicitly includes chosen item and routes useful station work. No new
+native RRC, dependency/account adoption, upgrade, G5 retry or later-unit coding.
