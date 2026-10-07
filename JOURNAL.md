@@ -3473,6 +3473,22 @@ excluded from source publication and not represented as accepted by this unit.
 No later unit started. Remaining G6 unavailable async/native participant features
 are explicit in queue/docs; G5 cross-provider access stays independently blocked.
 
+## 2026-10-07 G7 station candidate
+
+arconaut-7iy.7 starts06:27:04.372475UTC, deadline07:57:04.372475UTC.
+Existing empty pilot-pool slot reused for clean G7 source/builds, preserving
+unrelated startup-replay dirt in main checkout. Native local-file event admissions
+and boundary pause/resume/steer/stop implemented with session ownership, retained
+inputs, at-most-once source/id dispatch and unknown-reopen pause. Direct store and
+actual-process oracles passed (idle audit unchanged; failed workflow actually
+writes then fails, never redispatched). Baseline native rejects --station.
+RRC process oracle preserves actor/scheduling without implicit continue.
+Scoped source consequences, envelope and limits: G7_STATION_SUBPLAN/STATION.
+Hardening06:33:37..06:58:37 allowance; layer1 passed Mac release and affected Linux
+debug/release/ASan checks. One layer2 source recheck found full command-table pause
+failure; native pause fact fixed it,4096-command exhaustion direct oracle passed.
+Useful actual model-trigger delivery and same-session activation remain next.
+No third review, provider panel, G5 access retry or old campaign recertification.
 ## Operator startup and waste audit (2026-10-07)
 
 Operator reports launcher silent after ergonomics work; first confirmed real dev
@@ -3519,3 +3535,49 @@ and12.1236s original. Ordinary cache/load uncontrolled, not cold-start guarantee
 Published checked UI archive binary atomically to arco-ui; real TUI reopened preserved
 conversation and /quit works. Live G7 dev loop observed independently, executable
 untouched. Publish scoped source on candidate and master excluding G7 candidate code.
+
+G7 actual source-trigger delivery: native PID87484, fresh g7-worker-run1, one
+admission for duplicated source event, ordinary OpenAI tools wrote useful
+G7_NATIVE_STATION_MAP.md in112.995s. Operator pause retained PID/actor/context head;
+explicit stop exit0. Initial background PID87080 did not reach admission (112byte
+header only); original path/unknown final boundary preserved. No replay claim.
+Final affected Linux source2a34415 checks passed; ASan command-cap oracle390.15s.
+Combined independently accepted startup0f01f2c into5e58d51, preserved journal;
+Mac affected integration cases passed06:55:43, no blanket Linux recertification.
+Read new waste audit; repeated full snapshot capture/status serialization deferred
+visibly, not fixed under a third hardening layer. Clean release5e58d51 installed
+SHA8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9.
+Same-unit native RRC next; source5e58d51 candidate pushed, acceptance/master pending.
+
+## G7 scoped acceptance / actual native activation (2026-10-07)
+
+Same-session RRC continued native PID91133 start06:59:23UTC, observed06:59:31UTC;
+installed release SHA8572bb3ba2e9ff9eb18aa1b4d06b7868d6aedb0c8e84a182c3b20ccd203dd7c9
+matched built5e58d51. G7 local-file station/control scoped accepted after actual
+source-trigger useful station map, duplicate single admission, same-actor operator
+pause/stop and completed affected checks. Eight live provider requests aggregate
+36600 input/3354 output/39954 total reported tokens; billing unavailable.
+Hardening finished06:50:16; no third layer or settled-suite rerun. Original unit
+deadline07:57:04.372475UTC unchanged. Source owns backlog, latest boundary controls
+not a command queue; unknown attempts stay unknown/no replay, no remote settlement
+or crash containment claim. Repeated snapshot/status cadence costs are separate
+bounded follow-up, not silent scope expansion. Close bead and publish via checked
+non-force master fast-forward; no later unit implementation in this session.
+
+G7 publication boundary07:00:41UTC: fresh origin/master is a82ec5a, not an
+ancestor of shared local HEAD87419ba (concurrent startup owner committed on
+this branch after08f22ea). Non-force FF prerequisite failed. STOP: no merge,
+force push or second activation. Running G7 native remains built5e58d51, not
+new local87419ba. Candidate preserves both owners' work; G7 reopened blocked
+pending explicit branch reconciliation/publication, not called campaign accepted.
+
+## Root fleet check-in / G7 integration (2026-10-07)
+
+Fleet observed G8 active with native92256/supervisor92246; G5 parked on provider
+auth/credit failures. G7 qualified station source/native activation completed, but
+publication blocked on independently published startup master. Reconciled immutable
+f961248 candidate and a82ec5a master off the active checkout. Only merge conflict
+was append-only JOURNAL; retained both owners entries. Identical startup source
+changes deduplicated by Git; no G8 dirty/untracked work admitted. Existing G7 scoped
+checks and useful station observation retained, no third certification. Checked
+non-force merged-source publication, no running binary replacement.

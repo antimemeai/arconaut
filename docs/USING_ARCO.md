@@ -479,3 +479,14 @@ from silently changing the interactive generation. Native self-development in an
 interactive session must install the checked executable atomically to `arco-ui`
 before `/restart`, or explicitly select its executable when launching. A restart
 continues the selected path. Startup reports the session before reopening history.
+
+## Opt-in native station
+
+`--station LOCAL_ADAPTER_DIRECTORY` admits identified file source events into the
+same native participant/context/Lua workflow. Idle needs no inference. Inspect
+`SESSION/station-status.json`; atomically replace source `events.json` and boundary
+`control.json` for pause/resume/steer/stop. Repeated or unknown source/id never
+redispatches. `workflow_returned` is not effect success. Use explicit release
+selection if your interactive launcher is pinned to an older UI generation.
+See [Station operating interface](STATION.md) for exact bounds, RRC selection and
+source-owned backlog semantics. No live TUI attach or crash containment claim.
