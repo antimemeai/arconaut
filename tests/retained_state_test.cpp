@@ -207,6 +207,28 @@ AttemptAdmissionEvent admission(unsigned char attempt = 11,
   return {id<OperationAttemptId>(attempt), id<InvocationId>(9),
           id<DecisionId>(checkpoint), original};
 }
+void indexed_errors_close_queries() {
+  auto storage = std::make_shared<StorageState>();
+  auto state = require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
+                                            "journal", header(), capacity));
+  auto index_storage = std::make_shared<StorageState>();
+  require(state->enable_indexed_queries(std::make_unique<MemoryFile>(index_storage),4*1024*1024));
+  const RetainedEvent event{{}, decision()};
+  require(state->submit(event));
+  const auto before = state->cursor();
+  const auto bytes = storage->bytes;
+  // Selected-page corruption is a query error, never absence or a new submission.
+  index_storage->bytes.back() ^= std::byte{1};
+  error_is(state->submit(event),ErrorCode::corrupt);
+  error_is(state->fact(0),ErrorCode::corrupt);
+  CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
+  index_storage->bytes.back() ^= std::byte{1};
+  CHECK(require(state->submit(event)).existing);
+  index_storage->fail_after = index_storage->writes;
+  error_is(state->submit({{}, invocation()}),ErrorCode::io);
+  CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
+  CHECK(require(state->submit(event)).existing); // old root survives failed derivation
+}
 bool indexed_mode = false;
 std::unique_ptr<RetainedState> attach(std::unique_ptr<RetainedState> state) {
   if (indexed_mode) require(state->enable_indexed_queries(
@@ -1528,6 +1550,7 @@ void protected_settlement_faults() {
 int main(int argc, char **) {
   indexed_mode = argc > 1;
   try {
+    indexed_errors_close_queries();
     protected_settlement_faults();
     duplicates_and_retries();
     recovery_and_failed_admission();

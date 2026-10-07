@@ -74,3 +74,42 @@ migration yet. Explicit attachment is a prerequisite mode, not default fast reop
 No index root publication, reclamation or current-state root exists. S2/S3/S4 remain
 not started. NEXT: finish indexed native consumer/locator migration and replace
 resident history vectors, before projection and suffix reopen.
+
+## Affected native recheck and open limitations
+
+Release/OFF recheck after destructor fix: retained_environment (including native
+indexed pending/full confirmation/source/fact/dispatch path), retained_state_crash,
+issuer_ranges and retained_state_indexed all passed (4/4, 5.95s total). Initial
+retained_state/audit/cold_history/index checks passed as recorded above. Added
+selected index corruption + failed derived write tests: duplicate/fact errors stay
+errors, journal cursor/bytes unchanged, old root still supplies exact duplicate.
+Indexed retained-state test passed with these cases.
+
+The optional query mode presently writes copied paths per inserted key and retains
+orphaned pages up to the supplied cap; cap exhaustion rejects new derivation before
+journal admission. This is not S4 settlement backpressure or a reclamation policy.
+1600 keys test produced bounded-tree disk work, not a native readiness measurement.
+No provider readiness/read-byte/RSS result exists for this candidate; startup remains
+full replay. No S1/S2 completion or overall completion is claimed.
+
+## Review result and measured limitation
+
+The single Kimi attempt did **not** provide a review: stderr reports provider
+403/subscription access unavailable. Capture:
+`context/kimi-review/run-9mr9qwdc` (private), one version event only, no substantive
+findings and no final wrapper result file observed. No retry or replacement review.
+Independent review remains missing, including inherited cold-history code. Candidate
+stays inactive; tests do not imply integration or safety.
+
+Only a prerequisite index fixture measurement exists: normal Release/OFF,
+`/usr/bin/time -l recovery_index_test`: 1600 keys, 48,873,472 derived bytes (path-copy
+write amplification is substantial), 0.13s real/0.08s user/0.01s sys, 118,226,944
+max RSS and 117,850,544 peak footprint. This uses a memory-file fixture retaining
+its bytes, not native startup/RSS or archive scaling evidence. Input/output blocks
+reported zero, not actual journal read bytes. Internal multi-level split stress,
+publication crashes and native request-ready measurements remain unperformed.
+A failed write after copied-child completion/before new-parent publication also
+preserves the old selected tree in the direct index test.
+
+Both `build/durable-release/blackbird` and `build/release/blackbird` built <=j2,
+Release and BLACKBIRD_DEBUG=OFF. No installed binary changed and no session restarted.

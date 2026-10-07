@@ -7,7 +7,7 @@ using namespace blackbird;
 #define CHECK(x) do { if (!(x)) throw std::runtime_error("index line " + std::to_string(__LINE__)); } while(false)
 template<class T> T take(Result<T> r) { CHECK(r.has_value()); return std::move(r).value(); }
 void take(Result<void> r) { CHECK(r.has_value()); }
-struct Bytes { std::vector<std::byte> bytes; std::size_t chunk=SIZE_MAX; bool fail=false,zero=false,oversize=false; std::size_t reads=0; };
+struct Bytes { std::vector<std::byte> bytes; std::size_t chunk=SIZE_MAX; bool fail=false,zero=false,oversize=false; std::size_t reads=0; std::size_t writes_before_failure=SIZE_MAX; };
 class File final : public JournalFile {
 public:
   explicit File(std::shared_ptr<Bytes> b): b_(std::move(b)) {}
@@ -24,6 +24,8 @@ public:
     return Result<std::size_t>::success(n);
   }
   Result<std::size_t> write_at(std::uint64_t offset, ByteView in) override {
+    if (b_->writes_before_failure == 0) return Result<std::size_t>::failure({ErrorCode::io});
+    if (b_->writes_before_failure != SIZE_MAX) --b_->writes_before_failure;
     if (b_->fail) return Result<std::size_t>::failure({ErrorCode::io});
     if (b_->oversize) return Result<std::size_t>::success(in.size()+1);
     if (b_->zero) return Result<std::size_t>::success(0);
@@ -70,6 +72,11 @@ int main() {
     b->fail=b->zero=b->oversize=false;
     CHECK(take(index->find(old,key(400)))==1200);
   }
+  // Fail after a copied child is written but before its new parent is complete.
+  b->writes_before_failure=1;
+  CHECK(!index->put(root,key(1600),4800).has_value());
+  b->writes_before_failure=SIZE_MAX;
+  CHECK(!take(index->find(root,key(1600))) && take(index->find(root,key(400)))==77);
   auto wrong=root; ++wrong.generation; CHECK(!index->find(wrong,key(1)).has_value());
   wrong=root; ++wrong.offset; CHECK(!index->find(wrong,key(1)).has_value());
   wrong=root; wrong.checksum^=1; CHECK(!index->find(wrong,key(1)).has_value());
