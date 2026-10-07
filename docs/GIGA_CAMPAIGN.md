@@ -78,14 +78,18 @@ Local-file source owns backlog/cursor; no TUI live attachment, remote-effect suc
 crash containment or scheduler claim. Exact interface [STATION](STATION.md),
 evidence/limits [station delivery](../papers/2026-10-07-station-delivery.md).
 
-G8 `arconaut-7iy.8` candidate a0d96f1: optional trusted Lua packages/public
-GitHub releases integration and thematic C++/Lua text HUD. Affected Mac embedded
-Lua/Linux5.4.8 cases passed; hardening07:08..07:10:56UTC layers1+2 complete.
-Actual native receipt/display of LLVM23.1.2/23.1.3 delivered
-[G8 HUD](G8_TOOLCHAIN_HUD.md), context/action still pending. Retained modules
-staged for successful boundary; same-unit next turn observes/imports activation
-and routes selected context/useful station work. Not accepted or master-promoted.
-Deadline08:31:37.892952UTC unchanged. [Interface](PACKAGES.md),
+G8 `arconaut-7iy.8` scoped accepted: production Lua source a0d96f1 delivers
+optional trusted packages/public GitHub releases integration and thematic C++/Lua
+text HUD. Affected Mac embedded Lua/Linux5.4.8 checks passed; hardening
+07:08..07:10:56UTC layers1+2 complete/no third. Effective retained module
+revision794b42c728ab44a0aa160000000000 imported07:14UTC; Lua-only activation/no RRC.
+Actual native receipt/[HUD](G8_TOOLCHAIN_HUD.md), selected context, distinct native
+station source-packet request -> useful [toolchain decision](G8_TOOLCHAIN_DECISION.md)
+-> explicit stop exit0 in20.72s. First tool-reading station remained unknown/paused
+with timeout/original paths preserved; no replay or inherited admissions, exact
+mixed-range model-loop follow-up arconaut-qqy.9 calls21295 total reported tokens,
+billing unavailable. No compiler/library adoption, graphical TUI pane or complete
+feed replay claim. [Interface](PACKAGES.md),
 [evidence/limits](../papers/2026-10-07-packages-delivery.md).
 
 ## Ordered whole units

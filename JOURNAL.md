@@ -3602,3 +3602,25 @@ native RRC, dependency/account adoption, upgrade, G5 retry or later-unit coding.
 G8 candidate a0d96f1 committed and pushed to origin/giga/g8-packages-hud.
 Queue remains G8 active/continue, not accepted/master-promoted. Retained modules
 publish only at this successful ordinary boundary; next turn checks actual use.
+
+## G8 actual activation / useful source-trigger delivery (2026-10-07)
+
+Same-unit07:14UTC observed effective retained module revision
+794b42c728ab44a0aa16000000000000, both imports passed. New native release snapshot
+794b42c728ab44a0001d000000000000, explicit selected context at
+794b42c728ab44a0231d000000000000. Adapter parent/write-result mistake surfaced
+as known startup invalid_range before admission; corrected caller, documented.
+First actual station then failed8 bounded model calls mixing ranges, paused with
+unknown admission; outer wait timed out while idle/paused. Original
+context/g8/station-worker retained, output_ref794b42c728ab44a0a51f000000000000;
+no replay, final timeout boundary/billing unknown. Backlog arconaut-qqy scoped.
+Independent explicitly selected source-packet action in context/g8/decision-worker
+uses separate source/action/artifact, no predecessor authority. Native bounded
+reads -> request with selected feed facts and source packet/tools0 -> useful
+G8_TOOLCHAIN_DECISION.md -> explicit stop, exit0 in20.72s. One admission from
+duplicate-bearing snapshot, not a requalification of native G7 dedup. Actor
+9443570b992c53eb0300000000000000, context9443570b992c53eb3e01000000000000.
+Actual9 calls20377 input/918 output/21295 total reported tokens, billing unavailable.
+No compiler/library adoption, settled qualification rerun, native RRC or later
+unit work. Hardening still completed07:10:56/no third. Production sourcea0d96f1
+unchanged; final scoped acceptance/master publication next after ancestor check.

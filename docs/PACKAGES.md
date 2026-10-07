@@ -40,6 +40,11 @@ arco.call('write_file', {path='context/feed-adapter/events.json',
   content=arco.json.encode(arco.array({event}))})
 ```
 
+Create the adapter directory before writing: native `write_file` does not create
+parent directories. Check every native result (`assert(not result.error)`) before
+claiming publication; a returned error is not a thrown exception. The example
+paths assume existing parent directories.
+
 For a live adapter use atomic replacement (temporary file plus rename), not an
 in-place edit visible to its station. See [STATION](STATION.md) for admission,
 source-owned backlog, boundary pause/control, unknown/no-replay semantics and
