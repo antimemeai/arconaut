@@ -4158,3 +4158,19 @@ window completed; finite allocation capture attached to the real profile harness
 Board adopted workflows-core; old lanes unchanged. Direct launch fault checks show
 preflight failure starts no workload and later telemetry failure still waits the
 command and retains terminal exit7. No extra review layer or budget reset.
+
+## 2026-10-07 — First actual W1 performance interpretation
+
+Operator asks what measured data shows. Saved785-second/781-observation snapshot:
+22.62 harnessCPU-seconds,740sec loggedprovider calls,83.47MiB current/153.16MiB
+sampled peak physicalfootprint,487646-byte latestrequest,75.09MB logicalaudit,
+284.30MiB OSwrites. Collector2.28CPU-seconds (0.29% ofonecore),12.28MiB footprint.
+Three stackwindows predominantlypoll; later windows also show sync, retainedevent
+lookup, vector/snapshot bookkeeping and allocation/free. These define concrete
+nextmeasurement targets; no leak or redundantpayload verdict from gauges alone.
+
+Read nativecontextbudgetrequest construction: advisorytrigger and managedproposals
+activate at successfulworkflowcompletion; longcurrentLua turn has no midrunboundary.
+Thus configured131KBtrigger did not bound487KBrequest. Captured firstlook in papers;
+allocationtrace recorded but peractiontotals not yet analysed. NativeInstruments
+metadata includes environment, so rawtraces/privateexport stay ignored/local.
