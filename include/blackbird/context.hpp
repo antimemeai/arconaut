@@ -68,7 +68,13 @@ private:
   std::string head_;
   Json::Array entries_;
   std::map<std::string, Json> originals_;
-  Json::Array captured_, history_;
+  Json::Array captured_;
+  struct HistoryRecord {
+    ImmutableBytes payload;
+    std::string revision;
+  };
+  std::vector<HistoryRecord> history_;
+  static HistoryRecord history_record(const Json &packet);
   bool workflow_ = false;
   struct Pending {
     Json proposal;

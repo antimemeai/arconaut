@@ -59,7 +59,14 @@ public:
          JournalHeader header, JournalCapacity capacity);
   static Result<std::unique_ptr<RetainedState>>
   open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
-       JournalHeader header, JournalCapacity capacity);
+       JournalHeader header, JournalCapacity capacity,
+       bool use_scan_checkpoint = false);
+  Result<void> publish_scan_checkpoint() {
+    if (state() != JournalWriterState::live || in_transaction_ || prepared_ || !reconciled_)
+      return Result<void>::failure({ErrorCode::audit_unavailable});
+    return journal_->publish_scan_checkpoint();
+  }
+  bool used_scan_checkpoint() const noexcept { return journal_->used_scan_checkpoint(); }
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
   // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.
@@ -126,6 +133,7 @@ public:
   std::span<const RetainedFact> committed_facts() const noexcept {
     return committed_.facts;
   }
+  // Durable/pending upper reservation bound, not the volatile last-issued ID.
   std::uint64_t issuer_counter() const noexcept;
   // Surviving RAM originals, not committed sources or permission. Borrow ends
   // at the next mutation; reopening cannot recreate lost process memory.
@@ -199,6 +207,10 @@ private:
   Snapshot committed_;
   std::optional<Snapshot> prepared_;
   std::optional<PendingProposal> pending_proposal_;
+  // Never restored: reopening burns all unused counters in the durable range.
+  std::uint64_t allocation_namespace_ = 0;
+  std::uint64_t allocation_cursor_ = 0;
+  std::uint64_t allocation_limit_ = 0;
   std::uint64_t pending_counter_ = 0;
   std::uint64_t pending_namespace_ = 0;
   bool reconciled_ = true;

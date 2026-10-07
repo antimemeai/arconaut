@@ -42,5 +42,9 @@ private:
   Value data_;
 };
 Result<Json> parse_json(std::string_view input, JsonLimits limits = {});
+// Fully validates input and bounds; selected root object values become null.
+// Nested same-named fields are unaffected. Not a partial/trusting parser.
+Result<Json> parse_json_projection(std::string_view input,
+    std::span<const std::string_view> omitted, JsonLimits limits = {});
 Result<std::string> dump_json(const Json &value, JsonLimits limits = {});
 } // namespace blackbird

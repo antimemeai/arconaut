@@ -101,6 +101,9 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
     return allocated;
   }
   auto journal = std::move(allocated).value();
+  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   auto opened = directory.create_exclusive(name);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
@@ -141,12 +144,16 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
                                                            std::string_view name,
                                                            JournalHeader expected,
                                                            JournalCapacity capacity,
-                                                           SyncStrength strength) {
+                                                           SyncStrength strength,
+                                                           bool use_scan_checkpoint) {
   auto allocated = allocate(directory, expected, capacity, strength);
   if (!allocated.has_value()) {
     return allocated;
   }
   auto journal = std::move(allocated).value();
+  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
+  }
   auto opened = directory.open_existing(name, FileAccess::read_write);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
@@ -182,6 +189,23 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
   }
   if (decoded.value() != expected) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::conflict});
+  }
+  if (use_scan_checkpoint) {
+    auto a = journal->load_scan_checkpoint(0);
+    auto b = journal->load_scan_checkpoint(1);
+    if (!a.has_value() || !b.has_value())
+      return Result<std::unique_ptr<FramedJournal>>::failure(
+          !a.has_value() ? a.error() : b.error());
+    auto selected = std::move(a).value();
+    auto other = std::move(b).value();
+    if (other && (!selected || other->cursor.sequence > selected->cursor.sequence))
+      selected = std::move(other);
+    if (selected) {
+      journal->cursor_ = selected->cursor;
+      journal->staged_.insert(journal->staged_.end(), selected->records.begin(),
+                              selected->records.end());
+      journal->used_scan_checkpoint_ = true;
+    }
   }
   const auto scanned = journal->scan();
   if (!scanned.has_value()) {
@@ -332,8 +356,15 @@ Result<JournalCursor> FramedJournal::append(std::span<const JournalDraft> drafts
 
 Result<void> FramedJournal::scan(bool propagate_read_errors) {
   try {
-    auto offset = static_cast<std::uint64_t>(journal_header_size);
-    std::uint64_t expected_sequence = 1;
+    auto offset = cursor_.end_offset;
+    if (cursor_.sequence == UINT64_MAX) {
+      if (offset != recovery_.available_end) {
+        recovery_.problem = Error{ErrorCode::overflow};
+        recovery_.diagnostic_offset = offset;
+      }
+      return Result<void>::success();
+    }
+    std::uint64_t expected_sequence = cursor_.sequence + 1;
     std::uint64_t batch_offset = offset;
     std::size_t batch_bytes = 0;
     std::uint32_t batch_checksum = 0;
