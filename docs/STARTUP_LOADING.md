@@ -79,3 +79,11 @@ Median full audited request admission:1394.550ms ->265.961ms (5.24x); context st
 preparation/durable admission median85.965ms. UNDER100ms NOT achieved. Large LIVE
 context and large originals workloads not measured. See renewed report for ranges,
 build/source hashes, exact boundaries, profiling limitations and integration handoff.
+
+## Accepted master integration
+
+The operator's wrap-up direction merged this completed unit through1abb5b7 and
+published the local Release runtime02872af (DEBUG/profiling OFF). Affected integrated
+checks passed. Earlier candidate measurements above remain observations of those
+specific workloads/source versions; no new integrated latency claim is implied.
+Full current-state/suffix recovery remains a separate unfinished milestone.

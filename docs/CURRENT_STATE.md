@@ -1,10 +1,11 @@
 # Current Blackbird stock — 2026-10-07
 
-The operator halted autonomous development for consolidation and hands-on use.
-Master is the unified accepted source. Armada admission and its core/colleague
-jobs are paused; no matching worker or supervisor was observed. Reservations,
-unknown effects and original sessions remain; nothing is replayed or silently
-released. Research proceeds independently of harness execution.
+The operator directed consolidation and delivery. Master now includes native Jev,
+registered callable workflows and POWERWORDS, durable issuer ranges, and validated
+context-history projection. The local Release build is published for both plain
+and interactive launches. Debug/profiling are OFF. Sixteen affected checks and an
+actual launcher/Lua/Jev smoke passed. No autodev is running; partial experiments
+and their original sessions remain preserved as backlog.
 
 ## What is on master
 
@@ -18,7 +19,10 @@ released. Research proceeds independently of harness execution.
 | Station | Durable-before-dispatch local source admission, duplicates, boundary inspect/steer/pause/resume/stop. | Local-file source; unknown effects remain unknown; no live TUI attachment or crash-containment claim. |
 | Integrations/HUD | Opt-in trusted Lua packages; public GitHub releases and thematic text feed used in real work. | Feed display/context/action are separate; no broad integration catalog or graphical HUD. |
 | Multiplexing | Supported external phux launcher, actual TUI turn, detach/reattach and RRC checked. | Shell run probe timed out; native lifecycle projection is backlog. Relay TLS does not establish application E2EE. |
-| Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link. | Mascot/image/attribution removed at operator request. |
+| Decision models | Native Jev model tool, Lua `blackbird.decide`, `/decision JSON`; batched Choice/Score/Noul, lazy credentials, audited requests/results. | Jev only; workflows compose judgments and explicit retries. |
+| Callable workflows | Retained Lua definitions, configurable slash prefix/aliases and bare invocation, operator POWERWORDS and terminal colors; model/Lua discovery/invocation. | Sequential same-turn execution; no parallel or durable scheduler. |
+| Local efficiency | Durable 1,024-ID ranges and validated historical JSON projection reduce reservation/replay work. | Startup still replays history; under100ms large-history target not delivered. |
+| Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link; BLACKBIRD wordmark and supplied SR-71 startup/status image. | Ghostty/Kitty image support; terminal fallback. |
 
 ## Work outside accepted runtime
 
@@ -33,28 +37,21 @@ membership, enrollment/revocation, artifact/job authority and reconnect semantic
 need design together. Frumentarii delivered primary literature/refimpl studies; read the
 [source-grounded synthesis](../papers/networking-2026-10-07/SYNTHESIS.md). No networking dependency adopted.
 
-[Branch inventory](BRANCH_INVENTORY.md) retains exact tips and ancestry. Most
-candidate refs are ancestors of master. Giga-colleagues, old TUI-shell and
-useful-work-tools refs have unique commits; uniqueness is not acceptance. Preserve
-these as historical references; no blanket merge/deletion. The useful-work write
-fence and TUI command discovery already exist on master under later commits;
-unique commit ancestry alone does not establish missing functionality.
+[Branch inventory](BRANCH_INVENTORY.md) records the current12 candidate refs:
+eight tips included in master, four retained unmerged experiments/colleague work.
+Earlier branch cleanup is preserved as a dated historical inventory. Unique
+ancestry is not acceptance; no partial code is merged by implication.
 
-## Proposed next course before multiplayer
+## Remaining work
 
-1. Use this local main build for actual coding; collect concrete ergonomics and
-   failures. The read_file selector unit is delivered, with both range modes used
-   successfully in a real model turn.
-2. Integrate and exercise a useful Claude collaboration, then another working
-   provider permutation. Authentication readiness alone is insufficient.
-3. Close the gap between synchronous Lua orchestration and independently running
-   participants: limits, cancellation, addressing and truthful lifecycle visibility.
-4. Address measured byte/I/O costs (stream captures, issuer reservation cadence,
-   repeated input and original lookup), keeping retained originals and unknowns.
-5. Reconcile stale issue descriptions/activation claims and remaining candidate
-   differences. Keep distribution/login and broader containment as explicit backlog.
-6. Use the networking corpus to write a coherent threat/authority/lifecycle model,
-   then design and bounded plan. Multiplayer launch follows operator discussion.
+The next performance delivery is [native current-state and suffix recovery](DURABLE_STATE_PLAN.md).
+The cold-history and recovery-index branches are prerequisites/experiments; neither
+is accepted as completed startup work. [Exact continuation](../papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md)
+records the unfinished dependency and next source edit. Physical recovery hints
+remain a separate opt-in experiment. No extra review or broad certification pass
+is required to use the completed capabilities above.
 
-This is proposed sequencing, not a new autonomous campaign authorization or
-certification gate. Hardening remains two layers, never three, with finite budgets.
+Other backlog: stream-capture batching, repeated-input retention, scoped Linux
+checks, useful heterogeneous colleagues, richer terminal presentation, asynchronous
+participant orchestration, and multiplayer design. Giga and autonomous development
+remain stopped. No new campaign is launched by this stock report.

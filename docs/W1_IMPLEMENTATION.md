@@ -36,8 +36,9 @@ Provider-selected invocation is sequential after tool outputs in the same turn;
 see CALLABLE_WORKFLOWS.md for ordering, limits, and no durability/parallel claims.
 Focused direct checks and affected regressions passed; one bounded findings
 recheck completed (fixture delimiter correction verified by only its direct test).
-Independent Claude review timed out at90s with no output; candidate is inactive
-and unmerged, not certified. Remaining independent review precedes activation.
+At the original checkpoint, the independent Claude attempt timed out at90s with
+no output and the candidate stayed inactive. Subsequent review fixes and integration
+are recorded below.
 
 ## Integrated completion — 2026-10-07
 

@@ -69,7 +69,7 @@ an explicit trim notice; full originals remain audited and A2 retrieval still wo
   exits; an active turn is stopped first. Terminal settings restore on exit.
 
 Commands: `/help`, `/model NAME`, `/effort LEVEL`, `/context`, `/stats`, `/originals`,
-`/restore ENTRY`, `/lua CODE`, `/clear` (view only), `/drafts`, `/draft N`, `/quit, `/exit`, `/session`, `/sessions`, `/workflow FILE`, `/restart NOTE`. Unknown slash commands report a local error without a model request.
+`/restore ENTRY`, `/lua CODE`, `/clear` (view only), `/drafts`, `/draft N`, `/quit`, `/exit`, `/session`, `/sessions`, `/workflow FILE`, `/restart NOTE`. Unknown slash commands report a local error without a model request.
 In plain mode `/paste` collects a block until `/send`.
 `--audit-last` inspects recent original records without a provider request.
 
@@ -191,6 +191,18 @@ tools and `blackbird.call` dispatches them through retained operation/native-eff
 paths. Invalid definitions or failed workflows preserve effective configuration.
 See [LUA_TOOLS](LUA_TOOLS.md) for the supported scalar-object schema, exact bounds,
 source/body example, persistence and unknown-effect limits.
+
+## Callable workflows and decision models
+
+[Callable workflows](CALLABLE_WORKFLOWS.md) register retained Lua definitions,
+configurable slash aliases/prefix, bare invocations and colored POWERWORDS.
+`/ultracode TASK` is available by default in new sessions. Inspect the effective
+registry with `/lua return blackbird.call('workflow_registry', {})`.
+
+[Native decision models](DECISION_MODELS.md) expose Jev through `decision_model`,
+Lua `blackbird.decide(...)`, and `/decision JSON`. The launcher lazily locates the
+workspace key file; direct binary installs use environment credentials or
+BLACKBIRD_JEV_ENV_FILE. No Python runtime or startup credential read is involved.
 
 ## Restart/resume/continue (RRC)
 

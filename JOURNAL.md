@@ -4677,3 +4677,13 @@ unrelated certification campaign. Partial physical-hint/cold-history/recovery-in
 experiments stay separate; native current-state/suffix recovery and under100ms
 large-history startup remain unimplemented. Existing one-observation performance
 numbers are not measurements of this merged generation.
+
+Published the built source generation02872af to build/release/blackbird-ui by
+APFS clone and atomic rename; ordinary script plain/interactive both use this
+accepted generation. Active operator processes are not restarted. Actual launcher
+fresh-session /decision returned pinned jev-1.13.0 Noul (288input/20output tokens,
+220537us), then native Lua inspected ultracode registry and /help exposed both
+interfaces. Exit0; private audit/logs plus publication source/hash retained.
+Current-stock/readme/usage/fleet/branch inventory reconciled. Eight candidate tips
+are ancestors of master; four unmerged sources stay explicit backlog. No branch
+history rewrite, new worker or broad certification pass.

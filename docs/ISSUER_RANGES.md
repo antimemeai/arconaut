@@ -93,3 +93,11 @@ range process too short for live sample. No new native timing instrumentation in
 chosen OFF release; primary harness/traces remain unchanged. No allocation/copy
 census, short-child coverage or startup latency claim. JSON report and evidence
 hashes: docs/measurements/issuer-ranges-r2.json; raw logs under lane build/.
+
+## Accepted master integration
+
+The operator's wrap-up direction merged this completed unit through1abb5b7 and
+published the local Release runtime02872af (DEBUG/profiling OFF). Affected integrated
+checks passed. Earlier candidate measurements above remain observations of those
+specific workloads/source versions; no new integrated latency claim is implied.
+Full current-state/suffix recovery remains a separate unfinished milestone.

@@ -9,6 +9,11 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
+Completed integration: native Jev, callable workflows/POWERWORDS, issuer ranges
+and historical JSON projection are accepted on master and locally published.
+Release DEBUG/profiling OFF;16 affected checks pass. See [current stock](CURRENT_STATE.md).
+Physical hints, cold-history and recovery-index branches remain unmerged.
+
 Current status: **zero active native BBs**. The durable-recovery-2026-10-07
 period returned useful partial S1 work at pushed87f786f; S1 is unfinished and
 S2/S3/S4 have not begun. Root reconciled the stopped identities and released its

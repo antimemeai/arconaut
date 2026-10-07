@@ -15,7 +15,7 @@ That is the project. It is also the reason Blackbird is being built inside Black
 
 This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal interface, and an operating self-development loop**. It is an early system in active use and reconstruction. Its ambitions exceed its present implementation; the distinctions below are part of the description, rather than small print.
 
-For current accepted capabilities, unfinished work and the paused development
+For current accepted capabilities, unfinished work and the development
 cycle, see [the project stock](docs/CURRENT_STATE.md).
 
 Arconaut is now **Blackbird**. Old launch commands and the Lua `arco` API remain compatibility aliases; sessions and retained audit formats are preserved.
@@ -116,6 +116,16 @@ Lua globals are ephemeral between turns. Persistent state belongs in context, fi
 `load` remain available for experiments. This arrangement keeps ordinary effects visible in the audit. It does not claim hostile-code isolation.
 
 The native engine underneath the program owns operation admission, observed outcomes, retained source material, and publication of accepted context. In that vocabulary, **admission** means recording an operation before dispatch. It is an internal execution record, not a request for the operator to approve a command. Dispatch, completion, failure, and an unknown outcome remain separate facts.
+
+Callable Lua workflows can register slash aliases with a configurable prefix,
+explicit bare names, and colored operator POWERWORDS. `/ultracode` is the first
+built-in example; the operator and model can redefine the retained registry.
+See [callable workflows](docs/CALLABLE_WORKFLOWS.md) for dispatch and activation.
+
+Native decision-model calls are available through `decision_model`,
+`blackbird.decide(...)`, and `/decision JSON`, with Jev as the first adapter.
+Batched Choice/Score/Noul results retain probabilities, usage and audit linkage;
+workflow code chooses what to do with them. See [decision models](docs/DECISION_MODELS.md).
 
 The current loop is synchronous. Its programmable seam is real; an arbitrary concurrent multi-model scheduler is still a design objective.
 

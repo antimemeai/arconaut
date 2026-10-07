@@ -14,7 +14,7 @@ confirmed ancestors of current master before deletion. Remote heads and peeled
 tag targets were checked after publication. Local branches/worktrees are retained;
 master history was not rewritten.
 
-**Only candidate/giga-colleagues contains substantive unintegrated work.**
+**At that earlier cleanup, only candidate/giga-colleagues contained substantive unintegrated work.**
 It adds the standalone colleague library/CLI, selected-context request contract,
 OpenAI/Claude adapters, truthful outcome captures and direct tests. It is one
 unique commit, f233689, 66 commits behind this baseline. Port its useful slice
@@ -41,6 +41,29 @@ No open GitHub PRs were reported by gh pr list.
 
 The assessment recommendation has now been executed. The inventory below is the
 pre-cleanup snapshot and preserves every retired name and exact tip.
+
+## Current consolidation — 2026-10-07
+
+The original two-head cleanup below is historical. Later bounded units added
+candidate branches;12 candidate refs plus master are currently tracked. Eight
+candidate tips are now ancestors of accepted master. This integration does not
+delete refs or worktrees. Their source is fully retained on master:
+
+| Included candidate | Exact tip |
+| --- | --- |
+| `candidate/issuer-ranges-2026-10-07` | `02ff9acad35bf383958e5e51f7bfcfebf4de89c4` |
+| `candidate/issuer-ranges-r2-2026-10-07` | `e0e0b980cb333eabe120bf1689040c528312c841` |
+| `candidate/local-performance-2026-10-07` | `94bc2d4184a03f54a7e277d9cc408bda0d40436c` |
+| `candidate/native-beads-2026-10-07` | `47bb9be83b771f8bbc11b3e164b06584af4a9c65` |
+| `candidate/native-jev-2026-10-07` | `ccc26087328d882c3e2dd0ced2af38063f6d183b` |
+| `candidate/startup-demand-loading-2026-10-07` | `8e35f55a9a1db808b80576b3a4cda0846961edc4` |
+| `candidate/startup-loading-r2-2026-10-07` | `35413f3f9eb1cecb70cf3c44a2aadd4008708f29` |
+| `candidate/workflow-core-2026-10-07` | `c8498f01d7c5b4d908d8d385d4f7e0eb4306a2a5` |
+
+Four unmerged candidates remain: giga-colleagues, durable-state-r1 (opt-in physical
+hints), cold-history-r2, and durable-recovery (unfinished index prerequisite).
+Preserve their exact sources/results; they are not active campaigns or accepted
+startup delivery. No new production feature is inferred from commit uniqueness.
 
 ## Exact remote inventory before cleanup
 

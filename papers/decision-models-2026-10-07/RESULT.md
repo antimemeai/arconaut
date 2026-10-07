@@ -45,6 +45,16 @@ call preceded the review corrections; deterministic direct checks cover those
 changes. Request, raw output and its private audit remain in ignored context.
 No credential content was inspected or printed by development orchestration.
 
-Remaining scope: explicit master integration/activation; additional decision-model
+At the initial candidate checkpoint, remaining scope was master integration/activation
+and additional decision-model
 adapters and calibrated policies as separately planned work. No hidden retries,
 thresholds, cache, automatic approvals, or startup credential I/O were added.
+
+## Master delivery
+
+Wrap-up direction integrated ccc2608 through23c864a, with the completed workflow
+registry in02872af. Local plain/interactive Release executables published DEBUGOFF.
+All16 affected integrated checks passed; actual launcher /decision returned one
+Noul judgment from pinned jev-1.13.0 (288input/20output tokens,220537us), then Lua
+inspected the workflow registry and /help exposed both interfaces. Private audit
+retained. arconaut-1ma closed. Additional adapters/calibration remain future work.
