@@ -3370,3 +3370,9 @@ docs/LUA_TOOLS.md. Candidate publication distinct from pending native RRC and
 master FF acceptance. Concurrent editor source0f1019c is now parent; uncommitted
 palette/UI paths preserved/excluded, coherent source snapshot used for replacement.
 No later unit started; controller working intent stays continue until activation.
+
+G3 candidate fdd8511 pushed on giga/g3-live-lua-tools. Coherent clean source snapshot
+built build/g3-release/arco (SHA25663f26f8a9b219b71eb77898a32dc1c7919a990edcc13848d87adb2a02dc2bcdd),
+including accepted editor parent0f1019c, excluding dirty concurrent palette. Install
+at build/release/arco and same-unit RRC next; whole deadline06:59:09UTC preserved.
+Master remains de22bb2 until activation observation/checked FF; no accepted claim.

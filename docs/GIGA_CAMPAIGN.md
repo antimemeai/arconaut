@@ -28,8 +28,12 @@ focused Mac/Linux oracles and actual unknown-timeout -> repair -> useful checkli
 path passed; same-unit native RRC observed05:26:57UTC, PID48458 started05:25:11.
 Scoped B4 accepted; broader effect containment/reconciliation remains unavailable.
 See [workflow repair delivery](../papers/2026-10-07-workflow-repair-delivery.md).
-Next ordered primary unit is G3 Lua tools in a fresh root-authored working context;
-G5 remains the independent colleague lane. This note starts neither unit.
+G3 `arconaut-7iy.3` candidate fdd8511 implements boundary-published session Lua
+tools. Affected Mac/Linux direct checks and actual OpenAI definition -> later named
+tool -> useful source-map delivery passed. Same-session coherent native RRC and
+checked master fast-forward remain acceptance actions; see [Lua tools delivery](../papers/2026-10-07-lua-tools-delivery.md).
+G3 remains the sole active primary unit until those actions complete. G5 remains
+the independent colleague lane; this note starts no later unit.
 
 ## Ordered whole units
 

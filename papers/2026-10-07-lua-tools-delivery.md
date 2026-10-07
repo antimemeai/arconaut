@@ -85,3 +85,9 @@ A coherent clean committed-source replacement is built separately to exclude
 uncommitted UI work, then placed at build/release/arco for RRC. Same-session RRC
 observation and checked non-force master fast-forward remain acceptance actions;
 source/archive/build/activation are not interchangeable. No later unit started.
+
+Coherent release built from clean archived fdd8511 at build/g3-release/arco
+(Clang23.1.2/Lua5.4.8), then installed at build/release/arco for same-session RRC.
+SHA256 `63f26f8a9b219b71eb77898a32dc1c7919a990edcc13848d87adb2a02dc2bcdd`.
+The accepted editor parent0f1019c is included; dirty palette paths are not. This is
+a replacement build, not another assurance layer. Activation observation is next.
