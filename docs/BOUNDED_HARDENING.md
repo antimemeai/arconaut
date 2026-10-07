@@ -53,9 +53,10 @@ existing explicit fresh-session path for capacity continuation, with honest unkn
 lineage and no old-effect replay. Do not require an unattended recovery platform or
 full historical replay optimization to accept this scoped behavior.
 
-Remaining allowance from this steer:30minutes remediation,15minutes recheck/fixes
+Operator shortened allowance:25minutes TOTAL from the existing start, allocated
+15minutes remediation and10minutes recheck/fixes
 (measured wall time; provider/build waiting counts). The numbers are a campaign
-operating bound, not an estimate or universal default. No automatic extension or
+operating bound, not an estimate or universal default. No clock reset, automatic extension or
 promise to ship an unsafe candidate. If access/build infrastructure fails, preserve
 actual evidence and finish the state report rather than launch replacement reviews.
 

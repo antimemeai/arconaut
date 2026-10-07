@@ -3111,3 +3111,17 @@ Operator confirms arconaut-uaa.3 is complete. Its open state came from stale
 Replaced current notes, closed issue on actual operator acceptance, updated README
 and implementation-plan status. No new review/test gate; remaining features and
 full-core acceptance stay in separate issues. Backup/source publication follow.
+
+## Hardening shortened to25minutes total; giga strategy begins
+
+Operator cuts allowance to25m. Same03:28:55UTC start, no reset; remediation
+boundary03:43:55 and total03:53:55. Updated bound file/docs and bead comment.
+Independent development-only deadline timer13751 checks this supervisor11311
+and lineage, stops retries via pause file and sends normal native SIGINT at bound
+only to enrolled native Arco; does not claim descendant quiescence or kill shared
+services. Exits if campaign already ended/changed. Python syntax checked, actual
+watching state retained; not a production runtime feature or safety certification.
+Remaining unsafe source stays candidate/backlog. Strategy discussion for giga
+centers programmable tools/workflows, heterogeneous colleagues and sustained
+triggered work, then optional integration/feed/multiplayer deliverables. No giga
+launch or new dependency selected during discussion.
