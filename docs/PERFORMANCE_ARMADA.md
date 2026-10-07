@@ -9,9 +9,11 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **one active autodev**, cold-history-r2-2026-10-07, on the
-operator's explicit continuation. It owns cold historical payloads and integrated
-native consumers. Durable-state-r1's physical hints remain an inactive partial;
+Current status: **zero active autodevs**. Cold-history-r2-2026-10-07 finished and
+pushed d32a764: native historical application payloads use checked disk references.
+Matched warm request-ready RSS fell from353MB to6–7MB, but median readiness rose
+from198ms to245ms. One reviewer attempt timed out; candidate remains inactive.
+Durable-state-r1's physical hints remain an inactive partial;
 compact current-state/tail recovery is still the destination. Beads/debug-only
 timing surfaces are merged; earlier launch descriptions below are historical.
 

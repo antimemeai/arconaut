@@ -4496,3 +4496,30 @@ fences and useful memory measured. Early full nativebuild, one NEWcode review
 and direct findingsrecheck, no oldunit recertification. Explicit development
 native/OScapture only, primarynormalDEBUGOFF unchanged. Board adopted authorized
 unit; n11/3x2 active, master integration separate.
+
+## 2026-10-07 — cold-history R2 result, native ownership improved, recovery pending
+
+Native BB completed before its fixed deadline and pushed d32a764 to
+candidate/cold-history-r2-2026-10-07. Historical application payloads now retain
+checked descriptor-backed disk references; context/session/coding/audit native
+consumers use explicit fallible reads. Current data remains purposefully owned;
+non-application blobs remain eager. No current-state checkpoint/tail recovery.
+Reference-grounded design and result preserved under papers/storage-performance-2026-10-07.
+
+Matched Release/DEBUGOFF applications built. Native ownership/eager-cold/duplicate/
+lifetime/fault checks and affected context/session/recovery checks passed after
+fixing the retained writer lease and replacing the obsolete eager alias oracle.
+One authenticated Codex review timed out without final findings, no retry.
+Candidate remains inactive/unintegrated; primary executable unchanged.
+
+Same656-fact335769848byte archive,37 live bytes, three warm samples per variant:
+request-ready RSS352.68–352.73MB→5.54–6.75MB, median readiness197.987→244.600ms;
+reads671502960→1007256581bytes. Cold ownership removes historical residency but
+context restoration adds another full byte pass. Under100ms missed; restore
+current state plus subsequent tail remains the next architecture step. No forced
+cold-cache or complete native allocation/private-mapped breakdown was measured.
+
+Manager/collector completed exit0; all254 sampled identities absent via Darwin
+libproc, launcher identities absent. Checkout clean/pushed/checkpointed, native
+slot and board reservation released; zero active autodevs, raw evidence retained.
+No implicit allowance renewal, further review round or master code integration.
