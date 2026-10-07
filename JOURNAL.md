@@ -3462,3 +3462,13 @@ not hidden delivered scope. G5 heterogeneous auth blocker unchanged. Lua-only
 activation observed, no native rebuild/RRC. Remote/master b5c750a freshly fetched
 and ancestor685ed31; selected G6 accepted-source publication/promotion next.
 Other-owner startup-replay dirty paths still excluded. Unit deadline unchanged.
+
+G6 source publication completed06:26UTC: candidate685ed31 -> accepted2fba085 pushed
+candidate/g6-orchestration; freshly fetched remote/master b5c750a was ancestor and
+non-force FF b5c750a..2fba085 succeeded. Local master expected-old CAS updated without
+switching any active checkout. Bead7iy.6 closed, backup recorded. Original whole
+unit completed ~10minutes after start; hardening remains finished, no native RRC
+needed. Concurrent dirty startup-replay source remains its owner's candidate work,
+excluded from source publication and not represented as accepted by this unit.
+No later unit started. Remaining G6 unavailable async/native participant features
+are explicit in queue/docs; G5 cross-provider access stays independently blocked.
