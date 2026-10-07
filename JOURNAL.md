@@ -3022,3 +3022,16 @@ another long unit; do not increase cap/replay uncertain effects. Old536870704 au
 untouched/unsettled. Current managed explicit-base proposal STAGED306300.. after
 known missing-base rejection, only applies normal boundary. Root owns README and
 promotion/branch retirement; did not edit README, merge/delete/promote. bd backup.
+
+## Second physical-capacity stop; root restores focused workflow work
+
+After fb2b5a5 source/tests/report were pushed, final provider completed but capacity
+refusal ended workflow; final managed publication/atomic RRC not established.
+Original audits remain untouched at both existing namespaces. Actual output shows
+provider_transport28 followed by native retry2 and accepted response, a real
+transport recovery observation (not retrospective failed-attempt success).
+Root supplied explicitly authored fresh handoff, not imported or verified context,
+under session-workflow-protection. Prior control metadata archived, supervisor
+restarted. Direction prioritizes integrated workflow protection, early headroom
+action and useful outcomes over additional isolated primitives or certification.
+No pilot/B1 rerun, cap increase, old-effect replay, promotion or giga.
