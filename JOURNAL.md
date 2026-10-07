@@ -3472,3 +3472,20 @@ needed. Concurrent dirty startup-replay source remains its owner's candidate wor
 excluded from source publication and not represented as accepted by this unit.
 No later unit started. Remaining G6 unavailable async/native participant features
 are explicit in queue/docs; G5 cross-provider access stays independently blocked.
+
+## 2026-10-07 G7 station candidate
+
+arconaut-7iy.7 starts06:27:04.372475UTC, deadline07:57:04.372475UTC.
+Existing empty pilot-pool slot reused for clean G7 source/builds, preserving
+unrelated startup-replay dirt in main checkout. Native local-file event admissions
+and boundary pause/resume/steer/stop implemented with session ownership, retained
+inputs, at-most-once source/id dispatch and unknown-reopen pause. Direct store and
+actual-process oracles passed (idle audit unchanged; failed workflow actually
+writes then fails, never redispatched). Baseline native rejects --station.
+RRC process oracle preserves actor/scheduling without implicit continue.
+Scoped source consequences, envelope and limits: G7_STATION_SUBPLAN/STATION.
+Hardening06:33:37..06:58:37 allowance; layer1 passed Mac release and affected Linux
+debug/release/ASan checks. One layer2 source recheck found full command-table pause
+failure; native pause fact fixed it,4096-command exhaustion direct oracle passed.
+Useful actual model-trigger delivery and same-session activation remain next.
+No third review, provider panel, G5 access retry or old campaign recertification.

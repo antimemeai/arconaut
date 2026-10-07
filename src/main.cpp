@@ -1,5 +1,6 @@
-#include "arconaut/coding.hpp"
 #include "arconaut/backstop.hpp"
+#include "arconaut/coding.hpp"
+#include "arconaut/station.hpp"
 #include "arconaut/terminal.hpp"
 #include <atomic>
 #include <csignal>
@@ -8,6 +9,7 @@
 #include <map>
 #include <sys/random.h>
 #include <sys/stat.h>
+#include <thread>
 #include <unistd.h>
 using namespace arconaut;
 namespace {
@@ -54,7 +56,7 @@ int main(int argc, char **argv) {
     std::filesystem::path session =
         std::filesystem::path{home} / ".local/state/arconaut/default";
     std::filesystem::path workflow = ARCONAUT_WORKFLOW;
-    std::string model = "gpt-6.1-sol", once, seed_path, backstop_path;
+    std::string model = "gpt-6.1-sol", once, seed_path, backstop_path, station_path;
     Json backstop_mission;
     bool one = false, inspect = false, plain = false;
     std::string effort = "medium";
@@ -98,7 +100,9 @@ int main(int argc, char **argv) {
       }
       if (i + 1 == argc)
         throw Error{ErrorCode::invalid_range};
-      if (arg == "--backstop")
+      if (arg == "--station")
+        station_path = argv[++i];
+      else if (arg == "--backstop")
         backstop_path = argv[++i];
       else if (arg == "--seed-session")
         seed_path = argv[++i];
@@ -119,6 +123,9 @@ int main(int argc, char **argv) {
       } else
         throw Error{ErrorCode::invalid_range};
     }
+    if (!station_path.empty() &&
+        (one || inspect || discovery || !backstop_path.empty() || !seed_path.empty()))
+      throw Error{ErrorCode::conflict};
     if (!backstop_path.empty()) {
       if (!one || resume_requested || inspect || discovery || !seed_path.empty() ||
           once.empty() || once.starts_with("/"))
@@ -232,7 +239,32 @@ int main(int argc, char **argv) {
     ContextStore context{log};
     if (!seed_path.empty())
       context.seed_successor(seed);
+    // Restore station scheduling only for an explicit native RRC resume. Ordinary
+    // campaign/once invocations never acquire feed admissions by implication.
+    if (resume_requested && station_path.empty())
+      for (const auto &fact : root->committed_facts()) {
+        const auto *r = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+        if (!r || r->channel != ApplicationChannel::program)
+          continue;
+        const auto p = unwrap(parse_json(std::string_view{
+            reinterpret_cast<const char *>(r->payload.data()), r->payload.size()}));
+        const auto *label = p.find("label");
+        if (label && std::holds_alternative<std::string>(label->value()) &&
+            label->string() == "station.profile")
+          station_path = string_field(p, "adapter");
+      }
+    if (!station_path.empty() && one)
+      throw Error{ErrorCode::conflict};
+    log.record(
+        ApplicationChannel::program,
+        Json::object({{"label", Json{"station.profile"}},
+                      {"adapter", Json{station_path.empty()
+                                           ? ""
+                                           : std::filesystem::absolute(station_path)
+                                                 .lexically_normal()
+                                                 .string()}}}));
     SessionStore session_store{log};
+
     auto settings = session_store.settings();
     if (model_option)
       settings.model = model;
@@ -263,7 +295,8 @@ int main(int argc, char **argv) {
       return interrupted.load(std::memory_order_relaxed) || cancelled.load();
     };
     TerminalUI ui{"Arconaut · " + model + " · " + effort + " · " + session.string()};
-    const bool tui = !plain && !one && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
+    const bool tui = station_path.empty() && !plain && !one && isatty(STDIN_FILENO) &&
+                     isatty(STDOUT_FILENO);
     auto emit = [&](std::string_view text) {
       if (tui)
         ui.text(text);
@@ -382,8 +415,9 @@ int main(int argc, char **argv) {
           throw;
         if (!backstop_path.empty() && e.code != ErrorCode::interrupted &&
             !engine.cancelled()) {
-          const auto outcome = run_backstop(engine, log, session, backstop_mission,
-                                           provider, session_store.settings(), engine.cancelled, emit);
+          const auto outcome =
+              run_backstop(engine, log, session, backstop_mission, provider,
+                           session_store.settings(), engine.cancelled, emit);
           emit("\nBackstop: " + unwrap(dump_json(outcome)) + "\n");
           if (string_field(outcome, "phase") == "useful-work-observed")
             return;
@@ -395,6 +429,98 @@ int main(int argc, char **argv) {
       if (interrupted.load(std::memory_order_relaxed))
         cancelled.store(true);
     };
+    if (!station_path.empty()) {
+      // An explicitly selected local file adapter, not a feed service governor.
+      const auto adapter = std::filesystem::absolute(station_path).lexically_normal();
+      if (!std::filesystem::is_directory(adapter))
+        throw Error{ErrorCode::invalid_range};
+      StationStore station{log};
+      const auto station_identity = session_identity(log);
+
+      std::string previous_snapshot;
+      auto publish = [&](std::string_view phase) {
+        auto packet = Json::object(
+            {{"station", station.view()},
+             {"phase", Json{std::string{phase}}},
+             {"pid", Json{JsonNumber{std::to_string(getpid())}}},
+             {"adapter", Json{adapter.string()}},
+             {"context_head", Json{context.head()}},
+             {"session", Json{session.string()}},
+             {"actor", Json{hex_identity(station_identity.actor.bytes())}}});
+        auto bytes = unwrap(dump_json(packet));
+        if (bytes != previous_snapshot) {
+          write_file(session / "station-status.json", bytes);
+          previous_snapshot = std::move(bytes);
+        }
+      };
+      // A station never performs the ordinary implicit restart "continue" turn.
+      // Only a newly admitted event can run a workflow.
+      resume_turn = false;
+      try {
+        while (!interrupted.load(std::memory_order_relaxed)) {
+          if (std::filesystem::exists(adapter / "control.json")) {
+            const auto bytes = read_file(adapter / "control.json", 65536);
+            const auto command = unwrap(parse_json(bytes));
+            if (station.control(command))
+              log.original(
+                  {"station.control-input", bytes,
+                   Json::object(
+                       {{"path", Json{(adapter / "control.json").string()}}})});
+          }
+          if (station.stopped())
+            break;
+          publish(station.paused() ? "paused" : "idle");
+          if (!station.paused() && std::filesystem::exists(adapter / "events.json")) {
+            const auto bytes = read_file(adapter / "events.json", 1024 * 1024);
+            const auto events = unwrap(parse_json(bytes));
+            if (events.array().size() > 1024)
+              throw Error{ErrorCode::capacity};
+            // One event per poll: controls always get a boundary before the next event.
+            for (const auto &event : events.array()) {
+              if (!station.admit(event))
+                continue;
+              log.original(
+                  {"station.file-input", bytes,
+                   Json::object({{"path", Json{(adapter / "events.json").string()}}})});
+              publish("busy");
+              bool returned = false;
+              try {
+                engine.turn({station.prompt(event), read_file(workflow)});
+                returned = true;
+              } catch (const Error &e) {
+                emit("Station workflow stopped: " + std::string{error_name(e.code)} +
+                     "; admission remains unknown, no replay.\n");
+              }
+              station.finish(event, returned);
+              refresh_info();
+              if (returned)
+                if (auto note = engine.take_restart_note()) {
+                  engine.validate_restart();
+                  session_store.restart(*note);
+                  restart_pending.store(true);
+                }
+              publish(station.paused() ? "paused" : "idle");
+              break;
+            }
+          }
+          if (restart_pending.load())
+            break;
+          std::this_thread::sleep_for(std::chrono::milliseconds{250});
+        }
+      } catch (...) {
+        // Persist pause when possible. A failed audit must never be bypassed to
+        // dispatch more events; derived status cannot grant admission authority.
+        if (root->state() == JournalWriterState::live) {
+          station.pause("native-stop: operator interrupt or adapter failure");
+          publish("blocked");
+        }
+        throw;
+      }
+      if (interrupted.load(std::memory_order_relaxed))
+        station.pause("native-stop: operator interrupt or adapter failure");
+      publish(restart_pending.load() ? "restart" : "stopped");
+      return restart_pending.load() ? 75 : 0;
+    }
     if (one) {
       perform(resume_turn ? "continue" : once);
       std::cout << '\n';
