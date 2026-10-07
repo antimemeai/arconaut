@@ -47,8 +47,9 @@ First inventory used nonexistent guessed paths and returned external_unknown;
 no completion or replay claim. Correct-path inventory delivered57 matches/4 files.
 Workflow-selector staging and atomic interrupt/apply remain deferred, not delivered.
 Scope/limitations: [modules/config delivery](../papers/2026-10-07-modules-config-delivery.md).
-Checked non-force master promotion follows this acceptance checkpoint; original
-07:24:28.679526UTC deadline and completed two-layer hardening are unchanged.
+Checked non-force master promotion70575f2 -> d52c40f completed06:16:03UTC without
+switching the active dirty checkout. Independent startup-replay changes excluded.
+Original07:24:28.679526UTC deadline and completed two-layer hardening unchanged.
 
 ## Ordered whole units
 

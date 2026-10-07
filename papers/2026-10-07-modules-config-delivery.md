@@ -80,3 +80,7 @@ was fetched and observed ancestor of candidate292ce9d; final checked fast-forwar
 publication follows acceptance commit. Separate dirty startup-replay files remain
 untouched and excluded from publication; current executable is still the recorded
 single replacement, not those unbuilt dirty changes.
+
+06:16:03UTC checked non-force remote master fast-forward70575f2 -> d52c40f
+succeeded. Local master ref advanced by expected-old CAS without checkout switch.
+No independent dirty source included; active branch remains giga/g4-modules-config.

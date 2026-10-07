@@ -3429,3 +3429,8 @@ not another hardening layer. C2 delivered; C4 request defaults/effective-pending
 slice delivered; staged governing workflow and atomic interrupt/apply deferred.
 Remote/master70575f2 fetched/ancestor candidate; final FF follows this checkpoint.
 Independent dirty startup-replay source/script/test/paper excluded and untouched.
+
+G4 publication06:16:03UTC: fresh remote ancestor check then non-force master
+70575f2 -> d52c40f succeeded; local master updated with expected-old CAS, no active
+checkout switch. Independent startup-replay dirty work still untouched. G4 closed;
+unit-state accepted at ordinary boundary, no later unit work in this invocation.
