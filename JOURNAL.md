@@ -3817,3 +3817,25 @@ turn made canonical lines1..3 and bytes0..10 reads of README.md, both completed,
 8.608s total; 6095 reported tokens across3 requests. Exact admitted arguments
 checked in retained audit; no legacy/mixed selector or retry. Install local UI, close
 both reports of the same range-mixing fault, keep campaign paused. No third layer.
+
+## Vivid TUI and slash-command study — 2026-10-07
+
+Operator requests study of the local harness corpus and a concrete plan for an
+attractive terminal, automatic slash discovery, arrow navigation and basic command
+completion. Clarifies visual quality, animations, color and useful information
+density are immediate work; advanced controls follow. No Superdesign/design SaaS.
+Read focused command/presentation source from Codex, Pi, OpenCode, Crush, Kimi,
+Vibe, Gemini; OMP command-discovery documentation. Acquire official Xiaomi
+MiMo-Code and Meta muse-code-sdk immutable ZIPs, retain originals in shared archive
+shelf, extract clean ignored references and record pins/SHA/restoration. MiMo vivid
+mode/spinner and Unicode completion tests inform design. Muse SDK/protocol is
+public but host/TUI absent; distinguish source evidence from official user manual.
+
+Write papers/2026-10-07-terminal-ux-study.md and docs/TUI_PLAN.md: visual shell and
+motion first, inline slash menu/basic commands, typed conversation/tool rendering,
+then measured tuning. Explicit no full-history reflow on animation ticks, actual
+terminal geometry, preserved audit originals, boundary activation and Ctrl-C.
+Track substantive implementation as arconaut-os3; existing tiny-window issue stays
+relevant. Discussion plan only: no product code or dependency adoption, no campaign
+restart/multiplayer launch. Documentation checked for whitespace and local links;
+production tests are not applicable to this source acquisition/design unit.

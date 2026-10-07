@@ -1,0 +1,44 @@
+[
+  {
+    "name": "mimo-code",
+    "repository": "https://github.com/XiaomiMiMo/MiMo-Code",
+    "revision": "6babeb0b98f9b4818bddf04a4331edfee04dbf85",
+    "archive": "../quarantine_proj/archives/arconaut-terminal-2026-10-07/mimo-code-6babeb0b98f9.zip",
+    "archive_url": "https://codeload.github.com/XiaomiMiMo/MiMo-Code/zip/6babeb0b98f9b4818bddf04a4331edfee04dbf85",
+    "sha256": "beaad2812e5e8f97efd8f3832c81d7b633423c065b02017b503f5b3580253e4f",
+    "archive_root": "MiMo-Code-6babeb0b98f9b4818bddf04a4331edfee04dbf85",
+    "destination": "quarantine/mimo-code",
+    "bytes": 10094892,
+    "restoration": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "../quarantine_proj/archives/arconaut-terminal-2026-10-07/mimo-code-6babeb0b98f9.zip",
+      "quarantine/mimo-code",
+      "--root",
+      "MiMo-Code-6babeb0b98f9b4818bddf04a4331edfee04dbf85",
+      "--skip-symlinks"
+    ],
+    "scope": "Public source snapshot; no submodules/LFS objects resolved, no reference code executed."
+  },
+  {
+    "name": "muse-code-sdk",
+    "repository": "https://github.com/meta-models/muse-code-sdk",
+    "revision": "912061bb125b4bff60c9f3089a21cd23b53c6b4f",
+    "archive": "../quarantine_proj/archives/arconaut-terminal-2026-10-07/muse-code-sdk-912061bb125b.zip",
+    "archive_url": "https://codeload.github.com/meta-models/muse-code-sdk/zip/912061bb125b4bff60c9f3089a21cd23b53c6b4f",
+    "sha256": "273be8c9a5d1b2596a751803324214cd47ea46f2ab892db698c178761a10b219",
+    "archive_root": "muse-code-sdk-912061bb125b4bff60c9f3089a21cd23b53c6b4f",
+    "destination": "quarantine/muse-code-sdk",
+    "bytes": 1231358,
+    "restoration": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "../quarantine_proj/archives/arconaut-terminal-2026-10-07/muse-code-sdk-912061bb125b.zip",
+      "quarantine/muse-code-sdk",
+      "--root",
+      "muse-code-sdk-912061bb125b4bff60c9f3089a21cd23b53c6b4f",
+      "--skip-symlinks"
+    ],
+    "scope": "Public source snapshot; no submodules/LFS objects resolved, no reference code executed. SDK/protocol only; host and terminal implementation not included."
+  }
+]

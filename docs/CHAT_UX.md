@@ -1,5 +1,10 @@
 # Chat ergonomics baseline
 
+The [terminal redesign discussion plan](TUI_PLAN.md) adds the operator's explicit
+2026-10-07 requirement: vivid colors, animation, visual quality and useful density
+are first-pass work alongside inline slash discovery. Advanced controls follow
+later. The delivered behaviors below remain the current implementation baseline.
+
 The operator adopted this direction on2026-10-07: **chat-first, tools-secondary**, with a capable composer, discoverable commands and a readable conversation. This is the baseline, not ornamental polish. Powerful Lua/JSON/CLI paths remain available; ordinary interaction should not require memorizing them.
 
 ## Composer: delivered first editing slice

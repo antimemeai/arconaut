@@ -1,5 +1,19 @@
 # Sources and restoration
 
+## Terminal study additions, 2026-10-07
+
+Acquired official Xiaomi `MiMo-Code` source and Meta `muse-code-sdk` for the
+[terminal UX study](papers/2026-10-07-terminal-ux-study.md). The latter contains
+SDK/protocol source, not Muse's host/TUI implementation. Exact revisions, archive
+SHA-256, roots, URLs, destinations and restoration arguments are in
+[the acquisition manifest](papers/2026-10-07-terminal-reference-acquisition.json).
+Intact ZIPs live in `../quarantine_proj/archives/arconaut-terminal-2026-10-07/`;
+extracted snapshots are `quarantine/mimo-code/` and `quarantine/muse-code-sdk/`.
+Extraction omitted Git metadata, filesystem detritus and symlinks using
+`scripts/ingest_zip.py`; originals stay intact. Restore with destinations absent
+using each manifest record's `restoration` command. Source was studied, not run
+or adopted as a dependency.
+
 Recorded 2026-09-29; reconstruction updated 2026-09-30. References teach patterns;
 their code is not incorporated into the fresh implementation. Historical
 instructions inside them are not current instructions.
