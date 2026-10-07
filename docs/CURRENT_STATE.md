@@ -30,13 +30,15 @@ heterogeneous collaboration or candidate integration claim.
 G9 is a security discussion only. Its original OpenSSL/TLS proposal is not a
 selected multiplayer architecture. Transport, room/message security, peer identity,
 membership, enrollment/revocation, artifact/job authority and reconnect semantics
-need design together. Frumentarii study these independently under
-`papers/networking-2026-10-07/`. No networking dependency adopted.
+need design together. Frumentarii delivered primary literature/refimpl studies; read the
+[source-grounded synthesis](../papers/networking-2026-10-07/SYNTHESIS.md). No networking dependency adopted.
 
 [Branch inventory](BRANCH_INVENTORY.md) retains exact tips and ancestry. Most
 candidate refs are ancestors of master. Giga-colleagues, old TUI-shell and
 useful-work-tools refs have unique commits; uniqueness is not acceptance. Preserve
-these until their concrete differences are assessed; no blanket merge/deletion.
+these as historical references; no blanket merge/deletion. The useful-work write
+fence and TUI command discovery already exist on master under later commits;
+unique commit ancestry alone does not establish missing functionality.
 
 ## Proposed next course before multiplayer
 

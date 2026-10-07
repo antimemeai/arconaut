@@ -11,6 +11,9 @@ That is the project. It is also the reason Arconaut is being built inside Arcona
 
 This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal interface, and an operating self-development loop**. It is an early system in active use and reconstruction. Its ambitions exceed its present implementation; the distinctions below are part of the description, rather than small print.
 
+For current accepted capabilities, unfinished work and the paused development
+cycle, see [the project stock](docs/CURRENT_STATE.md).
+
 ## Come aboard
 
 From a configured checkout with the release executable built:

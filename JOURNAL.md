@@ -3765,3 +3765,25 @@ branch tips/worktrees in docs/BRANCH_INVENTORY.md and material delivery limits i
 docs/CURRENT_STATE.md. Corrected G7 publication and campaign paused status; earlier
 journal claims remain historical. Rebuild local main for operator use; no multiplayer
 implementation or autonomous resume authorized by this consolidation.
+
+## Networking corpus and actual local main
+
+Three frumentarii completed P2P, multiplayer-state/game-networking and E2EE
+literature/reference studies, preserving archives/manifests and acquisition gaps.
+Root read delivery findings and key ownership/identity/lifecycle sections, then
+used them in papers/networking-2026-10-07/SYNTHESIS.md: distinguish custody from
+action, allow specified same-ID reconciliation, no inference/effect rollback,
+per-hop relay TLS not E2EE, live revocation and secret audit exclusions, group
+commit conflict and aggregate byte bounds. No multiplayer stack selected.
+
+Main source built locally; release terminal and terminal_pty2/2 passed (11.69s).
+Atomic local publication to build/release/arco-ui (launcher interactive generation).
+Actual fresh TUI context/main-preview/session using gpt-6.1-sol medium returned
+MAIN_READY, provider2843ms,1886 reported tokens. Turn completed, then /quit exited0
+and restored terminal. No user session or autonomous campaign was resumed.
+A redundant second build was started after checkout consolidation; its identical
+source rebuild is tracked to completion, not an additional test/certification layer.
+
+Compared unique old branch commits: useful-work request-write fence already in main
+with direct regression; old TUI shell superseded by editor/palette. Colleague source
+is genuine separate candidate, explicitly not silently accepted by consolidation.

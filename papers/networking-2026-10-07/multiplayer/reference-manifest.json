@@ -1,0 +1,38 @@
+[
+  {
+    "repo": "ValveSoftware/GameNetworkingSockets",
+    "commit": "d534c19aa760df3fb75fd20db13ba1932b8a5463",
+    "url": "https://codeload.github.com/ValveSoftware/GameNetworkingSockets/zip/d534c19aa760df3fb75fd20db13ba1932b8a5463",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/arconaut-multiplayer-2026-10-07/GameNetworkingSockets-d534c19aa760df3fb75fd20db13ba1932b8a5463.zip",
+    "sha256": "34475423f4d03494b9b8b4c0703b2807ea2fcf7035cbb1da44e0ed3a0ff7d48b",
+    "bytes": 11267421,
+    "extracted": "/Users/patrickbeam/projects/arconaut/quarantine/multiplayer-study/GameNetworkingSockets"
+  },
+  {
+    "repo": "lsalzman/enet",
+    "commit": "5a9c537fd464b3c6d3c55e1d3bd47588faf71b42",
+    "url": "https://codeload.github.com/lsalzman/enet/zip/5a9c537fd464b3c6d3c55e1d3bd47588faf71b42",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/arconaut-multiplayer-2026-10-07/enet-5a9c537fd464b3c6d3c55e1d3bd47588faf71b42.zip",
+    "sha256": "f01da8ea686147d04bb8524d580dc26b44015b9b7f0ddde012a357e2e3a35fde",
+    "bytes": 99074,
+    "extracted": "/Users/patrickbeam/projects/arconaut/quarantine/multiplayer-study/enet"
+  },
+  {
+    "repo": "pond3r/ggpo",
+    "commit": "7ddadef8546a7d99ff0b3530c6056bc8ee4b9c0a",
+    "url": "https://codeload.github.com/pond3r/ggpo/zip/7ddadef8546a7d99ff0b3530c6056bc8ee4b9c0a",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/arconaut-multiplayer-2026-10-07/ggpo-7ddadef8546a7d99ff0b3530c6056bc8ee4b9c0a.zip",
+    "sha256": "6d49623b2db2a342f4a32255b868ebb2c05bdbdd72d5cf66a3bf08488e9d3ba3",
+    "bytes": 337544,
+    "extracted": "/Users/patrickbeam/projects/arconaut/quarantine/multiplayer-study/ggpo"
+  },
+  {
+    "repo": "automerge/automerge",
+    "commit": "e2452ea1ea9a4008e94f435d60e893bfeb8e0f38",
+    "url": "https://codeload.github.com/automerge/automerge/zip/e2452ea1ea9a4008e94f435d60e893bfeb8e0f38",
+    "archive": "/Users/patrickbeam/projects/quarantine_proj/archives/arconaut-multiplayer-2026-10-07/automerge-e2452ea1ea9a4008e94f435d60e893bfeb8e0f38.zip",
+    "sha256": "7a542b0a1b06323f0cf603d6cc08725173f21f25311928e275d5355cece0b7be",
+    "bytes": 66828402,
+    "extracted": "/Users/patrickbeam/projects/arconaut/quarantine/multiplayer-study/automerge"
+  }
+]

@@ -1,0 +1,203 @@
+[
+  {
+    "repo": "cisco/mlspp",
+    "sha": "fc724c3100ce3b5d8565dbd6d93648a440991a8c",
+    "commit_date": "2026-09-21T15:34:33Z",
+    "license": {
+      "key": "bsd-2-clause",
+      "name": "BSD 2-Clause \"Simplified\" License",
+      "spdx_id": "BSD-2-Clause",
+      "url": "https://api.github.com/licenses/bsd-2-clause",
+      "node_id": "MDc6TGljZW5zZTQ="
+    },
+    "url": "https://codeload.github.com/cisco/mlspp/zip/fc724c3100ce3b5d8565dbd6d93648a440991a8c",
+    "path": "quarantine/e2ee-study/cisco-mlspp-fc724c3100ce3b5d8565dbd6d93648a440991a8c.zip",
+    "bytes": 4647953,
+    "sha256": "71aea9ae371df1561628a377e6cc48fcf9ec909b246fcae2a889813c48ad8c04",
+    "extracted": "quarantine/e2ee-study/mlspp"
+  },
+  {
+    "repo": "discord/libdave",
+    "sha": "8de72b1f8a2ac3c5a5270755bb8091a62e3c6169",
+    "commit_date": "2026-09-15T16:29:58Z",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "url": "https://codeload.github.com/discord/libdave/zip/8de72b1f8a2ac3c5a5270755bb8091a62e3c6169",
+    "path": "quarantine/e2ee-study/discord-libdave-8de72b1f8a2ac3c5a5270755bb8091a62e3c6169.zip",
+    "bytes": 189368,
+    "sha256": "8b6422d1ef817d40a3f1c299b785af94cf55075b3a3be91830deb4689f1d0a00",
+    "extracted": "quarantine/e2ee-study/libdave"
+  },
+  {
+    "repo": "discord/dave-protocol",
+    "sha": "1b2b706ad4a562ede5c2ef901f9d77f6dbe79446",
+    "commit_date": "2025-08-14T22:02:17Z",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "url": "https://codeload.github.com/discord/dave-protocol/zip/1b2b706ad4a562ede5c2ef901f9d77f6dbe79446",
+    "path": "quarantine/e2ee-study/discord-dave-protocol-1b2b706ad4a562ede5c2ef901f9d77f6dbe79446.zip",
+    "bytes": 921981,
+    "sha256": "84d9bec909f433f11a058687c093e201e186805d9d3ccf60203b62bfd3af2398",
+    "extracted": "quarantine/e2ee-study/dave-protocol"
+  },
+  {
+    "repo": "rweather/noise-c",
+    "sha": "cfe25410979a87391bb9ac8d4d4bef64e9f268c6",
+    "commit_date": "2023-12-06T20:51:04Z",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "url": "https://codeload.github.com/rweather/noise-c/zip/cfe25410979a87391bb9ac8d4d4bef64e9f268c6",
+    "path": "quarantine/e2ee-study/rweather-noise-c-cfe25410979a87391bb9ac8d4d4bef64e9f268c6.zip",
+    "bytes": 2914170,
+    "sha256": "6ec639480a7b8229f24a1b1bb51cbad063c3a60328c83acecf16d6fce93a4c9e",
+    "extracted": "quarantine/e2ee-study/noise-c"
+  },
+  {
+    "repo": "noiseprotocol/noise_wiki",
+    "error": "HTTP Error 409: Conflict"
+  },
+  {
+    "repo": "jedisct1/libsodium",
+    "sha": "75c6d5520a3b99790696d98b554673697c71c5cc",
+    "commit_date": "2026-09-28T09:04:24Z",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "url": "https://codeload.github.com/jedisct1/libsodium/zip/75c6d5520a3b99790696d98b554673697c71c5cc",
+    "path": "quarantine/e2ee-study/jedisct1-libsodium-75c6d5520a3b99790696d98b554673697c71c5cc.zip",
+    "bytes": 2234667,
+    "sha256": "5d066c7e054d4bbba6c5251f020de7cbbd4fa2536d9741d5998d48c43347ad54",
+    "extracted": "quarantine/e2ee-study/libsodium"
+  },
+  {
+    "repo": "signalapp/libsignal",
+    "sha": "4beb029d8a941f81e7d9c6d8af1ed25a677569a8",
+    "commit_date": "2026-10-07T00:29:35Z",
+    "license": {
+      "key": "agpl-3.0",
+      "name": "GNU Affero General Public License v3.0",
+      "spdx_id": "AGPL-3.0",
+      "url": "https://api.github.com/licenses/agpl-3.0",
+      "node_id": "MDc6TGljZW5zZTE="
+    },
+    "url": "https://codeload.github.com/signalapp/libsignal/zip/4beb029d8a941f81e7d9c6d8af1ed25a677569a8",
+    "path": "quarantine/e2ee-study/signalapp-libsignal-4beb029d8a941f81e7d9c6d8af1ed25a677569a8.zip",
+    "bytes": 4185395,
+    "sha256": "f68f40ccbaac6633e0f986dd3a5174e4a7395cb4ebc0a4e020f93a81788293c3",
+    "extracted": "quarantine/e2ee-study/libsignal"
+  },
+  {
+    "url": "https://www.rfc-editor.org/rfc/rfc8446.txt",
+    "path": "quarantine/e2ee-study/rfc8446.txt",
+    "bytes": 337736,
+    "sha256": "47871bc8820a2c3b6ea89f061055577058862cf543686b82d10131239702b3bd"
+  },
+  {
+    "url": "https://www.rfc-editor.org/rfc/rfc9420.txt",
+    "path": "quarantine/e2ee-study/rfc9420.txt",
+    "bytes": 299103,
+    "sha256": "251ab11076c43fd4b8dc080a068a8caaf55e2fc5e6aa61d4274961627f32624b"
+  },
+  {
+    "url": "https://www.rfc-editor.org/rfc/rfc9750.txt",
+    "path": "quarantine/e2ee-study/rfc9750.txt",
+    "bytes": 113442,
+    "sha256": "6aa156c5592f99802aae9c39510bf347cacee4abdb1c34baab4c933a6cd992dd"
+  },
+  {
+    "url": "https://noiseprotocol.org/noise.html",
+    "path": "quarantine/e2ee-study/noise.html",
+    "bytes": 142833,
+    "sha256": "05d1f2305f81f49ce516530fd70884014f9bae54f8f290a4274b3392b1313d68"
+  },
+  {
+    "url": "https://signal.org/docs/specifications/doubleratchet/",
+    "path": "quarantine/e2ee-study/double-ratchet.html",
+    "bytes": 93841,
+    "sha256": "75fb165edcf8e990c03f155a69a254172f71c205d3d0e9710b83d4d9e69c8381"
+  },
+  {
+    "url": "https://signal.org/docs/specifications/pqxdh/",
+    "path": "quarantine/e2ee-study/pqxdh.html",
+    "bytes": 63790,
+    "sha256": "bdd079bae55265ba770a66076d0ebb902d0fbd0972ed7cdbf1bf47058863a1eb"
+  },
+  {
+    "url": "https://signal.org/docs/specifications/sesame/",
+    "path": "quarantine/e2ee-study/sesame.html",
+    "bytes": 45753,
+    "sha256": "ecc9d4badd3a36a502cec48d18cecbf8d965ba6d067b73ef21f290e89b6b38fa"
+  },
+  {
+    "url": "https://eprint.iacr.org/2018/766.pdf",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://www.usenix.org/system/files/usenixsecurity24-bhargavan.pdf",
+    "path": "quarantine/e2ee-study/pqxdh-analysis.pdf",
+    "bytes": 600204,
+    "sha256": "2c4d23eb46ea5fd9706f2509c287a26b2428f06eef9eaf751b6b85d95e517ff9"
+  },
+  {
+    "repo": "Mbed-TLS/mbedtls",
+    "sha": "6bdf4e15e24bb04650b53cbb61b7cc52fe9a5a06",
+    "commit_date": "2026-10-05T11:39:44Z",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "url": "https://codeload.github.com/Mbed-TLS/mbedtls/zip/6bdf4e15e24bb04650b53cbb61b7cc52fe9a5a06",
+    "path": "quarantine/e2ee-study/mbedtls-6bdf4e15e24bb04650b53cbb61b7cc52fe9a5a06.zip",
+    "bytes": 1330817,
+    "sha256": "85db8998a227c6e57fe553925930b9f77a6cc4128368ee572e5a7cb18bf6f412",
+    "extracted": "quarantine/e2ee-study/mbedtls"
+  },
+  {
+    "url": "https://www.openssl-library.org/source/",
+    "path": "quarantine/e2ee-study/openssl-source.html",
+    "bytes": 45864,
+    "sha256": "005f5ecaacf9af9037af99260553d8fa3d2555aef4face446bc802e7246a2b0b"
+  },
+  {
+    "url": "https://openssl-library.org/post/2026-09-16-eol30/",
+    "path": "quarantine/e2ee-study/openssl-support.html",
+    "bytes": 33990,
+    "sha256": "f6a2988bee4ceca6d8b139e6b570da5cccf5dc3e460ff4bab5b1bc4cb1922eba"
+  },
+  {
+    "url": "https://docs.openssl.org/3.5/man3/SSL_CTX_set_verify/",
+    "path": "quarantine/e2ee-study/openssl-verification.html",
+    "bytes": 1103696,
+    "sha256": "df7ffe2e042239c478ce3036e97d580cc0a285fbe749020f1830785d9909df64"
+  },
+  {
+    "url": "https://docs.openssl.org/3.5/man3/X509_STORE_CTX_set_flags/",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "url": "https://eprint.iacr.org/2022/607.pdf",
+    "error": "HTTP Error 403: Forbidden"
+  }
+]

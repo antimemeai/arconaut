@@ -1,0 +1,43 @@
+[
+  {
+    "name": "lamport-time-clocks",
+    "url": "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+    "sha256": "c55e7cab4230aa3d7126748a149b2db6f0d7a67296d5eccfdd50a210299a96b2",
+    "bytes": 854562,
+    "path": "/Users/patrickbeam/projects/arconaut/papers/networking-2026-10-07/multiplayer/lamport-time-clocks.pdf",
+    "status": "acquired"
+  },
+  {
+    "name": "consistency-survey",
+    "url": "https://vukolic.com/consistency-survey.pdf",
+    "status": "HTTP Error 403: Forbidden"
+  },
+  {
+    "name": "byzantine-eventual",
+    "url": "https://arxiv.org/pdf/2012.00472",
+    "sha256": "39c7c7872bfd302cf7c7010608f79336ec8b113bf4f872bd608270001f25d7c3",
+    "bytes": 769446,
+    "path": "/Users/patrickbeam/projects/arconaut/papers/networking-2026-10-07/multiplayer/byzantine-eventual.pdf",
+    "status": "acquired"
+  },
+  {
+    "name": "bft-crdt",
+    "url": "https://martin.kleppmann.com/papers/bft-crdt-papoc22.pdf",
+    "sha256": "395fcdf2e93c0e553fc5a8ec4586c4c06c61335a7b40ce6db889ebbf6a3e6fe1",
+    "bytes": 516465,
+    "path": "/Users/patrickbeam/projects/arconaut/papers/networking-2026-10-07/multiplayer/bft-crdt.pdf",
+    "status": "acquired"
+  },
+  {
+    "name": "local-first",
+    "url": "https://www.inkandswitch.com/essay/local-first/local-first.pdf",
+    "status": "HTTP Error 403: Forbidden"
+  },
+  {
+    "name": "consistency-survey-arxiv",
+    "url": "https://arxiv.org/pdf/1512.00168",
+    "sha256": "4f426e812269e67b530e682031d9ba1fcd205f957661158a9f7dc063758f1157",
+    "bytes": 887459,
+    "status": "acquired"
+  }
+]

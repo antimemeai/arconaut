@@ -81,3 +81,12 @@ No refs or worktrees deleted during consolidation.
 The colleague candidate f233689 remains outside accepted runtime source; actual
 Claude readiness succeeded, but heterogeneous useful work and serial integration
 are unfinished. G9 contains research only; no transport implementation adopted.
+
+## Concrete comparison after inventory
+
+The unique useful-work-tools change refuses CLI dispatch when request write is
+unconfirmed; master already contains that fence and its direct regression check.
+The old TUI-shell adds command discovery/responsive controls, subsequently expanded
+by master's editor/palette. Do not replace current source with those older files.
+The substantive standalone colleague command/library remains a bounded, qualified
+candidate awaiting serial integration and useful cross-provider work; G5 stays open.

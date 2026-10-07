@@ -455,3 +455,21 @@ python3 scripts/ingest_zip.py ../quarantine_proj/archives/arconaut-phux-2026-10-
 
 Study: papers/2026-10-07-phux-multiplexing.md. External optional service proposal,
 not embedded dependency adoption or production qualification.
+
+## P2P, multiplayer and E2EE frumentarii — 2026-10-07
+
+Primary standards/literature and immutable reference archives acquired and studied
+for the deferred multiplayer design. Source archives remain intact in shared
+quarantine_proj; extracted refs are ignored and stripped of Git metadata/detritus.
+No reference build/execution, networking dependency adoption or account use.
+Sources, hashes, exact paths, restoration and acquisition gaps are recorded in:
+
+- [P2P manifest](papers/networking-2026-10-07/p2p/MANIFEST.md)
+- [Multiplayer references](papers/networking-2026-10-07/multiplayer/reference-manifest.json),
+  [literature](papers/networking-2026-10-07/multiplayer/literature-manifest.json),
+  [restoration](papers/networking-2026-10-07/multiplayer/RESTORE.md)
+- [E2EE manifest](papers/networking-2026-10-07/e2ee/manifest.json),
+  [restoration](papers/networking-2026-10-07/e2ee/RESTORE.md)
+
+[Source-grounded synthesis](papers/networking-2026-10-07/SYNTHESIS.md) separates
+identity, reachability, encryption, custody and shared-work authority.
