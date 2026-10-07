@@ -4,6 +4,11 @@ blackbird_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 blackbird_executable=${BLACKBIRD_EXECUTABLE:-${ARCO_EXECUTABLE:-"$blackbird_root/build/release/blackbird"}}
 BLACKBIRD_SPRITE_ASSET=${BLACKBIRD_SPRITE_ASSET:-"$blackbird_root/assets/sr71.png"}
 export BLACKBIRD_SPRITE_ASSET
+# Only a nonsecret locator is exported; credentials are read lazily by native code.
+if [ -z "${BLACKBIRD_JEV_ENV_FILE:-}" ] && [ -f "$blackbird_root/../.env" ]; then
+  BLACKBIRD_JEV_ENV_FILE="$blackbird_root/../.env"
+  export BLACKBIRD_JEV_ENV_FILE
+fi
 blackbird_probe=false
 blackbird_session="$HOME/.local/state/blackbird/default"
 if [ ! -e "$blackbird_session" ] && [ -d "$HOME/.local/state/arconaut/default" ]; then

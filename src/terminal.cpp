@@ -70,6 +70,7 @@ constexpr std::array commands{
     ChatCommand{"/workflow", "FILE", "Select the turn workflow", "Programs"},
     ChatCommand{"/restart", "NOTE", "Request native restart; build replacement first",
                 "Programs"},
+    ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)", "Tools"},
     ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};
 
 std::string search_text(std::string_view text) {
