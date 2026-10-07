@@ -4545,3 +4545,20 @@ address/content/lifetime code. References remain study-only; no dependency adopt
 Plan is a written proposal, not independently reviewed or launched. Keep one
 recovery milestone across bounded execution periods; prerequisites are not success.
 No new worker, review panel, deadline reset, code merge or primary binary change.
+
+## 2026-10-07 — operator explicitly launches the coherent recovery milestone
+
+Actually launched native BB durable-recovery-2026-10-07 at21:04:38UTC,
+gpt-6.1-sol/medium, reusedpoolslot0/candidate/durable-recovery-2026-10-07.
+Seedfef64c1bb52d719c066994b7158c94b6bb89ede3 merges d32a764 with currentmaster6d024ea/plan; only journal
+append conflict, both histories preserved. Seed branch pushed. Absolute deadline
+1791408577,25minutesTOTAL including provider/build/review. One owner
+starts S1 and follows S2/S3/S4 dependencies; successful prerequisite/turn is not
+whole milestone completion. Completion filename reserved for actual delivery;
+otherwise progress/continuation at bound. No deadline reset or master code merge.
+
+Manager62818, collector62819 and native62866 identities verified through libproc;
+supervisor62856 running, provider active,15resource samples observed. Persisted
+OS CPU/RSS/I/O/stacks and explicit per-process DEBUG timings; ordinary runtime
+unchanged/OFF. Launch/run/mission/spec files retained privately in context/.
+Board adopted the authorized run while general admission remains paused.

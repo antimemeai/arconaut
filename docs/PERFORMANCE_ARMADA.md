@@ -9,18 +9,14 @@ Each has a fixed 25-minute unit allowance, successful 12-round turn segments,
 managed context, one code review, direct checks, commits/pushes and persistent
 resource/stack collection. Original P1 allowance is unchanged.
 
-Current status: **zero active autodevs**. Cold-history-r2-2026-10-07 finished and
-pushed d32a764: native historical application payloads use checked disk references.
-Matched warm request-ready RSS fell from353MB to6–7MB, but median readiness rose
-from198ms to245ms. One reviewer attempt timed out; candidate remains inactive.
-Durable-state-r1's physical hints remain an inactive partial;
-compact current-state/tail recovery is still the destination. Beads/debug-only
-timing surfaces are merged; earlier launch descriptions below are historical.
-
-The remaining milestone is specified in [DURABLE_STATE_PLAN](DURABLE_STATE_PLAN.md).
-Its schema, publication, native reader migration and dependency order replace
-the earlier broad mission/optional substitute deliveries. It is a written proposal,
-not independently reviewed or launched; execution bounds do not redefine success.
+Current status: **one active native BB**, durable-recovery-2026-10-07,
+following docs/DURABLE_STATE_PLAN.md under the operator's explicit launch.
+Seed fef64c1 combines native cold-history d32a764 with current master/plan.
+It starts S1 indexed queries and proceeds through projection/checkpoint/tail
+as dependencies permit. Actual integrated recovery is the milestone; smaller
+prerequisites leave progress/continuation, never the completion marker.
+Normal installed runtime remains DEBUGOFF; this development run explicitly
+captures native timings and OS resources. Earlier results below are historical.
 
 | Lane | Ownership | Discriminator |
 | --- | --- | --- |

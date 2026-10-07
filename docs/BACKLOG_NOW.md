@@ -8,8 +8,8 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 
 Remaining recovery implementation follows [DURABLE_STATE_PLAN](DURABLE_STATE_PLAN.md):
 one owner, indexed queries → native current-state projection → checkpoint/suffix
-reopen → bounded maintenance/direct delivery. Written proposal, not yet reviewed
-or launched. Cold ownership/physical hints are prerequisites, not the finish line.
+reopen → bounded maintenance/direct delivery. Operator explicitly launched one native BB on it; independent review remains
+pending. Cold ownership/physical hints are prerequisites, not the finish line.
 
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
@@ -36,7 +36,8 @@ resumed cold-history-r2-2026-10-07, which delivered pushed d32a764 and stopped.
 Historical application ownership is now cold through native consumers: matched
 335.8MB fixture request-ready RSS353MB→6–7MB, median warm readiness198ms→245ms.
 Direct ownership/context/recovery checks passed; one review timed out. Candidate
-remains inactive. Zero active autodevs; physical hints remain inactive.
+remains inactive. Operator launches one native BB durable-recovery-2026-10-07
+on the written plan; physical hints remain inactive.
 Compact semantic state, bounded tail and demand-read history remain the next
 actual redesign; no additional review panel is queued.
 
