@@ -9,7 +9,8 @@ assurance hierarchy. Historical issue prefixes remain for identity.
 | Issue | Actual deliverable | Evidence and priority |
 | --- | --- | --- |
 | arconaut-fsp | Minimal native local-action timing and actual short/long history measurements | Running BB on candidate/local-performance-2026-10-07 with automatic resource/stack collection; narrowly instrument append/preparation before selecting first optimization. |
-| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | Old measured session:13,767 captures and14,610 reservations for179 admissions. Bound blocks/reservation ranges while retaining every observed byte and truthful crash outcome. |
+| arconaut-02g | Reduce capture/reservation/synchronization work per streamed chunk | BB now implements durable identity ranges; old measured session:13,767 captures and14,610 reservations for179 admissions. Capture batching remains separate if necessary. |
+| arconaut-n11 | Startup below100ms with large retained history/context | BB studies indexed restoration and demand loading; measure prompt and audited-request readiness, preserving originals and recovery fences. |
 | arconaut-1v0 | Store invocation input once and reference it from semantic records | Old census measured46,559,372 duplicated blob bytes between invocation/admission alone; decision repeats logicalinput. Requires versioned references and historical readability, not history deletion. |
 | arconaut-3x2 | Stop copying complete metadata/context history on small appends | Current append copies Snapshot vectors; live lookup scans facts; ContextStore copies/serializes cumulative state. Split retained suffix storage and context indexing at their real ownership boundaries. |
 | arconaut-ayg | Scoped Linux check of already-delivered startup changes | Useful portability check on Neuroses; no new productfeature, blanket recertification or blocker on unrelated work. |
@@ -22,9 +23,10 @@ fixes; it must not grow into a laboratory that postpones the fixes.
 ## Other useful product work
 
 - **Workflow registry delivery (arconaut-3oz.2):** implemented/tested/pushedc8498f0;
-  remaining independent review produced no result at90seconds. Candidate retained
-  inactive; no implementation restart. Review remains authorized, not a permission
-  request or reason to idle independent lanes.
+  first substantive review found two repairs: bound palette selection after hot
+  registry shrink, and latch caught invocation-limit failures. Candidate remains
+  inactive; report specifies direct regression checks. Fix these without restarting
+  implementation or adding another tribunal.
 - **Real workflow execution:** structured concurrent tasks/joins, restartable
   segments/effect reconciliation, then station signals/timers and artifact reuse.
   These are W2–W5 in WORKFLOW_CAMPAIGN, not delivered by registry invocation.

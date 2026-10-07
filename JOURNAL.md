@@ -4222,3 +4222,29 @@ wrapper distinction. Closed stale deliverededitor/palette, remotebranch retireme
 and superseded W0survey entries. UpdatedTUI notes/priority to reflect removedphysical
 clamp and deliveredrename, without inventing missingPTY results. No newtests/reviews
 or taskhierarchy used merely to validate backlog bookkeeping.
+
+## 2026-10-07 — Launch the local-performance armada
+
+Operator asks a small BB fleet, then prioritizes dramatic issuer reservation
+reduction and startup below100ms with large context. Launched two Blackbird
+instances from14513f7 in a two-slot reusable pool: durable issuer ranges
+(arconaut-02g, deadline1791382309) and intelligent startup restoration
+(arconaut-n11, deadline1791382317). Existing P1 remains under original deadline
+1791381225. All use gpt-6.1-sol/medium, optimized profile executable, persistent
+resource/stack sampling, successful12-round turn boundaries and25-minute units.
+New candidate branches pushed. Actual provider requests/resource JSONL observed
+in both new lanes. No target claimed achieved at launch.
+
+Ownership: P1 timing, issuer allocation/highwater, startup restoration/indexes.
+Shared translation units integrate serially under Root. Audit authority, original
+repair and unknown fences remain; startup measures audited-request readiness as
+well as prompt. Reference study and direct oracles specified in missions.
+docs/PERFORMANCE_ARMADA.md records scope/targets/follow-ups. Board adopts new runs
+with global admission paused; limit5 accounts for3active plus2legacy holds. No old
+campaign resumed or operator build/session changed.
+
+One substantive independent W1 review completed within5minutes after earlier
+Claude attempt yielded no report. Findings: palette selection out-of-range after
+registry shrink; caught invocation-count exhaustion bypasses failure latch.
+Report retained in papers; bead/flat backlog updated with direct repair oracles.
+Candidate inactive; no second tribunal or review-of-review requested.
