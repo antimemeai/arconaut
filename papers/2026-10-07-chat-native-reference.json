@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/ArthurSonzogni/FTXUI",
+  "revision": "d807cbca267a5ed994604439efa6a4b8cb411f54",
+  "archive": "../quarantine_proj/archives/arconaut-terminal-2026-10-07/ftxui-d807cbca267a.zip",
+  "sha256": "05d462ab87dd30d478146cf4265c3bd802e947bbbd3aed729b3b418d9bf9efd1",
+  "root": "FTXUI-d807cbca267a5ed994604439efa6a4b8cb411f54",
+  "destination": "quarantine/ftxui",
+  "restoration": [
+    "python3",
+    "scripts/ingest_zip.py",
+    "../quarantine_proj/archives/arconaut-terminal-2026-10-07/ftxui-d807cbca267a.zip",
+    "quarantine/ftxui",
+    "--root",
+    "FTXUI-d807cbca267a5ed994604439efa6a4b8cb411f54",
+    "--skip-symlinks"
+  ]
+}

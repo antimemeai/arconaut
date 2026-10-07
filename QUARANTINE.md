@@ -2,6 +2,14 @@
 
 ## Terminal study additions, 2026-10-07
 
+Deeper chat/render study adds FTXUI, Notcurses and libvterm. Exact revisions,
+archive SHA-256 and restoration arguments are in
+[native reference provenance](papers/2026-10-07-chat-native-reference.json) and
+[C renderer provenance](papers/2026-10-07-render-reference-acquisition.json).
+ZIPs remain intact in the same shared terminal-study archive shelf. Clean
+extractions are `quarantine/ftxui`, `quarantine/notcurses`, `quarantine/libvterm`.
+These are studied source references; no dependency was adopted or code executed.
+
 Acquired official Xiaomi `MiMo-Code` source and Meta `muse-code-sdk` for the
 [terminal UX study](papers/2026-10-07-terminal-ux-study.md). The latter contains
 SDK/protocol source, not Muse's host/TUI implementation. Exact revisions, archive

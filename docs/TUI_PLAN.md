@@ -6,6 +6,12 @@ The operator wants a gorgeous, animated, information-dense terminal and good
 basic slash commands now. Advanced orchestration/control surfaces follow later.
 This plan is not an implementation completion claim.
 
+The [chat presentation proposal](CHAT_PRESENTATION_PROPOSAL.md) develops message
+composition and the renderer in detail after the operator's updated screenshot.
+Its source study covers C renderer damage tracking/storage/output as well as agent
+presentation. The inline slash menu and initial borders are implemented; the rich
+conversation renderer remains proposed.
+
 ## Visual direction
 
 Make it feel like a finely made instrument: luminous accents, clear hierarchy,

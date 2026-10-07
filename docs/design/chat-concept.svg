@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="900" viewBox="0 0 1360 900">
+<rect width="1360" height="900" fill="#202329"/>
+<g font-family="SFMono-Regular, Menlo, monospace" font-size="18">
+<text x="32" y="40" fill="#72d7d3" font-weight="bold">ARCONAUT</text>
+<text x="170" y="40" fill="#a2adb8">arconaut / ergonomics</text>
+<text x="970" y="40" fill="#bca8ef">sol 6.1 · medium</text>
+<rect x="32" y="57" width="1296" height="1" fill="#46505c" stroke="none"/>
+<rect x="40" y="87" width="1280" height="91" fill="#292b30" stroke="none"/>
+<rect x="40" y="87" width="3" height="91" fill="#deb371" stroke="none"/>
+<text x="63" y="117" fill="#deb371" font-weight="bold">YOU</text>
+<text x="63" y="150" fill="#e8e3d9">Make this conversation look excellent. Keep rendering lean.</text>
+<rect x="40" y="210" width="2" height="250" fill="#72d7d3" stroke="none"/>
+<text x="63" y="232" fill="#72d7d3" font-weight="bold">ARCO</text>
+<text x="1100" y="232" fill="#a2adb8">working · 4s</text>
+<text x="63" y="271" fill="#e8e3d9">I’ll separate chat from diagnostics and render only what changes.</text>
+<text x="63" y="310" fill="#e8e3d9" font-weight="bold">A small renderer with a strong visual vocabulary.</text>
+<rect x="63" y="332" width="1228" height="117" fill="#252833" stroke="none"/>
+<text x="82" y="358" fill="#bca8ef">C++ · proposed render loop</text>
+<text x="82" y="391" fill="#e8e3d9">1   auto damage = layout.update(events);</text>
+<text x="82" y="422" fill="#72d7d3">2   terminal.present(cells, damage);</text>
+<text x="63" y="493" fill="#9bd5ac">▸  3 files read                                      ✓  12ms</text>
+<text x="63" y="525" fill="#9bd5ac">▸  src/terminal.cpp   +42 −18                         ✓  edited</text>
+<text x="63" y="557" fill="#deb371">⠹  release terminal checks                              running</text>
+<text x="91" y="589" fill="#a2adb8">terminal … passed   ·   terminal_pty … running</text>
+<rect x="63" y="605" width="1228" height="1" fill="#39414c" stroke="none"/>
+<text x="63" y="641" fill="#e8e3d9">Crisp message hierarchy, highlighted code, compact live tools.</text>
+<text x="63" y="670" fill="#e8e3d9">Exact source and audit detail stay a keypress away.</text>
+<text x="63" y="704" fill="#a2adb8">4.2s · 2.1k in · 184 out</text>
+<rect x="32" y="752" width="1296" height="76" fill="#23292e" stroke="#72d7d3"/>
+<text x="51" y="784" fill="#72d7d3">› </text>
+<rect x="74" y="767" width="10" height="22" fill="#e8e3d9" stroke="none"/>
+<text x="52" y="818" fill="#a2adb8">Enter send    / commands    Ctrl-G editor</text>
+<text x="32" y="865" fill="#a2adb8">CONCEPT FIXTURE · not an implemented screen; timings and counts are illustrative</text>
+</g>
+</svg>

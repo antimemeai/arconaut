@@ -1,0 +1,40 @@
+[
+  {
+    "name": "notcurses",
+    "repository": "https://github.com/dankamongmen/notcurses",
+    "revision": "b26048eebc74d5d254717d3332fa484718f9efe6",
+    "archive": "../quarantine_proj/archives/arconaut-terminal-2026-10-07/notcurses-b26048eebc74.zip",
+    "archive_url": "https://codeload.github.com/dankamongmen/notcurses/zip/b26048eebc74d5d254717d3332fa484718f9efe6",
+    "sha256": "d0d4c18eedf9dcd85f1bf909b6dfbad3d13982f75c82ece24bc4cb94c4bdc899",
+    "root": "notcurses-b26048eebc74d5d254717d3332fa484718f9efe6",
+    "destination": "quarantine/notcurses",
+    "restoration": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "../quarantine_proj/archives/arconaut-terminal-2026-10-07/notcurses-b26048eebc74.zip",
+      "quarantine/notcurses",
+      "--root",
+      "notcurses-b26048eebc74d5d254717d3332fa484718f9efe6",
+      "--skip-symlinks"
+    ]
+  },
+  {
+    "name": "libvterm",
+    "repository": "https://github.com/neovim/libvterm",
+    "revision": "934bc2fbf21800ac3458a499df8820ca5fb45fd3",
+    "archive": "../quarantine_proj/archives/arconaut-terminal-2026-10-07/libvterm-934bc2fbf218.zip",
+    "archive_url": "https://codeload.github.com/neovim/libvterm/zip/934bc2fbf21800ac3458a499df8820ca5fb45fd3",
+    "sha256": "35a7a7e005b3321b32854c613d92ac70086703dd36d405184a28bc6b19415ca7",
+    "root": "libvterm-934bc2fbf21800ac3458a499df8820ca5fb45fd3",
+    "destination": "quarantine/libvterm",
+    "restoration": [
+      "python3",
+      "scripts/ingest_zip.py",
+      "../quarantine_proj/archives/arconaut-terminal-2026-10-07/libvterm-934bc2fbf218.zip",
+      "quarantine/libvterm",
+      "--root",
+      "libvterm-934bc2fbf21800ac3458a499df8820ca5fb45fd3",
+      "--skip-symlinks"
+    ]
+  }
+]

@@ -3864,3 +3864,29 @@ slash opening, selected row, arrow/Tab, help dispatch, paste, active cancellatio
 editor handoff, reopen, native restart isolation and streaming scroll. No provider
 request or broad certification. Atomically install final build/release/arco as
 arco-ui for scripts/arco; existing operator process is untouched and needs relaunch.
+
+## Rich chat and lean renderer proposal — 2026-10-07
+
+Operator requests study/proposal before implementation after new Ghostty screenshot;
+then emphasizes buttery rendering, C-programmer economy, critical-systems lessons,
+redundancies and zero fat/filler. Trace merged engine display/process/status paths:
+request-size/usage JSON reaches flat transcript, preventing semantic invalidation.
+Read agent message/code/tool/caching source (Codex, Pi, OMP, Crush), OMP cold-versus-
+streaming tests and late-preview rejection. Acquire/read FTXUI native canvas/easing
+and actual Draw/ToString; latter serializes whole screen, so do not adopt it as a
+frequent-update shortcut. Acquire/read Notcurses C cell-damage/wide glyph handling,
+inline/pool graphemes and buffer writing; its blocking finalize is a tradeoff, not
+our latency solution. libvterm C contiguous buffers/explicit damage merging provide
+another independent source model. Keep source ZIPs intact, clean extraction/pins.
+
+Write docs/CHAT_PRESENTATION_PROPOSAL.md with concrete conversation language,
+color/code/diff/tool/metrics/motion, docs/design/chat-concept.svg illustrative visual,
+and papers/2026-10-07-rendering-internals-study.md with fast path and failure handling.
+Modern terminal protocol study uses primary Ghostty/Kitty docs: synchronized output
+and changed-cell writes; graphics optional, OSC66 not assumed in Ghostty GUI.
+Explicit reusable bounded buffers/caches, no per-cell strings, source mappings,
+Unicode footprints, partial-write/backpressure state, stale-frame handling,
+full-repaint/raw/capability fallbacks and direct comparative performance oracles.
+No language-superiority claim, no production dependency adoption, no product code
+or test execution/qualification claim. Campaign remains paused. Update arconaut-os3
+with proposal links; local link/XML/whitespace checks only for this document unit.
