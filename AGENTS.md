@@ -147,3 +147,9 @@ for ownership, lifetime, copies, representation duplication, allocation/I/O cade
 and actual hot-path complexity. Measure real byte/work costs before optimization;
 do not invent performance claims or add a perpetual performance certification gate.
 Preserve originals, exact request/effect linkage, recovery fences and model agency.
+
+Operator2026-10-07 clarifies: substantial memory use is welcome when intentional
+and justified by useful capability or measured performance. Do not impose arbitrary
+RSS ceilings or optimize for byte minimalism. Avoid legalistic terminology; describe
+actual behavior, rules and invariants directly. Archived history must not force
+resident payloads or full replay merely because it exists.

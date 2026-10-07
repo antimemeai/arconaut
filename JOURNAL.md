@@ -4424,3 +4424,14 @@ Defined flat-history scaling discriminator, tentative memory goals, direct full-
 equivalence and deterministic publication-fault oracles. No promised latency result,
 extra tribunal, code implementation, budget renewal or autodev launch. Existing
 n11/3x2 retain startup/state scope; capture batching/single-input remain separate.
+
+## 2026-10-07 — Operator directs intentional memory use and native autodev
+
+Operator welcomes substantial memory when intentional and justified; rejects
+legalistic wording and directs autodev on the durable-state redesign now. Removed
+that wording from the current study and withdrew arbitrary1MiB/32MiB memory goals.
+AGENTS records actual behavior/invariants and intentional allocation guidance.
+Prepare one native BB owner for compact working state, bounded tail recovery and
+on-demand historical reads, seeded by the inspected source study and delivered
+allocator/projection candidates. Root keeps master integration separate; ordinary
+runtime profiling remainsOFF. No additional design-survey or approval gate.

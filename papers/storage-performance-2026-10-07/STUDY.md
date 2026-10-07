@@ -33,7 +33,7 @@ readiness265.961ms. Live provider input37bytes. This is neither cold startup nor
 large-live-context evidence. The allocator candidate's interaction is unmeasured.
 
 Current API `committed_facts()` exposes an in-memory span of all decoded history.
-Changing only its storage allocator will preserve the wrong startup contract.
+Changing only its storage allocator will preserve the wrong startup behavior.
 Consumers requiring session settings, live context, unresolved effects or one old
 record need corresponding queries, not a resident reconstruction of everything.
 
@@ -51,11 +51,11 @@ record need corresponding queries, not a resident reconstruction of everything.
 **LMDB.** At pinned700e10f91a65, `mdb.c`1354–1386 defines two meta pages with
 transaction IDs and database roots. `mdb_env_pick_meta`5012 selects a root by
 transaction sequence. `mdb_env_write_meta` publishes after data handling, with
-platform-specific durable writes; weak sync flags change the contract. `intro.doc`
+platform-specific durable writes; weak sync flags change the guarantees. `intro.doc`
 describes values borrowed from the mapping and invalidated by transaction end.
 The lesson is small root selection and explicit borrow lifetime, not a claim that
 two unchecked pointers solve arbitrary corruption. [Source](https://github.com/LMDB/lmdb/blob/700e10f91a65fae69520301926fb9819f16d292f/libraries/liblmdb/mdb.c),
-[borrow contract](https://github.com/LMDB/lmdb/blob/700e10f91a65fae69520301926fb9819f16d292f/libraries/liblmdb/intro.doc).
+[borrow lifetime](https://github.com/LMDB/lmdb/blob/700e10f91a65fae69520301926fb9819f16d292f/libraries/liblmdb/intro.doc).
 
 **SQLite.** At5af1b822f5da, `src/wal.c:1422` rebuilds the WAL index using a frame
 buffer and checked frame scan; `sqlite3WalReadFrame:3740` reads a selected frame
@@ -155,7 +155,7 @@ time while pretending its serialization/network bytes disappeared.
   verifies historical blocks when accessed, and offers explicit complete verification.
   Root hashes do not magically detect every latent change to an untouched archive.
   Crash recovery, accidental corruption and hostile replacement are different claims;
-  CRC alone is not authentication. The exact contract remains a design decision.
+  CRC alone is not authentication. The exact guarantees remain a design decision.
 - Corrupt/missing root or index takes an explicit safe rebuild/fallback path.
   An invalid index never changes authoritative state. Existing archives remain
   readable; conversion must not silently mutate operator history.
@@ -170,7 +170,7 @@ Start with offset/length references and bounded `pread` buffers for fallible arc
 reads. Study/measure read-only mappings for sealed segments and compact indexes,
 where they remove real copies. Do not map a mutable/truncatable file and pretend
 its pointer remains valid across recovery/refit. Mapping lifetime, truncation,
-page faults and borrowed-view invalidation need explicit contracts. Rhizome's
+page faults and borrowed-view invalidation need explicit rules. Rhizome's
 `papers/cpp-rigor-stack.md` reinforces checked offset arithmetic, endian decoding,
 legal C++ object lifetime, immutable publication and bounded borrowing.
 
@@ -196,9 +196,12 @@ These are proposed budgets, not measured achievements. Preserve the operator's
 | Are history reads trustworthy? | Corrupt/truncated/wrong-session/missing index blocks and archives; exact-read checksum failures and safe fallback, no out-of-range allocation. |
 | Is the gain just cache or accounting? | Interleaved warm matched runs; separately identify actual cold/first-open conditions. Report CPU, wall, read bytes, syncs, allocated/copied bytes, peak private memory, mapped RSS and faults. |
 
-Initial engineering goals: history-related private memory <=1MiB with tiny live
-state on the336MB fixture; tentative tiny-context total-RSS goal<32MiB, subject to
-measuring fixed process/runtime cost. A mapped archive's address-space size is not
+Operator clarification: memory may be large when it buys useful capability or
+measured speed. There is no arbitrary total-RSS ceiling or byte-minimalism target.
+Each substantial allocation needs an intentional purpose, lifetime and benefit;
+archived payload volume alone must not force residency. Measure useful caches and
+live-state costs, and compare benefit against their memory and initialization work.
+A mapped archive's address-space size is not
 RSS; kernel page cache still consumes machine memory. Linux smaps separates anonymous,
 file-backed and shared residency; macOS needs corresponding VM/resource observations.
 [Kernel accounting](https://docs.kernel.org/filesystems/proc.html).
