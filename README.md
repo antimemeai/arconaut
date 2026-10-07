@@ -251,3 +251,12 @@ This is a reconstruction, not an uncritical continuation of inherited code. The 
 The fresh C++/Lua implementation follows the operator's renewed brief. Historical Git records preserve the old project; current campaign branches preserve source and experiments from the reconstruction. A branch is a useful identity for work, not a reason to postpone integration forever.
 
 Arconaut already does useful work on itself. The next obligation is to make that work comfortable, resilient, inspectable, and increasingly capable—while retaining enough evidence to tell whether the changes helped.
+
+## License
+
+Arconaut's original software and documentation are released under the
+[MIT License](LICENSE). Copyright © 2026 Patrick Beam.
+
+The Caves of Qud artwork and adaptations of it are excluded from this grant;
+rights remain with their respective creators. See [artwork attribution](ATTRIBUTION.md).
+Third-party material retains its original license.

@@ -3724,3 +3724,12 @@ authorship. Set GitHub About to describe the C++/Lua agent, expert operators,
 model-editable workflows, managed context and self-development. Proposed MIT
 with Patrick Beam copyright; license selection awaits clarification of whether
 commercial forks are intended to be permitted. No license added yet.
+
+## MIT license shipped (2026-10-07)
+
+Operator approved MIT with Copyright (c) 2026 Patrick Beam. Added standard MIT
+LICENSE, README license section and explicit exclusion of third-party Qud artwork
+and adaptations from the project grant. GitHub About already configured. Checked
+license text against the OSI MIT reference, notice, artwork boundary and whitespace.
+Documentation-only; no runtime tests required. Published accepted files to master
+without switching or merging the active campaign checkout.
