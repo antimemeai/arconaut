@@ -1,8 +1,18 @@
-# Remote branch assessment — 2026-10-07
+# Remote branch assessment and cleanup — 2026-10-07
 
-Fresh origin fetch/prune and GitHub heads list: **32 branches**, excluding the
-symbolic origin/HEAD. Comparison baseline: master `ee8f1e38daabe89fcba33f5b07f7e6143b206a8b`.
-This is an assessment; no remote branches, tags or worktrees were deleted.
+Before cleanup, origin fetch/prune and GitHub heads list showed **32 branches**,
+excluding the symbolic origin/HEAD. Comparison baseline: master `ee8f1e38daabe89fcba33f5b07f7e6143b206a8b`.
+Cleanup subsequently executed at the operator's request: **two remote branches
+remain**, master and candidate/giga-colleagues. The other 30 branch refs were
+deleted in one atomic push alongside two annotated archive tags:
+
+- archive/2026-10-07/tui-chat-shell retains 76c4016.
+- archive/2026-10-07/useful-work-tools retains 7cbc088.
+
+All retiring tips were unchanged from the assessment; the other 28 tips were
+confirmed ancestors of current master before deletion. Remote heads and peeled
+tag targets were checked after publication. Local branches/worktrees are retained;
+master history was not rewritten.
 
 **Only candidate/giga-colleagues contains substantive unintegrated work.**
 It adds the standalone colleague library/CLI, selected-context request contract,
@@ -29,11 +39,10 @@ recovery refs are historical checkpoints, not pending merges. G9's inclusion
 means its discussion is retained, not that networking implementation was shipped.
 No open GitHub PRs were reported by gh pr list.
 
-Recommendation: keep master and candidate/giga-colleagues; optionally create
-archive tags for the two unique superseded tips, then retire the other 30 remote
-branch names. This recommendation is not an instruction executed by this audit.
+The assessment recommendation has now been executed. The inventory below is the
+pre-cleanup snapshot and preserves every retired name and exact tip.
 
-## Exact remote inventory
+## Exact remote inventory before cleanup
 
 Ahead/behind counts are against the comparison baseline above, not later docs
 commits. Ancestry establishes retained commits; source comparison establishes

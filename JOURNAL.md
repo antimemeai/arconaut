@@ -4070,3 +4070,14 @@ current declarations, dispatch, write fence and regression: both superseded.
 The 12 economy refs all share one ancestor commit. No open PRs were reported.
 Updated docs/BRANCH_INVENTORY.md with exact tips and recommendations. No branches,
 worktrees or tags changed; no provider requests or unnecessary test reruns.
+
+## 2026-10-07 — Retire remote branch clutter
+
+Operator authorized the proposed cleanup. Refetched heads and confirmed every
+retiring tip unchanged, with 28 contained in master and two superseded unique
+commits. Published annotated archive tags for 76c4016 and 7cbc088 and deleted all
+30 retired remote branches in one atomic push. A fresh heads/tag query confirms
+only master and candidate/giga-colleagues remain, and both unique commits are
+retained by published tags. No master history rewrite, blind candidate merge,
+local worktree deletion or running process changes. Updated branch inventory
+records the disposition and preserves the original tip snapshot.
