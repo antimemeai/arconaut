@@ -5019,3 +5019,29 @@ Codex quit still exceeds3s allowance; record forced TERM separately, without
 turning endpoint success into a clean-exit claim. Restart full300/tool batch under
 new output directory; first observations are not pooled or erased. Driver identity
 and Git source recorded with the run. No third assurance/certification layer.
+
+## 2026-10-08 — fresh cross-agent startup observations complete
+
+Matched the prior fresh population with 100 starts each of Blackbird, Codex, Claude,
+Hermes classic CLI and OpenCode in the same serial rotation. Reduced the initial
+300/tool ceiling to 100/tool by judgment, after an optional population/time question
+received no answer; operator did not explicitly choose 300. A bounded external
+controller stopped at500complete records; one extra Blackbird launch was
+interrupted and its raw transcript/explicit tail record retained separately.
+All 500 selected observations reached the completed configured input frame and
+rendered common unsubmitted marker. No inference prompt submitted.
+First-frame nearest-rank p50/p90 ms: Blackbird 102.231/115.428;
+Codex 1369.478/4562.046; Claude 346.842/558.986;
+Hermes 5227.299/7665.620; OpenCode 3794.499/4608.243.
+Codex --no-daemon includes a fresh local server; its model-labelled input frame
+excludes the earlier loading splash. All 100 Codex processes needed TERM after 3 s
+shutdown drain, while others exited 0. Endpoint success is separate from shutdown.
+Private profile scaffolding/schema initialization is included; copied auth,
+onboarding/catalog setup and APFS preparation excluded. No causal/runtime/inference
+speed claim. Full metadata, all samples, preliminary observer-error records and
+interrupted tail preserved in docs/measurements and corresponding papers report.
+Original Blackbird 300-start data/quarantine/art unchanged. Post-run executable
+identities unchanged, no accumulated private benchmark children observed. Temporary
+credential copies removed; existing account files untouched. No further source edits,
+review-of-review or additional test campaign. Back up Beads, checkpoint and push
+report/numeric results and documentation link under standing authorization.

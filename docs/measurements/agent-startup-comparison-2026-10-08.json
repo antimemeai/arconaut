@@ -1,0 +1,5719 @@
+{
+  "metadata": {
+    "count_per_tool": 100,
+    "order": "round robin, serial",
+    "terminal": "110x35 PTY; Ghostty identity; consumer drains bytes and answers terminal queries",
+    "cache": "ordinary macOS caches; private APFS-cloned state per process; cloning excluded",
+    "measurement": "parent monotonic clock before spawn to input frame, then unsubmitted marker rendered",
+    "inference_prompts_submitted": 0,
+    "driver_sha256": "4d3225532bae81ebe2d0cf6723d96d4e8d7905c65e80c975107cb1e5f8e0b090",
+    "source_commit": "3f8ed57f49b313336f950e860e63339b7e9667bf",
+    "started_utc": "2026-10-08T10:07:31Z",
+    "host_load_before": [
+      3.552734375,
+      5.71044921875,
+      6.96240234375
+    ],
+    "tools": {
+      "blackbird": {
+        "command": [
+          "/Users/patrickbeam/projects/blackbird/scripts/blackbird",
+          "--session",
+          "{run}/session"
+        ],
+        "ready_text": [
+          "Enter send"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "Published Release/OFF launcher, fresh empty session. Native SHA256: 47282d5c978dbed9c4a7eb6e01a1aa0c30e810910b63a1f91e011ea882a88d99.",
+        "executable_sha256": "a017f4e0f186df3bf3568be7e5dc069d479ea0a12f593f8a4dfd62d7beb55a5c"
+      },
+      "codex": {
+        "command": [
+          "/Users/patrickbeam/.local/bin/codex",
+          "--no-daemon"
+        ],
+        "ready_text": [
+          "Ask Codex to do anything",
+          "GPT-6.1-Sol"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "0.161.0; isolated local server (--no-daemon), auth/model cache and minimal config, no user hooks/MCP/plugins; model GPT-6.1-Sol.",
+        "executable_sha256": "12ac11d2c7eee27cfae34393986d7b7c9ed0dea537cb749831cdd7033893e6de"
+      },
+      "claude": {
+        "command": [
+          "/Users/patrickbeam/.local/bin/claude"
+        ],
+        "ready_text": [
+          "Claude",
+          "Code",
+          "shortcuts",
+          "\u276f"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "2.1.163; copied authentication/onboarding cache, no enabled plugins; updates/nonessential traffic disabled. Default Opus 4.8.",
+        "executable_sha256": "c7582e926e8fe459dbd9743f19ccb75500e3b455c722902d1aa587a74fb1fa7c"
+      },
+      "hermes": {
+        "command": [
+          "/Users/patrickbeam/projects/blackbird/context/agent-startup-comparison-2026-10-08/hermes-source/venv/bin/hermes",
+          "chat"
+        ],
+        "ready_text": [
+          "ctx --",
+          "\u276f"
+        ],
+        "frame_end": "\\x1b[?25h",
+        "notes": "Source a3ed4a173070e981332e4d879ff6cc8b9efd57ab; reports vunknown (2026.9.24); Python 3.14.3; frozen core uv.lock install, standard classic CLI, bundled tool/skill discovery; OpenRouter claude-sonnet-4.6; telemetry declined.",
+        "executable_sha256": "daa323ab5f75a3b523cc661fea513094c272a4167a8de17218fb4a1f6f0af345"
+      },
+      "opencode": {
+        "command": [
+          "/Users/patrickbeam/.opencode/bin/opencode",
+          "--model",
+          "openrouter/anthropic/claude-sonnet-4.6"
+        ],
+        "ready_text": [
+          "Ask anything",
+          "commands",
+          "1.15.13"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "1.15.13; copied auth/model catalog, minimal config, no external plugins; empty database at spawn; OpenRouter claude-sonnet-4.6.",
+        "executable_sha256": "1cdcb7e426a863528a41ae8f9f6b65470b8395ddd48937229b01299ddc1085f0"
+      }
+    },
+    "driver_initial_count_per_tool": 300,
+    "scope_note": "Fresh population matches the previous Blackbird trial: 100 per tool by default; initial driver ceiling was 300, then externally stopped after the selected population completed.",
+    "population_completed_utc": "2026-10-08T10:35:10Z",
+    "host_load_at_summary": [
+      13.00439453125,
+      14.3623046875,
+      13.2333984375
+    ],
+    "extra_completed_observations": 0,
+    "interrupted_tail_observations": 1
+  },
+  "summary": {
+    "blackbird": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 98.931292,
+        "p50": 102.230959,
+        "p70": 105.770791,
+        "p90": 115.428458,
+        "max": 210.033417
+      },
+      "input_echo_ms": {
+        "p30": 100.416416,
+        "p50": 103.807167,
+        "p70": 107.364917,
+        "p90": 116.904583,
+        "max": 214.730167
+      },
+      "input_response_ms": {
+        "p30": 0.62375,
+        "p50": 0.721042,
+        "p70": 0.901666,
+        "p90": 1.297417,
+        "max": 2.550709
+      }
+    },
+    "codex": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 100,
+      "nonzero_exits": 100,
+      "input_frame_ms": {
+        "p30": 1265.394583,
+        "p50": 1369.478375,
+        "p70": 1616.597666,
+        "p90": 4562.045875,
+        "max": 7555.863666
+      },
+      "input_echo_ms": {
+        "p30": 1316.075917,
+        "p50": 1436.459,
+        "p70": 1659.862041,
+        "p90": 4598.573041,
+        "max": 7600.149
+      },
+      "input_response_ms": {
+        "p30": 39.930083,
+        "p50": 42.941917,
+        "p70": 49.586708,
+        "p90": 64.988167,
+        "max": 176.606583
+      }
+    },
+    "claude": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 307.764375,
+        "p50": 346.841708,
+        "p70": 392.716375,
+        "p90": 558.98625,
+        "max": 3847.129584
+      },
+      "input_echo_ms": {
+        "p30": 337.620708,
+        "p50": 385.1125,
+        "p70": 429.971333,
+        "p90": 638.103334,
+        "max": 3988.796834
+      },
+      "input_response_ms": {
+        "p30": 30.31675,
+        "p50": 36.317042,
+        "p70": 37.5115,
+        "p90": 65.960167,
+        "max": 228.082708
+      }
+    },
+    "hermes": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 4953.665375,
+        "p50": 5227.298583,
+        "p70": 6145.218917,
+        "p90": 7665.62025,
+        "max": 9520.175458
+      },
+      "input_echo_ms": {
+        "p30": 5007.83725,
+        "p50": 5303.575708,
+        "p70": 6222.461625,
+        "p90": 7708.950125,
+        "max": 9621.021083
+      },
+      "input_response_ms": {
+        "p30": 47.89575,
+        "p50": 65.251708,
+        "p70": 72.76525,
+        "p90": 83.062333,
+        "max": 139.472833
+      }
+    },
+    "opencode": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 3399.773959,
+        "p50": 3794.49925,
+        "p70": 4224.716583,
+        "p90": 4608.243166,
+        "max": 9277.944792
+      },
+      "input_echo_ms": {
+        "p30": 3496.232208,
+        "p50": 3896.905833,
+        "p70": 4311.6815,
+        "p90": 4798.68075,
+        "max": 9603.877208
+      },
+      "input_response_ms": {
+        "p30": 76.205292,
+        "p50": 86.618625,
+        "p70": 100.551208,
+        "p90": 120.164375,
+        "max": 324.579
+      }
+    }
+  },
+  "samples": [
+    {
+      "tool": "blackbird",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 87.360416,
+      "input_echo_ms": 88.349708,
+      "input_response_ms": 0.507792,
+      "exit_code": 0,
+      "process_total_ms": 90.9215
+    },
+    {
+      "tool": "codex",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 2171.046083,
+      "input_echo_ms": 2245.617333,
+      "input_response_ms": 74.137625,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5299.364583
+    },
+    {
+      "tool": "claude",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 400.344542,
+      "input_echo_ms": 436.864625,
+      "input_response_ms": 36.293833,
+      "exit_code": 0,
+      "process_total_ms": 450.909667
+    },
+    {
+      "tool": "hermes",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 4593.479958,
+      "input_echo_ms": 4657.522833,
+      "input_response_ms": 63.734875,
+      "exit_code": 0,
+      "process_total_ms": 5223.088583
+    },
+    {
+      "tool": "opencode",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 3848.988833,
+      "input_echo_ms": 3940.942292,
+      "input_response_ms": 91.129917,
+      "exit_code": 0,
+      "process_total_ms": 4084.70775
+    },
+    {
+      "tool": "blackbird",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 97.666458,
+      "input_echo_ms": 98.972125,
+      "input_response_ms": 0.757584,
+      "exit_code": 0,
+      "process_total_ms": 102.135666
+    },
+    {
+      "tool": "codex",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 5331.187458,
+      "input_echo_ms": 5373.701,
+      "input_response_ms": 42.251042,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8397.775875
+    },
+    {
+      "tool": "claude",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 382.395,
+      "input_echo_ms": 419.922584,
+      "input_response_ms": 37.282959,
+      "exit_code": 0,
+      "process_total_ms": 433.56
+    },
+    {
+      "tool": "hermes",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 6968.580875,
+      "input_echo_ms": 7005.254834,
+      "input_response_ms": 36.478042,
+      "exit_code": 0,
+      "process_total_ms": 7410.870959
+    },
+    {
+      "tool": "opencode",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 4336.489666,
+      "input_echo_ms": 4430.739916,
+      "input_response_ms": 93.391916,
+      "exit_code": 0,
+      "process_total_ms": 4551.942458
+    },
+    {
+      "tool": "blackbird",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 93.169833,
+      "input_echo_ms": 94.814291,
+      "input_response_ms": 1.195583,
+      "exit_code": 0,
+      "process_total_ms": 99.725416
+    },
+    {
+      "tool": "codex",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 3995.829791,
+      "input_echo_ms": 4025.22725,
+      "input_response_ms": 29.169125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7039.609666
+    },
+    {
+      "tool": "claude",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 389.46425,
+      "input_echo_ms": 426.547625,
+      "input_response_ms": 36.852125,
+      "exit_code": 0,
+      "process_total_ms": 440.839334
+    },
+    {
+      "tool": "hermes",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 7634.725958,
+      "input_echo_ms": 7673.759417,
+      "input_response_ms": 38.870709,
+      "exit_code": 0,
+      "process_total_ms": 8138.371125
+    },
+    {
+      "tool": "opencode",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 4356.824625,
+      "input_echo_ms": 4418.743792,
+      "input_response_ms": 61.261,
+      "exit_code": 0,
+      "process_total_ms": 4530.890667
+    },
+    {
+      "tool": "blackbird",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 96.529541,
+      "input_echo_ms": 97.398208,
+      "input_response_ms": 0.43075,
+      "exit_code": 0,
+      "process_total_ms": 100.808666
+    },
+    {
+      "tool": "codex",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 4562.045875,
+      "input_echo_ms": 4598.573041,
+      "input_response_ms": 36.424208,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7640.272375
+    },
+    {
+      "tool": "claude",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 415.890125,
+      "input_echo_ms": 456.658834,
+      "input_response_ms": 40.487292,
+      "exit_code": 0,
+      "process_total_ms": 472.651959
+    },
+    {
+      "tool": "hermes",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 6485.664583,
+      "input_echo_ms": 6527.172916,
+      "input_response_ms": 41.300208,
+      "exit_code": 0,
+      "process_total_ms": 7000.872333
+    },
+    {
+      "tool": "opencode",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 4608.243166,
+      "input_echo_ms": 4654.325333,
+      "input_response_ms": 45.305083,
+      "exit_code": 0,
+      "process_total_ms": 4730.22725
+    },
+    {
+      "tool": "blackbird",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 91.885333,
+      "input_echo_ms": 92.881958,
+      "input_response_ms": 0.546833,
+      "exit_code": 0,
+      "process_total_ms": 95.658625
+    },
+    {
+      "tool": "codex",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 4498.797416,
+      "input_echo_ms": 4538.376041,
+      "input_response_ms": 39.463583,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7586.271333
+    },
+    {
+      "tool": "claude",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 409.248792,
+      "input_echo_ms": 448.63925,
+      "input_response_ms": 39.154583,
+      "exit_code": 0,
+      "process_total_ms": 463.400875
+    },
+    {
+      "tool": "hermes",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 6749.499416,
+      "input_echo_ms": 6787.404041,
+      "input_response_ms": 37.722125,
+      "exit_code": 0,
+      "process_total_ms": 7339.26225
+    },
+    {
+      "tool": "opencode",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 4361.921667,
+      "input_echo_ms": 4433.130792,
+      "input_response_ms": 70.28775,
+      "exit_code": 0,
+      "process_total_ms": 4542.048
+    },
+    {
+      "tool": "blackbird",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 100.534875,
+      "input_echo_ms": 101.908542,
+      "input_response_ms": 0.939625,
+      "exit_code": 0,
+      "process_total_ms": 105.953667
+    },
+    {
+      "tool": "codex",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 5101.305667,
+      "input_echo_ms": 5141.420625,
+      "input_response_ms": 39.994708,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8182.592792
+    },
+    {
+      "tool": "claude",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 634.271292,
+      "input_echo_ms": 727.542792,
+      "input_response_ms": 92.706,
+      "exit_code": 0,
+      "process_total_ms": 792.324458
+    },
+    {
+      "tool": "hermes",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 8030.459667,
+      "input_echo_ms": 8068.238958,
+      "input_response_ms": 37.59775,
+      "exit_code": 0,
+      "process_total_ms": 8475.527125
+    },
+    {
+      "tool": "opencode",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 4553.064125,
+      "input_echo_ms": 4603.002291,
+      "input_response_ms": 49.266375,
+      "exit_code": 0,
+      "process_total_ms": 4691.214083
+    },
+    {
+      "tool": "blackbird",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 103.92275,
+      "input_echo_ms": 104.79725,
+      "input_response_ms": 0.441458,
+      "exit_code": 0,
+      "process_total_ms": 107.774292
+    },
+    {
+      "tool": "codex",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 7443.149334,
+      "input_echo_ms": 7474.627417,
+      "input_response_ms": 31.323667,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 10537.641667
+    },
+    {
+      "tool": "claude",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 389.050416,
+      "input_echo_ms": 426.425208,
+      "input_response_ms": 37.146083,
+      "exit_code": 0,
+      "process_total_ms": 440.510041
+    },
+    {
+      "tool": "hermes",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 7184.860333,
+      "input_echo_ms": 7222.769,
+      "input_response_ms": 37.728542,
+      "exit_code": 0,
+      "process_total_ms": 7723.832166
+    },
+    {
+      "tool": "opencode",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 4490.85825,
+      "input_echo_ms": 4566.429708,
+      "input_response_ms": 73.7195,
+      "exit_code": 0,
+      "process_total_ms": 4674.256833
+    },
+    {
+      "tool": "blackbird",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 96.690833,
+      "input_echo_ms": 97.8525,
+      "input_response_ms": 0.702333,
+      "exit_code": 0,
+      "process_total_ms": 101.891458
+    },
+    {
+      "tool": "codex",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 4008.960541,
+      "input_echo_ms": 4050.029083,
+      "input_response_ms": 40.814417,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7103.511541
+    },
+    {
+      "tool": "claude",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 404.661125,
+      "input_echo_ms": 453.184042,
+      "input_response_ms": 48.276625,
+      "exit_code": 0,
+      "process_total_ms": 469.455125
+    },
+    {
+      "tool": "hermes",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 7944.822334,
+      "input_echo_ms": 7982.511459,
+      "input_response_ms": 37.4995,
+      "exit_code": 0,
+      "process_total_ms": 8421.70925
+    },
+    {
+      "tool": "opencode",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 4268.905375,
+      "input_echo_ms": 4309.425666,
+      "input_response_ms": 39.676833,
+      "exit_code": 0,
+      "process_total_ms": 4435.480041
+    },
+    {
+      "tool": "blackbird",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 98.3045,
+      "input_echo_ms": 99.748084,
+      "input_response_ms": 0.969042,
+      "exit_code": 0,
+      "process_total_ms": 104.312
+    },
+    {
+      "tool": "codex",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 4446.47775,
+      "input_echo_ms": 4482.847917,
+      "input_response_ms": 36.126,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7496.3165
+    },
+    {
+      "tool": "claude",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 417.650375,
+      "input_echo_ms": 461.6395,
+      "input_response_ms": 43.749875,
+      "exit_code": 0,
+      "process_total_ms": 483.100916
+    },
+    {
+      "tool": "hermes",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 6384.650375,
+      "input_echo_ms": 6427.385084,
+      "input_response_ms": 42.524542,
+      "exit_code": 0,
+      "process_total_ms": 6942.4875
+    },
+    {
+      "tool": "opencode",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 4365.550833,
+      "input_echo_ms": 4449.202667,
+      "input_response_ms": 82.803542,
+      "exit_code": 0,
+      "process_total_ms": 4586.71925
+    },
+    {
+      "tool": "blackbird",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 97.452583,
+      "input_echo_ms": 99.115958,
+      "input_response_ms": 1.222541,
+      "exit_code": 0,
+      "process_total_ms": 102.857458
+    },
+    {
+      "tool": "codex",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 6123.733042,
+      "input_echo_ms": 6161.030583,
+      "input_response_ms": 36.957416,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 9194.078
+    },
+    {
+      "tool": "claude",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 558.98625,
+      "input_echo_ms": 638.103334,
+      "input_response_ms": 78.739917,
+      "exit_code": 0,
+      "process_total_ms": 688.96775
+    },
+    {
+      "tool": "hermes",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 6091.682208,
+      "input_echo_ms": 6133.41125,
+      "input_response_ms": 41.534167,
+      "exit_code": 0,
+      "process_total_ms": 6645.861333
+    },
+    {
+      "tool": "opencode",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 4164.327709,
+      "input_echo_ms": 4237.741792,
+      "input_response_ms": 72.795292,
+      "exit_code": 0,
+      "process_total_ms": 4360.718792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 196.112708,
+      "input_echo_ms": 197.3455,
+      "input_response_ms": 0.670084,
+      "exit_code": 0,
+      "process_total_ms": 201.024
+    },
+    {
+      "tool": "codex",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 7555.863666,
+      "input_echo_ms": 7600.149,
+      "input_response_ms": 43.949209,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 10649.203166
+    },
+    {
+      "tool": "claude",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 398.309708,
+      "input_echo_ms": 436.3665,
+      "input_response_ms": 37.829292,
+      "exit_code": 0,
+      "process_total_ms": 450.514208
+    },
+    {
+      "tool": "hermes",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 7452.910542,
+      "input_echo_ms": 7490.204,
+      "input_response_ms": 37.109083,
+      "exit_code": 0,
+      "process_total_ms": 7985.766458
+    },
+    {
+      "tool": "opencode",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 4740.259,
+      "input_echo_ms": 4798.68075,
+      "input_response_ms": 57.821041,
+      "exit_code": 0,
+      "process_total_ms": 4909.763084
+    },
+    {
+      "tool": "blackbird",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 100.789583,
+      "input_echo_ms": 101.931333,
+      "input_response_ms": 0.652958,
+      "exit_code": 0,
+      "process_total_ms": 104.851625
+    },
+    {
+      "tool": "codex",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 5595.235583,
+      "input_echo_ms": 5631.362833,
+      "input_response_ms": 36.016125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8680.145958
+    },
+    {
+      "tool": "claude",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 390.678125,
+      "input_echo_ms": 427.59575,
+      "input_response_ms": 36.69125,
+      "exit_code": 0,
+      "process_total_ms": 441.709042
+    },
+    {
+      "tool": "hermes",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 7274.734791,
+      "input_echo_ms": 7319.105875,
+      "input_response_ms": 44.162834,
+      "exit_code": 0,
+      "process_total_ms": 7819.395708
+    },
+    {
+      "tool": "opencode",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 4159.562584,
+      "input_echo_ms": 4200.886292,
+      "input_response_ms": 40.577958,
+      "exit_code": 0,
+      "process_total_ms": 4304.15625
+    },
+    {
+      "tool": "blackbird",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 101.983541,
+      "input_echo_ms": 103.221625,
+      "input_response_ms": 0.550834,
+      "exit_code": 0,
+      "process_total_ms": 106.380458
+    },
+    {
+      "tool": "codex",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 5819.783125,
+      "input_echo_ms": 5851.473959,
+      "input_response_ms": 31.5765,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8893.550459
+    },
+    {
+      "tool": "claude",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 419.357458,
+      "input_echo_ms": 458.592667,
+      "input_response_ms": 38.997084,
+      "exit_code": 0,
+      "process_total_ms": 473.659917
+    },
+    {
+      "tool": "hermes",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 8277.36575,
+      "input_echo_ms": 8316.580375,
+      "input_response_ms": 39.03,
+      "exit_code": 0,
+      "process_total_ms": 8704.338083
+    },
+    {
+      "tool": "opencode",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 4329.497209,
+      "input_echo_ms": 4407.099625,
+      "input_response_ms": 76.878416,
+      "exit_code": 0,
+      "process_total_ms": 4534.688792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 99.981708,
+      "input_echo_ms": 101.048208,
+      "input_response_ms": 0.619875,
+      "exit_code": 0,
+      "process_total_ms": 104.874917
+    },
+    {
+      "tool": "codex",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 1301.510958,
+      "input_echo_ms": 1341.792458,
+      "input_response_ms": 39.911875,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4408.3735
+    },
+    {
+      "tool": "claude",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 288.407917,
+      "input_echo_ms": 318.372208,
+      "input_response_ms": 29.761583,
+      "exit_code": 0,
+      "process_total_ms": 329.672208
+    },
+    {
+      "tool": "hermes",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 4847.251959,
+      "input_echo_ms": 4909.910459,
+      "input_response_ms": 62.3715,
+      "exit_code": 0,
+      "process_total_ms": 5402.781459
+    },
+    {
+      "tool": "opencode",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 3214.108667,
+      "input_echo_ms": 3277.749375,
+      "input_response_ms": 62.580167,
+      "exit_code": 0,
+      "process_total_ms": 3398.472458
+    },
+    {
+      "tool": "blackbird",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 105.317334,
+      "input_echo_ms": 106.356667,
+      "input_response_ms": 0.60175,
+      "exit_code": 0,
+      "process_total_ms": 110.124542
+    },
+    {
+      "tool": "codex",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 1231.108375,
+      "input_echo_ms": 1280.529833,
+      "input_response_ms": 49.0465,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4349.914
+    },
+    {
+      "tool": "claude",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 300.675042,
+      "input_echo_ms": 330.386958,
+      "input_response_ms": 29.517958,
+      "exit_code": 0,
+      "process_total_ms": 341.224917
+    },
+    {
+      "tool": "hermes",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 8336.235166,
+      "input_echo_ms": 8374.276916,
+      "input_response_ms": 37.854916,
+      "exit_code": 0,
+      "process_total_ms": 8785.6015
+    },
+    {
+      "tool": "opencode",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 4388.874458,
+      "input_echo_ms": 4511.485083,
+      "input_response_ms": 121.335542,
+      "exit_code": 0,
+      "process_total_ms": 4676.157291
+    },
+    {
+      "tool": "blackbird",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 108.285417,
+      "input_echo_ms": 109.355458,
+      "input_response_ms": 0.647375,
+      "exit_code": 0,
+      "process_total_ms": 112.680292
+    },
+    {
+      "tool": "codex",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 1957.573042,
+      "input_echo_ms": 1993.231375,
+      "input_response_ms": 35.333417,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5006.283833
+    },
+    {
+      "tool": "claude",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 303.452667,
+      "input_echo_ms": 333.683125,
+      "input_response_ms": 30.038333,
+      "exit_code": 0,
+      "process_total_ms": 344.577667
+    },
+    {
+      "tool": "hermes",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 4714.41625,
+      "input_echo_ms": 4757.894041,
+      "input_response_ms": 43.156916,
+      "exit_code": 0,
+      "process_total_ms": 5340.456
+    },
+    {
+      "tool": "opencode",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 3266.996333,
+      "input_echo_ms": 3348.288208,
+      "input_response_ms": 80.069667,
+      "exit_code": 0,
+      "process_total_ms": 3468.434333
+    },
+    {
+      "tool": "blackbird",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 105.036542,
+      "input_echo_ms": 106.15075,
+      "input_response_ms": 0.681375,
+      "exit_code": 0,
+      "process_total_ms": 109.496417
+    },
+    {
+      "tool": "codex",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 1224.338666,
+      "input_echo_ms": 1274.182958,
+      "input_response_ms": 49.505083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4285.124083
+    },
+    {
+      "tool": "claude",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 298.827625,
+      "input_echo_ms": 328.6945,
+      "input_response_ms": 29.669458,
+      "exit_code": 0,
+      "process_total_ms": 339.582125
+    },
+    {
+      "tool": "hermes",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 4756.798334,
+      "input_echo_ms": 4832.614917,
+      "input_response_ms": 75.426667,
+      "exit_code": 0,
+      "process_total_ms": 5525.025292
+    },
+    {
+      "tool": "opencode",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 3146.235334,
+      "input_echo_ms": 3245.583125,
+      "input_response_ms": 98.756416,
+      "exit_code": 0,
+      "process_total_ms": 3413.910417
+    },
+    {
+      "tool": "blackbird",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 103.953541,
+      "input_echo_ms": 104.960166,
+      "input_response_ms": 0.561041,
+      "exit_code": 0,
+      "process_total_ms": 108.486625
+    },
+    {
+      "tool": "codex",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 1217.439583,
+      "input_echo_ms": 1271.527416,
+      "input_response_ms": 53.773625,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4321.571916
+    },
+    {
+      "tool": "claude",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 300.353458,
+      "input_echo_ms": 330.161625,
+      "input_response_ms": 29.611708,
+      "exit_code": 0,
+      "process_total_ms": 340.981167
+    },
+    {
+      "tool": "hermes",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 4774.662209,
+      "input_echo_ms": 4847.227417,
+      "input_response_ms": 72.325417,
+      "exit_code": 0,
+      "process_total_ms": 5429.088959
+    },
+    {
+      "tool": "opencode",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 3388.909625,
+      "input_echo_ms": 3465.775292,
+      "input_response_ms": 76.205292,
+      "exit_code": 0,
+      "process_total_ms": 3565.709125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 98.64225,
+      "input_echo_ms": 99.528667,
+      "input_response_ms": 0.465417,
+      "exit_code": 0,
+      "process_total_ms": 102.543667
+    },
+    {
+      "tool": "codex",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 1454.581917,
+      "input_echo_ms": 1494.86975,
+      "input_response_ms": 39.930083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4558.472917
+    },
+    {
+      "tool": "claude",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 288.653625,
+      "input_echo_ms": 318.737625,
+      "input_response_ms": 29.8835,
+      "exit_code": 0,
+      "process_total_ms": 329.387917
+    },
+    {
+      "tool": "hermes",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 4864.076791,
+      "input_echo_ms": 4920.924541,
+      "input_response_ms": 56.389916,
+      "exit_code": 0,
+      "process_total_ms": 5393.632583
+    },
+    {
+      "tool": "opencode",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 3343.976166,
+      "input_echo_ms": 3454.433833,
+      "input_response_ms": 109.500542,
+      "exit_code": 0,
+      "process_total_ms": 3597.907125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 102.7405,
+      "input_echo_ms": 104.557542,
+      "input_response_ms": 1.297417,
+      "exit_code": 0,
+      "process_total_ms": 109.097
+    },
+    {
+      "tool": "codex",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 1636.8565,
+      "input_echo_ms": 1691.146375,
+      "input_response_ms": 53.598834,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4736.743625
+    },
+    {
+      "tool": "claude",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 293.075458,
+      "input_echo_ms": 323.676583,
+      "input_response_ms": 30.413625,
+      "exit_code": 0,
+      "process_total_ms": 334.155125
+    },
+    {
+      "tool": "hermes",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 4862.951375,
+      "input_echo_ms": 4935.984,
+      "input_response_ms": 72.76525,
+      "exit_code": 0,
+      "process_total_ms": 5583.713917
+    },
+    {
+      "tool": "opencode",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 3457.9735,
+      "input_echo_ms": 3559.561875,
+      "input_response_ms": 100.494041,
+      "exit_code": 0,
+      "process_total_ms": 3727.385042
+    },
+    {
+      "tool": "blackbird",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 113.350125,
+      "input_echo_ms": 115.386083,
+      "input_response_ms": 1.196791,
+      "exit_code": 0,
+      "process_total_ms": 118.829333
+    },
+    {
+      "tool": "codex",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 1499.232167,
+      "input_echo_ms": 1544.815417,
+      "input_response_ms": 45.212583,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4569.724334
+    },
+    {
+      "tool": "claude",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 346.841708,
+      "input_echo_ms": 383.904708,
+      "input_response_ms": 36.82175,
+      "exit_code": 0,
+      "process_total_ms": 397.67475
+    },
+    {
+      "tool": "hermes",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 4764.445333,
+      "input_echo_ms": 4823.065,
+      "input_response_ms": 58.38725,
+      "exit_code": 0,
+      "process_total_ms": 5327.399208
+    },
+    {
+      "tool": "opencode",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 3265.204834,
+      "input_echo_ms": 3388.280959,
+      "input_response_ms": 122.119459,
+      "exit_code": 0,
+      "process_total_ms": 3559.105459
+    },
+    {
+      "tool": "blackbird",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 121.377625,
+      "input_echo_ms": 122.773292,
+      "input_response_ms": 0.803125,
+      "exit_code": 0,
+      "process_total_ms": 126.2995
+    },
+    {
+      "tool": "codex",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 1404.197,
+      "input_echo_ms": 1457.814875,
+      "input_response_ms": 53.124,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4480.407
+    },
+    {
+      "tool": "claude",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 295.230083,
+      "input_echo_ms": 324.911958,
+      "input_response_ms": 29.48825,
+      "exit_code": 0,
+      "process_total_ms": 336.0525
+    },
+    {
+      "tool": "hermes",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 4866.411958,
+      "input_echo_ms": 4942.434083,
+      "input_response_ms": 75.799875,
+      "exit_code": 0,
+      "process_total_ms": 5529.684333
+    },
+    {
+      "tool": "opencode",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 3441.554084,
+      "input_echo_ms": 3559.131834,
+      "input_response_ms": 116.638084,
+      "exit_code": 0,
+      "process_total_ms": 3701.0595
+    },
+    {
+      "tool": "blackbird",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 103.457459,
+      "input_echo_ms": 104.72975,
+      "input_response_ms": 0.644208,
+      "exit_code": 0,
+      "process_total_ms": 108.024209
+    },
+    {
+      "tool": "codex",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 1360.617958,
+      "input_echo_ms": 1405.471375,
+      "input_response_ms": 44.484417,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4450.214416
+    },
+    {
+      "tool": "claude",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 293.427542,
+      "input_echo_ms": 323.222208,
+      "input_response_ms": 29.611541,
+      "exit_code": 0,
+      "process_total_ms": 333.620583
+    },
+    {
+      "tool": "hermes",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 6685.716833,
+      "input_echo_ms": 6729.198875,
+      "input_response_ms": 43.278834,
+      "exit_code": 0,
+      "process_total_ms": 7238.501
+    },
+    {
+      "tool": "opencode",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 3759.001209,
+      "input_echo_ms": 3831.382875,
+      "input_response_ms": 71.516833,
+      "exit_code": 0,
+      "process_total_ms": 3959.425917
+    },
+    {
+      "tool": "blackbird",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 98.314542,
+      "input_echo_ms": 99.692917,
+      "input_response_ms": 0.899375,
+      "exit_code": 0,
+      "process_total_ms": 102.841333
+    },
+    {
+      "tool": "codex",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 7263.324042,
+      "input_echo_ms": 7313.953708,
+      "input_response_ms": 50.227458,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 10350.497625
+    },
+    {
+      "tool": "claude",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 467.747791,
+      "input_echo_ms": 558.016416,
+      "input_response_ms": 89.815291,
+      "exit_code": 0,
+      "process_total_ms": 624.725708
+    },
+    {
+      "tool": "hermes",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 8577.795,
+      "input_echo_ms": 8618.582875,
+      "input_response_ms": 40.582792,
+      "exit_code": 0,
+      "process_total_ms": 9092.595625
+    },
+    {
+      "tool": "opencode",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 4854.3725,
+      "input_echo_ms": 4958.727917,
+      "input_response_ms": 103.705875,
+      "exit_code": 0,
+      "process_total_ms": 5134.938042
+    },
+    {
+      "tool": "blackbird",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 116.52575,
+      "input_echo_ms": 117.4245,
+      "input_response_ms": 0.470875,
+      "exit_code": 0,
+      "process_total_ms": 120.715417
+    },
+    {
+      "tool": "codex",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 4507.5515,
+      "input_echo_ms": 4541.220042,
+      "input_response_ms": 33.53025,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7601.949083
+    },
+    {
+      "tool": "claude",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 365.776708,
+      "input_echo_ms": 403.522875,
+      "input_response_ms": 37.5115,
+      "exit_code": 0,
+      "process_total_ms": 417.091958
+    },
+    {
+      "tool": "hermes",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 8629.989541,
+      "input_echo_ms": 8662.917625,
+      "input_response_ms": 32.769334,
+      "exit_code": 0,
+      "process_total_ms": 9145.63925
+    },
+    {
+      "tool": "opencode",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 4344.928416,
+      "input_echo_ms": 4434.049375,
+      "input_response_ms": 87.93475,
+      "exit_code": 0,
+      "process_total_ms": 4586.945916
+    },
+    {
+      "tool": "blackbird",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 104.132542,
+      "input_echo_ms": 105.124167,
+      "input_response_ms": 0.563125,
+      "exit_code": 0,
+      "process_total_ms": 107.980709
+    },
+    {
+      "tool": "codex",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 5450.315042,
+      "input_echo_ms": 5493.58425,
+      "input_response_ms": 42.941917,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8591.348958
+    },
+    {
+      "tool": "claude",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 957.301541,
+      "input_echo_ms": 1019.217083,
+      "input_response_ms": 61.634917,
+      "exit_code": 0,
+      "process_total_ms": 1081.434166
+    },
+    {
+      "tool": "hermes",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 7665.62025,
+      "input_echo_ms": 7708.950125,
+      "input_response_ms": 43.134791,
+      "exit_code": 0,
+      "process_total_ms": 8098.513834
+    },
+    {
+      "tool": "opencode",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 4908.308333,
+      "input_echo_ms": 4995.796958,
+      "input_response_ms": 86.618625,
+      "exit_code": 0,
+      "process_total_ms": 5134.264
+    },
+    {
+      "tool": "blackbird",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 93.777667,
+      "input_echo_ms": 95.546459,
+      "input_response_ms": 1.104625,
+      "exit_code": 0,
+      "process_total_ms": 98.774834
+    },
+    {
+      "tool": "codex",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 5328.992291,
+      "input_echo_ms": 5361.533666,
+      "input_response_ms": 32.232291,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 8402.08175
+    },
+    {
+      "tool": "claude",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 1191.739125,
+      "input_echo_ms": 1421.099083,
+      "input_response_ms": 228.082708,
+      "exit_code": 0,
+      "process_total_ms": 1499.732708
+    },
+    {
+      "tool": "hermes",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 6007.436375,
+      "input_echo_ms": 6100.759959,
+      "input_response_ms": 92.970834,
+      "exit_code": 0,
+      "process_total_ms": 6929.635459
+    },
+    {
+      "tool": "opencode",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 3969.069541,
+      "input_echo_ms": 4082.288166,
+      "input_response_ms": 112.128666,
+      "exit_code": 0,
+      "process_total_ms": 4260.714791
+    },
+    {
+      "tool": "blackbird",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 103.35475,
+      "input_echo_ms": 105.505334,
+      "input_response_ms": 1.643334,
+      "exit_code": 0,
+      "process_total_ms": 109.320792
+    },
+    {
+      "tool": "codex",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 2507.966459,
+      "input_echo_ms": 2552.166042,
+      "input_response_ms": 44.045083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5587.520292
+    },
+    {
+      "tool": "claude",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 394.320167,
+      "input_echo_ms": 444.464709,
+      "input_response_ms": 49.910542,
+      "exit_code": 0,
+      "process_total_ms": 477.874167
+    },
+    {
+      "tool": "hermes",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 7069.3215,
+      "input_echo_ms": 7116.075083,
+      "input_response_ms": 46.504667,
+      "exit_code": 0,
+      "process_total_ms": 7725.468625
+    },
+    {
+      "tool": "opencode",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 3640.602416,
+      "input_echo_ms": 3725.328333,
+      "input_response_ms": 83.959917,
+      "exit_code": 0,
+      "process_total_ms": 3821.52225
+    },
+    {
+      "tool": "blackbird",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 88.361667,
+      "input_echo_ms": 89.284958,
+      "input_response_ms": 0.496458,
+      "exit_code": 0,
+      "process_total_ms": 92.209083
+    },
+    {
+      "tool": "codex",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 1549.114167,
+      "input_echo_ms": 1590.630583,
+      "input_response_ms": 41.177708,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4649.621958
+    },
+    {
+      "tool": "claude",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 342.89425,
+      "input_echo_ms": 376.741958,
+      "input_response_ms": 33.641083,
+      "exit_code": 0,
+      "process_total_ms": 389.694708
+    },
+    {
+      "tool": "hermes",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 5457.368792,
+      "input_echo_ms": 5529.760792,
+      "input_response_ms": 72.063334,
+      "exit_code": 0,
+      "process_total_ms": 6128.097333
+    },
+    {
+      "tool": "opencode",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 3754.537125,
+      "input_echo_ms": 3841.035917,
+      "input_response_ms": 79.84925,
+      "exit_code": 0,
+      "process_total_ms": 3972.061167
+    },
+    {
+      "tool": "blackbird",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 101.45525,
+      "input_echo_ms": 102.680958,
+      "input_response_ms": 0.802417,
+      "exit_code": 0,
+      "process_total_ms": 106.71425
+    },
+    {
+      "tool": "codex",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 1708.68025,
+      "input_echo_ms": 1749.735084,
+      "input_response_ms": 40.680042,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4778.101709
+    },
+    {
+      "tool": "claude",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 312.528959,
+      "input_echo_ms": 345.924709,
+      "input_response_ms": 33.18325,
+      "exit_code": 0,
+      "process_total_ms": 358.732875
+    },
+    {
+      "tool": "hermes",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 6145.218917,
+      "input_echo_ms": 6222.461625,
+      "input_response_ms": 77.008333,
+      "exit_code": 0,
+      "process_total_ms": 6977.675625
+    },
+    {
+      "tool": "opencode",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 4476.481334,
+      "input_echo_ms": 4669.57025,
+      "input_response_ms": 192.059041,
+      "exit_code": 0,
+      "process_total_ms": 4919.797792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 111.204417,
+      "input_echo_ms": 112.516375,
+      "input_response_ms": 0.739625,
+      "exit_code": 0,
+      "process_total_ms": 116.492084
+    },
+    {
+      "tool": "codex",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 1283.240542,
+      "input_echo_ms": 1335.94825,
+      "input_response_ms": 52.132708,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4390.024833
+    },
+    {
+      "tool": "claude",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 392.716375,
+      "input_echo_ms": 429.971333,
+      "input_response_ms": 37.016875,
+      "exit_code": 0,
+      "process_total_ms": 444.077833
+    },
+    {
+      "tool": "hermes",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 5266.396709,
+      "input_echo_ms": 5353.741709,
+      "input_response_ms": 87.110042,
+      "exit_code": 0,
+      "process_total_ms": 6001.319167
+    },
+    {
+      "tool": "opencode",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 4036.412709,
+      "input_echo_ms": 4134.327084,
+      "input_response_ms": 97.282209,
+      "exit_code": 0,
+      "process_total_ms": 4316.866542
+    },
+    {
+      "tool": "blackbird",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 102.69625,
+      "input_echo_ms": 103.931584,
+      "input_response_ms": 0.666209,
+      "exit_code": 0,
+      "process_total_ms": 107.756542
+    },
+    {
+      "tool": "codex",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 1081.257167,
+      "input_echo_ms": 1131.244125,
+      "input_response_ms": 49.645333,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4185.072709
+    },
+    {
+      "tool": "claude",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 402.25025,
+      "input_echo_ms": 440.576959,
+      "input_response_ms": 38.075417,
+      "exit_code": 0,
+      "process_total_ms": 454.310459
+    },
+    {
+      "tool": "hermes",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 5614.987333,
+      "input_echo_ms": 5692.319208,
+      "input_response_ms": 77.075042,
+      "exit_code": 0,
+      "process_total_ms": 6222.850333
+    },
+    {
+      "tool": "opencode",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 5538.358375,
+      "input_echo_ms": 5647.377583,
+      "input_response_ms": 108.07,
+      "exit_code": 0,
+      "process_total_ms": 5805.93925
+    },
+    {
+      "tool": "blackbird",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 107.725375,
+      "input_echo_ms": 109.307292,
+      "input_response_ms": 0.722708,
+      "exit_code": 0,
+      "process_total_ms": 113.809792
+    },
+    {
+      "tool": "codex",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 1432.261458,
+      "input_echo_ms": 1472.075541,
+      "input_response_ms": 39.650125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4533.496041
+    },
+    {
+      "tool": "claude",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 381.411958,
+      "input_echo_ms": 418.939333,
+      "input_response_ms": 37.282916,
+      "exit_code": 0,
+      "process_total_ms": 433.213958
+    },
+    {
+      "tool": "hermes",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 6753.739375,
+      "input_echo_ms": 6827.27075,
+      "input_response_ms": 73.183375,
+      "exit_code": 0,
+      "process_total_ms": 7636.023625
+    },
+    {
+      "tool": "opencode",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 3076.891708,
+      "input_echo_ms": 3118.3085,
+      "input_response_ms": 40.808084,
+      "exit_code": 0,
+      "process_total_ms": 3205.896833
+    },
+    {
+      "tool": "blackbird",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 93.794625,
+      "input_echo_ms": 94.865459,
+      "input_response_ms": 0.636375,
+      "exit_code": 0,
+      "process_total_ms": 97.64125
+    },
+    {
+      "tool": "codex",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 1305.511625,
+      "input_echo_ms": 1338.780083,
+      "input_response_ms": 32.77975,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4389.198916
+    },
+    {
+      "tool": "claude",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 259.113666,
+      "input_echo_ms": 287.478291,
+      "input_response_ms": 28.183041,
+      "exit_code": 0,
+      "process_total_ms": 297.140333
+    },
+    {
+      "tool": "hermes",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 4401.366542,
+      "input_echo_ms": 4498.288708,
+      "input_response_ms": 96.487125,
+      "exit_code": 0,
+      "process_total_ms": 5241.552583
+    },
+    {
+      "tool": "opencode",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 3324.611625,
+      "input_echo_ms": 3444.767542,
+      "input_response_ms": 118.774375,
+      "exit_code": 0,
+      "process_total_ms": 3627.13225
+    },
+    {
+      "tool": "blackbird",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 100.836375,
+      "input_echo_ms": 103.807167,
+      "input_response_ms": 2.550709,
+      "exit_code": 0,
+      "process_total_ms": 108.197708
+    },
+    {
+      "tool": "codex",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 1510.299167,
+      "input_echo_ms": 1553.999583,
+      "input_response_ms": 43.311458,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4563.286583
+    },
+    {
+      "tool": "claude",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 328.059833,
+      "input_echo_ms": 360.440666,
+      "input_response_ms": 32.176958,
+      "exit_code": 0,
+      "process_total_ms": 372.088791
+    },
+    {
+      "tool": "hermes",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 5227.298583,
+      "input_echo_ms": 5303.575708,
+      "input_response_ms": 76.043292,
+      "exit_code": 0,
+      "process_total_ms": 5836.704791
+    },
+    {
+      "tool": "opencode",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 3175.563417,
+      "input_echo_ms": 3245.785084,
+      "input_response_ms": 69.208084,
+      "exit_code": 0,
+      "process_total_ms": 3368.735625
+    },
+    {
+      "tool": "blackbird",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 96.425708,
+      "input_echo_ms": 97.704917,
+      "input_response_ms": 0.745292,
+      "exit_code": 0,
+      "process_total_ms": 101.205042
+    },
+    {
+      "tool": "codex",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 1226.03525,
+      "input_echo_ms": 1272.4825,
+      "input_response_ms": 46.288875,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4312.319542
+    },
+    {
+      "tool": "claude",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 298.822167,
+      "input_echo_ms": 328.824459,
+      "input_response_ms": 29.811584,
+      "exit_code": 0,
+      "process_total_ms": 339.585834
+    },
+    {
+      "tool": "hermes",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 4846.538625,
+      "input_echo_ms": 4914.271584,
+      "input_response_ms": 67.504584,
+      "exit_code": 0,
+      "process_total_ms": 5505.707042
+    },
+    {
+      "tool": "opencode",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 3693.5105,
+      "input_echo_ms": 3796.865625,
+      "input_response_ms": 102.433583,
+      "exit_code": 0,
+      "process_total_ms": 3974.482125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 210.033417,
+      "input_echo_ms": 214.730167,
+      "input_response_ms": 2.506542,
+      "exit_code": 0,
+      "process_total_ms": 219.154167
+    },
+    {
+      "tool": "codex",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 1742.894291,
+      "input_echo_ms": 1783.569083,
+      "input_response_ms": 40.296375,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4794.230833
+    },
+    {
+      "tool": "claude",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 273.545208,
+      "input_echo_ms": 302.241208,
+      "input_response_ms": 28.5225,
+      "exit_code": 0,
+      "process_total_ms": 312.255792
+    },
+    {
+      "tool": "hermes",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 4785.188625,
+      "input_echo_ms": 4845.064542,
+      "input_response_ms": 59.646209,
+      "exit_code": 0,
+      "process_total_ms": 5443.69075
+    },
+    {
+      "tool": "opencode",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 3728.794208,
+      "input_echo_ms": 3844.657875,
+      "input_response_ms": 115.165958,
+      "exit_code": 0,
+      "process_total_ms": 4022.497042
+    },
+    {
+      "tool": "blackbird",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 102.015375,
+      "input_echo_ms": 103.81225,
+      "input_response_ms": 1.326041,
+      "exit_code": 0,
+      "process_total_ms": 107.659709
+    },
+    {
+      "tool": "codex",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 2912.031209,
+      "input_echo_ms": 2952.922125,
+      "input_response_ms": 40.746291,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5971.782834
+    },
+    {
+      "tool": "claude",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 309.132625,
+      "input_echo_ms": 342.743875,
+      "input_response_ms": 33.387916,
+      "exit_code": 0,
+      "process_total_ms": 355.220584
+    },
+    {
+      "tool": "hermes",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 5724.538375,
+      "input_echo_ms": 5807.971666,
+      "input_response_ms": 83.047208,
+      "exit_code": 0,
+      "process_total_ms": 6341.310208
+    },
+    {
+      "tool": "opencode",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 3236.53275,
+      "input_echo_ms": 3308.06625,
+      "input_response_ms": 70.460667,
+      "exit_code": 0,
+      "process_total_ms": 3426.624875
+    },
+    {
+      "tool": "blackbird",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 100.911083,
+      "input_echo_ms": 102.073833,
+      "input_response_ms": 0.735917,
+      "exit_code": 0,
+      "process_total_ms": 105.354125
+    },
+    {
+      "tool": "codex",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 1639.615125,
+      "input_echo_ms": 1688.604084,
+      "input_response_ms": 48.624459,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4714.329042
+    },
+    {
+      "tool": "claude",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 284.002833,
+      "input_echo_ms": 313.681292,
+      "input_response_ms": 29.473875,
+      "exit_code": 0,
+      "process_total_ms": 324.715833
+    },
+    {
+      "tool": "hermes",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 5160.414625,
+      "input_echo_ms": 5261.299333,
+      "input_response_ms": 100.498375,
+      "exit_code": 0,
+      "process_total_ms": 5984.853833
+    },
+    {
+      "tool": "opencode",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 4248.42025,
+      "input_echo_ms": 4374.95575,
+      "input_response_ms": 125.817708,
+      "exit_code": 0,
+      "process_total_ms": 4561.1325
+    },
+    {
+      "tool": "blackbird",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 100.978833,
+      "input_echo_ms": 102.159041,
+      "input_response_ms": 0.716208,
+      "exit_code": 0,
+      "process_total_ms": 106.462291
+    },
+    {
+      "tool": "codex",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 2402.528542,
+      "input_echo_ms": 2459.717833,
+      "input_response_ms": 55.90975,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5489.881583
+    },
+    {
+      "tool": "claude",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 1760.056416,
+      "input_echo_ms": 1897.754416,
+      "input_response_ms": 137.302708,
+      "exit_code": 0,
+      "process_total_ms": 1982.084375
+    },
+    {
+      "tool": "hermes",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 9520.175458,
+      "input_echo_ms": 9621.021083,
+      "input_response_ms": 100.520625,
+      "exit_code": 0,
+      "process_total_ms": 10449.375833
+    },
+    {
+      "tool": "opencode",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 4209.827375,
+      "input_echo_ms": 4320.318042,
+      "input_response_ms": 109.220167,
+      "exit_code": 0,
+      "process_total_ms": 4459.69125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 105.547334,
+      "input_echo_ms": 107.364917,
+      "input_response_ms": 1.378125,
+      "exit_code": 0,
+      "process_total_ms": 113.369959
+    },
+    {
+      "tool": "codex",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 1055.061083,
+      "input_echo_ms": 1093.661875,
+      "input_response_ms": 38.221542,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4136.872917
+    },
+    {
+      "tool": "claude",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 594.764375,
+      "input_echo_ms": 682.960834,
+      "input_response_ms": 87.925292,
+      "exit_code": 0,
+      "process_total_ms": 718.050125
+    },
+    {
+      "tool": "hermes",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 4877.775833,
+      "input_echo_ms": 4925.764583,
+      "input_response_ms": 47.788042,
+      "exit_code": 0,
+      "process_total_ms": 5635.950916
+    },
+    {
+      "tool": "opencode",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 4136.103375,
+      "input_echo_ms": 4213.795208,
+      "input_response_ms": 76.97275,
+      "exit_code": 0,
+      "process_total_ms": 4345.094833
+    },
+    {
+      "tool": "blackbird",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 109.20325,
+      "input_echo_ms": 110.351333,
+      "input_response_ms": 0.568791,
+      "exit_code": 0,
+      "process_total_ms": 113.997208
+    },
+    {
+      "tool": "codex",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 1585.845625,
+      "input_echo_ms": 1651.316667,
+      "input_response_ms": 64.988167,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4686.829334
+    },
+    {
+      "tool": "claude",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 599.4845,
+      "input_echo_ms": 665.995417,
+      "input_response_ms": 65.960167,
+      "exit_code": 0,
+      "process_total_ms": 719.308667
+    },
+    {
+      "tool": "hermes",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 4500.053,
+      "input_echo_ms": 4546.082708,
+      "input_response_ms": 45.830958,
+      "exit_code": 0,
+      "process_total_ms": 5091.910333
+    },
+    {
+      "tool": "opencode",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 3510.419917,
+      "input_echo_ms": 3598.82475,
+      "input_response_ms": 87.513208,
+      "exit_code": 0,
+      "process_total_ms": 3724.711959
+    },
+    {
+      "tool": "blackbird",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 101.659584,
+      "input_echo_ms": 103.122167,
+      "input_response_ms": 0.801125,
+      "exit_code": 0,
+      "process_total_ms": 107.877709
+    },
+    {
+      "tool": "codex",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 1513.053542,
+      "input_echo_ms": 1554.904875,
+      "input_response_ms": 41.487625,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4567.500667
+    },
+    {
+      "tool": "claude",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 334.760166,
+      "input_echo_ms": 366.78275,
+      "input_response_ms": 31.811834,
+      "exit_code": 0,
+      "process_total_ms": 378.864583
+    },
+    {
+      "tool": "hermes",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 5113.167333,
+      "input_echo_ms": 5185.880833,
+      "input_response_ms": 72.33075,
+      "exit_code": 0,
+      "process_total_ms": 5851.678458
+    },
+    {
+      "tool": "opencode",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 4265.89925,
+      "input_echo_ms": 4369.514208,
+      "input_response_ms": 102.790958,
+      "exit_code": 0,
+      "process_total_ms": 4594.959125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 103.724291,
+      "input_echo_ms": 104.991,
+      "input_response_ms": 0.700334,
+      "exit_code": 0,
+      "process_total_ms": 110.862208
+    },
+    {
+      "tool": "codex",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 1498.157125,
+      "input_echo_ms": 1540.858667,
+      "input_response_ms": 42.325792,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4553.643209
+    },
+    {
+      "tool": "claude",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 344.263292,
+      "input_echo_ms": 382.979834,
+      "input_response_ms": 38.483084,
+      "exit_code": 0,
+      "process_total_ms": 397.483042
+    },
+    {
+      "tool": "hermes",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 5215.965792,
+      "input_echo_ms": 5285.127334,
+      "input_response_ms": 68.92475,
+      "exit_code": 0,
+      "process_total_ms": 5929.703375
+    },
+    {
+      "tool": "opencode",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 3517.996667,
+      "input_echo_ms": 3622.581042,
+      "input_response_ms": 103.665833,
+      "exit_code": 0,
+      "process_total_ms": 3753.050375
+    },
+    {
+      "tool": "blackbird",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 98.498292,
+      "input_echo_ms": 100.606209,
+      "input_response_ms": 1.082334,
+      "exit_code": 0,
+      "process_total_ms": 104.708459
+    },
+    {
+      "tool": "codex",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 1287.524375,
+      "input_echo_ms": 1327.099042,
+      "input_response_ms": 39.234125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4369.37275
+    },
+    {
+      "tool": "claude",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 385.11675,
+      "input_echo_ms": 424.040625,
+      "input_response_ms": 38.67425,
+      "exit_code": 0,
+      "process_total_ms": 438.964542
+    },
+    {
+      "tool": "hermes",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 5220.412667,
+      "input_echo_ms": 5287.41775,
+      "input_response_ms": 66.718916,
+      "exit_code": 0,
+      "process_total_ms": 5964.189375
+    },
+    {
+      "tool": "opencode",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 3378.429958,
+      "input_echo_ms": 3496.232208,
+      "input_response_ms": 116.947583,
+      "exit_code": 0,
+      "process_total_ms": 3746.650417
+    },
+    {
+      "tool": "blackbird",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 105.381875,
+      "input_echo_ms": 106.578709,
+      "input_response_ms": 0.765417,
+      "exit_code": 0,
+      "process_total_ms": 109.978917
+    },
+    {
+      "tool": "codex",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 1008.798625,
+      "input_echo_ms": 1060.204541,
+      "input_response_ms": 50.700458,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4092.784541
+    },
+    {
+      "tool": "claude",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 1256.122084,
+      "input_echo_ms": 1467.563125,
+      "input_response_ms": 210.8955,
+      "exit_code": 0,
+      "process_total_ms": 1565.899792
+    },
+    {
+      "tool": "hermes",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 6357.985167,
+      "input_echo_ms": 6432.813458,
+      "input_response_ms": 74.60175,
+      "exit_code": 0,
+      "process_total_ms": 7140.271292
+    },
+    {
+      "tool": "opencode",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 3709.86425,
+      "input_echo_ms": 3812.845625,
+      "input_response_ms": 100.551208,
+      "exit_code": 0,
+      "process_total_ms": 4040.374
+    },
+    {
+      "tool": "blackbird",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 107.805791,
+      "input_echo_ms": 108.930791,
+      "input_response_ms": 0.678958,
+      "exit_code": 0,
+      "process_total_ms": 112.2545
+    },
+    {
+      "tool": "codex",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 1305.338542,
+      "input_echo_ms": 1335.225042,
+      "input_response_ms": 29.460209,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4373.078
+    },
+    {
+      "tool": "claude",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 390.8575,
+      "input_echo_ms": 428.66325,
+      "input_response_ms": 37.568708,
+      "exit_code": 0,
+      "process_total_ms": 442.848375
+    },
+    {
+      "tool": "hermes",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 7711.478958,
+      "input_echo_ms": 7818.96125,
+      "input_response_ms": 107.2425,
+      "exit_code": 0,
+      "process_total_ms": 9093.905833
+    },
+    {
+      "tool": "opencode",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 4276.391167,
+      "input_echo_ms": 4375.07575,
+      "input_response_ms": 97.790166,
+      "exit_code": 0,
+      "process_total_ms": 4537.428709
+    },
+    {
+      "tool": "blackbird",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 109.215917,
+      "input_echo_ms": 110.292459,
+      "input_response_ms": 0.6155,
+      "exit_code": 0,
+      "process_total_ms": 114.433375
+    },
+    {
+      "tool": "codex",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 1458.633375,
+      "input_echo_ms": 1507.899584,
+      "input_response_ms": 48.816084,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4561.646375
+    },
+    {
+      "tool": "claude",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 396.017083,
+      "input_echo_ms": 436.795833,
+      "input_response_ms": 40.547833,
+      "exit_code": 0,
+      "process_total_ms": 450.836208
+    },
+    {
+      "tool": "hermes",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 6457.707208,
+      "input_echo_ms": 6505.815417,
+      "input_response_ms": 47.89575,
+      "exit_code": 0,
+      "process_total_ms": 7221.523917
+    },
+    {
+      "tool": "opencode",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 3987.53375,
+      "input_echo_ms": 4095.128584,
+      "input_response_ms": 106.700125,
+      "exit_code": 0,
+      "process_total_ms": 4311.189042
+    },
+    {
+      "tool": "blackbird",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 130.427042,
+      "input_echo_ms": 132.041833,
+      "input_response_ms": 1.128125,
+      "exit_code": 0,
+      "process_total_ms": 135.828958
+    },
+    {
+      "tool": "codex",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 1349.510042,
+      "input_echo_ms": 1419.481292,
+      "input_response_ms": 69.618167,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4459.496792
+    },
+    {
+      "tool": "claude",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 394.185875,
+      "input_echo_ms": 430.314292,
+      "input_response_ms": 35.898334,
+      "exit_code": 0,
+      "process_total_ms": 444.737375
+    },
+    {
+      "tool": "hermes",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 6121.793667,
+      "input_echo_ms": 6191.075667,
+      "input_response_ms": 68.915292,
+      "exit_code": 0,
+      "process_total_ms": 6758.934417
+    },
+    {
+      "tool": "opencode",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 4207.761667,
+      "input_echo_ms": 4308.415084,
+      "input_response_ms": 99.647459,
+      "exit_code": 0,
+      "process_total_ms": 4447.506834
+    },
+    {
+      "tool": "blackbird",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 99.016209,
+      "input_echo_ms": 100.571667,
+      "input_response_ms": 1.117625,
+      "exit_code": 0,
+      "process_total_ms": 105.554334
+    },
+    {
+      "tool": "codex",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 1513.197,
+      "input_echo_ms": 1545.993833,
+      "input_response_ms": 32.036,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4593.010333
+    },
+    {
+      "tool": "claude",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 386.975125,
+      "input_echo_ms": 425.550458,
+      "input_response_ms": 38.339666,
+      "exit_code": 0,
+      "process_total_ms": 439.850167
+    },
+    {
+      "tool": "hermes",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 6530.492541,
+      "input_echo_ms": 6571.886666,
+      "input_response_ms": 41.099375,
+      "exit_code": 0,
+      "process_total_ms": 7075.06525
+    },
+    {
+      "tool": "opencode",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 4224.716583,
+      "input_echo_ms": 4324.879,
+      "input_response_ms": 99.108875,
+      "exit_code": 0,
+      "process_total_ms": 4457.016875
+    },
+    {
+      "tool": "blackbird",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 105.210083,
+      "input_echo_ms": 106.245458,
+      "input_response_ms": 0.595667,
+      "exit_code": 0,
+      "process_total_ms": 109.256208
+    },
+    {
+      "tool": "codex",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 1265.394583,
+      "input_echo_ms": 1316.075917,
+      "input_response_ms": 50.335709,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4362.095542
+    },
+    {
+      "tool": "claude",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 340.41525,
+      "input_echo_ms": 373.972833,
+      "input_response_ms": 33.34,
+      "exit_code": 0,
+      "process_total_ms": 387.604917
+    },
+    {
+      "tool": "hermes",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 5769.450459,
+      "input_echo_ms": 5838.228917,
+      "input_response_ms": 68.429083,
+      "exit_code": 0,
+      "process_total_ms": 6529.652917
+    },
+    {
+      "tool": "opencode",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 3907.308208,
+      "input_echo_ms": 3999.501833,
+      "input_response_ms": 91.535958,
+      "exit_code": 0,
+      "process_total_ms": 4117.52725
+    },
+    {
+      "tool": "blackbird",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 98.706833,
+      "input_echo_ms": 100.108792,
+      "input_response_ms": 0.925042,
+      "exit_code": 0,
+      "process_total_ms": 104.3915
+    },
+    {
+      "tool": "codex",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 1206.494167,
+      "input_echo_ms": 1255.874834,
+      "input_response_ms": 49.221542,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4300.931125
+    },
+    {
+      "tool": "claude",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 398.53425,
+      "input_echo_ms": 436.165042,
+      "input_response_ms": 37.38775,
+      "exit_code": 0,
+      "process_total_ms": 451.797583
+    },
+    {
+      "tool": "hermes",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 5572.917667,
+      "input_echo_ms": 5651.340292,
+      "input_response_ms": 78.181792,
+      "exit_code": 0,
+      "process_total_ms": 6413.800625
+    },
+    {
+      "tool": "opencode",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 5218.321,
+      "input_echo_ms": 5300.967375,
+      "input_response_ms": 82.245292,
+      "exit_code": 0,
+      "process_total_ms": 5454.308792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 111.636917,
+      "input_echo_ms": 114.012125,
+      "input_response_ms": 1.667792,
+      "exit_code": 0,
+      "process_total_ms": 120.351375
+    },
+    {
+      "tool": "codex",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 1272.398333,
+      "input_echo_ms": 1313.761333,
+      "input_response_ms": 40.987708,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4372.432458
+    },
+    {
+      "tool": "claude",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 395.793459,
+      "input_echo_ms": 432.825542,
+      "input_response_ms": 36.790375,
+      "exit_code": 0,
+      "process_total_ms": 446.910875
+    },
+    {
+      "tool": "hermes",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 6158.535208,
+      "input_echo_ms": 6241.050583,
+      "input_response_ms": 82.033208,
+      "exit_code": 0,
+      "process_total_ms": 6911.711917
+    },
+    {
+      "tool": "opencode",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 4169.128875,
+      "input_echo_ms": 4245.140833,
+      "input_response_ms": 75.354541,
+      "exit_code": 0,
+      "process_total_ms": 4408.468708
+    },
+    {
+      "tool": "blackbird",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 100.948959,
+      "input_echo_ms": 102.030417,
+      "input_response_ms": 0.646125,
+      "exit_code": 0,
+      "process_total_ms": 105.040917
+    },
+    {
+      "tool": "codex",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 1452.41875,
+      "input_echo_ms": 1523.0585,
+      "input_response_ms": 69.854,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4544.8855
+    },
+    {
+      "tool": "claude",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 401.576542,
+      "input_echo_ms": 440.746833,
+      "input_response_ms": 38.93275,
+      "exit_code": 0,
+      "process_total_ms": 454.999542
+    },
+    {
+      "tool": "hermes",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 4603.802459,
+      "input_echo_ms": 4657.9155,
+      "input_response_ms": 53.909708,
+      "exit_code": 0,
+      "process_total_ms": 5137.159792
+    },
+    {
+      "tool": "opencode",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 4893.9335,
+      "input_echo_ms": 4994.930959,
+      "input_response_ms": 99.989625,
+      "exit_code": 0,
+      "process_total_ms": 5127.084667
+    },
+    {
+      "tool": "blackbird",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 102.370834,
+      "input_echo_ms": 103.344917,
+      "input_response_ms": 0.533875,
+      "exit_code": 0,
+      "process_total_ms": 106.508542
+    },
+    {
+      "tool": "codex",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 1397.991291,
+      "input_echo_ms": 1454.232416,
+      "input_response_ms": 55.922791,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4514.15625
+    },
+    {
+      "tool": "claude",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 390.723875,
+      "input_echo_ms": 427.3325,
+      "input_response_ms": 36.370125,
+      "exit_code": 0,
+      "process_total_ms": 441.488458
+    },
+    {
+      "tool": "hermes",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 6135.148458,
+      "input_echo_ms": 6185.906958,
+      "input_response_ms": 50.517416,
+      "exit_code": 0,
+      "process_total_ms": 6885.124625
+    },
+    {
+      "tool": "opencode",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 3551.118833,
+      "input_echo_ms": 3669.899458,
+      "input_response_ms": 117.91675,
+      "exit_code": 0,
+      "process_total_ms": 3791.482666
+    },
+    {
+      "tool": "blackbird",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 98.931292,
+      "input_echo_ms": 100.063167,
+      "input_response_ms": 0.697417,
+      "exit_code": 0,
+      "process_total_ms": 102.996458
+    },
+    {
+      "tool": "codex",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 715.246334,
+      "input_echo_ms": 741.112334,
+      "input_response_ms": 25.712125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 3794.768
+    },
+    {
+      "tool": "claude",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 404.905541,
+      "input_echo_ms": 442.6105,
+      "input_response_ms": 37.369,
+      "exit_code": 0,
+      "process_total_ms": 456.635083
+    },
+    {
+      "tool": "hermes",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 5099.666708,
+      "input_echo_ms": 5176.693167,
+      "input_response_ms": 76.683334,
+      "exit_code": 0,
+      "process_total_ms": 5757.7655
+    },
+    {
+      "tool": "opencode",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 3643.586458,
+      "input_echo_ms": 3756.009916,
+      "input_response_ms": 110.106458,
+      "exit_code": 0,
+      "process_total_ms": 3868.367416
+    },
+    {
+      "tool": "blackbird",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 105.770791,
+      "input_echo_ms": 107.225458,
+      "input_response_ms": 1.010833,
+      "exit_code": 0,
+      "process_total_ms": 111.437375
+    },
+    {
+      "tool": "codex",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 1369.478375,
+      "input_echo_ms": 1446.907542,
+      "input_response_ms": 76.933542,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4500.8085
+    },
+    {
+      "tool": "claude",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 386.900833,
+      "input_echo_ms": 426.204042,
+      "input_response_ms": 39.072792,
+      "exit_code": 0,
+      "process_total_ms": 440.256
+    },
+    {
+      "tool": "hermes",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 5393.65825,
+      "input_echo_ms": 5469.686375,
+      "input_response_ms": 75.554,
+      "exit_code": 0,
+      "process_total_ms": 6643.339542
+    },
+    {
+      "tool": "opencode",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 9277.944792,
+      "input_echo_ms": 9603.877208,
+      "input_response_ms": 324.579,
+      "exit_code": 0,
+      "process_total_ms": 9826.4145
+    },
+    {
+      "tool": "blackbird",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 114.556209,
+      "input_echo_ms": 116.347709,
+      "input_response_ms": 0.996542,
+      "exit_code": 0,
+      "process_total_ms": 120.6355
+    },
+    {
+      "tool": "codex",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 1632.683333,
+      "input_echo_ms": 1697.36975,
+      "input_response_ms": 64.354625,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4715.141
+    },
+    {
+      "tool": "claude",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 359.869833,
+      "input_echo_ms": 397.328667,
+      "input_response_ms": 37.217459,
+      "exit_code": 0,
+      "process_total_ms": 410.530917
+    },
+    {
+      "tool": "hermes",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 5467.998083,
+      "input_echo_ms": 5554.75575,
+      "input_response_ms": 86.497458,
+      "exit_code": 0,
+      "process_total_ms": 6309.8915
+    },
+    {
+      "tool": "opencode",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 3343.488375,
+      "input_echo_ms": 3436.583875,
+      "input_response_ms": 91.779917,
+      "exit_code": 0,
+      "process_total_ms": 3554.638875
+    },
+    {
+      "tool": "blackbird",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 102.2,
+      "input_echo_ms": 103.24325,
+      "input_response_ms": 0.622708,
+      "exit_code": 0,
+      "process_total_ms": 106.106292
+    },
+    {
+      "tool": "codex",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 1322.079209,
+      "input_echo_ms": 1347.799792,
+      "input_response_ms": 25.381292,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4371.736625
+    },
+    {
+      "tool": "claude",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 278.38475,
+      "input_echo_ms": 307.424375,
+      "input_response_ms": 28.86325,
+      "exit_code": 0,
+      "process_total_ms": 316.863875
+    },
+    {
+      "tool": "hermes",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 4721.492542,
+      "input_echo_ms": 4785.720667,
+      "input_response_ms": 63.9945,
+      "exit_code": 0,
+      "process_total_ms": 5260.144917
+    },
+    {
+      "tool": "opencode",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 2889.155291,
+      "input_echo_ms": 2944.691125,
+      "input_response_ms": 54.814459,
+      "exit_code": 0,
+      "process_total_ms": 3064.331791
+    },
+    {
+      "tool": "blackbird",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 97.882833,
+      "input_echo_ms": 99.675625,
+      "input_response_ms": 1.161125,
+      "exit_code": 0,
+      "process_total_ms": 105.894041
+    },
+    {
+      "tool": "codex",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 1254.477209,
+      "input_echo_ms": 1304.314875,
+      "input_response_ms": 49.534166,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4318.922875
+    },
+    {
+      "tool": "claude",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 302.203292,
+      "input_echo_ms": 331.782458,
+      "input_response_ms": 29.398708,
+      "exit_code": 0,
+      "process_total_ms": 342.990083
+    },
+    {
+      "tool": "hermes",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 5069.997416,
+      "input_echo_ms": 5151.284125,
+      "input_response_ms": 81.056584,
+      "exit_code": 0,
+      "process_total_ms": 5791.81975
+    },
+    {
+      "tool": "opencode",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 3274.174958,
+      "input_echo_ms": 3334.491333,
+      "input_response_ms": 59.362833,
+      "exit_code": 0,
+      "process_total_ms": 3440.159958
+    },
+    {
+      "tool": "blackbird",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 99.552667,
+      "input_echo_ms": 100.534084,
+      "input_response_ms": 0.538334,
+      "exit_code": 0,
+      "process_total_ms": 103.642334
+    },
+    {
+      "tool": "codex",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 1262.920292,
+      "input_echo_ms": 1312.952834,
+      "input_response_ms": 49.590334,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4342.400875
+    },
+    {
+      "tool": "claude",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 299.095042,
+      "input_echo_ms": 329.3835,
+      "input_response_ms": 30.0995,
+      "exit_code": 0,
+      "process_total_ms": 339.943084
+    },
+    {
+      "tool": "hermes",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 4875.862209,
+      "input_echo_ms": 4942.885459,
+      "input_response_ms": 66.799,
+      "exit_code": 0,
+      "process_total_ms": 5591.487709
+    },
+    {
+      "tool": "opencode",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 3204.062958,
+      "input_echo_ms": 3288.52175,
+      "input_response_ms": 83.737375,
+      "exit_code": 0,
+      "process_total_ms": 3418.508458
+    },
+    {
+      "tool": "blackbird",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 98.466458,
+      "input_echo_ms": 100.351666,
+      "input_response_ms": 1.252208,
+      "exit_code": 0,
+      "process_total_ms": 103.423
+    },
+    {
+      "tool": "codex",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 692.974167,
+      "input_echo_ms": 733.068875,
+      "input_response_ms": 39.557875,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 3747.51075
+    },
+    {
+      "tool": "claude",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 307.764375,
+      "input_echo_ms": 337.620708,
+      "input_response_ms": 29.616208,
+      "exit_code": 0,
+      "process_total_ms": 349.17125
+    },
+    {
+      "tool": "hermes",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 4912.938459,
+      "input_echo_ms": 4968.757709,
+      "input_response_ms": 55.50825,
+      "exit_code": 0,
+      "process_total_ms": 5520.971625
+    },
+    {
+      "tool": "opencode",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 3205.45825,
+      "input_echo_ms": 3281.915166,
+      "input_response_ms": 75.275916,
+      "exit_code": 0,
+      "process_total_ms": 3433.672375
+    },
+    {
+      "tool": "blackbird",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 110.947125,
+      "input_echo_ms": 112.121834,
+      "input_response_ms": 0.745959,
+      "exit_code": 0,
+      "process_total_ms": 116.518625
+    },
+    {
+      "tool": "codex",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 1320.308041,
+      "input_echo_ms": 1360.862541,
+      "input_response_ms": 40.209458,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4406.362333
+    },
+    {
+      "tool": "claude",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 308.558584,
+      "input_echo_ms": 341.317667,
+      "input_response_ms": 32.545917,
+      "exit_code": 0,
+      "process_total_ms": 353.295292
+    },
+    {
+      "tool": "hermes",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 5114.447959,
+      "input_echo_ms": 5185.941625,
+      "input_response_ms": 71.091458,
+      "exit_code": 0,
+      "process_total_ms": 5793.187792
+    },
+    {
+      "tool": "opencode",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 3698.027584,
+      "input_echo_ms": 3779.703375,
+      "input_response_ms": 80.833,
+      "exit_code": 0,
+      "process_total_ms": 3914.265959
+    },
+    {
+      "tool": "blackbird",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 102.230959,
+      "input_echo_ms": 103.385334,
+      "input_response_ms": 0.726084,
+      "exit_code": 0,
+      "process_total_ms": 106.710209
+    },
+    {
+      "tool": "codex",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 1388.60025,
+      "input_echo_ms": 1436.556333,
+      "input_response_ms": 47.794166,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4488.229583
+    },
+    {
+      "tool": "claude",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 305.233042,
+      "input_echo_ms": 335.723333,
+      "input_response_ms": 30.302,
+      "exit_code": 0,
+      "process_total_ms": 346.31575
+    },
+    {
+      "tool": "hermes",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 4953.665375,
+      "input_echo_ms": 5007.83725,
+      "input_response_ms": 53.860833,
+      "exit_code": 0,
+      "process_total_ms": 5570.925083
+    },
+    {
+      "tool": "opencode",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 3094.701042,
+      "input_echo_ms": 3161.158917,
+      "input_response_ms": 65.8315,
+      "exit_code": 0,
+      "process_total_ms": 3281.840625
+    },
+    {
+      "tool": "blackbird",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 103.627875,
+      "input_echo_ms": 104.791916,
+      "input_response_ms": 0.743541,
+      "exit_code": 0,
+      "process_total_ms": 108.580958
+    },
+    {
+      "tool": "codex",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 1310.301167,
+      "input_echo_ms": 1338.980375,
+      "input_response_ms": 28.187833,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4398.135084
+    },
+    {
+      "tool": "claude",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 275.746042,
+      "input_echo_ms": 304.116667,
+      "input_response_ms": 28.203417,
+      "exit_code": 0,
+      "process_total_ms": 315.51875
+    },
+    {
+      "tool": "hermes",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 4649.22125,
+      "input_echo_ms": 4717.904083,
+      "input_response_ms": 68.451208,
+      "exit_code": 0,
+      "process_total_ms": 5353.037167
+    },
+    {
+      "tool": "opencode",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 3320.926958,
+      "input_echo_ms": 3412.529208,
+      "input_response_ms": 90.791042,
+      "exit_code": 0,
+      "process_total_ms": 3549.277791
+    },
+    {
+      "tool": "blackbird",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 97.975917,
+      "input_echo_ms": 98.925083,
+      "input_response_ms": 0.520125,
+      "exit_code": 0,
+      "process_total_ms": 101.895292
+    },
+    {
+      "tool": "codex",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 1315.996209,
+      "input_echo_ms": 1357.135917,
+      "input_response_ms": 40.776167,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4398.697709
+    },
+    {
+      "tool": "claude",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 275.834333,
+      "input_echo_ms": 304.47725,
+      "input_response_ms": 28.468709,
+      "exit_code": 0,
+      "process_total_ms": 314.624083
+    },
+    {
+      "tool": "hermes",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 4560.852375,
+      "input_echo_ms": 4623.198917,
+      "input_response_ms": 62.114459,
+      "exit_code": 0,
+      "process_total_ms": 5211.202875
+    },
+    {
+      "tool": "opencode",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 3207.985291,
+      "input_echo_ms": 3275.727458,
+      "input_response_ms": 66.607792,
+      "exit_code": 0,
+      "process_total_ms": 3413.134541
+    },
+    {
+      "tool": "blackbird",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 98.568292,
+      "input_echo_ms": 100.303292,
+      "input_response_ms": 0.972167,
+      "exit_code": 0,
+      "process_total_ms": 103.402458
+    },
+    {
+      "tool": "codex",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 1130.456209,
+      "input_echo_ms": 1174.198042,
+      "input_response_ms": 43.415417,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4233.166542
+    },
+    {
+      "tool": "claude",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 277.15025,
+      "input_echo_ms": 306.122167,
+      "input_response_ms": 28.794792,
+      "exit_code": 0,
+      "process_total_ms": 316.950958
+    },
+    {
+      "tool": "hermes",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 4685.265292,
+      "input_echo_ms": 4744.638125,
+      "input_response_ms": 59.142667,
+      "exit_code": 0,
+      "process_total_ms": 5254.875417
+    },
+    {
+      "tool": "opencode",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 3191.230208,
+      "input_echo_ms": 3261.481375,
+      "input_response_ms": 69.579417,
+      "exit_code": 0,
+      "process_total_ms": 3398.67475
+    },
+    {
+      "tool": "blackbird",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 99.202583,
+      "input_echo_ms": 100.099083,
+      "input_response_ms": 0.462708,
+      "exit_code": 0,
+      "process_total_ms": 103.380125
+    },
+    {
+      "tool": "codex",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 1261.704,
+      "input_echo_ms": 1298.940292,
+      "input_response_ms": 36.861375,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4344.04375
+    },
+    {
+      "tool": "claude",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 282.125833,
+      "input_echo_ms": 310.505541,
+      "input_response_ms": 28.21475,
+      "exit_code": 0,
+      "process_total_ms": 320.678625
+    },
+    {
+      "tool": "hermes",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 4793.481167,
+      "input_echo_ms": 4860.462459,
+      "input_response_ms": 66.752584,
+      "exit_code": 0,
+      "process_total_ms": 5426.759584
+    },
+    {
+      "tool": "opencode",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 3251.993041,
+      "input_echo_ms": 3337.598333,
+      "input_response_ms": 84.851833,
+      "exit_code": 0,
+      "process_total_ms": 3467.991
+    },
+    {
+      "tool": "blackbird",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 95.397542,
+      "input_echo_ms": 96.543209,
+      "input_response_ms": 0.721042,
+      "exit_code": 0,
+      "process_total_ms": 99.982584
+    },
+    {
+      "tool": "codex",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 1061.384916,
+      "input_echo_ms": 1109.354208,
+      "input_response_ms": 47.604083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4123.200458
+    },
+    {
+      "tool": "claude",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 277.45925,
+      "input_echo_ms": 306.406583,
+      "input_response_ms": 28.769083,
+      "exit_code": 0,
+      "process_total_ms": 316.036
+    },
+    {
+      "tool": "hermes",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 4564.110459,
+      "input_echo_ms": 4613.620542,
+      "input_response_ms": 49.275167,
+      "exit_code": 0,
+      "process_total_ms": 5210.606584
+    },
+    {
+      "tool": "opencode",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 3274.67675,
+      "input_echo_ms": 3343.172875,
+      "input_response_ms": 67.453917,
+      "exit_code": 0,
+      "process_total_ms": 3458.267083
+    },
+    {
+      "tool": "blackbird",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 98.902916,
+      "input_echo_ms": 100.416416,
+      "input_response_ms": 0.872291,
+      "exit_code": 0,
+      "process_total_ms": 104.280583
+    },
+    {
+      "tool": "codex",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 1196.437333,
+      "input_echo_ms": 1249.728708,
+      "input_response_ms": 53.133333,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4254.173417
+    },
+    {
+      "tool": "claude",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 277.654833,
+      "input_echo_ms": 307.630292,
+      "input_response_ms": 29.800625,
+      "exit_code": 0,
+      "process_total_ms": 318.426083
+    },
+    {
+      "tool": "hermes",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 4982.607625,
+      "input_echo_ms": 5046.321458,
+      "input_response_ms": 63.462417,
+      "exit_code": 0,
+      "process_total_ms": 5557.9735
+    },
+    {
+      "tool": "opencode",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 3305.412958,
+      "input_echo_ms": 3392.498833,
+      "input_response_ms": 86.16825,
+      "exit_code": 0,
+      "process_total_ms": 3512.967625
+    },
+    {
+      "tool": "blackbird",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 99.802125,
+      "input_echo_ms": 100.914166,
+      "input_response_ms": 0.559458,
+      "exit_code": 0,
+      "process_total_ms": 104.187833
+    },
+    {
+      "tool": "codex",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 1612.181125,
+      "input_echo_ms": 1653.537875,
+      "input_response_ms": 40.9615,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4695.127958
+    },
+    {
+      "tool": "claude",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 263.192084,
+      "input_echo_ms": 292.945125,
+      "input_response_ms": 29.58475,
+      "exit_code": 0,
+      "process_total_ms": 302.427375
+    },
+    {
+      "tool": "hermes",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 4605.275125,
+      "input_echo_ms": 4670.767917,
+      "input_response_ms": 65.251708,
+      "exit_code": 0,
+      "process_total_ms": 5257.999875
+    },
+    {
+      "tool": "opencode",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 3175.704333,
+      "input_echo_ms": 3259.822375,
+      "input_response_ms": 83.511167,
+      "exit_code": 0,
+      "process_total_ms": 3402.486458
+    },
+    {
+      "tool": "blackbird",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 97.535916,
+      "input_echo_ms": 98.606625,
+      "input_response_ms": 0.628042,
+      "exit_code": 0,
+      "process_total_ms": 101.87375
+    },
+    {
+      "tool": "codex",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 1181.825084,
+      "input_echo_ms": 1247.215417,
+      "input_response_ms": 65.034208,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4266.633209
+    },
+    {
+      "tool": "claude",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 276.726042,
+      "input_echo_ms": 305.403792,
+      "input_response_ms": 28.503334,
+      "exit_code": 0,
+      "process_total_ms": 316.513083
+    },
+    {
+      "tool": "hermes",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 5029.417541,
+      "input_echo_ms": 5099.571083,
+      "input_response_ms": 69.770625,
+      "exit_code": 0,
+      "process_total_ms": 6244.371458
+    },
+    {
+      "tool": "opencode",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 4564.745083,
+      "input_echo_ms": 4820.512166,
+      "input_response_ms": 254.3485,
+      "exit_code": 0,
+      "process_total_ms": 4993.4095
+    },
+    {
+      "tool": "blackbird",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 114.87275,
+      "input_echo_ms": 116.501542,
+      "input_response_ms": 1.1815,
+      "exit_code": 0,
+      "process_total_ms": 120.990333
+    },
+    {
+      "tool": "codex",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 2414.906584,
+      "input_echo_ms": 2592.106292,
+      "input_response_ms": 176.606583,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5646.177709
+    },
+    {
+      "tool": "claude",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 382.548542,
+      "input_echo_ms": 423.970667,
+      "input_response_ms": 41.189792,
+      "exit_code": 0,
+      "process_total_ms": 439.060458
+    },
+    {
+      "tool": "hermes",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 4666.337833,
+      "input_echo_ms": 4721.167625,
+      "input_response_ms": 54.5935,
+      "exit_code": 0,
+      "process_total_ms": 5307.131083
+    },
+    {
+      "tool": "opencode",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 3984.858416,
+      "input_echo_ms": 4060.219291,
+      "input_response_ms": 74.49125,
+      "exit_code": 0,
+      "process_total_ms": 4188.206916
+    },
+    {
+      "tool": "blackbird",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 103.956958,
+      "input_echo_ms": 105.140833,
+      "input_response_ms": 0.743958,
+      "exit_code": 0,
+      "process_total_ms": 108.586208
+    },
+    {
+      "tool": "codex",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 1161.541792,
+      "input_echo_ms": 1210.458833,
+      "input_response_ms": 48.561166,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4271.187
+    },
+    {
+      "tool": "claude",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 397.715,
+      "input_echo_ms": 435.489916,
+      "input_response_ms": 37.441166,
+      "exit_code": 0,
+      "process_total_ms": 449.192166
+    },
+    {
+      "tool": "hermes",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 8207.365416,
+      "input_echo_ms": 8253.192291,
+      "input_response_ms": 45.600333,
+      "exit_code": 0,
+      "process_total_ms": 8785.89525
+    },
+    {
+      "tool": "opencode",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 3726.944083,
+      "input_echo_ms": 3788.452542,
+      "input_response_ms": 60.649292,
+      "exit_code": 0,
+      "process_total_ms": 3944.605
+    },
+    {
+      "tool": "blackbird",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 106.69275,
+      "input_echo_ms": 107.89175,
+      "input_response_ms": 0.637042,
+      "exit_code": 0,
+      "process_total_ms": 111.126583
+    },
+    {
+      "tool": "codex",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 1215.502667,
+      "input_echo_ms": 1261.147959,
+      "input_response_ms": 45.294792,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4318.653584
+    },
+    {
+      "tool": "claude",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 388.335792,
+      "input_echo_ms": 425.570083,
+      "input_response_ms": 36.992416,
+      "exit_code": 0,
+      "process_total_ms": 440.165917
+    },
+    {
+      "tool": "hermes",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 5493.59975,
+      "input_echo_ms": 5540.171042,
+      "input_response_ms": 46.362584,
+      "exit_code": 0,
+      "process_total_ms": 6063.445125
+    },
+    {
+      "tool": "opencode",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 4012.789458,
+      "input_echo_ms": 4134.0365,
+      "input_response_ms": 120.164375,
+      "exit_code": 0,
+      "process_total_ms": 4292.835792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 100.722667,
+      "input_echo_ms": 101.8265,
+      "input_response_ms": 0.652708,
+      "exit_code": 0,
+      "process_total_ms": 104.94
+    },
+    {
+      "tool": "codex",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 1302.261833,
+      "input_echo_ms": 1341.916417,
+      "input_response_ms": 39.312792,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4390.794375
+    },
+    {
+      "tool": "claude",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 313.495084,
+      "input_echo_ms": 344.279792,
+      "input_response_ms": 30.585167,
+      "exit_code": 0,
+      "process_total_ms": 356.567375
+    },
+    {
+      "tool": "hermes",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 7791.742375,
+      "input_echo_ms": 7866.237958,
+      "input_response_ms": 74.251875,
+      "exit_code": 0,
+      "process_total_ms": 8551.976125
+    },
+    {
+      "tool": "opencode",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 5902.01425,
+      "input_echo_ms": 6058.500625,
+      "input_response_ms": 154.852208,
+      "exit_code": 0,
+      "process_total_ms": 6233.699125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 118.836875,
+      "input_echo_ms": 120.085458,
+      "input_response_ms": 0.819791,
+      "exit_code": 0,
+      "process_total_ms": 124.914583
+    },
+    {
+      "tool": "codex",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 1430.102417,
+      "input_echo_ms": 1480.065375,
+      "input_response_ms": 49.586708,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4531.464
+    },
+    {
+      "tool": "claude",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 316.10075,
+      "input_echo_ms": 350.106792,
+      "input_response_ms": 33.789042,
+      "exit_code": 0,
+      "process_total_ms": 362.4375
+    },
+    {
+      "tool": "hermes",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 4986.49925,
+      "input_echo_ms": 5059.592375,
+      "input_response_ms": 72.833875,
+      "exit_code": 0,
+      "process_total_ms": 5676.77025
+    },
+    {
+      "tool": "opencode",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 3993.1835,
+      "input_echo_ms": 4080.39525,
+      "input_response_ms": 86.217417,
+      "exit_code": 0,
+      "process_total_ms": 4201.051291
+    },
+    {
+      "tool": "blackbird",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 116.45625,
+      "input_echo_ms": 117.71775,
+      "input_response_ms": 0.832333,
+      "exit_code": 0,
+      "process_total_ms": 122.654875
+    },
+    {
+      "tool": "codex",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 1152.3105,
+      "input_echo_ms": 1194.581666,
+      "input_response_ms": 41.658041,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4250.037583
+    },
+    {
+      "tool": "claude",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 392.868334,
+      "input_echo_ms": 435.306875,
+      "input_response_ms": 42.1885,
+      "exit_code": 0,
+      "process_total_ms": 449.863959
+    },
+    {
+      "tool": "hermes",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 6040.229125,
+      "input_echo_ms": 6098.729833,
+      "input_response_ms": 58.297458,
+      "exit_code": 0,
+      "process_total_ms": 7068.879791
+    },
+    {
+      "tool": "opencode",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 3579.652458,
+      "input_echo_ms": 3649.189375,
+      "input_response_ms": 68.908542,
+      "exit_code": 0,
+      "process_total_ms": 3764.23775
+    },
+    {
+      "tool": "blackbird",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 112.515584,
+      "input_echo_ms": 113.675917,
+      "input_response_ms": 0.53875,
+      "exit_code": 0,
+      "process_total_ms": 118.939084
+    },
+    {
+      "tool": "codex",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 1191.550375,
+      "input_echo_ms": 1257.909458,
+      "input_response_ms": 66.022167,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4319.423958
+    },
+    {
+      "tool": "claude",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 321.363334,
+      "input_echo_ms": 355.343667,
+      "input_response_ms": 33.757542,
+      "exit_code": 0,
+      "process_total_ms": 367.891125
+    },
+    {
+      "tool": "hermes",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 5170.011458,
+      "input_echo_ms": 5240.259917,
+      "input_response_ms": 70.017167,
+      "exit_code": 0,
+      "process_total_ms": 5805.428875
+    },
+    {
+      "tool": "opencode",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 3382.274042,
+      "input_echo_ms": 3465.817958,
+      "input_response_ms": 82.558791,
+      "exit_code": 0,
+      "process_total_ms": 3586.720458
+    },
+    {
+      "tool": "blackbird",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 101.131541,
+      "input_echo_ms": 102.133583,
+      "input_response_ms": 0.552167,
+      "exit_code": 0,
+      "process_total_ms": 107.222541
+    },
+    {
+      "tool": "codex",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 1224.708833,
+      "input_echo_ms": 1264.393041,
+      "input_response_ms": 39.305625,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4532.784708
+    },
+    {
+      "tool": "claude",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 3847.129584,
+      "input_echo_ms": 3988.796834,
+      "input_response_ms": 141.370625,
+      "exit_code": 0,
+      "process_total_ms": 4095.899709
+    },
+    {
+      "tool": "hermes",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 7335.95925,
+      "input_echo_ms": 7476.465,
+      "input_response_ms": 139.472833,
+      "exit_code": 0,
+      "process_total_ms": 8783.04575
+    },
+    {
+      "tool": "opencode",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 4416.8745,
+      "input_echo_ms": 4529.045458,
+      "input_response_ms": 111.457041,
+      "exit_code": 0,
+      "process_total_ms": 4676.928042
+    },
+    {
+      "tool": "blackbird",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 115.076416,
+      "input_echo_ms": 116.128791,
+      "input_response_ms": 0.621541,
+      "exit_code": 0,
+      "process_total_ms": 119.873458
+    },
+    {
+      "tool": "codex",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 3064.573458,
+      "input_echo_ms": 3098.2225,
+      "input_response_ms": 33.29925,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 6147.27525
+    },
+    {
+      "tool": "claude",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 684.833833,
+      "input_echo_ms": 792.587583,
+      "input_response_ms": 107.318458,
+      "exit_code": 0,
+      "process_total_ms": 859.528875
+    },
+    {
+      "tool": "hermes",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 5864.30825,
+      "input_echo_ms": 5948.340375,
+      "input_response_ms": 83.705375,
+      "exit_code": 0,
+      "process_total_ms": 6565.604291
+    },
+    {
+      "tool": "opencode",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 4237.027375,
+      "input_echo_ms": 4346.597208,
+      "input_response_ms": 108.637375,
+      "exit_code": 0,
+      "process_total_ms": 4502.960708
+    },
+    {
+      "tool": "blackbird",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 162.398833,
+      "input_echo_ms": 165.723041,
+      "input_response_ms": 1.819791,
+      "exit_code": 0,
+      "process_total_ms": 195.78875
+    },
+    {
+      "tool": "codex",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 1321.592792,
+      "input_echo_ms": 1362.3435,
+      "input_response_ms": 40.38125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4401.628209
+    },
+    {
+      "tool": "claude",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 384.886,
+      "input_echo_ms": 422.494292,
+      "input_response_ms": 37.374875,
+      "exit_code": 0,
+      "process_total_ms": 435.784208
+    },
+    {
+      "tool": "hermes",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 5147.617791,
+      "input_echo_ms": 5228.245416,
+      "input_response_ms": 80.253333,
+      "exit_code": 0,
+      "process_total_ms": 5736.511541
+    },
+    {
+      "tool": "opencode",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 4068.443042,
+      "input_echo_ms": 4262.705542,
+      "input_response_ms": 192.869167,
+      "exit_code": 0,
+      "process_total_ms": 4560.485958
+    },
+    {
+      "tool": "blackbird",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 115.428458,
+      "input_echo_ms": 116.904583,
+      "input_response_ms": 0.955833,
+      "exit_code": 0,
+      "process_total_ms": 121.178792
+    },
+    {
+      "tool": "codex",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 1320.561334,
+      "input_echo_ms": 1367.787167,
+      "input_response_ms": 46.803167,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4417.227542
+    },
+    {
+      "tool": "claude",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 370.135333,
+      "input_echo_ms": 406.704,
+      "input_response_ms": 36.317042,
+      "exit_code": 0,
+      "process_total_ms": 420.863167
+    },
+    {
+      "tool": "hermes",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 6747.198667,
+      "input_echo_ms": 6793.485667,
+      "input_response_ms": 46.075083,
+      "exit_code": 0,
+      "process_total_ms": 7398.290167
+    },
+    {
+      "tool": "opencode",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 4215.10375,
+      "input_echo_ms": 4307.865958,
+      "input_response_ms": 91.966625,
+      "exit_code": 0,
+      "process_total_ms": 4432.319833
+    },
+    {
+      "tool": "blackbird",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 106.375625,
+      "input_echo_ms": 107.457375,
+      "input_response_ms": 0.572666,
+      "exit_code": 0,
+      "process_total_ms": 110.405834
+    },
+    {
+      "tool": "codex",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 1311.622709,
+      "input_echo_ms": 1350.916167,
+      "input_response_ms": 39.146917,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4401.7375
+    },
+    {
+      "tool": "claude",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 307.213458,
+      "input_echo_ms": 337.152042,
+      "input_response_ms": 29.747167,
+      "exit_code": 0,
+      "process_total_ms": 348.023708
+    },
+    {
+      "tool": "hermes",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 6073.318958,
+      "input_echo_ms": 6130.350083,
+      "input_response_ms": 56.827125,
+      "exit_code": 0,
+      "process_total_ms": 6818.836542
+    },
+    {
+      "tool": "opencode",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 4230.661542,
+      "input_echo_ms": 4311.6815,
+      "input_response_ms": 80.217167,
+      "exit_code": 0,
+      "process_total_ms": 4485.018625
+    },
+    {
+      "tool": "blackbird",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 103.632166,
+      "input_echo_ms": 104.736041,
+      "input_response_ms": 0.62375,
+      "exit_code": 0,
+      "process_total_ms": 107.811875
+    },
+    {
+      "tool": "codex",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 4369.142083,
+      "input_echo_ms": 4411.182791,
+      "input_response_ms": 41.908375,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 7461.524
+    },
+    {
+      "tool": "claude",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 399.226333,
+      "input_echo_ms": 436.865833,
+      "input_response_ms": 37.412,
+      "exit_code": 0,
+      "process_total_ms": 451.78075
+    },
+    {
+      "tool": "hermes",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 4798.115042,
+      "input_echo_ms": 4843.75525,
+      "input_response_ms": 45.42975,
+      "exit_code": 0,
+      "process_total_ms": 5295.8825
+    },
+    {
+      "tool": "opencode",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 3929.694,
+      "input_echo_ms": 3994.675459,
+      "input_response_ms": 64.378667,
+      "exit_code": 0,
+      "process_total_ms": 4101.316334
+    },
+    {
+      "tool": "blackbird",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 109.661208,
+      "input_echo_ms": 110.791166,
+      "input_response_ms": 0.691,
+      "exit_code": 0,
+      "process_total_ms": 115.709458
+    },
+    {
+      "tool": "codex",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 1194.643541,
+      "input_echo_ms": 1270.227541,
+      "input_response_ms": 75.434958,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4283.664958
+    },
+    {
+      "tool": "claude",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 307.919459,
+      "input_echo_ms": 338.441584,
+      "input_response_ms": 30.31675,
+      "exit_code": 0,
+      "process_total_ms": 351.227875
+    },
+    {
+      "tool": "hermes",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 4904.602792,
+      "input_echo_ms": 4979.9035,
+      "input_response_ms": 75.072,
+      "exit_code": 0,
+      "process_total_ms": 5653.595375
+    },
+    {
+      "tool": "opencode",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 3474.648625,
+      "input_echo_ms": 3548.569375,
+      "input_response_ms": 73.024875,
+      "exit_code": 0,
+      "process_total_ms": 3679.690167
+    },
+    {
+      "tool": "blackbird",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 97.834916,
+      "input_echo_ms": 98.874041,
+      "input_response_ms": 0.586333,
+      "exit_code": 0,
+      "process_total_ms": 101.944708
+    },
+    {
+      "tool": "codex",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 1616.597666,
+      "input_echo_ms": 1659.862041,
+      "input_response_ms": 42.904875,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4715.780333
+    },
+    {
+      "tool": "claude",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 391.25725,
+      "input_echo_ms": 428.03775,
+      "input_response_ms": 36.528333,
+      "exit_code": 0,
+      "process_total_ms": 442.265209
+    },
+    {
+      "tool": "hermes",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 5590.877334,
+      "input_echo_ms": 5644.990292,
+      "input_response_ms": 53.904,
+      "exit_code": 0,
+      "process_total_ms": 6202.226709
+    },
+    {
+      "tool": "opencode",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 3773.109458,
+      "input_echo_ms": 3881.810583,
+      "input_response_ms": 107.485917,
+      "exit_code": 0,
+      "process_total_ms": 4050.736666
+    },
+    {
+      "tool": "blackbird",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 112.502208,
+      "input_echo_ms": 114.17925,
+      "input_response_ms": 1.052542,
+      "exit_code": 0,
+      "process_total_ms": 119.913916
+    },
+    {
+      "tool": "codex",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 1161.858792,
+      "input_echo_ms": 1241.017834,
+      "input_response_ms": 78.807125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4283.156334
+    },
+    {
+      "tool": "claude",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 313.442708,
+      "input_echo_ms": 346.957708,
+      "input_response_ms": 33.300791,
+      "exit_code": 0,
+      "process_total_ms": 359.305542
+    },
+    {
+      "tool": "hermes",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 4980.074083,
+      "input_echo_ms": 5048.75725,
+      "input_response_ms": 68.262125,
+      "exit_code": 0,
+      "process_total_ms": 5581.473042
+    },
+    {
+      "tool": "opencode",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 3794.49925,
+      "input_echo_ms": 3901.156916,
+      "input_response_ms": 105.701916,
+      "exit_code": 0,
+      "process_total_ms": 4030.4045
+    },
+    {
+      "tool": "blackbird",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 103.39825,
+      "input_echo_ms": 104.637,
+      "input_response_ms": 0.697333,
+      "exit_code": 0,
+      "process_total_ms": 108.772917
+    },
+    {
+      "tool": "codex",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 1598.467209,
+      "input_echo_ms": 1639.6305,
+      "input_response_ms": 41.003208,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4652.421834
+    },
+    {
+      "tool": "claude",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 303.832167,
+      "input_echo_ms": 334.264083,
+      "input_response_ms": 30.241916,
+      "exit_code": 0,
+      "process_total_ms": 345.432583
+    },
+    {
+      "tool": "hermes",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 6194.038584,
+      "input_echo_ms": 6227.730125,
+      "input_response_ms": 33.478875,
+      "exit_code": 0,
+      "process_total_ms": 6790.1585
+    },
+    {
+      "tool": "opencode",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 4869.050041,
+      "input_echo_ms": 4995.310375,
+      "input_response_ms": 124.676875,
+      "exit_code": 0,
+      "process_total_ms": 5112.265333
+    },
+    {
+      "tool": "blackbird",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 110.285041,
+      "input_echo_ms": 111.735791,
+      "input_response_ms": 0.901666,
+      "exit_code": 0,
+      "process_total_ms": 115.9955
+    },
+    {
+      "tool": "codex",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 1433.754042,
+      "input_echo_ms": 1475.422333,
+      "input_response_ms": 41.176083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4532.077333
+    },
+    {
+      "tool": "claude",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 655.069209,
+      "input_echo_ms": 734.663042,
+      "input_response_ms": 79.31775,
+      "exit_code": 0,
+      "process_total_ms": 776.790417
+    },
+    {
+      "tool": "hermes",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 5140.878708,
+      "input_echo_ms": 5185.843667,
+      "input_response_ms": 44.767375,
+      "exit_code": 0,
+      "process_total_ms": 5735.1695
+    },
+    {
+      "tool": "opencode",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 4034.135917,
+      "input_echo_ms": 4124.321209,
+      "input_response_ms": 89.372292,
+      "exit_code": 0,
+      "process_total_ms": 4267.859709
+    },
+    {
+      "tool": "blackbird",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 90.95475,
+      "input_echo_ms": 92.084834,
+      "input_response_ms": 0.587209,
+      "exit_code": 0,
+      "process_total_ms": 94.892625
+    },
+    {
+      "tool": "codex",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 1142.7135,
+      "input_echo_ms": 1172.200083,
+      "input_response_ms": 29.117667,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4183.215208
+    },
+    {
+      "tool": "claude",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 340.389417,
+      "input_echo_ms": 373.321917,
+      "input_response_ms": 32.711667,
+      "exit_code": 0,
+      "process_total_ms": 385.361917
+    },
+    {
+      "tool": "hermes",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 4936.172791,
+      "input_echo_ms": 4991.548833,
+      "input_response_ms": 54.983292,
+      "exit_code": 0,
+      "process_total_ms": 5598.226791
+    },
+    {
+      "tool": "opencode",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 3233.554916,
+      "input_echo_ms": 3314.760958,
+      "input_response_ms": 80.016708,
+      "exit_code": 0,
+      "process_total_ms": 3440.668166
+    },
+    {
+      "tool": "blackbird",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 94.811,
+      "input_echo_ms": 96.226083,
+      "input_response_ms": 0.765042,
+      "exit_code": 0,
+      "process_total_ms": 99.626041
+    },
+    {
+      "tool": "codex",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 1300.867583,
+      "input_echo_ms": 1354.983458,
+      "input_response_ms": 53.755125,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4365.596917
+    },
+    {
+      "tool": "claude",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 310.335458,
+      "input_echo_ms": 343.858333,
+      "input_response_ms": 33.297958,
+      "exit_code": 0,
+      "process_total_ms": 356.324167
+    },
+    {
+      "tool": "hermes",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 4959.032625,
+      "input_echo_ms": 5029.159,
+      "input_response_ms": 69.883666,
+      "exit_code": 0,
+      "process_total_ms": 5540.999459
+    },
+    {
+      "tool": "opencode",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 3399.773959,
+      "input_echo_ms": 3491.224709,
+      "input_response_ms": 90.775667,
+      "exit_code": 0,
+      "process_total_ms": 3597.547417
+    },
+    {
+      "tool": "blackbird",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 101.151709,
+      "input_echo_ms": 102.123459,
+      "input_response_ms": 0.528167,
+      "exit_code": 0,
+      "process_total_ms": 106.740084
+    },
+    {
+      "tool": "codex",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 1258.410709,
+      "input_echo_ms": 1320.638459,
+      "input_response_ms": 61.903,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4348.1345
+    },
+    {
+      "tool": "claude",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 316.549375,
+      "input_echo_ms": 349.660875,
+      "input_response_ms": 32.902917,
+      "exit_code": 0,
+      "process_total_ms": 361.377916
+    },
+    {
+      "tool": "hermes",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 5034.198959,
+      "input_echo_ms": 5102.894834,
+      "input_response_ms": 68.458209,
+      "exit_code": 0,
+      "process_total_ms": 5747.387542
+    },
+    {
+      "tool": "opencode",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 3820.201,
+      "input_echo_ms": 3896.905833,
+      "input_response_ms": 75.858208,
+      "exit_code": 0,
+      "process_total_ms": 4006.810125
+    },
+    {
+      "tool": "blackbird",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 98.408542,
+      "input_echo_ms": 99.772208,
+      "input_response_ms": 0.754916,
+      "exit_code": 0,
+      "process_total_ms": 103.286833
+    },
+    {
+      "tool": "codex",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 1291.24575,
+      "input_echo_ms": 1326.040167,
+      "input_response_ms": 34.424875,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4381.35075
+    },
+    {
+      "tool": "claude",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 372.458583,
+      "input_echo_ms": 409.219958,
+      "input_response_ms": 36.525916,
+      "exit_code": 0,
+      "process_total_ms": 423.372792
+    },
+    {
+      "tool": "hermes",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 5015.533375,
+      "input_echo_ms": 5061.280792,
+      "input_response_ms": 45.54975,
+      "exit_code": 0,
+      "process_total_ms": 5592.513458
+    },
+    {
+      "tool": "opencode",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 3341.814209,
+      "input_echo_ms": 3422.074167,
+      "input_response_ms": 79.545083,
+      "exit_code": 0,
+      "process_total_ms": 3549.643667
+    },
+    {
+      "tool": "blackbird",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 96.442375,
+      "input_echo_ms": 97.507959,
+      "input_response_ms": 0.640584,
+      "exit_code": 0,
+      "process_total_ms": 100.77925
+    },
+    {
+      "tool": "codex",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 1275.085083,
+      "input_echo_ms": 1326.814541,
+      "input_response_ms": 51.372208,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4348.336625
+    },
+    {
+      "tool": "claude",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 271.782334,
+      "input_echo_ms": 300.342334,
+      "input_response_ms": 28.353334,
+      "exit_code": 0,
+      "process_total_ms": 309.848917
+    },
+    {
+      "tool": "hermes",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 4603.18975,
+      "input_echo_ms": 4670.732917,
+      "input_response_ms": 67.308542,
+      "exit_code": 0,
+      "process_total_ms": 5304.716375
+    },
+    {
+      "tool": "opencode",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 3134.652375,
+      "input_echo_ms": 3199.318042,
+      "input_response_ms": 63.775792,
+      "exit_code": 0,
+      "process_total_ms": 3372.06075
+    },
+    {
+      "tool": "blackbird",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 112.916875,
+      "input_echo_ms": 115.241458,
+      "input_response_ms": 1.7755,
+      "exit_code": 0,
+      "process_total_ms": 121.396625
+    },
+    {
+      "tool": "codex",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 1390.088833,
+      "input_echo_ms": 1436.459,
+      "input_response_ms": 46.0355,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4445.772333
+    },
+    {
+      "tool": "claude",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 385.343042,
+      "input_echo_ms": 422.710042,
+      "input_response_ms": 37.116042,
+      "exit_code": 0,
+      "process_total_ms": 437.109125
+    },
+    {
+      "tool": "hermes",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 5166.222792,
+      "input_echo_ms": 5298.934167,
+      "input_response_ms": 132.239042,
+      "exit_code": 0,
+      "process_total_ms": 5952.445667
+    },
+    {
+      "tool": "opencode",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 4862.478625,
+      "input_echo_ms": 4946.7805,
+      "input_response_ms": 83.701,
+      "exit_code": 0,
+      "process_total_ms": 5084.109083
+    },
+    {
+      "tool": "blackbird",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 164.983,
+      "input_echo_ms": 167.397667,
+      "input_response_ms": 1.793,
+      "exit_code": 0,
+      "process_total_ms": 172.224375
+    },
+    {
+      "tool": "codex",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 2198.83225,
+      "input_echo_ms": 2270.922333,
+      "input_response_ms": 71.653833,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 5311.513583
+    },
+    {
+      "tool": "claude",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 311.694709,
+      "input_echo_ms": 344.159084,
+      "input_response_ms": 32.27725,
+      "exit_code": 0,
+      "process_total_ms": 356.960209
+    },
+    {
+      "tool": "hermes",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 5640.531916,
+      "input_echo_ms": 5707.235625,
+      "input_response_ms": 66.486959,
+      "exit_code": 0,
+      "process_total_ms": 6250.252916
+    },
+    {
+      "tool": "opencode",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 4335.474708,
+      "input_echo_ms": 4546.005458,
+      "input_response_ms": 209.224791,
+      "exit_code": 0,
+      "process_total_ms": 5022.218083
+    },
+    {
+      "tool": "blackbird",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 150.973333,
+      "input_echo_ms": 154.277,
+      "input_response_ms": 2.421125,
+      "exit_code": 0,
+      "process_total_ms": 164.009458
+    },
+    {
+      "tool": "codex",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 822.61525,
+      "input_echo_ms": 879.910125,
+      "input_response_ms": 56.52375,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 3895.424084
+    },
+    {
+      "tool": "claude",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 309.352708,
+      "input_echo_ms": 340.02475,
+      "input_response_ms": 30.482458,
+      "exit_code": 0,
+      "process_total_ms": 350.826333
+    },
+    {
+      "tool": "hermes",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 5512.027208,
+      "input_echo_ms": 5588.954458,
+      "input_response_ms": 76.699583,
+      "exit_code": 0,
+      "process_total_ms": 6354.289708
+    },
+    {
+      "tool": "opencode",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 3331.560834,
+      "input_echo_ms": 3423.01275,
+      "input_response_ms": 90.983375,
+      "exit_code": 0,
+      "process_total_ms": 3614.173792
+    },
+    {
+      "tool": "blackbird",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 104.136125,
+      "input_echo_ms": 105.150459,
+      "input_response_ms": 0.531,
+      "exit_code": 0,
+      "process_total_ms": 108.119167
+    },
+    {
+      "tool": "codex",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 1223.294292,
+      "input_echo_ms": 1277.772167,
+      "input_response_ms": 54.128083,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4340.692875
+    },
+    {
+      "tool": "claude",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 343.613459,
+      "input_echo_ms": 385.1125,
+      "input_response_ms": 40.798875,
+      "exit_code": 0,
+      "process_total_ms": 399.045292
+    },
+    {
+      "tool": "hermes",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 5219.305625,
+      "input_echo_ms": 5302.729458,
+      "input_response_ms": 83.062333,
+      "exit_code": 0,
+      "process_total_ms": 5957.854916
+    },
+    {
+      "tool": "opencode",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 3407.66625,
+      "input_echo_ms": 3498.95925,
+      "input_response_ms": 90.635459,
+      "exit_code": 0,
+      "process_total_ms": 3611.266083
+    },
+    {
+      "tool": "blackbird",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 96.618166,
+      "input_echo_ms": 98.004875,
+      "input_response_ms": 0.949375,
+      "exit_code": 0,
+      "process_total_ms": 101.323125
+    },
+    {
+      "tool": "codex",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 1120.053875,
+      "input_echo_ms": 1170.372167,
+      "input_response_ms": 49.966709,
+      "forced_shutdown": true,
+      "exit_code": -15,
+      "process_total_ms": 4186.747292
+    },
+    {
+      "tool": "claude",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 302.6085,
+      "input_echo_ms": 332.680584,
+      "input_response_ms": 29.871084,
+      "exit_code": 0,
+      "process_total_ms": 343.144459
+    },
+    {
+      "tool": "hermes",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 7367.579625,
+      "input_echo_ms": 7448.042209,
+      "input_response_ms": 79.798,
+      "exit_code": 0,
+      "process_total_ms": 8205.737875
+    },
+    {
+      "tool": "opencode",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 3456.316042,
+      "input_echo_ms": 3542.078375,
+      "input_response_ms": 82.257917,
+      "exit_code": 0,
+      "process_total_ms": 3660.165708
+    }
+  ],
+  "extra_completed_samples": [],
+  "interrupted_tail": [
+    {
+      "tool": "blackbird",
+      "trial": 101,
+      "status": "interrupted",
+      "reason": "Population limit reached; active private process cleaned up. No endpoint timings retained for this incomplete launch."
+    }
+  ],
+  "preliminary_observations": [
+    {
+      "run": "adapter-pilot",
+      "included_in_percentiles": false,
+      "samples": [
+        {
+          "tool": "blackbird",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 110.317,
+          "input_echo_ms": 110.893667,
+          "input_response_ms": 0.484625,
+          "exit_code": 0,
+          "process_total_ms": 113.268667
+        },
+        {
+          "tool": "codex",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 519.9975,
+          "input_echo_ms": 570.694167,
+          "input_response_ms": 50.557875,
+          "forced_shutdown": true,
+          "exit_code": -15,
+          "process_total_ms": 3617.506
+        },
+        {
+          "tool": "claude",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 605.505042,
+          "input_echo_ms": 692.071333,
+          "input_response_ms": 86.313208,
+          "exit_code": 0,
+          "process_total_ms": 727.269542
+        },
+        {
+          "tool": "hermes",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 4793.533541,
+          "input_echo_ms": 4883.234791,
+          "input_response_ms": 89.586583,
+          "exit_code": 0,
+          "process_total_ms": 5374.407625
+        },
+        {
+          "tool": "opencode",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 3869.857,
+          "input_echo_ms": 3963.89725,
+          "input_response_ms": 93.728042,
+          "exit_code": 0,
+          "process_total_ms": 4076.955208
+        }
+      ]
+    },
+    {
+      "run": "codex-quit-pilot",
+      "included_in_percentiles": false,
+      "samples": [
+        {
+          "tool": "codex",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 464.881792,
+          "input_echo_ms": 486.38575,
+          "input_response_ms": 21.3685,
+          "forced_shutdown": true,
+          "exit_code": -15,
+          "process_total_ms": 3523.959
+        }
+      ]
+    },
+    {
+      "run": "trial-300",
+      "included_in_percentiles": false,
+      "samples": [
+        {
+          "tool": "blackbird",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 95.433167,
+          "input_echo_ms": 96.723125,
+          "input_response_ms": 1.113042,
+          "exit_code": 0,
+          "process_total_ms": 99.75725
+        },
+        {
+          "tool": "codex",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 1635.769792,
+          "input_echo_ms": 1672.426917,
+          "input_response_ms": 36.462,
+          "forced_shutdown": true,
+          "exit_code": -15,
+          "process_total_ms": 4726.09125
+        },
+        {
+          "tool": "claude",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 307.32175,
+          "input_echo_ms": 337.911833,
+          "input_response_ms": 30.491291,
+          "exit_code": 0,
+          "process_total_ms": 349.17825
+        },
+        {
+          "tool": "hermes",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 5310.684167,
+          "input_echo_ms": 5413.853125,
+          "input_response_ms": 103.004625,
+          "exit_code": 0,
+          "process_total_ms": 6123.579458
+        },
+        {
+          "tool": "opencode",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 3602.860625,
+          "input_echo_ms": 3677.726708,
+          "input_response_ms": 74.543667,
+          "exit_code": 0,
+          "process_total_ms": 3804.653041
+        },
+        {
+          "tool": "blackbird",
+          "trial": 2,
+          "status": "ok",
+          "input_frame_ms": 101.667916,
+          "input_echo_ms": 102.323125,
+          "input_response_ms": 0.513542,
+          "exit_code": 0,
+          "process_total_ms": 104.937875
+        },
+        {
+          "tool": "codex",
+          "trial": 2,
+          "status": "ok",
+          "input_frame_ms": 2935.800083,
+          "input_echo_ms": 2969.207708,
+          "input_response_ms": 33.280666,
+          "forced_shutdown": true,
+          "exit_code": -15,
+          "process_total_ms": 6011.022542
+        },
+        {
+          "tool": "claude",
+          "trial": 2,
+          "status": "ok",
+          "input_frame_ms": 324.833,
+          "input_echo_ms": 362.190042,
+          "input_response_ms": 37.274708,
+          "exit_code": 0,
+          "process_total_ms": 376.337584
+        },
+        {
+          "tool": "hermes",
+          "trial": 2,
+          "status": "ok",
+          "input_frame_ms": 5779.404584,
+          "input_echo_ms": 5824.4755,
+          "input_response_ms": 44.971875,
+          "exit_code": 0,
+          "process_total_ms": 6351.387375
+        },
+        {
+          "tool": "opencode",
+          "trial": 2,
+          "status": "ok",
+          "input_frame_ms": 3823.92425,
+          "input_echo_ms": 3893.28625,
+          "input_response_ms": 68.857875,
+          "exit_code": 0,
+          "process_total_ms": 4020.552208
+        },
+        {
+          "tool": "blackbird",
+          "trial": 3,
+          "status": "ok",
+          "input_frame_ms": 94.435375,
+          "input_echo_ms": 95.2485,
+          "input_response_ms": 0.612083,
+          "exit_code": 0,
+          "process_total_ms": 98.0015
+        },
+        {
+          "tool": "codex",
+          "trial": 3,
+          "status": "failed",
+          "input_frame_ms": 1943.720166,
+          "error": "endpoint not reached before exit/deadline",
+          "exit_code": -15,
+          "process_total_ms": 30056.798833
+        },
+        {
+          "tool": "claude",
+          "trial": 3,
+          "status": "ok",
+          "input_frame_ms": 401.902875,
+          "input_echo_ms": 443.724916,
+          "input_response_ms": 41.716583,
+          "exit_code": 0,
+          "process_total_ms": 458.719
+        },
+        {
+          "tool": "hermes",
+          "trial": 3,
+          "status": "ok",
+          "input_frame_ms": 4772.325833,
+          "input_echo_ms": 4827.644625,
+          "input_response_ms": 55.216375,
+          "exit_code": 0,
+          "process_total_ms": 5332.02125
+        },
+        {
+          "tool": "opencode",
+          "trial": 3,
+          "status": "ok",
+          "input_frame_ms": 3936.314167,
+          "input_echo_ms": 4019.79525,
+          "input_response_ms": 83.000583,
+          "exit_code": 0,
+          "process_total_ms": 4146.068583
+        },
+        {
+          "tool": "blackbird",
+          "trial": 4,
+          "status": "ok",
+          "input_frame_ms": 104.11225,
+          "input_echo_ms": 105.507625,
+          "input_response_ms": 1.222042,
+          "exit_code": 0,
+          "process_total_ms": 108.094375
+        },
+        {
+          "tool": "codex",
+          "trial": 4,
+          "status": "failed",
+          "input_frame_ms": 1526.716708,
+          "error": "endpoint not reached before exit/deadline",
+          "exit_code": -15,
+          "process_total_ms": 30040.779583
+        },
+        {
+          "tool": "claude",
+          "trial": 4,
+          "status": "ok",
+          "input_frame_ms": 299.435375,
+          "input_echo_ms": 332.331542,
+          "input_response_ms": 32.804417,
+          "exit_code": 0,
+          "process_total_ms": 344.443167
+        },
+        {
+          "tool": "hermes",
+          "trial": 4,
+          "status": "ok",
+          "input_frame_ms": 5246.274375,
+          "input_echo_ms": 5311.431917,
+          "input_response_ms": 65.030459,
+          "exit_code": 0,
+          "process_total_ms": 5974.193458
+        },
+        {
+          "tool": "opencode",
+          "trial": 4,
+          "status": "ok",
+          "input_frame_ms": 3488.398792,
+          "input_echo_ms": 3598.269125,
+          "input_response_ms": 109.440125,
+          "exit_code": 0,
+          "process_total_ms": 3737.467417
+        },
+        {
+          "tool": "blackbird",
+          "trial": 5,
+          "status": "ok",
+          "input_frame_ms": 95.794708,
+          "input_echo_ms": 96.58275,
+          "input_response_ms": 0.63175,
+          "exit_code": 0,
+          "process_total_ms": 100.217208
+        },
+        {
+          "tool": "codex",
+          "trial": 5,
+          "status": "failed",
+          "input_frame_ms": 1454.092958,
+          "error": "endpoint not reached before exit/deadline",
+          "exit_code": -15,
+          "process_total_ms": 30060.139042
+        },
+        {
+          "tool": "claude",
+          "trial": 5,
+          "status": "ok",
+          "input_frame_ms": 444.492042,
+          "input_echo_ms": 529.505959,
+          "input_response_ms": 84.806542,
+          "exit_code": 0,
+          "process_total_ms": 582.762875
+        }
+      ]
+    },
+    {
+      "run": "screen-pilot",
+      "included_in_percentiles": false,
+      "samples": [
+        {
+          "tool": "blackbird",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 85.671083,
+          "input_echo_ms": 86.462833,
+          "input_response_ms": 0.382542,
+          "exit_code": 0,
+          "process_total_ms": 88.615833
+        },
+        {
+          "tool": "codex",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 1570.492166,
+          "input_echo_ms": 1610.979416,
+          "input_response_ms": 40.149708,
+          "forced_shutdown": true,
+          "exit_code": -15,
+          "process_total_ms": 4639.742791
+        },
+        {
+          "tool": "claude",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 386.895042,
+          "input_echo_ms": 430.856625,
+          "input_response_ms": 43.620666,
+          "exit_code": 0,
+          "process_total_ms": 446.601042
+        },
+        {
+          "tool": "hermes",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 4716.960584,
+          "input_echo_ms": 4776.666917,
+          "input_response_ms": 59.501958,
+          "exit_code": 0,
+          "process_total_ms": 5372.766459
+        },
+        {
+          "tool": "opencode",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 3507.855834,
+          "input_echo_ms": 3602.804209,
+          "input_response_ms": 93.676084,
+          "exit_code": 0,
+          "process_total_ms": 3730.498459
+        }
+      ]
+    }
+  ]
+}

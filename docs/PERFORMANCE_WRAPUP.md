@@ -32,3 +32,8 @@ batch before workflow execution. Consolidate that pair; preserve source referenc
 activation order, durable acknowledgement and source bytes. This removes a concrete
 redundant sync boundary without relaxing pre-effect recording. Direct program-source
 linkage/batch check plus affected coding and ordinary launcher check.
+
+Published-generation observations: [300-start rerun](../papers/2026-10-08-startup-300-wrapup.md)
+and [fresh startup comparison with Codex, Claude, Hermes and OpenCode](../papers/2026-10-08-agent-startup-comparison.md).
+The latter uses 100 fresh launches per tool and an unsubmitted input marker, rather
+than the Blackbird-only audited workflow query.
