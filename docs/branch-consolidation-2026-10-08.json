@@ -1,0 +1,302 @@
+{
+  "date": "2026-10-08",
+  "baseline": "44defd7da891b3134cc82cc20ccf476b4b5ca4dd",
+  "default_branch": "master",
+  "local_retirements": [
+    {
+      "branch": "assessment/2026-09-29",
+      "tip": "e20ee5dbd812ad9d93541b8beee648f85e037b20",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/cold-history-r2-2026-10-07",
+      "tip": "d32a764ea664ad1710a45e6de0bb0fa26b4a15d2",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/durable-recovery-2026-10-07",
+      "tip": "87f786fb982dae5a5035eb2146a9b0aac0beba2d",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/durable-state-r1-2026-10-07",
+      "tip": "dce1481fc05162432cb928f39cd14eb69ff0603a",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-a-1-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-a-1-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-a-2-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-a-2-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-b-1-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-b-1-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-b-2-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-b-2-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-c-1-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-c-1-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-d-1-baseline",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/economy-d-1-bounded-first",
+      "tip": "3fd4f33ddeee90d4894f2cd5f0929a8e6d9b19d6",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/giga-backstop",
+      "tip": "b052a4936f0ae1031499387552314ef962deb469",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/giga-colleagues",
+      "tip": "f23368914f46f9edd2db935fb499d669c690b009",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/giga-context-budget",
+      "tip": "8a0e959edb1d85515c4647305f7535a1bacf88c2",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/giga-workflow-repair",
+      "tip": "397187116858ccf2df3d0ea0bdd1eda5928e798a",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/history-headroom",
+      "tip": "72d7116086b543b99c8a5788b07b47d99ba9fe55",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/issuer-ranges-2026-10-07",
+      "tip": "02ff9acad35bf383958e5e51f7bfcfebf4de89c4",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/issuer-ranges-r2-2026-10-07",
+      "tip": "e0e0b980cb333eabe120bf1689040c528312c841",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/live-provider-retries",
+      "tip": "87e06e671eac51dbf9af983ee31527f198414592",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/local-performance-2026-10-07",
+      "tip": "94bc2d4184a03f54a7e277d9cc408bda0d40436c",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/native-beads-2026-10-07",
+      "tip": "47bb9be83b771f8bbc11b3e164b06584af4a9c65",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/native-jev-2026-10-07",
+      "tip": "ccc26087328d882c3e2dd0ced2af38063f6d183b",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/saved-state-delivery-2026-10-08",
+      "tip": "91da60e00b9ae54fc096ffc2ca256061b685d0d7",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/session-successor-seed",
+      "tip": "10a8de49c18c15839073c7e52048f2e8259f8f95",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/startup-demand-loading-2026-10-07",
+      "tip": "8e35f55a9a1db808b80576b3a4cda0846961edc4",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/startup-loading-r2-2026-10-07",
+      "tip": "35413f3f9eb1cecb70cf3c44a2aadd4008708f29",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/tui-chat-shell",
+      "tip": "76c401613bad81e510c23a118edd6891f220575f",
+      "disposition": "patch-equivalent to default history"
+    },
+    {
+      "branch": "candidate/useful-range-revision",
+      "tip": "d2b89d7e6c33e8656b241485712092621ebe2eba",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/useful-work-tools",
+      "tip": "7cbc088a0bae3c2971d3caaf0098c2f2cf845d4c",
+      "disposition": "write-confirmation guard and failure regression landed in abbd021"
+    },
+    {
+      "branch": "candidate/workflow-core-2026-10-07",
+      "tip": "c8498f01d7c5b4d908d8d385d4f7e0eb4306a2a5",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "candidate/workflow-foundations-2026-10-07",
+      "tip": "aa1d63add90d0620214a1aa8eb862b1284c1b36b",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "giga/g3-live-lua-tools",
+      "tip": "370a90fba80ff3eeb3ae9273dcfbbb5f27d4294f",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "giga/g4-modules-config",
+      "tip": "38fa47ccb417e77de357c0872f0bcb2b2fad1e37",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "giga/g7-station",
+      "tip": "5e58d51d1df87df92016d69f4d3f7e1af001bae5",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "giga/g8-packages-hud",
+      "tip": "d097f2e88c5dfa8d9f4955fdad09168c100136e9",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "giga/g9-security-decision",
+      "tip": "4419a4e235146ea18030d20e19ef032129c21ee7",
+      "disposition": "included in default history"
+    },
+    {
+      "branch": "reconstruction/cpp-lua-2026-10-06",
+      "tip": "650db43ea80b00f6b04eb85b512fd97f6529c91d",
+      "disposition": "included in default history"
+    }
+  ],
+  "remote_retirements": [
+    {
+      "branch": "candidate/cold-history-r2-2026-10-07",
+      "tip": "d32a764ea664ad1710a45e6de0bb0fa26b4a15d2"
+    },
+    {
+      "branch": "candidate/durable-recovery-2026-10-07",
+      "tip": "87f786fb982dae5a5035eb2146a9b0aac0beba2d"
+    },
+    {
+      "branch": "candidate/durable-state-r1-2026-10-07",
+      "tip": "dce1481fc05162432cb928f39cd14eb69ff0603a"
+    },
+    {
+      "branch": "candidate/giga-colleagues",
+      "tip": "f23368914f46f9edd2db935fb499d669c690b009"
+    },
+    {
+      "branch": "candidate/issuer-ranges-2026-10-07",
+      "tip": "02ff9acad35bf383958e5e51f7bfcfebf4de89c4"
+    },
+    {
+      "branch": "candidate/issuer-ranges-r2-2026-10-07",
+      "tip": "e0e0b980cb333eabe120bf1689040c528312c841"
+    },
+    {
+      "branch": "candidate/local-performance-2026-10-07",
+      "tip": "94bc2d4184a03f54a7e277d9cc408bda0d40436c"
+    },
+    {
+      "branch": "candidate/native-beads-2026-10-07",
+      "tip": "47bb9be83b771f8bbc11b3e164b06584af4a9c65"
+    },
+    {
+      "branch": "candidate/native-jev-2026-10-07",
+      "tip": "ccc26087328d882c3e2dd0ced2af38063f6d183b"
+    },
+    {
+      "branch": "candidate/saved-state-delivery-2026-10-08",
+      "tip": "91da60e00b9ae54fc096ffc2ca256061b685d0d7"
+    },
+    {
+      "branch": "candidate/startup-demand-loading-2026-10-07",
+      "tip": "8e35f55a9a1db808b80576b3a4cda0846961edc4"
+    },
+    {
+      "branch": "candidate/startup-loading-r2-2026-10-07",
+      "tip": "35413f3f9eb1cecb70cf3c44a2aadd4008708f29"
+    },
+    {
+      "branch": "candidate/workflow-core-2026-10-07",
+      "tip": "c8498f01d7c5b4d908d8d385d4f7e0eb4306a2a5"
+    }
+  ],
+  "parked_worktrees": [
+    {
+      "path": "/Users/patrickbeam/projects/arconaut/context/giga-parallel/pool/slot-0",
+      "tip": "f23368914f46f9edd2db935fb499d669c690b009",
+      "disposition": "detach in place; retain ignored build/evidence files"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/arconaut/context/useful-work/pilot-pool/slot-0",
+      "tip": "5e58d51d1df87df92016d69f4d3f7e1af001bae5",
+      "disposition": "detach in place; retain ignored build/evidence files"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0",
+      "tip": "91da60e00b9ae54fc096ffc2ca256061b685d0d7",
+      "disposition": "detach in place; retain ignored build/evidence files"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-1",
+      "tip": "ccc26087328d882c3e2dd0ced2af38063f6d183b",
+      "disposition": "detach in place; retain ignored build/evidence files"
+    },
+    {
+      "path": "/Users/patrickbeam/projects/blackbird/context/workflows-campaign/pool/slot-0",
+      "tip": "47bb9be83b771f8bbc11b3e164b06584af4a9c65",
+      "disposition": "detach in place; retain ignored build/evidence files"
+    }
+  ],
+  "duplicate_archive_tags": [
+    "archive/2026-10-07/tui-chat-shell",
+    "archive/2026-10-07/useful-work-tools"
+  ]
+}

@@ -1,4 +1,29 @@
-# Remote branch assessment and cleanup — 2026-10-07
+# Blackbird branch consolidation 2026 10 08
+
+Consolidation baseline: `44defd7`. The repository's default main line is `master`.
+All 42 other local heads have a disposition: 40 tips are ancestors of master;
+the slash-menu tip is patch-equivalent; the useful-work tip's write-confirmation
+guard and failed-write regression already landed in `abbd021` and remain present
+under the Blackbird namespace. None contains new product work to squash or merge.
+Existing public history is preserved.
+
+Retire all 42 redundant local heads and the 13 remaining remote candidate heads.
+The two nonancestor tips already have annotated `archive/2026-10-07/` tags.
+Five clean parked worktrees are detached at their historical tips in place,
+preserving their ignored build products and experimental captures. They are
+historical checkouts, not active branches or promised live workers. The operator's
+untracked artwork and current interactive Blackbird process remain untouched.
+
+[Exact branch tips and dispositions](branch-consolidation-2026-10-08.json) retain
+restoration information. Included heads can be recreated with `git branch NAME SHA`;
+the two duplicate-only heads can be recreated from their existing archive tags.
+Detached worktrees retain their recorded commits and paths. No new archive tags,
+source rollback, forced public-history rewrite or arbitrary branch re-merge.
+
+The record below is historical: its earlier missing-functionality and remaining-
+branch statements describe those dates, not the consolidated current state.
+
+## Historical remote assessment 2026 10 07
 
 Before cleanup, origin fetch/prune and GitHub heads list showed **32 branches**,
 excluding the symbolic origin/HEAD. Comparison baseline: master `ee8f1e38daabe89fcba33f5b07f7e6143b206a8b`.

@@ -5253,3 +5253,21 @@ Restrict that fixture exception to Darwin ENOTTY from scripts/blackbird; native
 runs still compare restored terminal settings. Rerun launcher: all session,
 restart, saved-state and exit checks pass. Existing operator sessions are not interrupted. Close bead, back up,
 checkpoint and push.
+
+## 2026-10-08 — branch consolidation and next campaign assessment
+
+Operator explicitly authorizes consolidation/squashing and main integration, then
+assessment against personal expectations and the field, followed by the next
+campaign proposal. Bead arconaut-1hp. Fetch/prune and inspect all43local/14remote
+heads and six worktrees. Forty other local tips are ancestors of master; two
+remaining tips are duplicate deliveries (one exact patch, one landed fence/test).
+All13remote candidate tips are ancestors. No new source to squash; retain existing
+public history and both existing duplicate archive tags. Record exact tips, retire
+redundant heads, detach five clean historical checkouts while retaining ignored
+captures/builds. Current operator process and untracked artwork remain untouched.
+
+Bound direct checks to branch ancestry/disposition, remote refs and preserved
+worktree/artifact state; run the existing useful-work guard oracle for the only
+non-patch-equivalent duplicate. Documentation corrections and dated primary-source
+comparison follow. No new provider/account calls, benchmarks, hardening campaign,
+subagents or product implementation. Proposed campaign remains for discussion.
