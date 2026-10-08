@@ -43,13 +43,28 @@ master. Branch refs and worktrees remain; no source history was rewritten.
 
 ## Remaining work
 
-The next performance delivery is [native current-state and suffix recovery](DURABLE_STATE_PLAN.md).
-The merged cold-history/index code supplies prerequisites; complete native
-current-state/suffix recovery is still unfinished. [Exact continuation](../papers/storage-performance-2026-10-07/RECOVERY-PROGRESS.md)
-records the unfinished dependency and next source edit. Physical recovery hints remain an opt-in API. No extra review or broad certification pass
-is required to use the completed capabilities above.
+Saved current-state/suffix recovery is delivered for the supported settled,
+single-segment population. The earlier recovery continuation notes describe
+historical incomplete work; current behavior and limits are in the
+[delivery report](../papers/2026-10-08-saved-state-delivery.md).
 
-Other backlog: stream-capture batching, repeated-input retention, scoped Linux
+Five subsequent performance commits deliver bounded provider-stream capture,
+two fewer retained request bodies, context append deltas and removal of historical
+index clones, bounded publication-scratch cleanup, and one fewer unchanged UI-state
+save on final-byte submission. Their six performance/reopen issues remain open or
+in progress: native invocation/admission duplication, remaining live/history copies,
+capture sync/CPU/latency and diagnostic lifetime, catalog/resident-tail bounds,
+launch-to-command latency and the supported reopen/fallback policy still need work.
+The broad coding test has a recorded unresolved `unsupported` failure; focused
+affected checks passed. No overall latency speedup is established by these slices.
+
+At the 2026-10-08 assessment, the rebuilt `build/release/blackbird` contains these
+five follow-ups, but ordinary interactive `scripts/blackbird` still selects the
+older published `blackbird-ui` measured in the 300-start report. Explicit executable
+selection overrides that choice. The interactive binary has not been republished
+by this assessment; source delivery and interactive activation remain distinct.
+
+Other backlog: scoped Linux
 checks, useful heterogeneous colleagues, richer terminal presentation, asynchronous
 participant orchestration, and multiplayer design. Giga and autonomous development
 remain stopped. No new campaign is launched by this stock report.

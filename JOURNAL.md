@@ -4876,3 +4876,38 @@ Root took over inactive0f50907 and implemented saved-boundary selection, compact
 ## 2026-10-08 — publish integrated recovery and measure300 actual starts
 
 Integrated91da60e into master4644d59, rebuilt native Release DEBUGOFF, atomically published blackbird-ui used by scripts/blackbird. Integrated forbidden-read oracle succeeded53.0916ms actual local request; no archived rejected body touched. Original immutable seeds preserved, private one-time converted seeds measured.300/300 real launcher starts exit0. Frame p90 fresh96.087ms/heavy79.017ms/weird77.978ms; audited Lua query p90 136.107/118.624/119.742ms. No outliers discarded, no provider calls in launcher series, no cold/idle claim. Detailed source/binary/endpoint/seed limits and raw samples saved in papers/2026-10-08-startup-300.md and docs/measurements. Retain broader under100ms readiness issue; archive recovery delivery is complete. Candidate checkpointed, board accepted; no active implementation owner remains.
+
+## 2026-10-08 — performance wrap-up present-state assessment
+
+Operator requested orientation and assessment. Read workspace/project doctrine,
+README, journal, current stock, performance campaign/armada, bounded hardening,
+saved-state delivery and the five subsequent delivery reports; inspected actual
+source, Beads, launcher, Release configuration, binary identities and remote tip.
+No production edits, binary publication, provider calls or new campaign. No active
+native Blackbird/autodev process observed; board and Beads service remain separate.
+
+Saved-state recovery is integrated and published for supported settled single-segment
+sessions. Historical 300-start results: first-frame p90 96.087/79.017/77.978ms;
+audited command p90 136.107/118.624/119.742ms. Under100ms command readiness remains
+unmet; outliers/cache/one-time conversion qualifications remain material.
+Five source follow-ups through0d009e4 deliver capture blocks, request linkage,
+append deltas/index-clone removal, scratch cleanup and one avoided UI fsync.
+Six corresponding issues remain open/in progress with substantive unfinished scope.
+These are byte/write improvements, not demonstrated aggregate latency speedups.
+
+At inspection master was five commits ahead of remote dfd1090. Release/OFF
+blackbird SHA25617db02d5720d5f5321604401b84139dbf5c114dafda4c2fb0527bd8c3e674b30;
+ordinary interactive launcher selects blackbird-ui SHA2560976a6b3a091627cd2bd6f58771940a46d8fa35e9752bcc8c41d0cb2861cae22,
+the earlier integrated recovery generation. Interactive follow-ups are therefore
+not activated. Untracked operator art archive/directory left intact.
+
+Source confirms retained_output_test still calls committed_facts() after reopen,
+and that API throws unsupported with compact archived facts; this is a concrete
+candidate explanation for its recorded failure, not a reproduced diagnosis.
+No settled checks reopened or third assurance pass run. Source also confirms
+remaining live entries copy, eager pinned-history tail copy and retained-state
+candidate metadata copy. Corrected CURRENT_STATE's contradictory unfinished-recovery
+paragraph and recorded activation/backlog limits. Prioritize the unresolved coding
+failure and explicit interactive activation, then measured command phases and
+steady-state/maintenance costs. Back up Beads and checkpoint/push this assessment
+with the existing source follow-ups under the repository's standing authorization.
