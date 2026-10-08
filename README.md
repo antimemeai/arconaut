@@ -241,9 +241,9 @@ The [pilot report](papers/2026-10-06-useful-work-pilot.md) retains measured outc
 
 ## Beyond one seat
 
-Blackbird is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The current production connection is OpenAI; independent colleagues have been invoked through development tooling. An integrated provider fleet has not shipped.
+Blackbird is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The main coding connection is OpenAI. The separate native `blackbird-colleague` library/CLI supports bounded selected-context OpenAI/Claude calls; useful live heterogeneous collaboration and a shared model/Lua/operator participant surface remain unfinished. An integrated provider fleet has not shipped.
 
-Two operating styles are also on the road ahead. **Campaign mode** is the operator in the seat, steering sustained work. **Station mode** is an agent listening for an explicit feed or trigger and acting in the background. Today we run autonomous campaigns with Lua and external supervision. A general native station/trigger service remains future work.
+Two operating styles are also on the road ahead. **Campaign mode** is the operator in the seat, steering sustained work. **Station mode** is an agent listening for an explicit feed or trigger and acting in the background. Campaigns have run with Lua and external supervision. An opt-in native local-file station is delivered, with retained event admission/deduplication and boundary inspect/steer/pause/resume/stop controls. General trigger connectors, live TUI attachment and asynchronous participants remain future work.
 
 Common integrations should arrive as optional packages: GitHub, Linear, Slack, Discord, Hugging Face, and others according to actual need. A minimal installation should stay small. The proposed HUD is a thematic feed relevant to a project set: security advisories, research papers, financial events, or other selected sources. Receiving an event, displaying it, including it in context, and acting on it are separate operations.
 
@@ -279,6 +279,8 @@ Literature and reference implementations are first-class working material. The r
 | `context/`, `quarantine/`, `build/` | Ignored working evidence, acquired references, and build products. |
 
 For the conceptual route, read [Foundation](docs/FOUNDATION.md), then the [core design](docs/CORE_DESIGN.md). For the implementation route, start with [Using Blackbird](docs/USING_BLACKBIRD.md), the [implementation plan](docs/IMPLEMENTATION_PLAN.md), and the [autodevelopment queue](docs/AUTODEV_QUEUE.md). For the empirical route, read the [agent survey](papers/capabilities/README.md), [harness-evolution synthesis](papers/frumentarii-2026-10-06/SYNTHESIS.md), and the campaign reports linked above. Older plans and journal entries describe their time; current source and later explicit operator decisions resolve their status.
+
+The [current assessment](papers/2026-10-08-consolidation-and-field-assessment.md) and [proposed next campaign](docs/NEXT_CAMPAIGN.md) describe the consolidated state and priorities.
 
 Issues use the repository's beads database. Supported backups live under `.beads/backup/`. Raw session audits, provider history, working captures, acquired references, PDFs, and build products stay out of source publication.
 

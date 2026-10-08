@@ -383,3 +383,15 @@
 {"actor":"antimemeai","comment":null,"created_at":"2026-10-08T13:49:26Z","event_type":"closed","id":383,"issue_id":"arconaut-956","new_value":"Clean foreground selection implemented; actual PTY arrow/style checks pass in debug and release; tested UI binary published.","old_value":""}
 {"actor":"antimemeai","comment":null,"created_at":"2026-10-08T13:55:37Z","event_type":"created","id":384,"issue_id":"arconaut-sz3","new_value":"","old_value":""}
 {"actor":"antimemeai","comment":null,"created_at":"2026-10-08T14:03:14Z","event_type":"closed","id":385,"issue_id":"arconaut-sz3","new_value":"/new implemented with separate saved state, settings inheritance and safe lifecycle switching; native and launcher PTY, plain mode and scoped Linux checks pass; release UI installed.","old_value":""}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:36:16Z","event_type":"created","id":386,"issue_id":"arconaut-1hp","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:43Z","event_type":"created","id":387,"issue_id":"arconaut-3sm","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":"Added label: proposal","created_at":"2026-10-08T18:41:43Z","event_type":"label_added","id":388,"issue_id":"arconaut-3sm","new_value":null,"old_value":null}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:43Z","event_type":"created","id":389,"issue_id":"arconaut-3sm.1","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":"Added label: proposal","created_at":"2026-10-08T18:41:43Z","event_type":"label_added","id":390,"issue_id":"arconaut-3sm.1","new_value":null,"old_value":null}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:43Z","event_type":"created","id":391,"issue_id":"arconaut-3sm.2","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":"Added label: proposal","created_at":"2026-10-08T18:41:43Z","event_type":"label_added","id":392,"issue_id":"arconaut-3sm.2","new_value":null,"old_value":null}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:43Z","event_type":"created","id":393,"issue_id":"arconaut-3sm.3","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":"Added label: proposal","created_at":"2026-10-08T18:41:43Z","event_type":"label_added","id":394,"issue_id":"arconaut-3sm.3","new_value":null,"old_value":null}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:43Z","event_type":"created","id":395,"issue_id":"arconaut-3sm.4","new_value":"","old_value":""}
+{"actor":"antimemeai","comment":"Added label: proposal","created_at":"2026-10-08T18:41:43Z","event_type":"label_added","id":396,"issue_id":"arconaut-3sm.4","new_value":null,"old_value":null}
+{"actor":"antimemeai","comment":null,"created_at":"2026-10-08T18:41:44Z","event_type":"closed","id":397,"issue_id":"arconaut-1hp","new_value":"Consolidation published: only master remains locally/on origin; exact duplicate/included tips recorded, five detached evidence checkouts preserved. Dated source-grounded assessment and discussion campaign saved; no new implementation launched.","old_value":""}

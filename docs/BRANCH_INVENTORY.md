@@ -7,7 +7,8 @@ guard and failed-write regression already landed in `abbd021` and remain present
 under the Blackbird namespace. None contains new product work to squash or merge.
 Existing public history is preserved.
 
-Retire all 42 redundant local heads and the 13 remaining remote candidate heads.
+Retired all 42 redundant local heads and the 13 remaining remote candidate heads
+in the consolidation published as `55cd85d`; origin now has only `master`.
 The two nonancestor tips already have annotated `archive/2026-10-07/` tags.
 Five clean parked worktrees are detached at their historical tips in place,
 preserving their ignored build products and experimental captures. They are

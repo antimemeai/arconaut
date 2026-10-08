@@ -5271,3 +5271,32 @@ worktree/artifact state; run the existing useful-work guard oracle for the only
 non-patch-equivalent duplicate. Documentation corrections and dated primary-source
 comparison follow. No new provider/account calls, benchmarks, hardening campaign,
 subagents or product implementation. Proposed campaign remains for discussion.
+
+Consolidation55cd85d published atomically with deletion of13remote candidate
+heads. Local42redundant heads retired; five clean checkouts detached in place.
+Verify origin/master-only and exact historical tips/captures remain. Existing
+useful-work regression passes, including failed-write dispatch refusal. Product
+source/binary unchanged. Legacy-local remote-tracking master stays historical.
+
+Evaluate against current FOUNDATION and delivered source, task/session notes,
+scoped recovery and actual startup artifacts. Read dated primary documentation
+for Codex, Claude teams/hooks, Pi extensions/sessions/providers, OpenCode, current
+Kimi Code (legacy CLI archived), Hermes and Temporal semantics. No coding-quality
+ranking inferred from startup tests or vendor claims. Read Rhizome's moved rigor
+notes under projects_old/inactive-2026-10-07 read-only: retain ownership discipline
+and fault-specific checks, not tool-stack adoption or another verification campaign.
+
+Save assessment in papers and discussion proposal in docs/NEXT_CAMPAIGN.md.
+Recommend everyday continuity, common colleague invocation, bounded concurrent
+participants with observation/steering, then useful sustained self-development.
+Correct stale README/current-state descriptions of shipped station/colleague/task
+surfaces, current workflow staging and benchmark population. Existing Giga stays
+paused; no new autonomous implementation or provider/account probes.
+
+Proposed campaign tracked as arconaut-3sm with four proposal-labelled orders;
+none started. Close consolidation bead and preserve supported Beads backup.
+Default-head and detached-tip checks pass; all five historical checkouts remain
+clean with their ignored directories intact. Product source matches44defd7
+exactly; no build/runtime redeployment is necessary for this documentation/ref
+unit. Repository report links and whitespace checks pass. Publish assessment,
+current-state corrections, campaign proposal and issue backup on master.

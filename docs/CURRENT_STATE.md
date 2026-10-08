@@ -1,28 +1,34 @@
-# Current Blackbird stock — 2026-10-08
+# Current Blackbird stock 2026 10 08
 
-The operator explicitly directed merging all remaining source. All12 candidate
-branch tips are now included in master, including cold history, physical recovery
-hints, the recovery index and OpenAI/Claude colleague code. Native Release binaries
-are locally published; DEBUG/profiling OFF. Twenty-one affected checks passed
-(20 initially, corrected checkpoint boundary test on direct recheck). Actual
-launcher/Lua smoke passed. No autodev or new review campaign was started.
+The default main line is `master`. Consolidation `55cd85d` leaves it as the only
+local branch and only branch on origin. All former candidate work is included or
+already delivered separately; five clean historical worktrees are detached with
+captures/build products preserved. [Exact dispositions](BRANCH_INVENTORY.md).
+
+Delivered product source includes tasks/subtasks, slash-menu styling and `/new`
+through `44defd7`. The installed Release/OFF interactive generation contains those
+changes. Consolidation changes refs/documentation, not the executable or running
+operator sessions. [Assessment](../papers/2026-10-08-consolidation-and-field-assessment.md)
+and [proposed next campaign](NEXT_CAMPAIGN.md) are discussion input; no autonomous
+campaign is launched.
 
 ## What is on master
 
 | Area | Current behavior | Material limit |
 | --- | --- | --- |
-| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
+| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new` creates a fresh saved session with inherited settings; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
 | Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Read selector now has one lines/bytes mode; malformed calls return correction guidance. Historical Lua ranges stay compatible. |
 | Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
-| Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Workflow-selector staging and atomic interrupt/apply remain deferred. |
+| Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Callable registry/configuration staging is delivered; combined atomic interrupt/apply and live native reload remain deferred. |
 | Orchestration | Lua sequence, branch, explicit safe retry and selected join. | Synchronous composition; no native parallel participant scheduler or general cancellation/messaging. |
 | Station | Durable-before-dispatch local source admission, duplicates, boundary inspect/steer/pause/resume/stop. | Local-file source; unknown effects remain unknown; no live TUI attachment or crash-containment claim. |
 | Integrations/HUD | Opt-in trusted Lua packages; public GitHub releases and thematic text feed used in real work. | Feed display/context/action are separate; no broad integration catalog or graphical HUD. |
 | Multiplexing | Supported external phux launcher, actual TUI turn, detach/reattach and RRC checked. | Shell run probe timed out; native lifecycle projection is backlog. Relay TLS does not establish application E2EE. |
 | Decision models | Native Jev model tool, Lua `blackbird.decide`, `/decision JSON`; batched Choice/Score/Noul, lazy credentials, audited requests/results. | Jev only; workflows compose judgments and explicit retries. |
 | Callable workflows | Retained Lua definitions, configurable slash prefix/aliases and bare invocation, operator POWERWORDS and terminal colors; model/Lua discovery/invocation. | Sequential same-turn execution; no parallel or durable scheduler. |
-| Local efficiency | Saved current-state and suffix recovery for settled single-segment sessions; paged checked archive queries and original repair; checkpoint renewal prunes resident history. Heavy TUI startup p90 79ms in100runs. | Unresolved/station/pending-restart/multisegment states fall back to full recovery; bulk metadata renewal and audited command latency remain work. See [delivery](../papers/2026-10-08-saved-state-delivery.md) and [measurements](../papers/2026-10-08-startup-300.md). |
+| Local efficiency | Saved current-state and suffix recovery for settled single-segment sessions; paged checked archive queries and original repair; checkpoint renewal prunes resident history. Earlier wrap-up heavy TUI first-frame p90 93.355ms in100runs; not a new task-pane-generation measurement. | Unresolved/station/pending-restart/multisegment states fall back to full recovery; catalog disk renewal still follows total key count. See [delivery](../papers/2026-10-08-saved-state-delivery.md) and [measurements](../papers/2026-10-08-startup-300-wrapup.md). |
 | Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. | One synchronous context-only call; broader provider coverage and useful live collaboration remain unfinished. |
+| Tasks | Durable session tasks/subtasks, typed model/Lua read/edit, below-sprite right pane, blockers/counts/version guards and explicit runtime bindings. | One owner/session; no cross-session synchronization, dependency scheduler or subsubtasks. See [tasks](TASKS.md). |
 | Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link; BLACKBIRD wordmark and supplied SR-71 startup/status image. | Ghostty/Kitty image support; terminal fallback. |
 
 ## Remaining design and delivery
@@ -38,8 +44,8 @@ membership, enrollment/revocation, artifact/job authority and reconnect semantic
 need design together. Frumentarii delivered primary literature/refimpl studies; read the
 [source-grounded synthesis](../papers/networking-2026-10-07/SYNTHESIS.md). No networking dependency adopted.
 
-[Branch inventory](BRANCH_INVENTORY.md) records all12 candidate tips included in
-master. Branch refs and worktrees remain; no source history was rewritten.
+[Branch inventory](BRANCH_INVENTORY.md) records the retired local/remote heads
+and preserved detached historical checkouts. Published source history is unchanged.
 
 ## Remaining work
 
@@ -68,7 +74,8 @@ measurement was excluded by the operator. Catalog disk renewal still follows tot
 key count; arbitrary historical compatibility and linked-session reopening are not
 implemented by this launcher.
 
-Other backlog: scoped Linux
-checks, useful heterogeneous colleagues, richer terminal presentation, asynchronous
-participant orchestration, and multiplayer design. Giga and autonomous development
+Selected affected Mac/Linux checks cover delivered task/session/native units;
+they are not a fresh whole-system qualification. Other backlog: useful
+heterogeneous colleagues, session picking, tiny-window correctness, asynchronous
+participant orchestration, complaint follow-through and multiplayer design. Giga and autonomous development
 remain stopped. No new campaign is launched by this stock report.
