@@ -962,13 +962,14 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     }
     status(description);
   }
+  LocalSpan admission{"command.admission", "src/coding.cpp:operation"};
   auto &root = log_.root();
   const auto decision = unwrap(root.issue<DecisionId>());
   const auto invocation = unwrap(root.issue<InvocationId>());
   const auto attempt = unwrap(root.issue<OperationAttemptId>());
   const auto serialized = unwrap(dump_json(input));
   const auto raw = std::as_bytes(std::span{serialized.data(), serialized.size()});
-  const std::vector<std::byte> bytes{raw.begin(), raw.end()};
+  const ImmutableBytes bytes{raw.begin(), raw.end()};
   const auto context = parse_id<ContextRevisionId>(context_.head());
   const auto meta =
       Json::object({{"operation", Json{std::string{name}}},
@@ -992,8 +993,12 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                         {invocation},
                         {continuation_bytes.begin(), continuation_bytes.end()}}},
       RetainedEvent{{}, InvocationEvent{invocation, decision, generation_, bytes}},
-      RetainedEvent{{}, AttemptAdmissionEvent{attempt, invocation, decision, bytes}}};
+      RetainedEvent{{},
+                    AttemptAdmissionEvent{attempt, invocation, decision, bytes, true}}};
   (void)unwrap(root.append(root.cursor(), {}, admitted));
+  admission.linkage(context_.head(), hex_identity(attempt.bytes()));
+  admission.outcome("admitted");
+  admission.finish();
   struct Boundary final : EffectBoundary {
     const std::function<Json(OperationAttemptId)> &fn;
     Json result;
@@ -1766,6 +1771,14 @@ Json CodingEngine::call(std::string name, Json arguments) {
 Json CodingEngine::stats() const {
   auto result = context_.stats();
   const auto journal = log_.root().journal_usage();
+  const auto maintenance_error = log_.root().maintenance_error();
+  result.object().emplace_back(
+      "maintenance_error", maintenance_error
+                               ? Json{std::string{error_name(maintenance_error->code)}}
+                               : Json{});
+  result.object().emplace_back(
+      "resident_tail_records",
+      Json{JsonNumber{std::to_string(log_.root().tail_facts().size())}});
   auto number = [](std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; };
   result.object().emplace_back(
       "audit",
@@ -1916,12 +1929,7 @@ void CodingEngine::turn(TurnInput input) {
   context_.begin_workflow();
   try {
     generation_ = unwrap(log_.root().issue<DefinitionGenerationId>());
-    log_.original(
-        {"program.source", workflow,
-         Json::object({{"generation", Json{hex_identity(generation_.bytes())}}})});
-    log_.record(ApplicationChannel::program,
-                Json::object({{"generation", Json{hex_identity(generation_.bytes())}},
-                              {"activation", Json{"turn-boundary"}}}));
+    log_.retain_program(workflow, generation_);
     if (!prompt.empty())
       context_.append({Json::object({{"role", Json{"user"}},
                                      {"content", Json{std::string{prompt}}}})},

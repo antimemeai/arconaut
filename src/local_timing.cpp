@@ -23,6 +23,7 @@ LocalTick local_tick(bool cpu) noexcept {
   return {ns(wall), ns(thread), valid};
 }
 void LocalTimingSink::push(const LocalMetric &m) noexcept {
+  const std::lock_guard lock{mutex_};
   if (size_ == capacity) {
     ++dropped_;
     return;
@@ -80,10 +81,12 @@ bool LocalTimingSink::persist(std::string_view path) noexcept {
       const int n = std::snprintf(
           line, sizeof line,
           "{\"type\":\"span\",\"action\":\"%s\",\"source\":\"%s\",\"outcome\":\"%s\","
-          "\"wall_ns\":%llu,\"thread_cpu_ns\":%s,\"clock_valid\":%s,\"history_"
+          "\"start_wall_ns\":%llu,\"wall_ns\":%llu,\"thread_cpu_ns\":%s,\"clock_"
+          "valid\":%s,\"history_"
           "records\":%llu,\"observed_bytes\":%llu,\"sequence\":%llu,\"revision\":\"%"
           "s\",\"attempt\":\"%s\",\"linkage_truncated\":%s}\n",
           action.c_str(), source.c_str(), outcome.c_str(),
+          static_cast<unsigned long long>(m.start_wall_ns),
           static_cast<unsigned long long>(m.wall_ns),
           m.cpu_measured ? std::to_string(m.cpu_ns).c_str() : "null",
           m.clock_valid ? "true" : "false", static_cast<unsigned long long>(m.history),
@@ -118,6 +121,7 @@ LocalSpan::LocalSpan(const char *action, const char *source, bool cpu) noexcept
   metric_.source = source;
   metric_.cpu_measured = cpu;
   start_ = sink_->clock()(cpu);
+  metric_.start_wall_ns = start_.wall;
 }
 // Labels/gauges follow a fixed documented order; distinct wrappers add no safety here.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

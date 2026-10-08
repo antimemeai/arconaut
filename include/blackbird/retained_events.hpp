@@ -131,6 +131,8 @@ struct AttemptAdmissionEvent {
   InvocationId invocation;
   DecisionId decision;
   ImmutableBytes input;
+  // Schema 2 omits input bytes; RetainedState resolves this invocation reference.
+  bool input_from_invocation = false;
   bool operator==(const AttemptAdmissionEvent &) const = default;
 };
 struct AttemptOpenEvent {

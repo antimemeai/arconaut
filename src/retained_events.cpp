@@ -205,7 +205,8 @@ void encode_body(Encoder &encoder, const AttemptAdmissionEvent &body) {
   encoder.identity(body.attempt);
   encoder.identity(body.invocation);
   encoder.identity(body.decision);
-  encoder.blob(body.input);
+  if (!body.input_from_invocation)
+    encoder.blob(body.input);
 }
 void encode_body(Encoder &encoder, const AttemptOpenEvent &body) {
   encoder.identity(body.attempt);
@@ -388,7 +389,8 @@ Result<std::vector<std::byte>> encode_retained_event(const RetainedEvent &event,
   }
   try {
     Encoder encoder{max_payload};
-    encoder.number<2>(1);
+    const auto *admission = std::get_if<AttemptAdmissionEvent>(&event.body);
+    encoder.number<2>(admission && admission->input_from_invocation ? 2 : 1);
     encoder.number<2>(static_cast<std::uint16_t>(retained_kind(event.body)));
     encoder.count(event.dependencies.size());
     for (const auto &reference : event.dependencies) {
@@ -416,7 +418,7 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
     if (decoder.failed() || count > decoder.remaining() / 24) {
       return Result<RetainedEvent>::failure({ErrorCode::corrupt});
     }
-    if (schema != 1) {
+    if (schema != 1 && !(schema == 2 && kind == 4)) {
       return Result<RetainedEvent>::failure({ErrorCode::unsupported});
     }
     std::vector<SourceReference> dependencies;
@@ -478,13 +480,13 @@ Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_pa
       auto attempt = decoder.identity<OperationAttemptId>();
       auto invocation = decoder.identity<InvocationId>();
       auto decision = decoder.identity<DecisionId>();
-      auto input = decoder.blob();
+      auto input = schema == 2 ? std::vector<std::byte>{} : decoder.blob();
       if (!attempt.has_value() || !invocation.has_value() || !decision.has_value()) {
         return Result<RetainedEvent>::failure({ErrorCode::corrupt});
       }
       return completed(AttemptAdmissionEvent{
           std::move(attempt).value(), std::move(invocation).value(),
-          std::move(decision).value(), std::move(input)});
+          std::move(decision).value(), std::move(input), schema == 2});
     }
     case 5: {
       auto attempt = decoder.identity<OperationAttemptId>();

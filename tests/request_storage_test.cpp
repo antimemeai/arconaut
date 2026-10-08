@@ -45,7 +45,8 @@ int main() {
       auto root = unwrap(RetainedState::open(std::make_unique<NativeJournalDirectory>(
         unwrap(NativeJournalDirectory::open(path))), "audit", header, capacity));
       unwrap(root->confirm_recovery()); recover_coding_session(*root);
-      std::size_t requests = 0, decisions = 0, input_size = 0, metadata_size = 0;
+      std::size_t requests = 0, decisions = 0, input_size = 0, metadata_size = 0,
+                  admission_wire = 0;
       std::optional<OperationAttemptId> provider_attempt;
       for (std::size_t i = 0; i < root->fact_count(); ++i) {
         const auto fact = unwrap(root->fact(i));
@@ -75,11 +76,35 @@ int main() {
           const auto meta = unwrap(parse_json(read_text(decision.continuation)));
           if (string_field(meta, "operation") == "provider") {
             provider_attempt = admission->attempt;
+            check(admission->input_from_invocation);
+            admission_wire +=
+                unwrap(encode_retained_event(fact.event, header.limits.max_payload))
+                    .size();
             check(admission->input == unwrap(root->invocation(admission->invocation)).input);
           }
         }
       }
-      check(provider_attempt && requests == 1 && decisions == 1 && input_size > 262144 && metadata_size < 1024);
+      check(provider_attempt && requests == 1 && decisions == 1 &&
+            input_size > 262144 && metadata_size < 1024 && admission_wire == 56);
+      const auto raw = unwrap(root->read_original_range(
+          0, static_cast<std::size_t>(root->cursor().end_offset)));
+      std::size_t offset = journal_header_size, persisted_admissions = 0;
+      while (offset < raw.bytes.size()) {
+        const auto frame = unwrap(
+            decode_journal_frame(ByteView{raw.bytes}.subspan(offset), header.limits));
+        if (frame.kind == FrameKind::semantic) {
+          const auto event =
+              unwrap(decode_retained_event(frame.payload, header.limits.max_payload));
+          if (const auto *admitted = std::get_if<AttemptAdmissionEvent>(&event.body);
+              admitted && admitted->attempt == *provider_attempt) {
+            check(admitted->input_from_invocation && admitted->input.empty());
+            check(frame.payload.size() == 56);
+            ++persisted_admissions;
+          }
+        }
+        offset += frame.encoded_size;
+      }
+      check(offset == raw.bytes.size() && persisted_admissions == 1);
       const auto attempt = unwrap(root->attempt(*provider_attempt));
       check(attempt.observation && !attempt.reconciliation_required);
       check(attempt.observation->disposition == (abrupt ? AttemptDisposition::unknown : AttemptDisposition::success));
@@ -89,7 +114,8 @@ int main() {
       } no_replay;
       check(!unwrap(root->dispatch(*provider_attempt, no_replay)).dispatched && no_replay.calls == 0);
       std::cout << (abrupt ? "abrupt" : "completed") << ": input=" << input_size
-        << " decision_metadata=" << metadata_size << " request_capture_body=0; two native input copies remain\n";
+                << " decision_metadata=" << metadata_size
+                << " admission_wire=" << admission_wire << " request_capture_body=0\n";
     }
     std::filesystem::remove_all(base);
   } catch (const Error &e) {

@@ -22,6 +22,15 @@ int main() {
     {
       auto root = unwrap(RetainedState::create(directory(), "audit", h, cap));
       AuditLog log{*root}; ContextStore ctx{log};
+      log.retain_program("return 42", id<DefinitionGenerationId>(9));
+      const auto captured_program = unwrap(root->fact(root->fact_count() - 2));
+      const auto activated_program = unwrap(root->fact(root->fact_count() - 1));
+      CHECK(captured_program.event.dependencies.size() == 1);
+      CHECK(activated_program.record.sequence == captured_program.record.sequence + 1);
+      CHECK((captured_program.event.dependencies ==
+             std::vector<SourceReference>{
+                 {captured_program.record.journal, captured_program.record.sequence - 1}}));
+      CHECK(unwrap(root->source(captured_program.event.dependencies[0])).size() == 9);
       ctx.append({Json::object({{"role", Json{"user"}}, {"content", Json{std::string(65536, 'a')}}})}, "anchor");
       const auto anchor = field(ctx.view(), "entries");
       std::size_t packet_bytes = 0;

@@ -9,12 +9,25 @@
 #include <set>
 
 #include <algorithm>
+#include <chrono>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace blackbird {
 namespace {
+template <typename Resolve>
+void resolve_admission_input(RetainedEvent &event, Resolve resolve) {
+  auto *admission = std::get_if<AttemptAdmissionEvent>(&event.body);
+  if (!admission || !admission->input_from_invocation)
+    return;
+  auto invocation = resolve(admission->invocation);
+  if (!invocation || invocation->invocation != admission->invocation)
+    throw Error{ErrorCode::corrupt};
+  if (!admission->input.empty() && admission->input != invocation->input)
+    throw Error{ErrorCode::conflict};
+  admission->input = invocation->input;
+}
 struct EventKey {
   RetainedKind kind;
   IdentityBytes identity;
@@ -105,7 +118,7 @@ std::vector<RecoveryKey> fact_keys(const RetainedFact &fact, std::uint64_t ns,
   return result;
 }
 template <typename T, typename Predicate>
-const T *find_event(std::span<const RetainedFact> facts, Predicate predicate) {
+const T *find_event(const SharedSequence<RetainedFact> &facts, Predicate predicate) {
   for (auto it = facts.rbegin(); it != facts.rend(); ++it) {
     if (const auto *event = std::get_if<T>(&it->event.body);
         event && predicate(*event)) {
@@ -200,6 +213,11 @@ RetainedState::create(std::unique_ptr<JournalDirectory> directory,
     return allocated;
   }
   auto owner = std::move(allocated).value();
+  const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+                       std::chrono::system_clock::now().time_since_epoch())
+                       .count();
+  if (now >= 0)
+    (void)owner->expire_diagnostics(static_cast<std::uint64_t>(now));
   auto journal = FramedJournal::create(*owner->directory_, name, header, capacity);
   if (!journal.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
@@ -213,7 +231,8 @@ RetainedState::create(std::unique_ptr<JournalDirectory> directory,
 Result<std::unique_ptr<RetainedState>>
 RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
                     JournalHeader header, JournalCapacity capacity,
-                    bool use_scan_checkpoint) {
+                    bool use_scan_checkpoint, bool allow_full_replay,
+                    std::uint64_t max_full_replay_bytes) {
   if (header.predecessor) {
     return Result<std::unique_ptr<RetainedState>>::failure({ErrorCode::unsupported});
   }
@@ -222,9 +241,17 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return allocated;
   }
   auto owner = std::move(allocated).value();
+  const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+                       std::chrono::system_clock::now().time_since_epoch())
+                       .count();
+  if (now >= 0)
+    (void)owner->expire_diagnostics(static_cast<std::uint64_t>(now));
   FramedJournal::ResumeSelector selector;
-  if (!use_scan_checkpoint)
+  if (!use_scan_checkpoint || !allow_full_replay || max_full_replay_bytes != UINT64_MAX)
     selector = [&](FramedJournal &locked) -> Result<std::optional<JournalResume>> {
+      const bool replay_allowed =
+          allow_full_replay &&
+          locked.recovery_report().available_end <= max_full_replay_bytes;
       auto saved = load_saved_state(*owner->directory_, name, locked, capacity, true);
       if (!saved.has_value())
         return Result<std::optional<JournalResume>>::failure(saved.error());
@@ -251,7 +278,10 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
               std::from_chars(text.data(), text.data() + text.size(), records);
           if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() ||
               records > capacity.max_records || records < owner->saved_->fact_count)
-            return Result<std::optional<JournalResume>>::success(std::nullopt);
+            return replay_allowed
+                       ? Result<std::optional<JournalResume>>::success(std::nullopt)
+                       : Result<std::optional<JournalResume>>::failure(
+                             {ErrorCode::unsupported});
           constexpr auto length = journal_frame_header_size + 24;
           auto anchor = locked.read_original_range(
               owner->saved_->boundary.end_offset - length, length);
@@ -263,11 +293,15 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
                             crc32c(anchor.value().bytes)});
         }
       }
-      return Result<std::optional<JournalResume>>::success(std::nullopt);
+      return replay_allowed
+                 ? Result<std::optional<JournalResume>>::success(std::nullopt)
+                 : Result<std::optional<JournalResume>>::failure(
+                       {ErrorCode::unsupported});
     };
-  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity,
-                                     SyncStrength::full, use_scan_checkpoint,
-                                     std::nullopt, std::move(selector));
+  auto journal = FramedJournal::open(
+      *owner->directory_, name, header, capacity, SyncStrength::full,
+      use_scan_checkpoint && allow_full_replay && max_full_replay_bytes == UINT64_MAX,
+      std::nullopt, std::move(selector));
   if (!journal.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
@@ -430,6 +464,13 @@ std::optional<RetainedFact> RetainedState::lookup(const Snapshot &snapshot,
         decode_retained_event(payload.value(), journal_->header().limits.max_payload);
     if (!event.has_value())
       throw event.error();
+    resolve_admission_input(event.value(), [&](InvocationId identity) {
+      const auto invocation =
+          lookup(snapshot, 1, RetainedKind::invocation, identity.bytes());
+      return invocation ? std::optional<InvocationEvent>{std::get<InvocationEvent>(
+                              invocation->event.body)}
+                        : std::nullopt;
+    });
     RetainedFact result{{selected.value()->journal, selected.value()->sequence},
                         std::move(event).value(),
                         selected.value()->sequence >= live_from_sequence_
@@ -468,6 +509,13 @@ Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
           decode_retained_event(payload.value(), journal_->header().limits.max_payload);
       if (!decoded.has_value())
         return Result<RetainedFact>::failure(decoded.error());
+      resolve_admission_input(decoded.value(), [&](InvocationId identity) {
+        const auto invocation =
+            lookup(committed_, 1, RetainedKind::invocation, identity.bytes());
+        return invocation ? std::optional<InvocationEvent>{std::get<InvocationEvent>(
+                                invocation->event.body)}
+                          : std::nullopt;
+      });
       return Result<RetainedFact>::success(
           {{found.value()->journal, found.value()->sequence},
            std::move(decoded).value(),
@@ -486,6 +534,8 @@ Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
     }
     return Result<RetainedFact>::success(
         committed_.facts[ordinal - committed_.archived_facts]);
+  } catch (const Error &error) {
+    return Result<RetainedFact>::failure(error);
   } catch (const std::bad_alloc &) {
     return Result<RetainedFact>::failure({ErrorCode::allocation});
   }
@@ -519,22 +569,21 @@ RetainedState::FactHistory RetainedState::history_snapshot() const {
       archive_ && saved_ ? static_cast<std::size_t>(saved_->fact_count) : 0;
   if (!compact_ && archived > committed_.facts.size())
     throw Error{ErrorCode::corrupt};
-  auto tail = std::make_shared<const std::vector<RetainedFact>>(
-      committed_.facts.begin() +
-          static_cast<std::ptrdiff_t>(compact_ ? archived - committed_.archived_facts
-                                               : archived),
-      committed_.facts.end());
+  const auto tail_start = compact_ ? archived - committed_.archived_facts : archived;
+  const auto tail = committed_.facts;
+  if ((compact_ && archived < committed_.archived_facts) || tail_start > tail.size())
+    throw Error{ErrorCode::corrupt};
   const auto limit = journal_->header().limits.max_payload;
   auto reader = journal_->archive_reader(saved_ ? saved_->boundary : cursor());
   return {
-      archived + tail->size(),
-      [archive = archive_, archived, tail, reader, limit,
+      archived + tail.size() - tail_start,
+      [archive = archive_, archived, tail, tail_start, reader, limit,
        live_from = live_from_sequence_](std::size_t ordinal) -> Result<RetainedFact> {
         try {
           if (ordinal >= archived) {
-            if (ordinal - archived >= tail->size())
+            if (ordinal - archived >= tail.size() - tail_start)
               return Result<RetainedFact>::failure({ErrorCode::invalid_range});
-            return Result<RetainedFact>::success((*tail)[ordinal - archived]);
+            return Result<RetainedFact>::success(tail[tail_start + ordinal - archived]);
           }
           auto found = archive->find(ordinal_key(6, {}, ordinal));
           if (!found.has_value())
@@ -547,11 +596,34 @@ RetainedState::FactHistory RetainedState::history_snapshot() const {
           auto decoded = decode_retained_event(body.value(), limit);
           if (!decoded.has_value())
             return Result<RetainedFact>::failure(decoded.error());
+          resolve_admission_input(
+              decoded.value(),
+              [&](InvocationId identity) -> std::optional<InvocationEvent> {
+                auto descriptor = archive->find(
+                    query_key(1, RetainedKind::invocation, identity.bytes()));
+                if (!descriptor.has_value())
+                  throw descriptor.error();
+                if (!descriptor.value())
+                  return std::nullopt;
+                auto input = reader(*descriptor.value());
+                if (!input.has_value())
+                  throw input.error();
+                auto invocation = decode_retained_event(input.value(), limit);
+                if (!invocation.has_value())
+                  throw invocation.error();
+                const auto *body =
+                    std::get_if<InvocationEvent>(&invocation.value().body);
+                if (!body)
+                  throw Error{ErrorCode::corrupt};
+                return *body;
+              });
           return Result<RetainedFact>::success(
               {{found.value()->journal, found.value()->sequence},
                std::move(decoded).value(),
                found.value()->sequence >= live_from ? RetainedEvidence::live
                                                     : RetainedEvidence::recovered});
+        } catch (const Error &error) {
+          return Result<RetainedFact>::failure(error);
         } catch (const std::bad_alloc &) {
           return Result<RetainedFact>::failure({ErrorCode::allocation});
         }
@@ -653,6 +725,13 @@ bool RetainedState::has_room(const Snapshot &snapshot,
 Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
                                   RecordReference record, RetainedEvidence evidence,
                                   ReplayIndex *index) {
+  resolve_admission_input(event, [&](InvocationId identity) {
+    const auto invocation =
+        lookup(snapshot, 1, RetainedKind::invocation, identity.bytes());
+    return invocation ? std::optional<InvocationEvent>{std::get<InvocationEvent>(
+                            invocation->event.body)}
+                      : std::nullopt;
+  });
   if (std::holds_alternative<RecoveryChoiceEvent>(event.body) ||
       std::holds_alternative<ProvisionalCaptureEvent>(event.body)) {
     return Result<void>::failure({ErrorCode::unsupported});
@@ -1079,6 +1158,38 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
   if (state() != JournalWriterState::live) {
     return Result<JournalCursor>::failure({ErrorCode::audit_unavailable});
   }
+  // Publication failure cannot turn a compact suffix into unlimited resident history.
+  // Checkpoint runs before admission; already admitted settlement remains writable.
+  if (compact_ && saved_ && !settlement && !diagnostic && !checkpoint_running_) {
+    auto tail_bytes = cursor().end_offset - saved_->boundary.end_offset;
+    if (maintenance_checkpoint_ && cursor().sequence >= maintenance_retry_sequence_ &&
+        (committed_.facts.size() + committed_.sources.size() >= 128 ||
+         tail_bytes >= 8 * 1024 * 1024)) {
+      checkpoint_running_ = true;
+      struct Reset {
+        bool &flag;
+        ~Reset() { flag = false; }
+      } reset{checkpoint_running_};
+      auto maintained = maintenance_checkpoint_();
+      maintenance_error_ = maintained.has_value()
+                               ? std::nullopt
+                               : std::optional<Error>{maintained.error()};
+      maintenance_retry_sequence_ =
+          maintained.has_value()
+              ? 0
+              : (cursor().sequence > UINT64_MAX - 64 ? UINT64_MAX
+                                                     : cursor().sequence + 64);
+      tail_bytes = cursor().end_offset - saved_->boundary.end_offset;
+    }
+    const auto tail_count = committed_.facts.size() + committed_.sources.size();
+    const auto credit = settlement_credit_.value_or(JournalCapacity{0, 0});
+    if (tail_count > 1024 || sources.size() > 1024 - tail_count ||
+        events.size() > 1024 - tail_count - sources.size() ||
+        credit.max_records > 1024 - tail_count - sources.size() - events.size()) {
+      maintenance_error_ = Error{ErrorCode::capacity};
+      return Result<JournalCursor>::failure(*maintenance_error_);
+    }
+  }
   const auto current = cursor();
   const bool stale = current.journal != expected.journal ||
                      current.sequence != expected.sequence ||
@@ -1108,6 +1219,25 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
         return Result<JournalCursor>::failure(bytes.error());
       }
       encoded.push_back(std::move(bytes).value());
+    }
+    if (compact_ && saved_ && !settlement && !diagnostic && !checkpoint_running_) {
+      constexpr std::uint64_t bound = 32 * 1024 * 1024;
+      auto used = cursor().end_offset - saved_->boundary.end_offset;
+      auto charge = [&](std::uint64_t n) {
+        if (used > bound || n > bound - used)
+          return false;
+        used += n;
+        return true;
+      };
+      bool room = charge(56) && charge(credit.max_file_bytes);
+      for (const auto source : sources)
+        room = room && charge(source.size()) && charge(journal_frame_header_size);
+      for (const auto &event : encoded)
+        room = room && charge(event.size()) && charge(journal_frame_header_size);
+      if (!room) {
+        maintenance_error_ = Error{ErrorCode::capacity};
+        return Result<JournalCursor>::failure(*maintenance_error_);
+      }
     }
     if (stale) {
       if (!diagnostic) {
@@ -1229,7 +1359,8 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
       }
       return written;
     }
-    for (auto &fact : prepared_->facts) {
+    for (std::size_t i = committed_.facts.size(); i < prepared_->facts.size(); ++i) {
+      auto &fact = prepared_->facts[i];
       if (fact.evidence == RetainedEvidence::uncertain) {
         fact.evidence = RetainedEvidence::live;
       }
@@ -1393,9 +1524,17 @@ RetainedState::retain_rejection(JournalCursor expected,
 Result<Submission> RetainedState::submit(const RetainedEvent &event) {
   return submit_impl(event, false);
 }
-Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
+Result<Submission> RetainedState::submit_impl(const RetainedEvent &proposal,
                                               bool settlement) {
   try {
+    auto event = proposal;
+    resolve_admission_input(event, [&](InvocationId identity) {
+      const auto invocation =
+          lookup(visible(), 1, RetainedKind::invocation, identity.bytes());
+      return invocation ? std::optional<InvocationEvent>{std::get<InvocationEvent>(
+                              invocation->event.body)}
+                        : std::nullopt;
+    });
     if (const auto previous = existing(visible(), event);
         previous && previous->event == event) {
       return Result<Submission>::success({true, previous->record, previous->evidence});
@@ -1927,13 +2066,6 @@ Result<void> RetainedState::save_current_state(const Json &context) {
     }
     // Historical catalog is derived disk data, never a vector in SavedState.
     std::map<RecoveryKey, PhysicalJournalRecord> locators;
-    if (compact_ && archive_)
-      for (std::uint64_t i = 0; i < archive_->count(); ++i) {
-        auto entry = archive_->entry(i);
-        if (!entry.has_value())
-          return Result<void>::failure(entry.error());
-        locators.emplace(entry.value().key, entry.value().record);
-      }
     const auto physical = journal_->physical_records();
     for (std::size_t ordinal = 0; ordinal < committed_.facts.size(); ++ordinal) {
       const auto &fact = committed_.facts[ordinal];
@@ -1957,15 +2089,16 @@ Result<void> RetainedState::save_current_state(const Json &context) {
     for (const auto &[k, record] : locators)
       entries.push_back({k, record});
     const auto catalog_name = journal_name_ + ".archive." + std::to_string(next.slot);
-    auto indexed = ArchiveCatalog::publish(*directory_, catalog_name,
-                                           journal_->header(), next.boundary, entries);
+    auto indexed = ArchiveCatalog::publish_merge(
+        *directory_, catalog_name, journal_->header(), next.boundary,
+        compact_ ? archive_.get() : nullptr, entries);
     if (!indexed.has_value())
-      return indexed;
+      return Result<void>::failure(indexed.error());
     next.context.object().emplace_back(
         "physical_records",
         Json{JsonNumber{std::to_string(journal_->usage().indexed_records)}});
     next.context.object().emplace_back(
-        "archive_entries", Json{JsonNumber{std::to_string(entries.size())}});
+        "archive_entries", Json{JsonNumber{std::to_string(indexed.value())}});
     bool supported = next.unresolved.empty();
     bool identity_saved = false;
     for (const auto &packet : next.programs.array()) {
@@ -1991,6 +2124,8 @@ Result<void> RetainedState::save_current_state(const Json &context) {
       return published;
     archive_ = std::move(opened).value();
     saved_ = std::make_unique<SavedState>(std::move(next));
+    maintenance_error_.reset();
+    maintenance_retry_sequence_ = 0;
     if (compact_ && saved_->unresolved.empty()) {
       committed_.archived_facts = static_cast<std::size_t>(saved_->fact_count);
       committed_.archived_records = journal_->usage().indexed_records;

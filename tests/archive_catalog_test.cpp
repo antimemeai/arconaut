@@ -22,6 +22,24 @@ int main() {
     auto catalog=unwrap(ArchiveCatalog::open(dir,"catalog",h,cursor,2000)); CHECK(catalog->count()==1600);
     for (std::size_t i=0;i<entries.size();++i) CHECK(unwrap(catalog->find(entries[i].key))==entries[i].record);
     RecoveryKey absent{}; absent[0]=std::byte{7}; CHECK(!unwrap(catalog->find(absent)));
+    auto replacement = entries[300];
+    replacement.record.frame_checksum = 99;
+    auto fresh = entries.back();
+    fresh.key[39] = std::byte{0xff};
+    fresh.key[38] = std::byte{0xff};
+    fresh.record.sequence = 1601;
+    const std::array delta{replacement, fresh};
+    CHECK(unwrap(ArchiveCatalog::publish_merge(dir, "merged", h, cursor, catalog.get(),
+                                               delta)) == 1601);
+    auto merged = unwrap(ArchiveCatalog::open(dir, "merged", h, cursor, 2000));
+    CHECK(unwrap(merged->find(replacement.key)) == replacement.record);
+    CHECK(unwrap(merged->find(fresh.key)) == fresh.record);
+    CHECK(unwrap(merged->find(entries[1599].key)) == entries[1599].record);
+    CHECK(unwrap(catalog->find(replacement.key)) == entries[300].record);
+    const std::array unsorted{fresh, replacement};
+    CHECK(!ArchiveCatalog::publish_merge(dir, "merged", h, cursor, catalog.get(),
+                                         unsorted)
+               .has_value());
     auto wrong=cursor; ++wrong.sequence; CHECK(!ArchiveCatalog::open(dir,"catalog",h,wrong,2000).has_value());
     CHECK(!ArchiveCatalog::open(dir,"catalog",h,cursor,1599).has_value());
     auto invalid=entries; invalid[1].key=invalid[0].key; CHECK(!ArchiveCatalog::publish(dir,"catalog",h,cursor,invalid).has_value());

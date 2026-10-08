@@ -4911,3 +4911,61 @@ paragraph and recorded activation/backlog limits. Prioritize the unresolved codi
 failure and explicit interactive activation, then measured command phases and
 steady-state/maintenance costs. Back up Beads and checkpoint/push this assessment
 with the existing source follow-ups under the repository's standing authorization.
+
+### 2026-10-08 — remaining session maintenance
+
+Implemented streamed archive renewal over immutable old locators plus suffix delta;
+resumable native scratch enumeration with last-pass status and concise failure
+warning; compact-session ledger-only automatic checkpoint callback and finite
+suffix admission backpressure preserving settlement headroom. Added direct checks
+for merge replacement/reader lifetime, debris behind unrelated names, automatic
+ledger-only maintenance, and persistent publication-failure refusal. Catalog disk
+rewrite remains linear in total keys; scanner cursor is process-local. Root owns
+final integration build/check results and issue bookkeeping. No dependencies.
+
+## 2026-10-08 — finite reopen behavior and local command phases
+
+Implemented a locked-descriptor64MiB automatic full-replay bound, explicit
+--rebuild-session slow path under existing512MiB/200000-record capacity, and
+clear linked-history/uncertain-custody messages. Published the finite matrix in
+docs/SESSION_REOPEN.md. Added --expire-diagnostics selected-directory maintenance,
+at most128passes with completion/rerun output and no audit creation.
+Removed unchanged discovery snapshot writes while retaining missing/damaged-file
+repair. Extended existing bounded debug timing and local-command probe for native
+phase timestamps, heavy fixtures and isolated native-child idle accounting.
+Scoped profile saved-state/session-store/timing tests and real private heavy-reopen/
+diagnostics CLI probes pass. Launcher fresh/heavy3each show most command wall time
+inside eight durable append batches; dispatch/rendering remain small. Three native
+attempts retain scheduling/storage outliers without assigning OS causes. Corrected
+macOS Mach-tick CPU units and the Python/native monotonic clock-origin assumption;
+no speedup or idle-zero conclusion. Details and raw observations are in
+papers/2026-10-08-reopen-latency.md and docs/measurements. Root owns final Release
+publication and the published-launcher smoke. No stream measurement expansion.
+
+## 2026-10-08 — requested performance wrap-up integrated and activated
+
+Operator requests all assessed work except expanded stream measurements, with30day
+diagnostics lifetime. Coherent owners implemented native request references,
+maintenance and launcher/reopen behavior; root integrated COW JSON, persistent
+radix facts/source descriptors, pinned-reader ownership, context retention/edit
+copies, expiring diagnostic files, coding fixture repairs and source/activation
+batching. No dependency adopted. Plans/reports and precise costs retained in
+papers/2026-10-08-wrapup-delivery.md and linked unit notes.
+
+Release/OFF built;21affected checks passed across initial execution and
+failed-case fixes/recheck. Broad coding test now passes. Independent source recheck
+covered changed ownership/diagnostics; fixes included owner-lifetime-safe callback
+cleanup and explicit snapshot range guard. No third assurance layer, new campaign,
+provider call or settled unrelated test sweep. Focused new diagnostics/JSON analysis
+passes; changed lines/new source formatted and git diff --check clean.
+
+Current native binary and published UI/compatibility generations all hash
+47282d5c978dbed9c4a7eb6e01a1aa0c30e810910b63a1f91e011ea882a88d99.
+Two default launcher starts succeeded/exited0 without executable override. Slow
+first frames805.103/443.370ms retained; input-to-audited-marker33.162/45.976ms.
+Final native phase run records681.124ms before native entry. No causal speedup or
+under100ms result asserted. Existing sessions/art untouched. New diagnostics expire
+on read and are physically reclaimed by bounded use/explicit maintenance; legacy
+embedded streams stay within existing finite audits. Capture cost study excluded.
+Close completed bounded implementation issues, retain excluded capture measurements,
+back up Beads and checkpoint/push source and relevant raw observations.

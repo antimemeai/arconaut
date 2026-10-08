@@ -2,6 +2,7 @@
 #include "blackbird/saved_state.hpp"
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <filesystem>
 #include <limits>
 #include <set>
@@ -72,6 +73,29 @@ void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context
                                            bytes(unwrap(dump_json(program_packet)))}}};
   (void)unwrap(root_.append(root_.cursor(), {}, events));
 }
+void AuditLog::retain_program(std::string_view source,
+                              DefinitionGenerationId generation) {
+  const auto original = issue();
+  const auto activation = issue();
+  const auto cursor = root_.cursor();
+  if (cursor.sequence == UINT64_MAX)
+    throw Error{ErrorCode::overflow};
+  const auto identity = hex_identity(generation.bytes());
+  const auto capture =
+      Json::object({{"label", Json{"program.source"}},
+                    {"metadata", Json::object({{"generation", Json{identity}}})}});
+  const auto effective = Json::object(
+      {{"generation", Json{identity}}, {"activation", Json{"turn-boundary"}}});
+  const auto raw = std::as_bytes(std::span{source.data(), source.size()});
+  const std::array<RetainedEvent, 2> events{
+      RetainedEvent{{SourceReference{cursor.journal, cursor.sequence + 1}},
+                    ApplicationRecordEvent{original, ApplicationChannel::log,
+                                           bytes(unwrap(dump_json(capture)))}},
+      RetainedEvent{{},
+                    ApplicationRecordEvent{activation, ApplicationChannel::program,
+                                           bytes(unwrap(dump_json(effective)))}}};
+  (void)unwrap(root_.append(cursor, std::span{&raw, 1}, events));
+}
 std::string AuditLog::original(OriginalCapture capture) {
   const auto label = capture.label;
   const auto raw = capture.bytes;
@@ -79,6 +103,29 @@ std::string AuditLog::original(OriginalCapture capture) {
   auto identity = issue();
   auto packet = Json::object(
       {{"label", Json{std::string{label}}}, {"metadata", std::move(metadata)}});
+  if (label == "provider.stream") {
+    const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
+                             std::chrono::system_clock::now().time_since_epoch())
+                             .count();
+    if (seconds < 0)
+      throw Error{ErrorCode::invalid_range};
+    const auto now = static_cast<std::uint64_t>(seconds);
+    const auto expires = now + 30ULL * 24 * 60 * 60;
+    const auto filename =
+        std::to_string(expires) + "." + hex_identity(identity.bytes());
+    auto stored = root_.store_diagnostic(
+        filename, std::as_bytes(std::span{raw.data(), raw.size()}), now);
+    auto &details = packet.object()[1].second.object();
+    details.emplace_back("diagnostic_file", Json{filename});
+    details.emplace_back("expires_at", Json{JsonNumber{std::to_string(expires)}});
+    details.emplace_back("bytes", Json{JsonNumber{std::to_string(raw.size())}});
+    details.emplace_back("available", Json{stored.has_value()});
+    if (!stored.has_value())
+      details.emplace_back("storage_error",
+                           Json{std::string{error_name(stored.error().code)}});
+    record(identity, ApplicationChannel::log, packet);
+    return hex_identity(identity.bytes());
+  }
   const auto cursor = root_.cursor();
   if (cursor.sequence == UINT64_MAX)
     throw Error{ErrorCode::overflow};
@@ -245,6 +292,12 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
   if (restore_saved)
     maybe_checkpoint();
   historical_ = log_.root().history_snapshot();
+  root_lifetime_ = log_.root().lifetime();
+  log_.root().set_maintenance_checkpoint([this] { return checkpoint(); });
+}
+ContextStore::~ContextStore() {
+  if (!root_lifetime_.expired())
+    log_.root().set_maintenance_checkpoint({});
 }
 std::optional<Json> ContextStore::original_entry(std::string_view id) const {
   if (const auto found = originals_.find(std::string{id}); found != originals_.end())
@@ -306,8 +359,18 @@ Result<void> ContextStore::checkpoint() {
                       {"base", Json{head_}},
                       {"entries", Json{entries_}},
                       {"live_originals", Json{std::move(live)}}}));
-    if (result.has_value())
+    if (result.has_value()) {
       historical_ = log_.root().history_snapshot();
+      // Published originals are now addressable through the owned archive.
+      // Historical inspection uses the pinned reader; keep no resident keydir.
+      std::set<std::string> live_ids;
+      for (const auto &entry : entries_)
+        live_ids.insert(string_field(entry, "id"));
+      std::erase_if(originals_,
+                    [&](const auto &pair) { return !live_ids.contains(pair.first); });
+      captured_.clear();
+      archive_loaded_ = false;
+    }
     checkpoint_error_ =
         result.has_value() ? std::nullopt : std::optional<Error>{result.error()};
     return result;
@@ -562,12 +625,16 @@ Json ContextStore::edit(const Json &candidate) {
                     {"reason", Json{publishes        ? "published"
                                     : representation ? "stale-base"
                                                      : "invalid-representation"}}});
+  auto details = candidate;
+  if (std::holds_alternative<Json::Object>(details.value()))
+    std::erase_if(details.object(),
+                  [](const auto &pair) { return pair.first == "entries"; });
   auto packet = Json::object({{"op", Json{"edit"}},
                               {"base", base == nullptr ? Json{} : *base},
                               {"observed", Json{head_}},
                               {"revision", Json{revision}},
                               {"accepted", Json{publishes}},
-                              {"candidate", candidate},
+                              {"candidate", std::move(details)},
                               {"entries", entries == nullptr ? Json{} : *entries},
                               {"outcome", outcome}});
   if (protect)
@@ -862,7 +929,7 @@ Json ContextStore::finish_workflow(bool success, const Json &boundary_program) {
     historical_ = log_.root().history_snapshot();
     return Json{};
   }
-  auto pending = *pending_;
+  auto pending = std::move(*pending_);
   if (!success) {
     pending_.reset();
     if (log_.root().state() != JournalWriterState::live)
@@ -939,8 +1006,8 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
     std::erase_if(next, [&](const Json &entry) {
       return selected.contains(string_field(entry, "id"));
     });
-    for (const auto &handle : captured_) {
-      const auto original = handle.entry();
+    const auto capture_order = captured_entries();
+    for (const auto &original : capture_order) {
 
       const auto &id = string_field(original, "id");
       if (!selected.contains(id))
@@ -956,8 +1023,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
       // entries.
       bool later = false;
       std::set<std::string> successors;
-      for (const auto &successor_handle : captured_) {
-        const auto entry = successor_handle.entry();
+      for (const auto &entry : capture_order) {
         if (later)
           successors.insert(string_field(entry, "id"));
         if (string_field(entry, "id") == id)

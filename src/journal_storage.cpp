@@ -1,9 +1,10 @@
 #include "blackbird/journal_storage.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
-#include <fcntl.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <limits>
 #include <string>
 #include <sys/file.h>
@@ -153,15 +154,27 @@ Result<NativeJournalDirectory> NativeJournalDirectory::open(std::string_view pat
   }
 }
 NativeJournalDirectory::~NativeJournalDirectory() {
+  if (cleanup_stream_)
+    ::closedir(static_cast<DIR *>(cleanup_stream_));
   if (descriptor_ != -1) {
     (void)::close(descriptor_);
   }
 }
 NativeJournalDirectory::NativeJournalDirectory(NativeJournalDirectory &&other) noexcept
-    : descriptor_(std::exchange(other.descriptor_, -1)) {}
+    : cleanup_stream_(std::exchange(other.cleanup_stream_, nullptr)),
+      cleanup_journal_(std::move(other.cleanup_journal_)),
+      cleanup_status_(other.cleanup_status_),
+      descriptor_(std::exchange(other.descriptor_, -1)),
+      diagnostics_(std::move(other.diagnostics_)) {}
 NativeJournalDirectory &
 NativeJournalDirectory::operator=(NativeJournalDirectory &&other) noexcept {
   if (this != &other) {
+    if (cleanup_stream_)
+      ::closedir(static_cast<DIR *>(cleanup_stream_));
+    cleanup_stream_ = std::exchange(other.cleanup_stream_, nullptr);
+    cleanup_journal_ = std::move(other.cleanup_journal_);
+    cleanup_status_ = other.cleanup_status_;
+    diagnostics_ = std::move(other.diagnostics_);
     if (descriptor_ != -1) {
       (void)::close(descriptor_);
     }
@@ -251,11 +264,31 @@ Result<void> NativeJournalDirectory::replace_file(std::string_view from,
 
 Result<ScratchCleanup> NativeJournalDirectory::reclaim_publication_scratch(
     std::string_view journal, std::size_t max_scan, std::size_t max_remove) {
+  auto result = reclaim_scratch_pass(journal, max_scan, max_remove);
+  if (!result.has_value()) {
+    if (!cleanup_status_.error || cleanup_status_.error->code != result.error().code ||
+        cleanup_status_.error->detail != result.error().detail)
+      std::fprintf(stderr, "blackbird: publication scratch cleanup: %.*s: %s (%llu)\n",
+                   static_cast<int>(std::min<std::size_t>(journal.size(), 200)),
+                   journal.data(), error_name(result.error().code),
+                   static_cast<unsigned long long>(result.error().detail));
+    cleanup_status_.error = result.error();
+  }
+  return result;
+}
+Result<ScratchCleanup> NativeJournalDirectory::reclaim_scratch_pass(
+    std::string_view journal, std::size_t max_scan, std::size_t max_remove) {
   using Answer = Result<ScratchCleanup>;
   if (!valid_component(journal) || max_scan == 0 || max_scan > 128 ||
       max_remove == 0 || max_remove > 16) return Answer::failure({ErrorCode::invalid_range});
   try {
     const std::string base{journal};
+    if (cleanup_journal_ != base) {
+      if (cleanup_stream_)
+        ::closedir(static_cast<DIR *>(cleanup_stream_));
+      cleanup_stream_ = nullptr;
+      cleanup_journal_ = base;
+    }
     const auto matches = [&](std::string_view name) {
       if (!name.starts_with(base)) return false;
       auto suffix = name.substr(base.size());
@@ -281,20 +314,31 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_publication_scratch(
       }
       return false;
     };
-    // A fresh directory description keeps this bounded pass independent of other
-    // readers' directory offsets. Never traverse children or follow symlinks.
-    const int fd = ::openat(descriptor_, ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (fd == -1) return Answer::failure(native_error(errno));
-    DIR *raw = ::fdopendir(fd);
-    if (!raw) { const auto error = native_error(errno); ::close(fd); return Answer::failure(error); }
-    const std::unique_ptr<DIR, decltype(&::closedir)> stream{raw, ::closedir};
+    // Keep the enumeration between calls; each call still inspects bounded work.
+    // EOF closes it, and the next pass starts a new cycle for newer debris.
+    if (!cleanup_stream_) {
+      const int fd = ::openat(descriptor_, ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+      if (fd == -1)
+        return Answer::failure(native_error(errno));
+      DIR *raw = ::fdopendir(fd);
+      if (!raw) {
+        const auto error = native_error(errno);
+        ::close(fd);
+        return Answer::failure(error);
+      }
+      cleanup_stream_ = raw;
+    }
+    auto *stream = static_cast<DIR *>(cleanup_stream_);
     ScratchCleanup result;
     while (result.scanned < max_scan && result.removed < max_remove) {
       errno = 0;
-      const auto *entry = ::readdir(stream.get());
+      const auto *entry = ::readdir(stream);
       if (!entry) {
         if (errno) return Answer::failure(native_error(errno));
-        result.complete = true; break;
+        result.complete = true;
+        ::closedir(stream);
+        cleanup_stream_ = nullptr;
+        break;
       }
       ++result.scanned;
       if (!matches(entry->d_name)) continue;
@@ -337,6 +381,7 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_publication_scratch(
     }
     // Scratch deletion need not survive a crash; no directory fsync on the
     // foreground path. Authoritative/selected files are never candidates.
+    cleanup_status_ = result;
     return Answer::success(result);
   } catch (const std::bad_alloc &) { return Answer::failure({ErrorCode::allocation}); }
 }

@@ -34,6 +34,7 @@ public:
   void record_boundary(ApplicationRecordId identity, const Json &context_packet,
                        const Json &program_packet);
   std::string original(OriginalCapture capture);
+  void retain_program(std::string_view source, DefinitionGenerationId generation);
   Json inspect(const Json &query);
   RetainedState &root() noexcept { return root_; }
 
@@ -43,6 +44,9 @@ private:
 class ContextStore {
 public:
   explicit ContextStore(AuditLog &log);
+  ~ContextStore();
+  ContextStore(const ContextStore &) = delete;
+  ContextStore &operator=(const ContextStore &) = delete;
   Result<void> checkpoint();
   const std::optional<Error> &checkpoint_error() const noexcept {
     return checkpoint_error_;
@@ -75,6 +79,7 @@ private:
   mutable bool archive_loaded_ = true;
   std::optional<Error> checkpoint_error_;
   AuditLog &log_;
+  std::weak_ptr<void> root_lifetime_;
   RetainedState::FactHistory historical_;
   std::string head_;
   Json::Array entries_;

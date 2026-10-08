@@ -302,6 +302,42 @@ public:
     return fail ? Result<void>::failure({ErrorCode::busy}) : Result<void>::success();
   }
 };
+void admission_references() {
+  auto storage = std::make_shared<StorageState>();
+  auto state = create(storage);
+  require(state->submit({{}, decision()}));
+  require(state->submit({{}, invocation()}));
+  auto referenced = admission();
+  referenced.input_from_invocation = true;
+  require(state->submit({{}, referenced}));
+  auto only_reference = referenced;
+  only_reference.input = {};
+  const auto before_duplicate = storage->writes;
+  CHECK(require(state->submit({{}, only_reference})).existing);
+  CHECK(storage->writes == before_duplicate);
+  const auto stored = require(state->attempt(referenced.attempt)).admission;
+  CHECK(stored.input == original);
+  CHECK(stored.input.data() ==
+        require(state->invocation(referenced.invocation)).input.data());
+  auto mismatch = admission(12);
+  mismatch.input_from_invocation = true;
+  mismatch.input = {std::byte{77}};
+  error_is(state->submit({{}, mismatch}), ErrorCode::conflict);
+  Counter effect;
+  CHECK(require(state->dispatch(referenced.attempt, effect)).dispatched);
+  CHECK(effect.calls == 1);
+  state.reset();
+  state = open(storage);
+  require(state->confirm_recovery());
+  const auto recovered = require(state->attempt(referenced.attempt));
+  CHECK(recovered.admission.input_from_invocation &&
+        recovered.admission.input == original);
+  CHECK(recovered.reconciliation_required);
+  Custody custody;
+  require(state->reconcile(custody));
+  CHECK(!require(state->dispatch(referenced.attempt, effect)).dispatched &&
+        effect.calls == 1);
+}
 void duplicates_and_retries() {
   auto storage = std::make_shared<StorageState>();
   auto state = create(storage);
@@ -1552,6 +1588,7 @@ int main(int argc, char **) {
   try {
     indexed_errors_close_queries();
     protected_settlement_faults();
+    admission_references();
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();

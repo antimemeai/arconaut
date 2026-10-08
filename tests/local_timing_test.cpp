@@ -41,8 +41,9 @@ int main() {
     s.outcome("success");
     s.finish();
   }
-  check(calls == 2 && sink->at(0).wall_ns == 100 && sink->at(0).cpu_ns == 30 &&
-        sink->at(0).history == 7 && sink->at(0).bytes == 19);
+  check(calls == 2 && sink->at(0).start_wall_ns == 100 && sink->at(0).wall_ns == 100 &&
+        sink->at(0).cpu_ns == 30 && sink->at(0).history == 7 &&
+        sink->at(0).bytes == 19);
   {
     LocalSpan s{"transport", "test", false};
     s.outcome("returned");

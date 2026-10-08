@@ -15,6 +15,10 @@ public:
   static Result<void> publish(JournalDirectory &directory, std::string_view name,
                               JournalHeader header, JournalCursor boundary,
                               std::span<const ArchiveEntry> sorted);
+  static Result<std::uint64_t>
+  publish_merge(JournalDirectory &directory, std::string_view name,
+                JournalHeader header, JournalCursor boundary,
+                const ArchiveCatalog *previous, std::span<const ArchiveEntry> delta);
   static Result<std::unique_ptr<ArchiveCatalog>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader header,
        JournalCursor boundary, std::uint64_t maximum_entries);

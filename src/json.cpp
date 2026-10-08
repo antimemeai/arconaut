@@ -4,7 +4,7 @@
 
 namespace blackbird {
 const Json *Json::find(std::string_view key) const noexcept {
-  const auto *fields = std::get_if<Object>(&data_);
+  const auto *fields = std::get_if<Object>(&value());
   if (fields != nullptr)
     for (const auto &[name, value] : *fields)
       if (name == key)

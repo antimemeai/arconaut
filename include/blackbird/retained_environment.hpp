@@ -70,7 +70,7 @@ public:
   }
   Result<RetainedFact> fact(std::size_t ordinal) const { return semantic_->fact(ordinal); }
   std::size_t fact_count() const noexcept { return semantic_->fact_count(); }
-  std::span<const RetainedFact> committed_facts() const noexcept {
+  const SharedSequence<RetainedFact> &committed_facts() const {
     return semantic_->committed_facts();
   }
 

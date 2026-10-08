@@ -1,6 +1,7 @@
 #include "blackbird/context.hpp"
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 namespace blackbird {
 namespace {
 Json number(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
@@ -145,6 +146,23 @@ Json AuditLog::inspect(const Json &q) {
       if (s >= fact.event.dependencies.size())
         throw Error{ErrorCode::invalid_range};
       original = unwrap(root_.source(fact.event.dependencies[s]));
+      raw = original;
+    }
+    if (q.find("diagnostic")) {
+      const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+      if (!record || record->channel != ApplicationChannel::log)
+        throw Error{ErrorCode::invalid_range};
+      const auto packet = unwrap(parse_json(read_text(record->payload)));
+      if (string_field(packet, "label") != "provider.stream")
+        throw Error{ErrorCode::invalid_range};
+      const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
+                               std::chrono::system_clock::now().time_since_epoch())
+                               .count();
+      if (seconds < 0)
+        throw Error{ErrorCode::invalid_range};
+      original = unwrap(root_.read_diagnostic(
+          string_field(field(packet, "metadata"), "diagnostic_file"),
+          static_cast<std::uint64_t>(seconds)));
       raw = original;
     }
     const auto offset = std::min(index(q, "offset", 0), raw.size());

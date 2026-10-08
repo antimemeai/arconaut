@@ -4,6 +4,7 @@
 #include "blackbird/json.hpp"
 #include "blackbird/recovery_index.hpp"
 #include "blackbird/retained_events.hpp"
+#include "blackbird/shared_sequence.hpp"
 
 namespace blackbird {
 struct SavedState;
@@ -63,8 +64,8 @@ public:
          JournalHeader header, JournalCapacity capacity);
   static Result<std::unique_ptr<RetainedState>>
   open(std::unique_ptr<JournalDirectory> directory, std::string_view name,
-       JournalHeader header, JournalCapacity capacity,
-       bool use_scan_checkpoint = false);
+       JournalHeader header, JournalCapacity capacity, bool use_scan_checkpoint = false,
+       bool allow_full_replay = true, std::uint64_t max_full_replay_bytes = UINT64_MAX);
   Result<void> publish_scan_checkpoint() {
     if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
         !reconciled_)
@@ -79,6 +80,24 @@ public:
   // archive-locator migration covers all semantic predicates.
   const SavedState *saved_state() const noexcept { return saved_.get(); }
   Result<void> save_current_state(const Json &context);
+  Result<void> store_diagnostic(std::string_view name, ByteView bytes,
+                                std::uint64_t now) {
+    return directory_->store_diagnostic(name, bytes, now);
+  }
+  Result<std::vector<std::byte>> read_diagnostic(std::string_view name,
+                                                 std::uint64_t now) {
+    return directory_->read_diagnostic(name, now);
+  }
+  Result<ScratchCleanup> expire_diagnostics(std::uint64_t now) {
+    return directory_->expire_diagnostics(now);
+  }
+  std::weak_ptr<void> lifetime() const noexcept { return lifetime_; }
+  void set_maintenance_checkpoint(std::function<Result<void>()> checkpoint) {
+    maintenance_checkpoint_ = std::move(checkpoint);
+  }
+  const std::optional<Error> &maintenance_error() const noexcept {
+    return maintenance_error_;
+  }
   Json::Array current_programs() const;
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
@@ -166,9 +185,11 @@ public:
     return committed_.archived_facts + committed_.facts.size();
   }
   // Borrow lasts until the next mutation; no staged/uncertain facts appear here.
-  std::span<const RetainedFact> tail_facts() const noexcept { return committed_.facts; }
+  const SharedSequence<RetainedFact> &tail_facts() const noexcept {
+    return committed_.facts;
+  }
   bool compact_recovery() const noexcept { return compact_; }
-  std::span<const RetainedFact> committed_facts() const {
+  const SharedSequence<RetainedFact> &committed_facts() const {
     if (compact_)
       throw Error{ErrorCode::unsupported};
     return committed_.facts;
@@ -197,14 +218,19 @@ private:
     RetainedState &owner_;
     bool previous_;
   };
+  std::shared_ptr<void> lifetime_ = std::make_shared<int>(0);
+  std::function<Result<void>()> maintenance_checkpoint_;
+  std::optional<Error> maintenance_error_;
+  std::uint64_t maintenance_retry_sequence_ = 0;
+  bool checkpoint_running_ = false;
   bool maintenance_ = false;
   bool compact_ = false;
   std::uint64_t live_from_sequence_ = 1;
   struct Snapshot {
     std::size_t archived_facts = 0;
     std::size_t archived_records = 0;
-    std::vector<RetainedFact> facts;
-    std::vector<PhysicalJournalRecord> sources;
+    SharedSequence<RetainedFact> facts;
+    SharedSequence<PhysicalJournalRecord> sources;
     std::vector<RetainedFact> uncertain_facts;
     std::vector<ProvisionalOriginal> provisional_originals;
     RecoveryPageRef query_root;

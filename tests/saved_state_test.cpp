@@ -106,6 +106,30 @@ int main() {
   const auto history_query =
       Json::object({{"kind", Json{"history"}}, {"limit", Json{JsonNumber{"65536"}}}});
   try {
+    // Missing derived state is refused before automatic replay when the caller
+    // selects a bounded reopen; explicit replay still restores the audit.
+    {
+      auto root = unwrap(RetainedState::create(directory(), "bounded", h, cap));
+      AuditLog log{*root};
+      log.record(ApplicationChannel::program,
+                 Json::object({{"label", Json{"bounded-test"}}}));
+    }
+    {
+      const auto audit_bytes = [&]() {
+        std::ifstream input{std::filesystem::path(path) / "bounded", std::ios::binary};
+        CHECK(input.is_open());
+        return std::string{std::istreambuf_iterator<char>{input},
+                           std::istreambuf_iterator<char>{}};
+      };
+      const auto before = audit_bytes();
+      auto refused = RetainedState::open(directory(), "bounded", h, cap, false, true,
+                                         journal_header_size);
+      CHECK(!refused.has_value() && refused.error().code == ErrorCode::unsupported);
+      CHECK(audit_bytes() == before);
+      auto allowed = unwrap(RetainedState::open(directory(), "bounded", h, cap));
+      unwrap(allowed->confirm_recovery());
+      CHECK(!allowed->compact_recovery() && allowed->fact_count() > 0);
+    }
     Json view, originals, history, programs;
     std::string archived;
     std::uint64_t highwater = 0;
@@ -202,6 +226,8 @@ int main() {
       f.write(&bad, 1);
     }
     {
+      auto refused = RetainedState::open(directory(), "audit", h, cap, false, false);
+      CHECK(!refused.has_value() && refused.error().code == ErrorCode::unsupported);
       auto root = unwrap(RetainedState::open(directory(), "audit", h, cap));
       CHECK(!root->saved_state());
       unwrap(root->confirm_recovery());
@@ -310,7 +336,7 @@ int main() {
         count = root->fact_count();
       }
       {
-        auto root = unwrap(RetainedState::open(dir(), "audit", h, cap));
+        auto root = unwrap(RetainedState::open(dir(), "audit", h, cap, false, false));
         CHECK(root->compact_recovery());
         unwrap(root->confirm_recovery());
         Empty e;
@@ -318,6 +344,47 @@ int main() {
         AuditLog log{*root};
         ContextStore ctx{log};
         CHECK(ctx.view() == expected && root->fact_count() == count);
+        CHECK(unwrap(root->fact(count - 1)).evidence == RetainedEvidence::recovered);
+        // Ledger-only writes advance their accelerator without a context edit.
+        for (unsigned i = 0; i < 300; ++i)
+          log.record(ApplicationChannel::program,
+                     Json::object({{"label", Json{"session.settings"}},
+                                   {"n", Json{JsonNumber{std::to_string(i)}}}}));
+        CHECK(root->tail_facts().size() < 128);
+        unwrap(ctx.checkpoint());
+        // Persistent accelerator failure refuses fresh work at a finite suffix.
+        root->set_maintenance_checkpoint(
+            [] { return Result<void>::failure({ErrorCode::io}); });
+        bool bounded = false;
+        for (unsigned i = 0; i < 1100; ++i) {
+          const auto before = root->cursor();
+          IdentityBytes identity{};
+          identity[0] = std::byte{0xff};
+          identity[14] = static_cast<std::byte>(i >> 8);
+          identity[15] = static_cast<std::byte>(i & 255);
+          const std::string payload = "{\"label\":\"session.settings\"}";
+          const ByteView bytes{reinterpret_cast<const std::byte *>(payload.data()),
+                               payload.size()};
+          const std::array events{
+              RetainedEvent{{},
+                            ApplicationRecordEvent{
+                                unwrap(ApplicationRecordId::from_bytes(identity)),
+                                ApplicationChannel::program,
+                                std::vector<std::byte>(bytes.begin(), bytes.end())}}};
+          const auto appended = root->append(before, {}, events);
+          if (!appended.has_value()) {
+            CHECK(appended.error().code == ErrorCode::capacity &&
+                  root->cursor().sequence == before.sequence &&
+                  root->cursor().end_offset == before.end_offset);
+            bounded = true;
+            break;
+          }
+        }
+        CHECK(bounded && root->tail_facts().size() <= 1024 &&
+              root->maintenance_error());
+        unwrap(ctx.checkpoint());
+        root->set_maintenance_checkpoint([&ctx] { return ctx.checkpoint(); });
+        count = root->fact_count();
         const auto old = root->history_snapshot();
         ctx.append({Json::object({{"role", Json{"user"}},
                                   {"content", Json{"live after reopen"}}})},
@@ -341,7 +408,7 @@ int main() {
         CHECK(unwrap(root->history_snapshot().read(last)).evidence ==
               RetainedEvidence::live);
         CHECK(old.count == count &&
-              unwrap(old.read(count - 1)).evidence == RetainedEvidence::recovered);
+              unwrap(old.read(count - 1)).evidence == RetainedEvidence::live);
         const auto removed = ctx.edit(Json::object(
             {{"base", Json{ctx.head()}}, {"entries", Json{Json::Array{}}}}));
         (void)removed;
@@ -367,6 +434,8 @@ int main() {
         unwrap(ctx.checkpoint());
       }
       {
+        auto refused = RetainedState::open(dir(), "audit", h, cap, false, false);
+        CHECK(!refused.has_value() && refused.error().code == ErrorCode::unsupported);
         auto root = unwrap(RetainedState::open(dir(), "audit", h, cap));
         CHECK(!root->compact_recovery());
       }

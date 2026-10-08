@@ -8,6 +8,23 @@ void check(bool value) {
 }
 int main() {
   try {
+    auto original =
+        Json::object({{"nested", Json{Json::Array{Json{std::string(65536, 'x')}}}}});
+    auto shared = original;
+    check(original.find("nested")->array()[0].string().data() ==
+          shared.find("nested")->array()[0].string().data());
+    auto &borrow = original.object()[0].second.array();
+    auto pinned = original;
+    borrow[0] = Json{"changed"};
+    check(pinned.find("nested")->array()[0].string().size() == 65536);
+    check(shared.find("nested")->array()[0].string().size() == 65536);
+    auto &nested_borrow = pinned.object()[0].second.array();
+    auto copied_after_borrow = pinned;
+    nested_borrow.push_back(Json{"new"});
+    check(copied_after_borrow.find("nested")->array().size() == 1);
+    auto detached = shared;
+    detached.object().emplace_back("another", Json{true});
+    check(!shared.find("another"));
     constexpr std::array<std::string_view, 1> omitted{"candidate"};
     for (const auto input : {R"({"candidate":{"candidate":"nested","a":[1,true,null,"\uD83D\uDE80"]},"keep":{"candidate":"yes"}})",
                              R"({"candidate":"plain UTF-8 🚀","keep":42})",

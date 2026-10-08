@@ -111,3 +111,13 @@ P3: improve the largest measured local cost as a whole unit, retain before/after
 raw evidence and the semantic tradeoff. No leaderboard chasing or blanket full
 suite/tribunal loops. Fixed allowance, at most two hardening layers, no mutants
 on the laptop. Speed, memory, I/O amplification and reliability are separate axes.
+
+## Remaining session maintenance (2026-10-08)
+
+Replace the history-sized catalog renewal map with a streaming merge of the selected
+catalog and the resident suffix. Keep directory enumeration alive across bounded
+scratch passes so unrelated entries cannot permanently hide debris; expose the
+latest pass counters/error. Bound resident suffix growth when accelerator publication
+cannot advance and preserve admitted settlement headroom. Direct checks: sorted
+merge/replaced locators, debris beyond 128 unrelated names, and refusal without a
+journal append at the suffix bound. Implementation and one source recheck only.

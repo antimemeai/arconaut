@@ -1,6 +1,7 @@
 #include "blackbird/archive_catalog.hpp"
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <limits>
 namespace blackbird {
 namespace {
@@ -52,38 +53,51 @@ std::array<std::byte,entry_size> encode(const ArchiveEntry &entry, std::uint32_t
   return bytes;
 }
 } // namespace
-Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_view name,
-    JournalHeader header, JournalCursor boundary, std::span<const ArchiveEntry> sorted) {
+static Result<void>
+publish_entries(JournalDirectory &directory, std::string_view name,
+                JournalHeader header, JournalCursor boundary, std::uint64_t count,
+                const std::function<Result<ArchiveEntry>(std::uint64_t)> &next) {
   try {
-    if (sorted.size()>UINT32_MAX || boundary.journal!=header.journal || boundary.end_offset<journal_header_size)
+    if (count > UINT32_MAX || boundary.journal != header.journal ||
+        boundary.end_offset < journal_header_size)
       return Result<void>::failure({ErrorCode::invalid_range});
-    for (std::size_t i=0;i<sorted.size();++i) {
-      const auto &r=sorted[i].record;
-      if ((i && !(sorted[i-1].key<sorted[i].key)) || r.journal!=header.journal ||
-          r.environment!=header.environment || !r.sequence || r.sequence>=boundary.sequence ||
-          !r.batch_first || r.batch_first>r.sequence || r.payload_offset<journal_header_size+journal_frame_header_size ||
-          r.payload_offset>boundary.end_offset || r.payload_size>boundary.end_offset-r.payload_offset ||
-          r.payload_size>header.limits.max_payload ||
-          (r.kind!=FrameKind::source && r.kind!=FrameKind::semantic))
-        return Result<void>::failure({ErrorCode::invalid_range});
-    }
     std::array<std::byte,prefix_size> bytes{}; MutableByteView out{bytes};
     put(out.first(8),magic); put(out.subspan(8,8),2);
     auto h=encode_journal_header(header); if (!h.has_value()) return Result<void>::failure(h.error());
     std::copy(h.value().begin(),h.value().end(),bytes.begin()+16);
     put(out.subspan(128,8),boundary.sequence); put(out.subspan(136,8),boundary.end_offset);
-    put(out.subspan(144,8),sorted.size()); put(out.subspan(152,4),crc32c(ByteView{bytes}.first(152)));
+    put(out.subspan(144, 8), count);
+    put(out.subspan(152, 4), crc32c(ByteView{bytes}.first(152)));
     const auto temporary=std::string{name}+".tmp."+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
     auto created=directory.create_exclusive(temporary); if (!created.has_value()) return Result<void>::failure(created.error());
     auto file=std::move(created).value();
     auto written=write_at(*file,0,bytes); if (!written.has_value()) return written;
     // Flush complete contiguous batches. The on-disk index is O(keys), not O(keys * path).
     constexpr std::size_t batch_entries=128;
+    std::optional<RecoveryKey> prior;
     std::vector<std::byte> batch; batch.reserve(batch_entries*entry_size);
-    for (std::size_t first=0;first<sorted.size();) {
-      batch.clear(); const auto end=std::min(sorted.size(),first+batch_entries);
+    for (std::size_t first = 0; first < count;) {
+      batch.clear();
+      const auto end = std::min<std::uint64_t>(count, first + batch_entries);
       for (std::size_t i=first;i<end;++i) {
-        const auto item=encode(sorted[i],static_cast<std::uint32_t>(i)); batch.insert(batch.end(),item.begin(),item.end());
+        auto loaded = next(i);
+        if (!loaded.has_value())
+          return Result<void>::failure(loaded.error());
+        const auto &entry = loaded.value();
+        const auto &r = entry.record;
+        if ((prior && !(prior.value() < entry.key)) || r.journal != header.journal ||
+            r.environment != header.environment || !r.sequence ||
+            r.sequence >= boundary.sequence || !r.batch_first ||
+            r.batch_first > r.sequence ||
+            r.payload_offset < journal_header_size + journal_frame_header_size ||
+            r.payload_offset > boundary.end_offset ||
+            r.payload_size > boundary.end_offset - r.payload_offset ||
+            r.payload_size > header.limits.max_payload ||
+            (r.kind != FrameKind::source && r.kind != FrameKind::semantic))
+          return Result<void>::failure({ErrorCode::invalid_range});
+        prior = entry.key;
+        const auto item = encode(entry, static_cast<std::uint32_t>(i));
+        batch.insert(batch.end(), item.begin(), item.end());
       }
       written=write_at(*file,prefix_size+first*entry_size,batch); if (!written.has_value()) return written;
       first=end;
@@ -92,6 +106,56 @@ Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_vi
     auto replaced=directory.replace_file(temporary,name); if (!replaced.has_value()) return replaced;
     return directory.synchronize_directory(SyncStrength::full);
   } catch (const std::bad_alloc &) { return Result<void>::failure({ErrorCode::allocation}); }
+}
+Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_view name,
+                                     JournalHeader header, JournalCursor boundary,
+                                     std::span<const ArchiveEntry> sorted) {
+  return publish_entries(
+      directory, name, header, boundary, sorted.size(),
+      [&](std::uint64_t i) { return Result<ArchiveEntry>::success(sorted[i]); });
+}
+Result<std::uint64_t>
+ArchiveCatalog::publish_merge(JournalDirectory &directory, std::string_view name,
+                              JournalHeader header, JournalCursor boundary,
+                              const ArchiveCatalog *previous,
+                              std::span<const ArchiveEntry> delta) {
+  using Answer = Result<std::uint64_t>;
+  std::uint64_t count = previous ? previous->count() : 0;
+  for (std::size_t i = 0; i < delta.size(); ++i) {
+    if (i && !(delta[i - 1].key < delta[i].key))
+      return Answer::failure({ErrorCode::invalid_range});
+    auto found =
+        previous ? previous->find(delta[i].key)
+                 : Result<std::optional<PhysicalJournalRecord>>::success(std::nullopt);
+    if (!found.has_value())
+      return Answer::failure(found.error());
+    if (!found.value())
+      ++count;
+  }
+  std::uint64_t old = 0;
+  std::size_t fresh = 0;
+  std::optional<ArchiveEntry> selected;
+  const auto next = [&](std::uint64_t) -> Result<ArchiveEntry> {
+    if (!selected && previous && old < previous->count()) {
+      auto loaded = previous->entry(old++);
+      if (!loaded.has_value())
+        return loaded;
+      selected = std::move(loaded).value();
+    }
+    if (fresh < delta.size() && (!selected || !(selected->key < delta[fresh].key))) {
+      if (selected && selected->key == delta[fresh].key)
+        selected.reset();
+      return Result<ArchiveEntry>::success(delta[fresh++]);
+    }
+    if (!selected)
+      return Result<ArchiveEntry>::failure({ErrorCode::corrupt});
+    auto result = std::move(*selected);
+    selected.reset();
+    return Result<ArchiveEntry>::success(std::move(result));
+  };
+  auto written = publish_entries(directory, name, header, boundary, count, next);
+  return written.has_value() ? Answer::success(count)
+                             : Answer::failure(written.error());
 }
 Result<std::unique_ptr<ArchiveCatalog>> ArchiveCatalog::open(JournalDirectory &directory,
     std::string_view name, JournalHeader header, JournalCursor boundary, std::uint64_t maximum_entries) {

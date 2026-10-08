@@ -1,0 +1,52 @@
+{
+  "binary_sha256": {
+    "candidate": "47282d5c978dbed9c4a7eb6e01a1aa0c30e810910b63a1f91e011ea882a88d99"
+  },
+  "samples": [
+    {
+      "binary": "candidate",
+      "index": 0,
+      "first_frame_ms": 805.1034999999999,
+      "command_marker_ms": 33.16166700000001,
+      "command_complete_ms": 33.332375000000084,
+      "spawn_to_marker_ms": 838.272917,
+      "idle_seconds": 0,
+      "idle_cpu_ms": null,
+      "idle_measured_seconds": null,
+      "seed": null,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 26.816
+    },
+    {
+      "binary": "candidate",
+      "index": 1,
+      "first_frame_ms": 443.37000000000006,
+      "command_marker_ms": 45.97645900000025,
+      "command_complete_ms": 45.97645900000025,
+      "spawn_to_marker_ms": 489.3555420000002,
+      "idle_seconds": 0,
+      "idle_cpu_ms": null,
+      "idle_measured_seconds": null,
+      "seed": null,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 76.63699999999999
+    }
+  ],
+  "load_before": [
+    25.56982421875,
+    31.6796875,
+    20.7314453125
+  ],
+  "platform": "Darwin",
+  "direct_native": false,
+  "published_launcher": true,
+  "idle_cpu_clock": "native PID user+system CPU; macOS Mach ticks converted with mach_timebase_info; Linux ticks/SC_CLK_TCK",
+  "endpoints": "Private fresh/copied sessions, ordinary cache. No provider. process_cpu_ms covers all phases; idle_cpu_ms only first-frame to submission.",
+  "load_after": [
+    24.40283203125,
+    31.3359375,
+    20.67431640625
+  ]
+}

@@ -69,6 +69,20 @@ int main() {
     CHECK(exists("audit.archive.1.tmp.202"));
     locked_scratch.reset();
     CHECK(unwrap(directory.reclaim_publication_scratch("audit")).removed == 1);
+    // Advance beyond unrelated names without rescanning the same first window.
+    for (unsigned i = 0; i < 300; ++i)
+      create("unrelated-" + std::to_string(i));
+    for (unsigned i = 0; i < 40; ++i)
+      create("audit.state.0.tmp." + std::to_string(500 + i));
+    for (unsigned pass = 0; pass < 32; ++pass) {
+      const auto progress =
+          unwrap(directory.reclaim_publication_scratch("audit", 64, 4));
+      CHECK(progress.scanned <= 64 && progress.removed <= 4);
+      CHECK(directory.scratch_cleanup_status().scanned == progress.scanned);
+    }
+    for (unsigned i = 0; i < 40; ++i)
+      CHECK(!exists("audit.state.0.tmp." + std::to_string(500 + i)));
+    // A new sweep must see files created after an earlier EOF.
     other.reset(); journal.reset();
     // Real interrupted process: writer lease and file are abandoned, then native
     // FramedJournal reopen reclaims the reserved temporary under its new lease.
@@ -80,6 +94,8 @@ int main() {
     int status = 0; CHECK(waitpid(child, &status, 0) == child);
     CHECK(WIFEXITED(status) && WEXITSTATUS(status) == 0 && exists("audit.state.1.tmp.300"));
     journal = unwrap(FramedJournal::open(directory, "audit", h, capacity));
+    for (unsigned pass = 0; pass < 8 && exists("audit.state.1.tmp.300"); ++pass)
+      unwrap(directory.reclaim_publication_scratch("audit"));
     CHECK(!exists("audit.state.1.tmp.300") && exists("audit.state.0") && exists("audit.archive.1"));
     std::cout << "reserved scratch reclaimed; unrelated/selected/linked/symlink files preserved; bounded passes and interrupted reopen pass\n";
     std::filesystem::remove_all(path);

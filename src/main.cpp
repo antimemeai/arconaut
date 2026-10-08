@@ -5,6 +5,7 @@
 #include "blackbird/station.hpp"
 #include "blackbird/terminal.hpp"
 #include <atomic>
+#include <chrono>
 #include <csignal>
 #include <fstream>
 #include <iostream>
@@ -54,6 +55,7 @@ int main(int argc, char **argv) {
 #if BLACKBIRD_DEBUG
   blackbird::LocalTimingSession local_timing;
 #endif
+  blackbird::LocalSpan startup{"startup.initialize", "src/main.cpp:main"};
   try {
     const char *home = std::getenv("HOME");
     if (home == nullptr)
@@ -62,7 +64,8 @@ int main(int argc, char **argv) {
     std::filesystem::path workflow = BLACKBIRD_WORKFLOW;
     std::string model = "gpt-6.1-sol", once, seed_path, backstop_path, station_path;
     Json backstop_mission;
-    bool one = false, inspect = false, plain = false;
+    bool one = false, inspect = false, plain = false, rebuild_session = false,
+         expire_diagnostics = false;
     std::string effort = "medium";
     bool model_option = false, effort_option = false, workflow_option = false;
     bool resume_requested = false, discovery = false;
@@ -75,7 +78,8 @@ int main(int argc, char **argv) {
                      "PROMPT] [--audit-last] [--effort low|medium|high|xhigh] "
                      "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
                      "[--backstop MISSION_JSON (requires --once)] "
-                     "[--resume-continue|--resume-once]\nInteractive: /context, "
+                     "[--resume-continue|--resume-once] [--rebuild-session] "
+                     "[--expire-diagnostics]\nInteractive: /context, "
                      "/originals, /restore "
                      "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
                      "/session, "
@@ -92,6 +96,14 @@ int main(int argc, char **argv) {
         resume_requested = true;
         if (arg == "--resume-once")
           one = true;
+        continue;
+      }
+      if (arg == "--expire-diagnostics") {
+        expire_diagnostics = true;
+        continue;
+      }
+      if (arg == "--rebuild-session") {
+        rebuild_session = true;
         continue;
       }
       if (arg == "--plain") {
@@ -152,6 +164,33 @@ int main(int argc, char **argv) {
       seed = unwrap(parse_json(read_file(seed_path, 1024 * 1024)));
       ContextStore::validate_successor_seed(seed);
     }
+    if (expire_diagnostics) {
+      if (one || inspect || discovery || resume_requested || rebuild_session ||
+          !seed_path.empty() || !station_path.empty() || !backstop_path.empty())
+        throw Error{ErrorCode::conflict};
+      auto maintenance = unwrap(NativeJournalDirectory::open(session.string()));
+      const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+      if (now < 0)
+        throw Error{ErrorCode::invalid_range};
+      std::size_t scanned = 0, removed = 0;
+      bool complete = false;
+      for (unsigned pass = 0; pass < 128 && !complete; ++pass) {
+        const auto result =
+            unwrap(maintenance.expire_diagnostics(static_cast<std::uint64_t>(now)));
+        scanned += result.scanned;
+        removed += result.removed;
+        if (result.error)
+          throw *result.error;
+        complete = result.complete;
+      }
+      std::cout << "Diagnostic expiry: " << removed << " removed, " << scanned
+                << " entries visited; "
+                << (complete ? "pass complete.\n"
+                             : "work bound reached; rerun to continue.\n");
+      return 0;
+    }
     std::filesystem::create_directories(session);
     if (::chmod(session.c_str(), 0700) != 0)
       throw Error{ErrorCode::io, errno};
@@ -170,12 +209,49 @@ int main(int argc, char **argv) {
       if (!file)
         throw Error{ErrorCode::incomplete};
       const auto header = unwrap(decode_journal_header(bytes));
-      root =
-          unwrap(RetainedState::open(std::move(directory), "audit", header, capacity));
+      if (header.predecessor) {
+        std::cerr
+            << "Linked audit segments require an explicit migration; this launcher "
+               "cannot reopen them. Session files left intact.\n";
+        return 1;
+      }
+      // Small sessions can rebuild automatically. Large histories require an
+      // explicit slow path if their derived state is missing or unsupported.
+      constexpr std::uint64_t automatic_replay_bytes = 64ULL * 1024 * 1024;
+      const auto replay_limit = rebuild_session ? UINT64_MAX : automatic_replay_bytes;
+      if (rebuild_session)
+        std::cerr << "Session recovery: full replay allowed (up to 512 MiB / 200000 "
+                     "records); uncertain operations will not be retried.\n";
+      LocalSpan restoration{"startup.restore", "src/main.cpp:open"};
+      auto opened = RetainedState::open(std::move(directory), "audit", header, capacity,
+                                        false, true, replay_limit);
+      if (!opened.has_value() && opened.error().code == ErrorCode::unsupported &&
+          !rebuild_session) {
+        std::cerr << "Session needs full recovery: saved state is missing, invalid, or "
+                     "does not cover this session. Automatic replay stops at 64 MiB. "
+                     "Reopen with --rebuild-session for the bounded slow path, or "
+                     "select a new --session directory. Session files left intact.\n";
+        return 1;
+      }
+      root = unwrap(std::move(opened));
+      if (!root->compact_recovery())
+        std::cerr << "Session recovery: rebuilding from audit; uncertain operations "
+                     "will not be retried.\n";
       unwrap(root->confirm_recovery());
       if (!inspect) {
-        recover_coding_session(*root);
+        try {
+          recover_coding_session(*root);
+        } catch (const Error &e) {
+          if (e.code != ErrorCode::external_unknown)
+            throw;
+          std::cerr << "Session has an operation with uncertain custody; reopen cannot "
+                       "grant permission to retry it. Inspect with --audit-last "
+                       "(--rebuild-session for a large audit), resolve the effect "
+                       "outside this session, or select a new --session directory.\n";
+          return 1;
+        }
       }
+      restoration.outcome(root->compact_recovery() ? "compact" : "full-replay");
     } else {
       std::uint64_t name_space = 0;
       if (getentropy(&name_space, sizeof(name_space)) != 0 || name_space == 0)
@@ -411,7 +487,10 @@ int main(int argc, char **argv) {
           emit(unwrap(dump_json(context.view())) + "\n");
         else if (prompt == "/sessions")
           emit(unwrap(dump_json(list_sessions(session.parent_path()))) + "\n");
-        else if (prompt == "/stats")
+        else if (prompt == "/checkpoint") {
+          unwrap(context.checkpoint());
+          emit("Session checkpoint saved.\n");
+        } else if (prompt == "/stats")
           emit(unwrap(dump_json(engine.stats())) + "\n");
         else if (prompt.starts_with("/compact "))
           emit(unwrap(dump_json(context.manage(unwrap(parse_json(prompt.substr(9)))))) +
@@ -506,6 +585,11 @@ int main(int argc, char **argv) {
           ui.failed();
         emit("\n" + std::string{error_name(e.code)} + " (" + std::to_string(e.detail) +
              "); context/audit retained\n");
+        if (root->maintenance_error())
+          emit("Saved-state maintenance failed (" +
+               std::string{error_name(root->maintenance_error()->code)} +
+               "). Check session storage, then use /checkpoint to retry; new work "
+               "stops at the resident-tail limit.\n");
         if (root->state() != JournalWriterState::live)
           throw;
         if (!backstop_path.empty() && e.code != ErrorCode::interrupted &&
@@ -524,6 +608,8 @@ int main(int argc, char **argv) {
       if (interrupted.load(std::memory_order_relaxed))
         cancelled.store(true);
     };
+    startup.outcome("ready");
+    startup.finish();
     if (!station_path.empty()) {
       // An explicitly selected local file adapter, not a feed service governor.
       const auto adapter = std::filesystem::absolute(station_path).lexically_normal();

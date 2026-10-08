@@ -502,3 +502,27 @@ redispatches. `workflow_returned` is not effect success. Use explicit release
 selection if your interactive launcher is pinned to an older UI generation.
 See [Station operating interface](STATION.md) for exact bounds, RRC selection and
 source-owned backlog semantics. No live TUI attach or crash containment claim.
+
+Provider transport diagnostics expire after **30 days**. New blocks live in private
+`diagnostics/` files beside the session audit; the audit stores small block references,
+not another raw stream copy. Live display is immediate. Diagnostics are optional:
+a process crash or storage error can lose them without replaying a request.
+`audit_inspect` with `record` and `diagnostic:true` reads an unexpired block (the
+usual offset/limit bounds apply); an expired/missing block returns `stale_handle`.
+Expiration uses wall-clock Unix seconds, including its behavior after clock changes.
+
+Reopen and new capture perform bounded expiry passes. For an idle session, run
+`scripts/blackbird --session DIR --expire-diagnostics`; it reports removed files
+and whether scanning completed. Repeat if incomplete. No background daemon is
+installed. Legacy stream bytes already embedded in an older finite audit remain
+there; this change does not rewrite those journals. New diagnostics no longer grow
+that journal by raw transport volume.
+
+`/checkpoint` explicitly saves current session state and retries failed maintenance.
+`/stats` exposes the maintenance error and resident tail records. Compact sessions
+attempt maintenance at128 resident records or8MiB of suffix; failed automatic
+retries wait64 sequence steps. New admissions stop before the1024-record/32MiB
+resident-tail budget, including reserved settlement room. Already-admitted work can
+settle. Fix storage and retry `/checkpoint`; a failed derived publication does not
+undo accepted context. The full journal's existing512MiB/200000-record capacity
+remains independent. See [session reopen](SESSION_REOPEN.md) for fallback behavior.

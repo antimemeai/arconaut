@@ -46,15 +46,22 @@ void validate(const SessionSettings &value) {
 void save_session_info(const std::filesystem::path &directory,
                        const SessionSettings &settings, const SessionIdentity &id) {
   validate(settings);
-  write_file(directory / "session-info.json",
-             unwrap(dump_json(Json::object(
-                 {{"version", Json{JsonNumber{"1"}}},
-                  {"model", Json{settings.model}},
-                  {"effort", Json{settings.effort}},
-                  {"workflow", Json{settings.workflow}},
-                  {"actor", Json{hex_identity(id.actor.bytes())}},
-                  {"conversation", Json{hex_identity(id.conversation.bytes())}},
-                  {"workflow_id", Json{hex_identity(id.workflow.bytes())}}}))));
+  const auto serialized = unwrap(dump_json(
+      Json::object({{"version", Json{JsonNumber{"1"}}},
+                    {"model", Json{settings.model}},
+                    {"effort", Json{settings.effort}},
+                    {"workflow", Json{settings.workflow}},
+                    {"actor", Json{hex_identity(id.actor.bytes())}},
+                    {"conversation", Json{hex_identity(id.conversation.bytes())}},
+                    {"workflow_id", Json{hex_identity(id.workflow.bytes())}}})));
+  const auto path = directory / "session-info.json";
+  try {
+    if (read_file(path, 512 * 1024) == serialized)
+      return;
+  } catch (const Error &) {
+    // Missing/unreadable derived metadata is replaced from current audit state.
+  }
+  write_file(path, serialized);
 }
 Json list_sessions(const std::filesystem::path &requested) {
   const auto absolute = std::filesystem::absolute(requested).lexically_normal();

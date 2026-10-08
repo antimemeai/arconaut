@@ -10,6 +10,14 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
+std::vector<std::byte> diagnostic_bytes(RetainedState &root, const Json &packet) {
+  const auto now = static_cast<std::uint64_t>(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count());
+  return unwrap(root.read_diagnostic(
+      string_field(field(packet, "metadata"), "diagnostic_file"), now));
+}
 class ManagedToolProvider final : public CodingProvider {
 public:
   Json proposal;
@@ -212,7 +220,7 @@ void atomic_admission_test(const std::string &path, int mode) {
   const JournalHeader h{id<EnvironmentId>(31),
                         id<AuditStreamId>(32),
                         3,
-                        {8192, mode == 2 ? 16384U : 65536U},
+                        {mode == 2 ? 7300U : 8192U, mode == 2 ? 7400U : 65536U},
                         std::nullopt};
   auto root =
       unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
@@ -255,7 +263,8 @@ void atomic_admission_test(const std::string &path, int mode) {
         const auto input = unwrap(dump_json(args));
         const auto metadata = unwrap(dump_json(Json::object(
             {{"operation", Json{"write_file"}},
-             {"input", args},
+             {"input_binding", Json{"invocation-v1"}},
+             {"invocation", Json{hex_identity(id<InvocationId>(52).bytes())}},
              {"revision", Json{context.head()}},
              {"generation", Json{hex_identity(prior->definition.bytes())}}})));
         const auto raw = std::as_bytes(std::span{metadata.data(), metadata.size()});
@@ -277,8 +286,8 @@ void atomic_admission_test(const std::string &path, int mode) {
                                                               id<DecisionId>(51),
                                                               prior->definition,
                                                               {in.begin(), in.end()}}});
-        // Cached durable IDs add no records/bytes; leave room for the two old
-        // transactions, but not their atomic admission/settlement envelope.
+        // Leave room for decision and invocation, but not the complete
+        // three-record admission batch. No effect may start with a partial batch.
         const auto room =
             2 * (56 + journal_frame_header_size) + decision + invocation;
         if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
@@ -291,8 +300,11 @@ void atomic_admission_test(const std::string &path, int mode) {
 
   bool refused = false;
   try {
-    engine.turn({"", "arco.call('write_file', arco.json.decode([==[" +
-                         unwrap(dump_json(args)) + "]==]))"});
+    const auto program = mode == 2
+        ? "local a=arco.json.decode([==[" + unwrap(dump_json(Json::object({{"path",Json{marker}}}))) +
+          "]==]); a.content=string.rep('x',7000); arco.call('write_file',a)"
+        : "arco.call('write_file', arco.json.decode([==[" + unwrap(dump_json(args)) + "]==]))";
+    engine.turn({"", program});
   } catch (const Error &error) {
     refused = error.code == ErrorCode::capacity;
   }
@@ -444,7 +456,7 @@ void retained_output_test(const std::string &path) {
     // The explorer must expose the actual unknown disposition and causal links,
     // rather than interpreting a terminal record as successful completion.
     bool unknown = false, linked = false;
-    const auto end = log.root().committed_facts().size();
+    const auto end = log.root().fact_count();
     for (std::size_t cursor = 0; cursor < end; cursor += 64) {
       auto page = log.inspect(
           Json::object({{"cursor", Json{JsonNumber{std::to_string(cursor)}}},
@@ -502,7 +514,8 @@ void retained_output_test(const std::string &path) {
       throw Error{ErrorCode::corrupt};
     const auto complaint_id = string_field(complaint, "complaint");
     bool captured = false;
-    for (const auto &fact : root->committed_facts()) {
+    for (std::size_t ordinal = 0; ordinal < root->fact_count(); ++ordinal) {
+      const auto fact = unwrap(root->fact(ordinal));
       if (const auto *e = std::get_if<ApplicationRecordEvent>(&fact.event.body);
           e && hex_identity(e->identity.bytes()) == complaint_id) {
         for (const auto dep : fact.event.dependencies) {
@@ -576,7 +589,7 @@ void capacity_warning_test(const std::string &path) {
   FlakyProvider provider;
   provider.failures = 0;
   CodingEngine engine{log, context, provider, "test"};
-  const std::string filler(200 * 1024, 'x');
+  const std::string filler(*root->journal_usage().remaining_bytes() - 24576, 'x');
   log.original({"capacity diagnostic filler", filler, Json::object({})});
   unsigned warnings = 0;
   engine.status = [&](std::string_view s) {
@@ -593,8 +606,12 @@ void capacity_warning_test(const std::string &path) {
     refused = true;
   }
   if (!refused || warnings != 1 || provider.calls != 0 ||
-      !std::get<bool>(field(field(engine.stats(), "audit"), "approaching").value()))
+      !std::get<bool>(field(field(engine.stats(), "audit"), "approaching").value())) {
+    std::cerr << "capacity warning refused=" << refused << " warnings=" << warnings
+              << " provider=" << provider.calls
+              << " remaining=" << *root->journal_usage().remaining_bytes() << '\n';
     throw Error{ErrorCode::corrupt};
+  }
 }
 void retry_tests(const std::string &path) {
   std::filesystem::create_directory(path);
@@ -820,13 +837,13 @@ void workflow_capacity_test(const std::string &path, bool records) {
       const auto packet = unwrap(parse_json(std::string_view{
           reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
       if (const auto *label = packet.find("label")) {
-        if (*label == Json{"provider.stream"})
-          for (const auto ref : fact.event.dependencies) {
-            const auto bytes = unwrap(root->source(ref));
-            if (std::string_view{reinterpret_cast<const char *>(bytes.data()),
-                                 bytes.size()}.starts_with("retained-first-fragment"))
-              first = true;
-          }
+        if (*label == Json{"provider.stream"}) {
+          const auto bytes = diagnostic_bytes(*root, packet);
+          if (std::string_view{reinterpret_cast<const char *>(bytes.data()),
+                               bytes.size()}
+                  .starts_with("retained-first-fragment"))
+            first = true;
+        }
         if (*label == Json{"capacity.stop"} &&
             field(field(packet, "metadata"), "unretained_bytes").number().text != "0")
           lost = true;
@@ -1095,10 +1112,14 @@ int main(int argc, char **argv) {
   auto path = mkdtemp(name);
   if (!path)
     return 2;
+  std::string stage = "initial";
   try {
     if (argc == 2 && std::string_view{argv[1]} == "stream-capture") {
+      stage = "workflow_capacity_test";
       workflow_capacity_test(std::string{path} + "/workflow-bytes", false);
+      stage = "workflow_capacity_test";
       workflow_capacity_test(std::string{path} + "/workflow-records", true);
+      stage = "retry_tests";
       retry_tests(std::string{path} + "/retries");
       JournalHeader h{id<EnvironmentId>(1), id<AuditStreamId>(2), 3,
                       {4 * 1024 * 1024, 16 * 1024 * 1024}, std::nullopt};
@@ -1139,29 +1160,44 @@ int main(int argc, char **argv) {
         const auto packet = unwrap(parse_json(read_text(record->payload)));
         if (string_field(packet, "label") != "provider.stream") continue;
         ++blocks;
-        for (const auto ref : facts[i].event.dependencies)
-          captured_bytes += unwrap(root->source(ref)).size();
+        if (!facts[i].event.dependencies.empty())
+          throw Error{ErrorCode::corrupt};
+        captured_bytes += diagnostic_bytes(*root, packet).size();
       }
       if (blocks != 2 || captured_bytes != 100000) throw Error{ErrorCode::corrupt};
-      std::cout << "engine: 100000 callbacks -> " << blocks << " source/log appends\n";
+      std::cout << "engine: 100000 callbacks -> " << blocks << " diagnostic blocks\n";
       std::filesystem::remove_all(path);
       return 0;
     }
+    stage = "file_selector_test";
     file_selector_test(std::string{path} + "/file-selector");
+    stage = "workflow_interruption_budget_test";
     workflow_interruption_budget_test(std::string{path} + "/interruption-floor");
+    stage = "workflow_settlement_limits_test";
     workflow_settlement_limits_test(std::string{path} + "/settlement-payload", false);
+    stage = "workflow_settlement_limits_test";
     workflow_settlement_limits_test(std::string{path} + "/settlement-batch", true);
+    stage = "workflow_mutation_capacity_test";
     workflow_mutation_capacity_test(std::string{path} + "/workflow-mutation", false);
+    stage = "workflow_mutation_capacity_test";
     workflow_mutation_capacity_test(std::string{path} + "/workflow-nesting", true);
+    stage = "workflow_process_capacity_test";
     workflow_process_capacity_test(std::string{path} + "/workflow-process");
+    stage = "workflow_capacity_test";
     workflow_capacity_test(std::string{path} + "/workflow-bytes", false);
+    stage = "workflow_capacity_test";
     workflow_capacity_test(std::string{path} + "/workflow-records", true);
+    stage = "atomic_admission_test";
     for (int mode = 0; mode != 3; ++mode)
       atomic_admission_test(std::string{path} + "/admission-" + std::to_string(mode),
                             mode);
+    stage = "capacity_warning_test";
     capacity_warning_test(std::string{path} + "/capacity");
+    stage = "retry_tests";
     retry_tests(std::string{path} + "/retries");
+    stage = "retained_output_test";
     retained_output_test(std::string{path} + "/output");
+    stage = "ordinary coding";
     JournalHeader h{id<EnvironmentId>(1),
                     id<AuditStreamId>(2),
                     3,
@@ -1407,7 +1443,7 @@ int main(int argc, char **argv) {
       throw Error{ErrorCode::corrupt};
 
   } catch (const Error &e) {
-    std::cerr << error_name(e.code) << ':' << e.detail << '\n';
+    std::cerr << stage << " stage: " << error_name(e.code) << ':' << e.detail << '\n';
     std::filesystem::remove_all(path);
     return 1;
   } catch (const std::exception &e) {

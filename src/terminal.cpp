@@ -62,6 +62,8 @@ const std::array builtin_commands{
     ChatCommand{"/effort", "LEVEL", "Set low, medium, high or xhigh", "Session"},
     ChatCommand{"/session", "", "Current session and settings", "Session"},
     ChatCommand{"/sessions", "", "List neighbouring sessions", "Session"},
+    ChatCommand{"/checkpoint", "", "Save session state and retry maintenance",
+                "Session"},
     ChatCommand{"/stats", "", "Context bytes and observed provider usage", "Session"},
     ChatCommand{"/context", "", "Inspect editable model context", "Context"},
     ChatCommand{"/originals", "", "Retained context originals", "Context"},
@@ -72,8 +74,11 @@ const std::array builtin_commands{
     ChatCommand{"/workflow", "FILE", "Select the turn workflow", "Programs"},
     ChatCommand{"/restart", "NOTE", "Request native restart; build replacement first",
                 "Programs"},
-    ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)", "Tools"},
-    ChatCommand{"/beads", "configure JSON | ready | list | show ID | select ID | cached", "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};
+    ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)",
+                "Tools"},
+    ChatCommand{"/beads",
+                "configure JSON | ready | list | show ID | select ID | cached",
+                "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};
 
 std::shared_ptr<const std::vector<ChatCommand>> command_catalog() {
   thread_local std::shared_ptr<const WorkflowRegistry> previous;
@@ -1112,6 +1117,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     const std::lock_guard lock{mutex_};
     notification_ = notifications[1];
   }
+  LocalSpan first_frame{"startup.terminal-first-frame", "src/terminal.cpp:chat"};
   Composer composer;
   std::jthread worker;
   struct StopOnExit {
@@ -1194,17 +1200,22 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
 #if BLACKBIRD_DEBUG
     auto *const timing = local_timing_sink;
 #endif
+    auto dispatch = std::make_unique<LocalSpan>("command.worker-dispatch",
+                                                "src/terminal.cpp:start", false);
     worker = std::jthread([&,
 #if BLACKBIRD_DEBUG
-                          timing,
+                           timing,
 #endif
-                          prompt = std::move(prompt)] {
+                           dispatch = std::move(dispatch), prompt = std::move(prompt)] {
 #if BLACKBIRD_DEBUG
       local_timing_sink = timing;
       struct UnbindTiming {
         ~UnbindTiming() { local_timing_sink = nullptr; }
       } unbind_timing;
 #endif
+      dispatch->outcome("running");
+      dispatch->finish();
+      LocalSpan command{"command.perform", "src/terminal.cpp:worker"};
       try {
         perform(prompt);
       } catch (const std::exception &e) {
@@ -1214,6 +1225,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         post(Kind::failure, {});
         text("\nTurn failed; inspect the retained audit.\n");
       }
+      command.outcome("returned");
+      command.finish();
       post(Kind::complete, {});
     });
   };
@@ -1256,6 +1269,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     start(std::move(initial));
   while (true) {
     if (output.pending() && output.flush()) {
+      first_frame.outcome("flushed");
+      first_frame.finish();
       if (pending_grid)
         painter.commit(grid);
       else
@@ -1360,6 +1375,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     if (rows != old_rows || columns != old_columns)
       redraw = true;
     if (redraw && !output.pending()) {
+      LocalSpan render{"command.render", "src/terminal.cpp:frame"};
       const bool same_width = old_columns == columns;
       const bool geometry_changed = old_columns != columns || old_rows != rows;
       old_rows = rows;
@@ -1379,8 +1395,12 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         small_frame += "\x1b[?2026l";
         pending_grid = false;
         output.start(small_frame);
-        (void)output.flush();
+        if (output.flush()) {
+          first_frame.outcome("flushed");
+          first_frame.finish();
+        }
         painter.invalidate();
+        render.outcome("small-frame");
         continue;
       }
       const auto inner_width = width - 4;
@@ -1588,9 +1608,13 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           output.start(image_frame);
         } else
           output.start(packet);
-        if (output.flush())
+        if (output.flush()) {
+          first_frame.outcome("flushed");
+          first_frame.finish();
           painter.commit(grid);
+        }
       }
+      render.outcome(output.pending() ? "queued" : "flushed");
     }
     std::array<pollfd, 3> inputs{
         {{STDIN_FILENO, POLLIN, 0},
@@ -1617,6 +1641,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       continue;
     }
     char bytes[512];
+    LocalSpan input{"command.input-save", "src/terminal.cpp:input"};
     const auto count = read(STDIN_FILENO, bytes, sizeof(bytes));
     if (count <= 0) {
       quitting = true;
@@ -1738,6 +1763,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         } else {
           if (persist()) {
             saved_last_input = true;
+            input.outcome("dispatch");
+            input.finish();
             start(std::move(result.text));
           } else
             composer.draft(std::move(result.text));

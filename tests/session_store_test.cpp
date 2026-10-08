@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include <chrono>
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -61,6 +62,13 @@ int main() {
       workflow = hex_identity(identity.workflow.bytes());
       check(session_identity(log).conversation == identity.conversation);
       save_session_info(path, store.settings(), identity);
+      const auto metadata_path = std::filesystem::path{path} / "session-info.json";
+      const auto old_time =
+          std::filesystem::file_time_type::clock::now() - std::chrono::hours{1};
+      std::filesystem::last_write_time(metadata_path, old_time);
+      const auto unchanged_time = std::filesystem::last_write_time(metadata_path);
+      save_session_info(path, store.settings(), identity);
+      check(std::filesystem::last_write_time(metadata_path) == unchanged_time);
       const auto audit_before = read_file(std::filesystem::path{path} / "audit");
       auto listed = list_sessions(path);
       check(field(listed, "sessions").array().size() == 1 &&

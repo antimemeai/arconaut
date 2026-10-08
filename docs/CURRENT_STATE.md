@@ -48,21 +48,25 @@ single-segment population. The earlier recovery continuation notes describe
 historical incomplete work; current behavior and limits are in the
 [delivery report](../papers/2026-10-08-saved-state-delivery.md).
 
-Five subsequent performance commits deliver bounded provider-stream capture,
-two fewer retained request bodies, context append deltas and removal of historical
-index clones, bounded publication-scratch cleanup, and one fewer unchanged UI-state
-save on final-byte submission. Their six performance/reopen issues remain open or
-in progress: native invocation/admission duplication, remaining live/history copies,
-capture sync/CPU/latency and diagnostic lifetime, catalog/resident-tail bounds,
-launch-to-command latency and the supported reopen/fallback policy still need work.
-The broad coding test has a recorded unresolved `unsupported` failure; focused
-affected checks passed. No overall latency speedup is established by these slices.
+The requested performance wrap-up is integrated and published. Native request
+inputs use invocation references; context values and history snapshots share owned
+storage; context edits avoid duplicate candidate entries. Maintenance streams catalog
+renewal, resumes scratch cleanup, and bounds compact resident tails when publication
+fails. `/checkpoint` retries maintenance. The coding test failure is resolved.
 
-At the 2026-10-08 assessment, the rebuilt `build/release/blackbird` contains these
-five follow-ups, but ordinary interactive `scripts/blackbird` still selects the
-older published `blackbird-ui` measured in the 300-start report. Explicit executable
-selection overrides that choice. The interactive binary has not been republished
-by this assessment; source delivery and interactive activation remain distinct.
+Ordinary interactive launches now select the current Release/OFF `blackbird-ui`,
+matching `blackbird` and the compatibility aliases. Program source and activation
+share a durable batch; unchanged discovery metadata skips rewriting. Local phase
+attribution and a finite [reopen matrix](SESSION_REOPEN.md) are delivered. No
+under100ms readiness result is implied; final launcher outliers are retained.
+See [delivery and actual limits](../papers/2026-10-08-wrapup-delivery.md).
+
+New provider diagnostics expire after30days and live in removable files. Reopen/
+capture cleanup is bounded; `--expire-diagnostics` cleans idle sessions explicitly.
+Older diagnostics embedded in finite audits remain there. Additional stream cost
+measurement was excluded by the operator. Catalog disk renewal still follows total
+key count; arbitrary historical compatibility and linked-session reopening are not
+implemented by this launcher.
 
 Other backlog: scoped Linux
 checks, useful heterogeneous colleagues, richer terminal presentation, asynchronous

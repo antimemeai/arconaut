@@ -1,0 +1,25 @@
+{
+  "large_missing_state_refusal": {
+    "exit": 1,
+    "message": "Session needs full recovery: saved state is missing, invalid, or does not cover this session. Automatic replay stops at 64 MiB. Reopen with --rebuild-session for the bounded slow path, or select a new --session directory. Session files left intact."
+  },
+  "explicit_rebuild": {
+    "exit": 0,
+    "message": "Session recovery: full replay allowed (up to 512 MiB / 200000 records); uncertain operations will not be retried.\nSession recovery: rebuilding from audit; uncertain operations will not be retried.",
+    "session": {
+      "actor": "03000000000000000104000000000000",
+      "conversation": "03000000000000000204000000000000",
+      "workflow_id": "03000000000000000304000000000000",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "workflow": "/Users/patrickbeam/projects/blackbird/programs/turn.lua"
+    }
+  },
+  "diagnostics_ttl_cli": {
+    "exit": 0,
+    "message": "Diagnostic expiry: 300 removed, 303 entries visited; pass complete.",
+    "expired_removed": 300,
+    "fresh_remaining": 1,
+    "created_audit": false
+  }
+}

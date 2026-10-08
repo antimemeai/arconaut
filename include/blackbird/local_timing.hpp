@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string_view>
 
 namespace blackbird {
@@ -17,11 +18,11 @@ using LocalClock = LocalTick (*)(bool) noexcept;
 LocalTick local_tick(bool cpu = true) noexcept;
 struct LocalMetric {
   const char *action{}, *source{}, *outcome{"incomplete"};
-  std::uint64_t wall_ns{}, cpu_ns{}, history{}, bytes{}, sequence{};
+  std::uint64_t start_wall_ns{}, wall_ns{}, cpu_ns{}, history{}, bytes{}, sequence{};
   bool cpu_measured{true}, clock_valid{}, linkage_truncated{};
   std::array<char, 96> revision{}, attempt{};
 };
-// Single owning thread. No file I/O in push; capacity fixed for the whole session.
+// Main/turn threads may publish concurrently; no file I/O in push. Fixed capacity.
 class LocalTimingSink {
 public:
   static constexpr std::size_t capacity = 8192;
@@ -34,6 +35,7 @@ public:
   const LocalMetric &at(std::size_t i) const noexcept { return records_[i]; }
 
 private:
+  std::mutex mutex_;
   LocalClock clock_;
   std::array<LocalMetric, capacity> records_{};
   std::size_t size_{};

@@ -77,6 +77,35 @@ void reservation_bytes() {
   const auto too_small = decode_retained_event(bytes, 15);
   CHECK(!too_small.has_value() && too_small.error().code == ErrorCode::capacity);
 }
+void admission_reference_bytes() {
+  const RetainedEvent event{{},
+                            AttemptAdmissionEvent{id<OperationAttemptId>(8),
+                                                  id<InvocationId>(7),
+                                                  id<DecisionId>(1), original, true}};
+  const auto bytes = require(encode_retained_event(event, 56));
+  CHECK(bytes.size() == 56 && bytes[0] == std::byte{2} && bytes[2] == std::byte{4});
+  const auto decoded = require(decode_retained_event(bytes, 56));
+  const auto &admission = std::get<AttemptAdmissionEvent>(decoded.body);
+  CHECK(admission.input.empty() && admission.input_from_invocation);
+  CHECK(admission.attempt == id<OperationAttemptId>(8));
+  CHECK(admission.invocation == id<InvocationId>(7));
+  CHECK(admission.decision == id<DecisionId>(1));
+  CHECK(require(encode_retained_event(decoded, 56)) == bytes);
+  for (std::size_t end = 0; end < bytes.size(); ++end)
+    CHECK(!decode_retained_event(ByteView{bytes}.first(end), 56).has_value());
+  auto extra = bytes;
+  extra.push_back(std::byte{0});
+  CHECK(!decode_retained_event(extra, 256).has_value());
+  auto unknown = bytes;
+  unknown[0] = std::byte{3};
+  CHECK(decode_retained_event(unknown, 256).error().code == ErrorCode::unsupported);
+  const RetainedEvent legacy{{},
+                             AttemptAdmissionEvent{id<OperationAttemptId>(8),
+                                                   id<InvocationId>(7),
+                                                   id<DecisionId>(1), original}};
+  CHECK(require(decode_retained_event(require(encode_retained_event(legacy, 256)),
+                                      256)) == legacy);
+}
 void decision_bytes() {
   const RetainedEvent event{{}, decision()};
   const auto bytes = require(encode_retained_event(event, 256));
@@ -479,6 +508,7 @@ void continuation_wire() {
 int main() {
   try {
     reservation_bytes();
+    admission_reference_bytes();
     decision_bytes();
     dependencies_and_other_bodies();
     rejection_and_receipt_bytes();

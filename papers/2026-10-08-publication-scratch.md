@@ -31,3 +31,33 @@ This is bounded best-effort reclamation, not a complete disk-growth bound. Every
 Catalog renewal still bulk-merges metadata, and arbitrary ledger-only workloads or persistent publication failures can still grow resident tails. arconaut-m9l remains in progress. No claim of full failure-publication storage cleanup or arbitrary-history constant maintenance cost.
 
 Unit bound35minutes; hardening at most20minutes, implementation/direct checks then one recheck and its fixes. Previous context/request/capture units were not re-reviewed.
+
+## Remaining maintenance implementation (2026-10-08)
+
+Native cleanup now retains its directory stream between calls, closes at EOF, and
+starts a fresh cycle on the next call. Changing journals resets the cursor. Each
+pass keeps the 128-entry/16-removal limits and prior candidate safety checks. The
+last pass counters and error are available on NativeJournalDirectory; a changed
+cleanup failure emits a concise native warning. Directory enumeration progress is
+process-local: restarting after fewer than a full cycle restarts its scan.
+
+Catalog publication now merges the selected immutable catalog with sorted suffix
+locators one entry at a time; it retains one old entry and one 128-entry output
+batch. The suffix map remains proportional to the resident suffix. Catalog renewal
+still rewrites O(total keys) disk bytes: this change removes the history-sized RAM
+map and extra vector, not all historical I/O. Publication preserves old generation
+reader ownership and validates monotonic keys and locator bounds while streaming.
+
+For compact recovery, ContextStore supplies a checkpoint callback before fresh
+ordinary admission once the suffix reaches 128 resident records or 8MiB of journal
+bytes. Failed maintenance is visible through maintenance_error(); fresh admission
+stops at 1024 records or 32MiB, including admitted settlement headroom. Existing
+settlement remains permitted. Ledger-only ordinary workloads therefore trigger the
+same maintenance as context edits. Explicit ContextStore::checkpoint() retries
+after repair. Legacy full-replay sessions retain their configured physical ceiling
+until migrated into a supported compact session; no unlimited-history behavior is
+introduced for them.
+
+Direct checks added: old/new duplicate locator merge and immutable readers, debris
+beyond 300 unrelated entries across bounded passes, ledger-only auto checkpoint,
+and persistent checkpoint failure refusing a fresh append without cursor advance.

@@ -39,6 +39,7 @@ In a terminal this opens the conversation view and composer. Piped input and `--
 ./scripts/blackbird --session context/my-blackbird --once 'Inspect this project and explain its build.'
 ./scripts/blackbird --session context/my-blackbird --model gpt-6.1-sol --effort medium
 ./scripts/blackbird --list-sessions
+./scripts/blackbird --session context/my-blackbird --expire-diagnostics
 ```
 
 **Supported partner tool: [phux](https://github.com/no-phux/phux)**, by phall,
@@ -53,7 +54,7 @@ Start a named phux session with:
 Detach with `Ctrl-A`, then `d`; return with `phux attach arco`. See
 [phux support](docs/PHUX.md) for installation, multiple Blackbirds, and terminal control.
 
-The working directory is the tool working directory. New default sessions live at `~/.local/state/blackbird/default`; an existing `~/.local/state/arconaut/default` is reused until you select a new default. An explicit directory keeps a project's conversation where you choose. Only one process may hold a session. Model, reasoning effort, workflow path, and conversation identities persist across restart. Explicit launch options override and save the corresponding settings.
+The working directory is the tool working directory. New default sessions live at `~/.local/state/blackbird/default`; an existing `~/.local/state/arconaut/default` is reused until you select a new default. An explicit directory keeps a project's conversation where you choose. Only one process may hold a session. Model, reasoning effort, workflow path, and conversation identities persist across restart. Explicit launch options override and save the corresponding settings. See [session reopen behavior](docs/SESSION_REOPEN.md) for recovery size limits, uncertain operations and `--rebuild-session`.
 
 The current OpenAI connection uses the operator's existing **Codex ChatGPT sign-in**. Installed native Codex supplies authentication and refresh. Blackbird constructs the provider requests, processes the streams, runs tools, and maintains context. An API key is not required for this bootstrap path. Codex is currently a runtime prerequisite for authentication; removing that construction scaffolding is future work. This is not yet a general multi-provider distribution.
 
