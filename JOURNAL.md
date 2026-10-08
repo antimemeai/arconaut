@@ -4842,3 +4842,17 @@ blocked admission to audit_unavailable; strengthened the diagnostic to record
 actual denied attempts and checked the direct count. No production changes.
 Targeted developer build succeeds. Candidate implementation owns the separate
 slot; no concurrent source edits in its checkout.
+
+## 2026-10-08 — saved-state delivery allowance ended incomplete
+
+Native candidate c06615e pushed and retained inactive. Compact saved-state/context
+restoration, bulk disk locators, checked physical suffix seam implemented; semantic
+ledger still fully replayed. Actual heavy local provider admission397.796ms with
+673841790bytes read: two archive passes, not goal completion. Direct scoped tests
+passed after owner fixed damaged-prefix finding. Root preliminary catalog review
+found unbound entry relocation; unresolved at deadline. No full review/merge/runtime
+activation or new100-start success claim. Exact continuation on candidate, summary
+in papers/2026-10-08-saved-state-delivery-status.md. Manager hard deadline returned
+unknown; observed managed processes stopped, native slot settled/checkpointed,
+board marked incomplete and active reservation released.687 resource observations
+persisted. No allowance reset. Bead stays open for integrated semantic recovery.
