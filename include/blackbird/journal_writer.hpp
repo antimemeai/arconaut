@@ -3,8 +3,8 @@
 #include "blackbird/journal.hpp"
 #include "blackbird/journal_storage.hpp"
 #include <algorithm>
-#include <string>
 #include <functional>
+#include <string>
 
 namespace blackbird {
 
@@ -94,7 +94,8 @@ public:
   static Result<std::unique_ptr<FramedJournal>>
   create(JournalDirectory &directory, std::string_view name, JournalHeader header,
          JournalCapacity capacity, SyncStrength strength = SyncStrength::full);
-  using ResumeSelector = std::function<Result<std::optional<JournalResume>>(FramedJournal &)>;
+  using ResumeSelector =
+      std::function<Result<std::optional<JournalResume>>(FramedJournal &)>;
   static Result<std::unique_ptr<FramedJournal>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader expected,
        JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
@@ -103,10 +104,13 @@ public:
        ResumeSelector selector = {});
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
-  using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
+  using PayloadReader = std::function<Result<std::vector<std::byte>>()>;
   Result<PayloadReader> payload_reader(const PhysicalJournalRecord &record);
   bool used_scan_checkpoint() const noexcept { return used_scan_checkpoint_; }
-  ~FramedJournal() { if (file_) file_->release_writer(); }
+  ~FramedJournal() {
+    if (file_)
+      file_->release_writer();
+  }
   FramedJournal(const FramedJournal &) = delete;
   FramedJournal &operator=(const FramedJournal &) = delete;
   Result<JournalCursor> append(std::span<const JournalDraft> drafts);
@@ -142,13 +146,15 @@ public:
 
 private:
   friend class RetainedState;
-  using ArchiveReader = std::function<Result<std::vector<std::byte>>(const PhysicalJournalRecord &)>;
+  using ArchiveReader =
+      std::function<Result<std::vector<std::byte>>(const PhysicalJournalRecord &)>;
   ArchiveReader archive_reader(JournalCursor boundary) const;
   // Only an authenticated catalog locator selected by RetainedState may bypass
-// the resident descriptor vector. Validate the complete frame on every read.
-Result<std::vector<std::byte>> read_catalog_payload(
-    const PhysicalJournalRecord &record, JournalCursor boundary);
-Result<std::vector<std::byte>> read_checked_payload(const PhysicalJournalRecord &record);
+  // the resident descriptor vector. Validate the complete frame on every read.
+  Result<std::vector<std::byte>>
+  read_catalog_payload(const PhysicalJournalRecord &record, JournalCursor boundary);
+  Result<std::vector<std::byte>>
+  read_checked_payload(const PhysicalJournalRecord &record);
   FramedJournal(JournalDirectory &directory, JournalHeader header,
                 JournalCapacity capacity, SyncStrength strength);
   static Result<std::unique_ptr<FramedJournal>> allocate(JournalDirectory &directory,

@@ -1,6 +1,10 @@
 # Native current-state recovery: design and implementation plan
 
-2026-10-07. Status: written proposal for the remaining implementation, grounded
+2026-10-08 update: the ordinary settled single-segment path is implemented; see
+[present delivery and limits](../papers/2026-10-08-saved-state-delivery.md).
+The remaining broader storage-engine design below is historical planning input.
+
+2026-10-07 original status: written proposal for the remaining implementation, grounded
 in inspected code; not independently reviewed, implemented, or activated.
 No new worker is launched by this document. It replaces the broad durable-state
 mission and optional smaller-delivery language as the execution direction.

@@ -44,7 +44,9 @@ class ContextStore {
 public:
   explicit ContextStore(AuditLog &log);
   Result<void> checkpoint();
-  const std::optional<Error> &checkpoint_error() const noexcept { return checkpoint_error_; }
+  const std::optional<Error> &checkpoint_error() const noexcept {
+    return checkpoint_error_;
+  }
   const std::string &head() const noexcept { return head_; }
   Json view() const;
   Json stats() const;
@@ -83,7 +85,8 @@ private:
     std::string id;
     Original(const Json &entry);
     Original(ImmutableBytes source, std::size_t ordinal, std::string identity)
-        : payload(std::move(source)), index(ordinal), packet(true), id(std::move(identity)) {}
+        : payload(std::move(source)), index(ordinal), packet(true),
+          id(std::move(identity)) {}
     Json entry() const;
   };
   mutable std::map<std::string, Original> originals_;

@@ -4815,3 +4815,7 @@ Record proposal, not silent plan replacement. Production code/binary unchanged,
 no provider/network call, no new campaign or broad tests. Report and full numeric
 samples under papers/2026-10-07-heavy-startup-assessment.md and docs/measurements.
 Update startup issue, back up Beads, commit/push research checkpoint.
+
+## 2026-10-08 — activate saved-state recovery, finish the actual path
+
+Root took over inactive0f50907 and implemented saved-boundary selection, compact semantic restoration, checked historical queries, renewal/pruning and remaining explicit-history consumers. One adversarial review; four findings fixed. Seven affected tests pass plus compact lifecycle cases. Forbidden archive-read oracle now admits and settles the unchanged302,241-byte heavy request successfully:52.145ms initial diagnostic,56.2555ms after suffix accumulation, zero forbidden attempts. Unsupported unresolved/station/restart/multisegment states fall back; no blanket performance claim. See papers/2026-10-08-saved-state-delivery.md. Operator explicitly asks to finish; integrate and measure actual launcher rather than another prerequisite milestone.

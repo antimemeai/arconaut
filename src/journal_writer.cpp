@@ -62,7 +62,8 @@ JournalUsage FramedJournal::usage() const {
           cursor_,
           extent.has_value() ? std::optional{extent.value()} : std::nullopt,
           extent.has_value() ? std::nullopt : std::optional{extent.error()},
-          archived_records_ + std::max(records_.size(), staged_.size() + pending_.size()),
+          archived_records_ +
+              std::max(records_.size(), staged_.size() + pending_.size()),
           state_};
 }
 
@@ -101,15 +102,18 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
     return allocated;
   }
   auto journal = std::move(allocated).value();
-  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+  try {
+    journal->name_ = name;
+  } catch (const std::bad_alloc &) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
   }
   auto opened = directory.create_exclusive(name);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  try { journal->file_ = std::move(opened).value(); }
-  catch (const std::bad_alloc &) {
+  try {
+    journal->file_ = std::move(opened).value();
+  } catch (const std::bad_alloc &) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
   }
   const auto locked = journal->file_->lock_writer();
@@ -143,28 +147,28 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
   return Result<std::unique_ptr<FramedJournal>>::success(std::move(journal));
 }
 
-Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &directory,
-                                                           std::string_view name,
-                                                           JournalHeader expected,
-                                                           JournalCapacity capacity,
-                                                           SyncStrength strength,
-                                                           bool use_scan_checkpoint,
-                                                           std::optional<JournalResume> resume,
-                                                           ResumeSelector selector) {
+Result<std::unique_ptr<FramedJournal>>
+FramedJournal::open(JournalDirectory &directory, std::string_view name,
+                    JournalHeader expected, JournalCapacity capacity,
+                    SyncStrength strength, bool use_scan_checkpoint,
+                    std::optional<JournalResume> resume, ResumeSelector selector) {
   auto allocated = allocate(directory, expected, capacity, strength);
   if (!allocated.has_value()) {
     return allocated;
   }
   auto journal = std::move(allocated).value();
-  try { journal->name_ = name; } catch (const std::bad_alloc &) {
+  try {
+    journal->name_ = name;
+  } catch (const std::bad_alloc &) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
   }
   auto opened = directory.open_existing(name, FileAccess::read_write);
   if (!opened.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(opened.error());
   }
-  try { journal->file_ = std::move(opened).value(); }
-  catch (const std::bad_alloc &) {
+  try {
+    journal->file_ = std::move(opened).value();
+  } catch (const std::bad_alloc &) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::allocation});
   }
   const auto locked = journal->file_->lock_writer();
@@ -198,28 +202,35 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
   if (decoded.value() != expected) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::conflict});
   }
-// Root and catalog selection observes the already-locked descriptor and the
-// checked header/extent. No unlocked preflight or second custodian is opened.
-if (selector) {
-  if (resume || use_scan_checkpoint)
-    return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::invalid_range});
-  auto selected = selector(*journal);
-  if (!selected.has_value()) return Result<std::unique_ptr<FramedJournal>>::failure(selected.error());
-  resume = std::move(selected).value();
-}
+  // Root and catalog selection observes the already-locked descriptor and the
+  // checked header/extent. No unlocked preflight or second custodian is opened.
+  if (selector) {
+    if (resume || use_scan_checkpoint)
+      return Result<std::unique_ptr<FramedJournal>>::failure(
+          {ErrorCode::invalid_range});
+    auto selected = selector(*journal);
+    if (!selected.has_value())
+      return Result<std::unique_ptr<FramedJournal>>::failure(selected.error());
+    resume = std::move(selected).value();
+  }
   if (resume) {
     constexpr std::size_t commit_size = journal_frame_header_size + 24;
     const auto &selected = *resume;
     if (use_scan_checkpoint || selected.cursor.journal != expected.journal ||
-        !selected.cursor.sequence || selected.cursor.end_offset < journal_header_size + commit_size ||
-        selected.cursor.end_offset > size.value() || selected.indexed_records > capacity.max_records)
-      return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::invalid_range});
+        !selected.cursor.sequence ||
+        selected.cursor.end_offset < journal_header_size + commit_size ||
+        selected.cursor.end_offset > size.value() ||
+        selected.indexed_records > capacity.max_records)
+      return Result<std::unique_ptr<FramedJournal>>::failure(
+          {ErrorCode::invalid_range});
     std::array<std::byte, commit_size> anchor{};
     auto loaded = journal->read_exact(selected.cursor.end_offset - commit_size, anchor);
-    if (!loaded.has_value()) return Result<std::unique_ptr<FramedJournal>>::failure(loaded.error());
+    if (!loaded.has_value())
+      return Result<std::unique_ptr<FramedJournal>>::failure(loaded.error());
     auto commit = decode_journal_frame(anchor, expected.limits);
     if (crc32c(anchor) != selected.commit_checksum || !commit.has_value() ||
-        commit.value().kind != FrameKind::commit || commit.value().sequence != selected.cursor.sequence ||
+        commit.value().kind != FrameKind::commit ||
+        commit.value().sequence != selected.cursor.sequence ||
         commit.value().payload.size() != 24)
       return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::corrupt});
     journal->cursor_ = selected.cursor;
@@ -474,7 +485,8 @@ Result<void> FramedJournal::scan(bool propagate_read_errors) {
         batch_checksum = 0;
         batch_offset = cursor_.end_offset;
       } else {
-        if (archived_records_ + staged_.size() + pending_.size() >= capacity_.max_records) {
+        if (archived_records_ + staged_.size() + pending_.size() >=
+            capacity_.max_records) {
           failed({ErrorCode::capacity}, offset);
           break;
         }
@@ -688,11 +700,11 @@ FramedJournal::read_payload(const PhysicalJournalRecord &record) {
   const auto contains = [&](const auto &records) {
     // Sequence order is preserved by append, scan and suffix recovery moves.
     // Still compare the complete handle: sequence alone cannot authorize reads.
-    const auto found = std::lower_bound(
-        records.begin(), records.end(), record.sequence,
-        [](const auto &candidate, std::uint64_t sequence) {
-          return candidate.sequence < sequence;
-        });
+    const auto found =
+        std::lower_bound(records.begin(), records.end(), record.sequence,
+                         [](const auto &candidate, std::uint64_t sequence) {
+                           return candidate.sequence < sequence;
+                         });
     return found != records.end() && *found == record;
   };
   if (!contains(records_) && !contains(staged_) && !contains(pending_)) {
@@ -700,12 +712,15 @@ FramedJournal::read_payload(const PhysicalJournalRecord &record) {
   }
   return read_checked_payload(record);
 }
-Result<std::vector<std::byte>> FramedJournal::read_catalog_payload(
-    const PhysicalJournalRecord &record, JournalCursor boundary) {
-  if (in_restage_) return Result<std::vector<std::byte>>::failure({ErrorCode::busy});
-  if (boundary.journal != header_.journal || record.environment != header_.environment ||
-      record.journal != header_.journal || !record.sequence || record.sequence >= boundary.sequence ||
-      !record.batch_first || record.batch_first > record.sequence ||
+Result<std::vector<std::byte>>
+FramedJournal::read_catalog_payload(const PhysicalJournalRecord &record,
+                                    JournalCursor boundary) {
+  if (in_restage_)
+    return Result<std::vector<std::byte>>::failure({ErrorCode::busy});
+  if (boundary.journal != header_.journal ||
+      record.environment != header_.environment || record.journal != header_.journal ||
+      !record.sequence || record.sequence >= boundary.sequence || !record.batch_first ||
+      record.batch_first > record.sequence ||
       record.payload_offset < journal_header_size + journal_frame_header_size ||
       record.payload_offset > boundary.end_offset ||
       record.payload_size > boundary.end_offset - record.payload_offset ||
@@ -714,7 +729,8 @@ Result<std::vector<std::byte>> FramedJournal::read_catalog_payload(
     return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
   return read_checked_payload(record);
 }
-Result<std::vector<std::byte>> FramedJournal::read_checked_payload(const PhysicalJournalRecord &record) {
+Result<std::vector<std::byte>>
+FramedJournal::read_checked_payload(const PhysicalJournalRecord &record) {
   try {
     const auto frame_offset = record.payload_offset - journal_frame_header_size;
     std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);
@@ -747,62 +763,74 @@ Result<std::vector<std::byte>> FramedJournal::read_checked_payload(const Physica
   }
 }
 
-FramedJournal::ArchiveReader FramedJournal::archive_reader(JournalCursor boundary) const {
-  return [file = file_, header = header_, boundary](const PhysicalJournalRecord &record) {
-    if (boundary.journal != header.journal || record.environment != header.environment ||
-        record.journal != header.journal || !record.sequence || record.sequence >= boundary.sequence ||
+FramedJournal::ArchiveReader
+FramedJournal::archive_reader(JournalCursor boundary) const {
+  return [file = file_, header = header_,
+          boundary](const PhysicalJournalRecord &record) {
+    if (boundary.journal != header.journal ||
+        record.environment != header.environment || record.journal != header.journal ||
+        !record.sequence || record.sequence >= boundary.sequence ||
         !record.batch_first || record.batch_first > record.sequence ||
         record.payload_offset < journal_header_size + journal_frame_header_size ||
-        record.payload_offset > boundary.end_offset || record.payload_size > boundary.end_offset - record.payload_offset ||
+        record.payload_offset > boundary.end_offset ||
+        record.payload_size > boundary.end_offset - record.payload_offset ||
         record.payload_size > header.limits.max_payload ||
         (record.kind != FrameKind::source && record.kind != FrameKind::semantic))
       return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
-    const auto exact = [&](std::uint64_t offset, MutableByteView output) -> Result<void> {
-        std::size_t done = 0;
-        unsigned interruptions = 0;
-        while (done < output.size()) {
-          if (offset > UINT64_MAX - done)
-            return Result<void>::failure({ErrorCode::invalid_range});
-          auto read = file->read_at(offset + done, output.subspan(done));
-          if (!read.has_value()) {
-            if (read.error().code == ErrorCode::interrupted && ++interruptions < 8) continue;
-            return Result<void>::failure(read.error());
-          }
-          if (read.value() == 0 || read.value() > output.size() - done)
-            return Result<void>::failure({ErrorCode::corrupt});
-          done += read.value();
+    const auto exact = [&](std::uint64_t offset,
+                           MutableByteView output) -> Result<void> {
+      std::size_t done = 0;
+      unsigned interruptions = 0;
+      while (done < output.size()) {
+        if (offset > UINT64_MAX - done)
+          return Result<void>::failure({ErrorCode::invalid_range});
+        auto read = file->read_at(offset + done, output.subspan(done));
+        if (!read.has_value()) {
+          if (read.error().code == ErrorCode::interrupted && ++interruptions < 8)
+            continue;
+          return Result<void>::failure(read.error());
         }
-        return Result<void>::success();
-      };
-      try {
-        std::array<std::byte, journal_header_size> root{};
-        auto got = exact(0, root);
-        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
-        auto identity = decode_journal_header(root);
-        if (!identity.has_value() || identity.value() != header)
-          return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
-        std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);
-        got = exact(record.payload_offset - journal_frame_header_size, bytes);
-        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
-        auto frame = decode_journal_frame(bytes, header.limits);
-        if (!frame.has_value() || frame.value().kind != record.kind ||
-            frame.value().sequence != record.sequence || frame.value().batch_first != record.batch_first ||
-            frame.value().payload.size() != record.payload_size ||
-            get_little(ByteView{bytes}.subspan(28, 4)) != record.frame_checksum)
-          return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
-        bytes.erase(bytes.begin(), bytes.begin() + journal_frame_header_size);
-        return Result<std::vector<std::byte>>::success(std::move(bytes));
-      } catch (const std::bad_alloc &) {
-        return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
+        if (read.value() == 0 || read.value() > output.size() - done)
+          return Result<void>::failure({ErrorCode::corrupt});
+        done += read.value();
       }
+      return Result<void>::success();
+    };
+    try {
+      std::array<std::byte, journal_header_size> root{};
+      auto got = exact(0, root);
+      if (!got.has_value())
+        return Result<std::vector<std::byte>>::failure(got.error());
+      auto identity = decode_journal_header(root);
+      if (!identity.has_value() || identity.value() != header)
+        return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+      std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);
+      got = exact(record.payload_offset - journal_frame_header_size, bytes);
+      if (!got.has_value())
+        return Result<std::vector<std::byte>>::failure(got.error());
+      auto frame = decode_journal_frame(bytes, header.limits);
+      if (!frame.has_value() || frame.value().kind != record.kind ||
+          frame.value().sequence != record.sequence ||
+          frame.value().batch_first != record.batch_first ||
+          frame.value().payload.size() != record.payload_size ||
+          get_little(ByteView{bytes}.subspan(28, 4)) != record.frame_checksum)
+        return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+      bytes.erase(bytes.begin(), bytes.begin() + journal_frame_header_size);
+      return Result<std::vector<std::byte>>::success(std::move(bytes));
+    } catch (const std::bad_alloc &) {
+      return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
+    }
   };
 }
 
 Result<FramedJournal::PayloadReader>
 FramedJournal::payload_reader(const PhysicalJournalRecord &record) {
   const auto contains = [&](const auto &records) {
-    const auto found = std::lower_bound(records.begin(), records.end(), record.sequence,
-      [](const auto &candidate, std::uint64_t sequence) { return candidate.sequence < sequence; });
+    const auto found =
+        std::lower_bound(records.begin(), records.end(), record.sequence,
+                         [](const auto &candidate, std::uint64_t sequence) {
+                           return candidate.sequence < sequence;
+                         });
     return found != records.end() && *found == record;
   };
   if (in_restage_ || (!contains(records_) && !contains(staged_)))
@@ -813,7 +841,8 @@ FramedJournal::payload_reader(const PhysicalJournalRecord &record) {
     return Result<PayloadReader>::failure({ErrorCode::corrupt});
   try {
     return Result<PayloadReader>::success([file = file_, header = header_, record]() {
-      const auto exact = [&](std::uint64_t offset, MutableByteView output) -> Result<void> {
+      const auto exact = [&](std::uint64_t offset,
+                             MutableByteView output) -> Result<void> {
         std::size_t done = 0;
         unsigned interruptions = 0;
         while (done < output.size()) {
@@ -821,7 +850,8 @@ FramedJournal::payload_reader(const PhysicalJournalRecord &record) {
             return Result<void>::failure({ErrorCode::invalid_range});
           auto read = file->read_at(offset + done, output.subspan(done));
           if (!read.has_value()) {
-            if (read.error().code == ErrorCode::interrupted && ++interruptions < 8) continue;
+            if (read.error().code == ErrorCode::interrupted && ++interruptions < 8)
+              continue;
             return Result<void>::failure(read.error());
           }
           if (read.value() == 0 || read.value() > output.size() - done)
@@ -833,16 +863,19 @@ FramedJournal::payload_reader(const PhysicalJournalRecord &record) {
       try {
         std::array<std::byte, journal_header_size> root{};
         auto got = exact(0, root);
-        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
+        if (!got.has_value())
+          return Result<std::vector<std::byte>>::failure(got.error());
         auto identity = decode_journal_header(root);
         if (!identity.has_value() || identity.value() != header)
           return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
         std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);
         got = exact(record.payload_offset - journal_frame_header_size, bytes);
-        if (!got.has_value()) return Result<std::vector<std::byte>>::failure(got.error());
+        if (!got.has_value())
+          return Result<std::vector<std::byte>>::failure(got.error());
         auto frame = decode_journal_frame(bytes, header.limits);
         if (!frame.has_value() || frame.value().kind != record.kind ||
-            frame.value().sequence != record.sequence || frame.value().batch_first != record.batch_first ||
+            frame.value().sequence != record.sequence ||
+            frame.value().batch_first != record.batch_first ||
             frame.value().payload.size() != record.payload_size ||
             get_little(ByteView{bytes}.subspan(28, 4)) != record.frame_checksum)
           return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});

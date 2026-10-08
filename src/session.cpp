@@ -146,9 +146,12 @@ SessionIdentity session_identity(AuditLog &log) {
               identity<ConversationId>(string_field(value, "conversation")),
               identity<WorkflowId>(string_field(value, "workflow"))};
   // Legacy sessions may not have an explicit identity packet.
-  for (const auto &fact : log.root().committed_facts())
+  for (std::size_t ordinal = 0; ordinal < log.root().fact_count(); ++ordinal) {
+    const auto fact = unwrap(log.root().fact(ordinal));
     if (const auto *decision = std::get_if<DecisionEvent>(&fact.event.body))
-      result = SessionIdentity{decision->actor, decision->conversation, decision->workflow};
+      result =
+          SessionIdentity{decision->actor, decision->conversation, decision->workflow};
+  }
   if (!result)
     result = SessionIdentity{unwrap(log.root().issue<ParticipantId>()),
                              unwrap(log.root().issue<ConversationId>()),
@@ -188,7 +191,8 @@ void SessionStore::restart(std::string_view note) {
   if (!std::holds_alternative<std::nullptr_t>(restart_.value()) &&
       string_field(restart_, "state") == "pending")
     throw Error{ErrorCode::busy};
-  if (!unwrap(log_.root().unresolved_attempts()).empty()) throw Error{ErrorCode::busy};
+  if (!unwrap(log_.root().unresolved_attempts()).empty())
+    throw Error{ErrorCode::busy};
   const auto token = hex_identity(log_.issue().bytes());
   auto value = Json::object({{"label", Json{"session.restart"}},
                              {"token", Json{token}},
