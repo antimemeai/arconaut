@@ -139,6 +139,12 @@ public:
   }
 
 private:
+friend class RetainedState;
+// Only an authenticated catalog locator selected by RetainedState may bypass
+// the resident descriptor vector. Validate the complete frame on every read.
+Result<std::vector<std::byte>> read_catalog_payload(
+    const PhysicalJournalRecord &record, JournalCursor boundary);
+Result<std::vector<std::byte>> read_checked_payload(const PhysicalJournalRecord &record);
   FramedJournal(JournalDirectory &directory, JournalHeader header,
                 JournalCapacity capacity, SyncStrength strength);
   static Result<std::unique_ptr<FramedJournal>> allocate(JournalDirectory &directory,

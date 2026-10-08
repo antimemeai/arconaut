@@ -688,6 +688,23 @@ FramedJournal::read_payload(const PhysicalJournalRecord &record) {
   if (!contains(records_) && !contains(staged_) && !contains(pending_)) {
     return Result<std::vector<std::byte>>::failure({ErrorCode::stale_handle});
   }
+  return read_checked_payload(record);
+}
+Result<std::vector<std::byte>> FramedJournal::read_catalog_payload(
+    const PhysicalJournalRecord &record, JournalCursor boundary) {
+  if (in_restage_) return Result<std::vector<std::byte>>::failure({ErrorCode::busy});
+  if (boundary.journal != header_.journal || record.environment != header_.environment ||
+      record.journal != header_.journal || !record.sequence || record.sequence >= boundary.sequence ||
+      !record.batch_first || record.batch_first > record.sequence ||
+      record.payload_offset < journal_header_size + journal_frame_header_size ||
+      record.payload_offset > boundary.end_offset ||
+      record.payload_size > boundary.end_offset - record.payload_offset ||
+      record.payload_size > header_.limits.max_payload ||
+      (record.kind != FrameKind::source && record.kind != FrameKind::semantic))
+    return Result<std::vector<std::byte>>::failure({ErrorCode::corrupt});
+  return read_checked_payload(record);
+}
+Result<std::vector<std::byte>> FramedJournal::read_checked_payload(const PhysicalJournalRecord &record) {
   try {
     const auto frame_offset = record.payload_offset - journal_frame_header_size;
     std::vector<std::byte> bytes(journal_frame_header_size + record.payload_size);

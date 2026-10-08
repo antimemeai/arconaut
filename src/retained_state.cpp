@@ -286,16 +286,16 @@ Result<void> RetainedState::enable_indexed_queries(std::unique_ptr<JournalFile> 
     return Result<void>::failure({ErrorCode::allocation});
   }
 }
-const RetainedFact *RetainedState::lookup(const Snapshot &snapshot,
+std::optional<RetainedFact> RetainedState::lookup(const Snapshot &snapshot,
     unsigned char family, RetainedKind kind, const IdentityBytes &identity,
     const IdentityBytes &second) const {
   const auto wanted = query_key(family,kind,identity,second);
   if (query_index_) {
     auto found = query_index_->find(snapshot.query_root,wanted);
     if (!found.has_value()) throw found.error();
-    if (!found.value()) return nullptr;
+    if (!found.value()) return std::nullopt;
     if (*found.value() >= snapshot.facts.size()) throw Error{ErrorCode::corrupt};
-    return &snapshot.facts[static_cast<std::size_t>(*found.value())];
+    return snapshot.facts[static_cast<std::size_t>(*found.value())];
   }
   for (std::size_t i = snapshot.facts.size(); i > 0; --i) {
     const auto &fact = snapshot.facts[i-1];
@@ -306,38 +306,45 @@ const RetainedFact *RetainedState::lookup(const Snapshot &snapshot,
     if (retained_kind(fact.event.body) != kind) continue;
     if (family == 1) {
       if (const auto k = key(fact.event.body,origin->header().issuer_namespace);
-          k && k->identity == identity) return &fact;
+          k && k->identity == identity) return fact;
       if (const auto *body = std::get_if<AttemptObservationEvent>(&fact.event.body);
           body && body->phase == AttemptPhase::terminal && body->attempt.bytes() == identity)
-        return &fact;
+        return fact;
     } else if (family == 2) {
       if (const auto *body = std::get_if<AttemptObservationEvent>(&fact.event.body);
-          body && body->attempt.bytes() == identity) return &fact;
+          body && body->attempt.bytes() == identity) return fact;
     } else if (family == 3) {
       if (const auto *body = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
-          body && body->invocation.bytes() == identity) return &fact;
+          body && body->invocation.bytes() == identity) return fact;
     } else if (family == 4) {
       if (const auto *body = std::get_if<RetryEvent>(&fact.event.body);
           body && body->decision.bytes() == identity && body->invocation.bytes() == second)
-        return &fact;
+        return fact;
     }
   }
   if (archive_ && saved_) {
     auto selected = archive_->find(wanted);
     if (!selected.has_value()) throw selected.error();
-    if (!selected.value()) return nullptr;
-    // The remaining full-replay oracle still owns fact/evidence lifetimes. Use
-    // the disk locator, not a persisted RAM ordinal, to resolve its exact record.
-    // The future compact reducer can replace this resolver without changing keys.
-    const auto found = std::lower_bound(snapshot.facts.begin(), snapshot.facts.end(),
-        selected.value()->sequence, [](const auto &fact, std::uint64_t sequence) {
-          return fact.record.sequence < sequence;
-        });
-    if (found == snapshot.facts.end() || found->record.sequence != selected.value()->sequence ||
-        found->record.journal != selected.value()->journal) throw Error{ErrorCode::corrupt};
-    return &*found;
+    if (!selected.value()) return std::nullopt;
+auto payload = journal_->read_catalog_payload(*selected.value(), saved_->boundary);
+if (!payload.has_value()) throw payload.error();
+auto event = decode_retained_event(payload.value(), journal_->header().limits.max_payload);
+if (!event.has_value()) throw event.error();
+RetainedFact result{{selected.value()->journal, selected.value()->sequence},
+                    std::move(event).value(), RetainedEvidence::recovered};
+const auto keys = fact_keys(result, journal_->header().issuer_namespace, 0);
+if (std::find(keys.begin(), keys.end(), wanted) == keys.end()) throw Error{ErrorCode::corrupt};
+// A live in-process checkpoint does not turn an old live admission into a
+// recovered one. Until compact restore is active, preserve resident evidence.
+const auto resident = std::lower_bound(snapshot.facts.begin(), snapshot.facts.end(),
+    result.record.sequence, [](const auto &fact, std::uint64_t sequence) {
+      return fact.record.sequence < sequence;
+    });
+if (resident != snapshot.facts.end() && resident->record == result.record)
+  result.evidence = resident->evidence;
+return result;
   }
-  return nullptr;
+  return std::nullopt;
 }
 Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
   try {
@@ -373,7 +380,7 @@ bool RetainedState::has_identity(const RetainedEvent &event) {
   return key(event.body).has_value() ||
          (observation && observation->phase == AttemptPhase::terminal);
 }
-const RetainedFact *
+std::optional<RetainedFact>
 RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
                         std::optional<std::uint64_t> issuer_namespace,
                         const ReplayIndex *index) const {
@@ -384,18 +391,18 @@ RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
     if (const auto *observation = std::get_if<AttemptObservationEvent>(&event.body);
         observation && observation->phase == AttemptPhase::terminal)
       return lookup(snapshot,1,retained_kind(event.body),observation->attempt.bytes());
-    if (query_index_) return nullptr;
+    if (query_index_) return std::nullopt;
   }
   if (identity && index) {
     const auto found = index->facts.find(*identity);
-    return found == index->facts.end() ? nullptr : &snapshot.facts[found->second];
+    return found == index->facts.end() ? std::nullopt : std::optional<RetainedFact>{snapshot.facts[found->second]};
   }
   if (identity) {
     for (const auto &fact : snapshot.facts) {
       const auto *origin = segment(fact.record.journal);
       if (origin &&
           key(fact.event.body, origin->header().issuer_namespace) == identity) {
-        return &fact;
+        return fact;
       }
     }
   }
@@ -405,11 +412,11 @@ RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
       const auto *previous = std::get_if<AttemptObservationEvent>(&it->event.body);
       if (previous && previous->attempt == observation->attempt &&
           previous->phase == AttemptPhase::terminal) {
-        return &*it;
+        return *it;
       }
     }
   }
-  return nullptr;
+  return std::nullopt;
 }
 const RetainedFact *
 RetainedState::existing_uncertain(const Snapshot &snapshot, const RetainedEvent &event,
@@ -460,7 +467,7 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
       std::holds_alternative<ProvisionalCaptureEvent>(event.body)) {
     return Result<void>::failure({ErrorCode::unsupported});
   }
-  if (const auto *previous = existing(snapshot, event, std::nullopt, index)) {
+  if (const auto previous = existing(snapshot, event, std::nullopt, index)) {
     return previous->event == event ? Result<void>::success()
                                     : Result<void>::failure({ErrorCode::conflict});
   }
@@ -500,9 +507,11 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
     }
   }
   const auto get = [&]<typename T>(unsigned char family, RetainedKind kind,
-      const IdentityBytes &identity, const IdentityBytes &second = {}) -> const T * {
-    const auto *fact = lookup(snapshot,family,kind,identity,second);
-    return fact ? std::get_if<T>(&fact->event.body) : nullptr;
+      const IdentityBytes &identity, const IdentityBytes &second = {}) -> std::optional<T> {
+    const auto fact = lookup(snapshot,family,kind,identity,second);
+    if (!fact) return std::nullopt;
+    const auto *body = std::get_if<T>(&fact->event.body);
+    return body ? std::optional<T>{*body} : std::nullopt;
   };
   const auto validated = std::visit(
       [&](const auto &body) -> Result<void> {
@@ -521,34 +530,28 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
             }
           }
         } else if constexpr (std::is_same_v<T, InvocationEvent>) {
-          const auto *decision =
-              get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
+          const auto decision = get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
           if (!decision || !plans(*decision, body.invocation)) {
             return Result<void>::failure({ErrorCode::conflict});
           }
         } else if constexpr (std::is_same_v<T, AttemptAdmissionEvent> ||
                              std::is_same_v<T, RetryEvent>) {
-          const auto *invocation =
-              get.template operator()<InvocationEvent>(1,RetainedKind::invocation,body.invocation.bytes());
-          const auto *decision =
-              get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
+          const auto invocation = get.template operator()<InvocationEvent>(1,RetainedKind::invocation,body.invocation.bytes());
+          const auto decision = get.template operator()<DecisionEvent>(1,RetainedKind::decision,body.decision.bytes());
           if (!invocation || !decision || !plans(*decision, body.invocation)) {
             return Result<void>::failure({ErrorCode::conflict});
           }
-          const auto *prior =
-              get.template operator()<AttemptAdmissionEvent>(3,RetainedKind::attempt_admitted,body.invocation.bytes());
+          const auto prior = get.template operator()<AttemptAdmissionEvent>(3,RetainedKind::attempt_admitted,body.invocation.bytes());
           if constexpr (std::is_same_v<T, RetryEvent>) {
-            const auto *used = get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
-            const auto *prior_retry =
-                get.template operator()<RetryEvent>(4,RetainedKind::retry,body.decision.bytes(),body.invocation.bytes());
+            const auto used = get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
+            const auto prior_retry = get.template operator()<RetryEvent>(4,RetainedKind::retry,body.decision.bytes(),body.invocation.bytes());
             if (!prior || used || prior_retry ||
                 body.decision == invocation->decision) {
               return Result<void>::failure({ErrorCode::conflict});
             }
           } else {
             if (prior) {
-              const auto *retry =
-                  get.template operator()<RetryEvent>(1,RetainedKind::retry,body.attempt.bytes());
+              const auto retry = get.template operator()<RetryEvent>(1,RetainedKind::retry,body.attempt.bytes());
               if (!retry || retry->invocation != body.invocation ||
                   retry->decision != body.decision) {
                 return Result<void>::failure({ErrorCode::conflict});
@@ -558,18 +561,15 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
             }
           }
         } else if constexpr (std::is_same_v<T, AdapterReceiptEvent>) {
-          const auto *opened =
-              get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
+          const auto opened = get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
           if (!opened) {
             return Result<void>::failure({ErrorCode::conflict});
           }
         } else if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
                              std::is_same_v<T, AttemptObservationEvent>) {
-          const auto *admission =
-              get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
-          const auto *opened =
-              get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
-          const auto *observation = get.template operator()<AttemptObservationEvent>(2,RetainedKind::observation,body.attempt.bytes());
+          const auto admission = get.template operator()<AttemptAdmissionEvent>(1,RetainedKind::attempt_admitted,body.attempt.bytes());
+          const auto opened = get.template operator()<AttemptOpenEvent>(1,RetainedKind::attempt_open,body.attempt.bytes());
+          const auto observation = get.template operator()<AttemptObservationEvent>(2,RetainedKind::observation,body.attempt.bytes());
           if (!admission ||
               (observation && observation->phase == AttemptPhase::terminal)) {
             return Result<void>::failure({ErrorCode::conflict});
@@ -934,9 +934,9 @@ Result<JournalCursor> RetainedState::append_impl(JournalCursor expected,
                 RetainedEvidence::uncertain);
       if (!applied.has_value()) {
         invalid = applied.error();
-        const auto *previous = existing(candidate, events[index]);
+        auto previous = existing(candidate, events[index]);
         if (!previous)
-          previous = existing_uncertain(candidate, events[index]);
+          if (const auto *uncertain = existing_uncertain(candidate, events[index])) previous = *uncertain;
         if (previous && previous->event != events[index])
           conflict = &events[index];
         break;
@@ -1158,7 +1158,7 @@ Result<Submission> RetainedState::submit(const RetainedEvent &event) {
 Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
                                               bool settlement) {
   try {
-  if (const auto *previous = existing(visible(), event);
+  if (const auto previous = existing(visible(), event);
       previous && previous->event == event) {
     return Result<Submission>::success({true, previous->record, previous->evidence});
   }
@@ -1185,11 +1185,11 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
   try {
     const auto &snapshot = visible();
     if (query_index_) {
-      const auto *admission = lookup(snapshot,1,RetainedKind::attempt_admitted,identity.bytes());
+      const auto admission = lookup(snapshot,1,RetainedKind::attempt_admitted,identity.bytes());
       if (!admission) return Result<AttemptState>::failure({ErrorCode::stale_handle});
-      const auto *opened = lookup(snapshot,1,RetainedKind::attempt_open,identity.bytes());
-      const auto *observed = lookup(snapshot,2,RetainedKind::observation,identity.bytes());
-      const auto *receipt = lookup(snapshot,1,RetainedKind::adapter_receipt,identity.bytes());
+      const auto opened = lookup(snapshot,1,RetainedKind::attempt_open,identity.bytes());
+      const auto observed = lookup(snapshot,2,RetainedKind::observation,identity.bytes());
+      const auto receipt = lookup(snapshot,1,RetainedKind::adapter_receipt,identity.bytes());
       auto evidence = admission->evidence;
       const bool uncertain_observation = observed && observed->evidence == RetainedEvidence::uncertain;
       auto inspected = query_index_->range(snapshot.query_root,ordinal_key(9,identity.bytes(),0),
@@ -1208,7 +1208,7 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
       const auto *observation = observed ? std::get_if<AttemptObservationEvent>(&observed->event.body) : nullptr;
       const bool terminal = observation && !uncertain_observation && observation->phase == AttemptPhase::terminal;
       return Result<AttemptState>::success({std::get<AttemptAdmissionEvent>(admission->event.body),
-          opened != nullptr, observation ? std::optional<AttemptObservationEvent>{*observation} : std::nullopt,
+          opened.has_value(), observation ? std::optional<AttemptObservationEvent>{*observation} : std::nullopt,
           receipt ? std::optional<AdapterReceiptEvent>{std::get<AdapterReceiptEvent>(receipt->event.body)} : std::nullopt,
           evidence, (!reconciled_ || recording_failed_ || evidence == RetainedEvidence::uncertain) && !terminal});
     }
@@ -1282,10 +1282,10 @@ Result<DispatchReport> RetainedState::dispatch(OperationAttemptId identity,
     return Result<DispatchReport>::success(
         {false, Result<void>::success(), Result<void>::success()});
   }
-  const DecisionEvent *checkpoint = nullptr;
+  std::optional<DecisionEvent> checkpoint;
   try {
-    const auto *fact = lookup(committed_,1,RetainedKind::decision,owned.admission.decision.bytes());
-    checkpoint = fact ? std::get_if<DecisionEvent>(&fact->event.body) : nullptr;
+    const auto fact = lookup(committed_,1,RetainedKind::decision,owned.admission.decision.bytes());
+    if (fact) if (const auto *body = std::get_if<DecisionEvent>(&fact->event.body)) checkpoint = *body;
   } catch (const Error &error) { return Result<DispatchReport>::failure(error); }
   if (!checkpoint) {
     return Result<DispatchReport>::failure({ErrorCode::corrupt});

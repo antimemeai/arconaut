@@ -30,6 +30,15 @@ int main() {
     unwrap(ArchiveCatalog::publish(dir,"catalog",h,newer,entries));
     CHECK(unwrap(catalog->find(entries[1599].key))==entries[1599].record);
     auto current=unwrap(ArchiveCatalog::open(dir,"catalog",h,newer,2000));
+// Copy an intact CRC-valid entry into the binary-search midpoint. A CRC
+// over only key/locator would incorrectly report absence for key 800.
+{ std::fstream f(std::string(path)+"/catalog",std::ios::binary|std::ios::in|std::ios::out);
+  std::array<char,96> intact{}; f.seekg(160+799*96); f.read(intact.data(),intact.size());
+  f.seekp(160+800*96); f.write(intact.data(),intact.size()); }
+CHECK(!current->find(entries[800].key).has_value());
+unwrap(ArchiveCatalog::publish(dir,"catalog",h,newer,entries));
+current=unwrap(ArchiveCatalog::open(dir,"catalog",h,newer,2000));
+
     { std::fstream f(std::string(path)+"/catalog",std::ios::binary|std::ios::in|std::ios::out); f.seekp(160+800*96+5); const char c='!'; f.write(&c,1); }
     CHECK(!current->find(entries[800].key).has_value());
     std::filesystem::resize_file(std::string(path)+"/catalog",160+20);

@@ -194,7 +194,7 @@ private:
                       std::uint64_t maintenance_end = 0);
   bool has_room(const Snapshot &snapshot, std::size_t count) const noexcept;
   FramedJournal *segment(AuditStreamId identity) const noexcept;
-  const RetainedFact *lookup(const Snapshot &snapshot, unsigned char family,
+  std::optional<RetainedFact> lookup(const Snapshot &snapshot, unsigned char family,
       RetainedKind kind, const IdentityBytes &identity,
       const IdentityBytes &second = {}) const;
   void index_fact(Snapshot &snapshot, std::size_t ordinal);
@@ -213,7 +213,7 @@ private:
                                 std::span<const ByteView> sources,
                                 std::span<const std::vector<std::byte>> events,
                                 Error reason, const RetainedEvent *conflict);
-  const RetainedFact *
+  std::optional<RetainedFact>
   existing(const Snapshot &snapshot, const RetainedEvent &event,
            std::optional<std::uint64_t> issuer_namespace = std::nullopt,
            const ReplayIndex *index = nullptr) const;

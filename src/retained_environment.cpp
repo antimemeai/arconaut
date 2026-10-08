@@ -229,13 +229,13 @@ Result<void> RetainedEnvironment::stage_original(RetainedState::Snapshot &snapsh
     const RecordReference predicted{origin.journal, original.capture.first_sequence +
                                                         proposal.sources.size() +
                                                         index};
-    const RetainedFact *known = nullptr;
+    std::optional<RetainedFact> known;
     if (RetainedState::has_identity(decoded.value())) {
       known = semantic_->existing(snapshot, decoded.value(), origin.issuer_namespace);
     } else {
       for (const auto &fact : snapshot.facts)
         if (fact.record == predicted) {
-          known = &fact;
+          known = fact;
           break;
         }
     }
@@ -579,7 +579,7 @@ RetainedEnvironment::submit_proposal(JournalCursor expected,
     if (first < cursor().sequence || events.size() > UINT64_MAX - first)
       return Result<ProposalSubmission>::failure({ErrorCode::overflow});
     for (std::size_t i = 0; i < events.size(); ++i) {
-      const auto *previous = semantic_->existing(semantic_->visible(), events[i]);
+      const auto previous = semantic_->existing(semantic_->visible(), events[i]);
       if (previous && previous->event == events[i]) {
         result.events.push_back({true, previous->record, previous->evidence});
         continue;

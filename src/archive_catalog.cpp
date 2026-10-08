@@ -39,7 +39,7 @@ Result<void> write_at(Storage &file, std::uint64_t offset, ByteView in) {
   }
   return Result<void>::success();
 }
-std::array<std::byte,entry_size> encode(const ArchiveEntry &entry) {
+std::array<std::byte,entry_size> encode(const ArchiveEntry &entry, std::uint32_t ordinal) {
   std::array<std::byte,entry_size> bytes{}; MutableByteView out{bytes};
   std::copy(entry.key.begin(),entry.key.end(),bytes.begin());
   const auto &r=entry.record;
@@ -47,14 +47,15 @@ std::array<std::byte,entry_size> encode(const ArchiveEntry &entry) {
   put(out.subspan(48,8),r.sequence); put(out.subspan(56,8),r.batch_first);
   put(out.subspan(64,8),r.payload_offset); put(out.subspan(72,8),r.payload_size);
   put(out.subspan(80,8),r.frame_checksum);
-  put(out.subspan(88,4),crc32c(ByteView{bytes}.first(88)));
+  put(out.subspan(88,4),ordinal);
+  put(out.subspan(92,4),crc32c(ByteView{bytes}.first(92)));
   return bytes;
 }
 } // namespace
 Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_view name,
     JournalHeader header, JournalCursor boundary, std::span<const ArchiveEntry> sorted) {
   try {
-    if (boundary.journal!=header.journal || boundary.end_offset<journal_header_size)
+    if (sorted.size()>UINT32_MAX || boundary.journal!=header.journal || boundary.end_offset<journal_header_size)
       return Result<void>::failure({ErrorCode::invalid_range});
     for (std::size_t i=0;i<sorted.size();++i) {
       const auto &r=sorted[i].record;
@@ -67,7 +68,7 @@ Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_vi
         return Result<void>::failure({ErrorCode::invalid_range});
     }
     std::array<std::byte,prefix_size> bytes{}; MutableByteView out{bytes};
-    put(out.first(8),magic); put(out.subspan(8,8),1);
+    put(out.first(8),magic); put(out.subspan(8,8),2);
     auto h=encode_journal_header(header); if (!h.has_value()) return Result<void>::failure(h.error());
     std::copy(h.value().begin(),h.value().end(),bytes.begin()+16);
     put(out.subspan(128,8),boundary.sequence); put(out.subspan(136,8),boundary.end_offset);
@@ -82,7 +83,7 @@ Result<void> ArchiveCatalog::publish(JournalDirectory &directory, std::string_vi
     for (std::size_t first=0;first<sorted.size();) {
       batch.clear(); const auto end=std::min(sorted.size(),first+batch_entries);
       for (std::size_t i=first;i<end;++i) {
-        const auto item=encode(sorted[i]); batch.insert(batch.end(),item.begin(),item.end());
+        const auto item=encode(sorted[i],static_cast<std::uint32_t>(i)); batch.insert(batch.end(),item.begin(),item.end());
       }
       written=write_at(*file,prefix_size+first*entry_size,batch); if (!written.has_value()) return written;
       first=end;
@@ -102,11 +103,11 @@ Result<std::unique_ptr<ArchiveCatalog>> ArchiveCatalog::open(JournalDirectory &d
   auto h=encode_journal_header(header); auto extent=file->extent();
   if (!h.has_value()) return Answer::failure(h.error());
   if (!extent.has_value()) return Answer::failure(extent.error());
-  if (get(in.first(8))!=magic || get(in.subspan(8,8))!=1 ||
+  if (get(in.first(8))!=magic || get(in.subspan(8,8))!=2 ||
       !std::equal(h.value().begin(),h.value().end(),bytes.begin()+16) ||
       boundary.journal!=header.journal || get(in.subspan(128,8))!=boundary.sequence ||
       get(in.subspan(136,8))!=boundary.end_offset || get(in.subspan(152,4))!=crc32c(in.first(152)) ||
-      get(in.last(4))!=0 || count>maximum_entries || count>(UINT64_MAX-prefix_size)/entry_size ||
+      get(in.last(4))!=0 || count>UINT32_MAX || count>maximum_entries || count>(UINT64_MAX-prefix_size)/entry_size ||
       extent.value()!=prefix_size+count*entry_size) return Answer::failure({ErrorCode::corrupt});
   try { return Answer::success(std::unique_ptr<ArchiveCatalog>{new ArchiveCatalog{std::move(file),header,boundary,count}}); }
   catch (const std::bad_alloc &) { return Answer::failure({ErrorCode::allocation}); }
@@ -118,7 +119,7 @@ Result<ArchiveEntry> ArchiveCatalog::entry(std::uint64_t ordinal) const {
   const ByteView in{bytes};
   const auto kind=get(in.subspan(40,8)), sequence=get(in.subspan(48,8)), first=get(in.subspan(56,8));
   const auto offset=get(in.subspan(64,8)), size=get(in.subspan(72,8)), checksum=get(in.subspan(80,8));
-  if (get(in.subspan(88,4))!=crc32c(in.first(88)) || get(in.last(4))!=0 ||
+  if (get(in.subspan(88,4))!=ordinal || get(in.subspan(92,4))!=crc32c(in.first(92)) ||
       (kind!=1 && kind!=2) || !sequence || sequence>=boundary_.sequence || !first || first>sequence ||
       offset<journal_header_size+journal_frame_header_size || offset>boundary_.end_offset ||
       size>boundary_.end_offset-offset || size>header_.limits.max_payload || checksum>UINT32_MAX)
