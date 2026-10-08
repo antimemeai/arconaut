@@ -503,6 +503,14 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
             if (rows.empty())
               emit(items ? "No tasks.\n" : "Task list updated.\n");
           }
+        } else if (prompt == "/colleagues") {
+          emit(unwrap(dump_json(
+                   engine.operator_call("colleague_catalog", Json::object({})))) +
+               "\n");
+        } else if (prompt.starts_with("/colleague ")) {
+          emit(unwrap(dump_json(engine.operator_call(
+                   "colleague", unwrap(parse_json(prompt.substr(11)))))) +
+               "\n");
         } else if (prompt == "/session") {
           const auto identity = session_identity(log);
           emit(unwrap(dump_json(Json::object(

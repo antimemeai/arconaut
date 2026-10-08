@@ -322,11 +322,15 @@ set_tests_properties(recovery_index PROPERTIES TIMEOUT 60)
 # Independent colleague slice; no native core ABI or lifecycle changes.
 add_library(blackbird_colleague src/colleague.cpp)
 target_link_libraries(blackbird_colleague PUBLIC blackbird_foundation)
+target_link_libraries(blackbird_coding PUBLIC blackbird_colleague)
 add_executable(blackbird-colleague src/colleague_main.cpp)
 target_link_libraries(blackbird-colleague PRIVATE blackbird_colleague)
 add_executable(colleague_test tests/colleague_test.cpp)
 target_link_libraries(colleague_test PRIVATE blackbird_colleague)
 add_test(NAME colleague COMMAND colleague_test)
+add_executable(colleague_engine_test tests/colleague_engine_test.cpp)
+target_link_libraries(colleague_engine_test PRIVATE blackbird_coding)
+add_test(NAME colleague_engine COMMAND colleague_engine_test)
 set_tests_properties(colleague PROPERTIES TIMEOUT 15)
 
 add_custom_target(arco-colleague DEPENDS blackbird-colleague

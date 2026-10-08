@@ -538,3 +538,16 @@ conclude and does not send a model request. Destination model/effort/workflow,
 context, tasks and drafts are restored independently. A failed open returns once
 to the old session; uncertain operations are never silently retried. `/new` still
 creates a fresh session and inherits only model, effort and workflow.
+
+### Shared colleague requests
+
+`/colleagues` discovers installed OpenAI/Codex and Claude transports. It makes no
+account probe; installed does not mean authenticated or available. `/colleague
+JSON`, model tool `colleague`, and `blackbird.colleague(request)` share one request:
+`request_id`, `from`, `to`, `provider` (`openai` or `claude`), `model`, `task`,
+`context` (explicit `{id,text}` entries), and `profile` (`name`, `provenance`,
+`timeout_seconds`, `tools:"none"`, `requests:1`). Selected requests are bounded to
+64 KiB. Inspect `status`, `remote_disposition`, actual model and usage separately.
+Calls have no tools, hidden transcript, continuation or automatic retries. Local
+interruption does not establish that remote work stopped. Admission, provider
+bytes and results are retained with the actual operation attempt.

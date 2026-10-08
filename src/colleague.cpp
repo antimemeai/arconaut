@@ -2,6 +2,9 @@
 #include "blackbird/openai.hpp"
 #include "blackbird/tools.hpp"
 #include <charconv>
+#include <cstdlib>
+#include <filesystem>
+#include <unistd.h>
 
 namespace blackbird {
 namespace {
@@ -272,11 +275,13 @@ Json call_colleague(const Json &request, const ColleagueCapture &capture,
   return reply;
 }
 
-Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture) {
+Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture,
+                                const std::function<bool()> &cancelled) {
   const auto &request = required_field(prepared, "request");
   if (text(request, "provider") == "openai") {
     OpenAiConfig config;
     config.timeout_seconds = timeout(request);
+    config.cancelled = cancelled;
     config.response_observer = [&](std::string_view bytes) { capture("raw", bytes); };
     auto login = unwrap(codex_login(config));
     auto raw = unwrap(
@@ -285,6 +290,40 @@ Json native_colleague_transport(const Json &prepared, const ColleagueCapture &ca
   }
   LocalTools tools{
       [&](std::string_view, std::string_view bytes) { capture("raw", bytes); }};
+  tools.cancelled = cancelled;
   return tools.run("exec", required_field(prepared, "exec"));
+}
+Json colleague_catalog() {
+  auto installed = [](std::string_view binary) {
+    const auto *env = std::getenv("PATH");
+    std::string_view paths = env ? env : "";
+    while (!paths.empty()) {
+      const auto end = paths.find(':');
+      const auto directory = paths.substr(0, end);
+      const auto path =
+          std::filesystem::path{directory.empty() ? "." : std::string{directory}} /
+          binary;
+      if (::access(path.c_str(), X_OK) == 0 && std::filesystem::is_regular_file(path))
+        return true;
+      if (end == std::string_view::npos)
+        break;
+      paths.remove_prefix(end + 1);
+    }
+    return false;
+  };
+  return Json::object(
+      {{"providers",
+        Json{Json::Array{
+            Json::object(
+                {{"provider", Json{"openai"}},
+                 {"transport_installed", Json{installed("codex") && installed("curl")}},
+                 {"authentication", Json{"not_checked"}}}),
+            Json::object({{"provider", Json{"claude"}},
+                          {"transport_installed", Json{installed("claude")}},
+                          {"authentication", Json{"not_checked"}}})}}},
+       {"context", Json{"explicit selection only"}},
+       {"tools", Json{"none"}},
+       {"models", Json{"caller selected; actual availability is observed on a call"}},
+       {"retries", Json{JsonNumber{"0"}}}});
 }
 } // namespace blackbird

@@ -5322,3 +5322,23 @@ first run exposed the driver's contiguous-string assumption: adding a name made
 /session JSON wrap an identity across main-pane rows. The driver now reconstructs
 those rows when checking the identity; product state was correct. One scoped Linux
 recheck is running. This is within the declared two-layer hardening allowance.
+
+## 2026-10-08 — Common retained colleague surface
+
+Order 2 wires the existing native selected-context library into the coding engine's
+operation admission/retention/settlement. Operator /colleague, model colleague and
+Lua blackbird.colleague share the exact request/result. /colleagues reads installed
+transports without account probing. Actual provider/model availability is observed,
+not inferred from an executable or alias. Cooperative local cancellation reaches
+both curl and Claude subprocesses; unknown remote disposition settles unknown.
+No automatic continuation, retry, tool access or transcript export.
+
+Direct engine case now checks all three interfaces, selected-only context, request
+and raw capture linkage, refused malformed requests without dispatch, and unknown
+settlement. Mac debug coding/colleague passed; engine interface case passed after
+fixing its initial use of a nonexistent Lua output helper to use the real append
+protocol. A single live Claude/sonnet source review through /colleague reached its
+90-second deadline: unknown/io, no answer, actual model/usage unavailable. This is
+not evidence of an authentication refusal or zero usage. No retry/account probe.
+The live heterogeneous outcome is still outstanding; deterministic interface work
+and concurrent participant machinery can proceed independently.

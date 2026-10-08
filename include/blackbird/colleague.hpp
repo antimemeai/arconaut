@@ -10,5 +10,7 @@ using ColleagueTransport = std::function<Json(const Json &, const ColleagueCaptu
 Json prepare_colleague(const Json &request);
 Json call_colleague(const Json &request, const ColleagueCapture &capture,
                     const ColleagueTransport &transport);
-Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture);
+Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture,
+                                const std::function<bool()> &cancelled = {});
+Json colleague_catalog();
 } // namespace blackbird

@@ -1,5 +1,6 @@
 #pragma once
 #include "blackbird/beads.hpp"
+#include "blackbird/colleague.hpp"
 #include "blackbird/decision_models.hpp"
 #include "blackbird/openai.hpp"
 #include "blackbird/session.hpp"
@@ -44,6 +45,8 @@ public:
   CodingEngine(const CodingEngine &) = delete;
   CodingEngine &operator=(const CodingEngine &) = delete;
   void turn(TurnInput input);
+  Json operator_call(std::string_view name, const Json &arguments);
+  ColleagueTransport colleague_transport;
   bool operator_turn(std::string_view prompt, std::string_view fallback);
   std::shared_ptr<const WorkflowRegistry> workflows() const { return workflows_; }
   // One cooperative failure ticket, consumed before creating a recovery audit.

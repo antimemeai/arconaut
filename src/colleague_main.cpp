@@ -31,7 +31,10 @@ int main(int argc, char **argv) {
         write_file(directory / (std::string{kind} + ".json"), bytes);
       }
     };
-    const auto result = call_colleague(request, capture, native_colleague_transport);
+    const auto result = call_colleague(
+        request, capture, [](const Json &prepared, const ColleagueCapture &retain) {
+          return native_colleague_transport(prepared, retain);
+        });
     std::cout << unwrap(dump_json(result)) << '\n';
     return result.find("status")->string() == "completed" ? 0 : 1;
   } catch (const Error &e) {

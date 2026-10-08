@@ -86,6 +86,11 @@ const std::array builtin_commands{
                 "Programs"},
     ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)",
                 "Tools"},
+    ChatCommand{"/colleagues", "",
+                "Show installed colleague transports; authentication observed on call",
+                "Tools"},
+    ChatCommand{"/colleague", "JSON",
+                "One selected-context colleague request; no tools or retries", "Tools"},
     ChatCommand{"/beads",
                 "configure JSON | ready | list | show ID | select ID | cached",
                 "Explicit native Beads refresh/selection (lazy binding)", "Tools"}};

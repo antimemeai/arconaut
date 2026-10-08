@@ -297,6 +297,7 @@ struct CodingEngine::Runtime {
     constexpr const char *tool_api =
         "function blackbird.decide(args) return blackbird.call('decision_model',args) "
         "end "
+        "function blackbird.colleague(q) return blackbird.call('colleague',q) end "
         "blackbird.tasks={} "
         "function blackbird.tasks.read(q) return blackbird.call('tasks_read',{query=q "
         "or {}}) end "
@@ -1138,7 +1139,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
   if (boundary.error &&
       (boundary.error->code == ErrorCode::capacity || name == "provider" ||
-       name == "exec" || name == "beads" || name == "decision_model") &&
+       name == "exec" || name == "beads" || name == "colleague" ||
+       name == "decision_model") &&
       (boundary.error->code == ErrorCode::capacity ||
        boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
@@ -1157,6 +1159,13 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                   : (state == "ok" || state == "configured" || state == "cached")
                       ? AttemptDisposition::success
                       : AttemptDisposition::failure;
+  }
+  if (!boundary.error && name == "colleague") {
+    const auto state = string_field(result, "status");
+    const auto remote = string_field(result, "remote_disposition");
+    disposition = remote == "unknown"    ? AttemptDisposition::unknown
+                  : state == "completed" ? AttemptDisposition::success
+                                         : AttemptDisposition::failure;
   }
   RetainedEvent terminal{{},
                          AttemptObservationEvent{attempt,
@@ -1807,6 +1816,25 @@ Json CodingEngine::call(std::string name, Json arguments) {
     }
     if (name == "audit_inspect")
       return log_.inspect(field(arguments, "query"));
+    if (name == "colleague_catalog")
+      return colleague_catalog();
+    if (name == "colleague") {
+      const auto capture = [&](std::string_view label, std::string_view raw) {
+        log_.original({"colleague." + std::string{label}, raw,
+                       Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                                     {"request_id", arguments.find("request_id")
+                                                        ? field(arguments, "request_id")
+                                                        : Json{}}})});
+      };
+      const auto transport =
+          colleague_transport
+              ? colleague_transport
+              : ColleagueTransport{
+                    [&](const Json &prepared, const ColleagueCapture &retain) {
+                      return native_colleague_transport(prepared, retain, cancelled);
+                    }};
+      return call_colleague(arguments, capture, transport);
+    }
     if (name == "tasks_read")
       return tasks_.read(arguments.find("query") ? field(arguments, "query")
                                                  : Json::object({}));
@@ -1931,6 +1959,25 @@ Error CodingEngine::claim_backstop() {
     throw Error{ErrorCode::conflict};
   backstop_claimed_ = true;
   return *failed_turn_;
+}
+Json CodingEngine::operator_call(std::string_view name, const Json &arguments) {
+  // Encode both values as decimal Lua bytes; no operator text becomes Lua source.
+  auto literal = [](std::string_view value) {
+    std::string out = "\"";
+    for (const char ch : value) {
+      const auto c = static_cast<unsigned char>(ch);
+      out += "\\";
+      out += static_cast<char>('0' + c / 100);
+      out += static_cast<char>('0' + (c / 10) % 10);
+      out += static_cast<char>('0' + c % 10);
+    }
+    return out + "\"";
+  };
+  const auto encoded = unwrap(dump_json(arguments));
+  const auto program = "return blackbird.call(" + literal(name) +
+                       ",blackbird.json.decode(" + literal(encoded) + "))";
+  turn({"", program});
+  return workflow_result_;
 }
 bool CodingEngine::operator_turn(std::string_view prompt, std::string_view fallback) {
   if (prompt.empty())

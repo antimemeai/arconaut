@@ -112,3 +112,48 @@ Direct checks: retained name round trip/invalid input, palette search/arrows, tw
 saved sessions with independent identities/context/tasks/drafts, busy queue
 boundary, failed/busy destination, and restart routing after selection. Existing
 new-session PTY is extended rather than adding a second receipt mechanism.
+
+## Order 2 implementation note
+
+Route one explicit selected-context colleague request through CodingEngine's
+existing admitted operation, originals and settlement. Tool `colleague`, Lua
+`blackbird.colleague(request)` and `/colleague JSON` share the exact contract.
+Catalog discovery describes installed transports and untested authentication;
+only an observed call establishes availability for that provider/model. Keep
+requested and actual models separate. Extend the existing native transport's
+cooperative cancellation input, preserving unknown remote disposition on local
+interruption. No implicit transcript export, continuation or retries.
+
+Allowance 90 minutes including at most 25 minutes hardening, two layers. Direct
+engine tests cover interface equivalence, original/attempt linkage, malformed
+admission, remote-unknown settlement and one dispatch. Existing colleague tests
+cover provider decoding. One useful selected-source Claude call supplies the live
+outcome; a failed account stops that probe without repeated login attempts.
+
+## Order 3 implementation note
+
+A native participant owns a bounded selected request and a worker, never the main
+engine or a Lua heap. Configure concurrent active participants before work; keep
+at most 32 resident runs. Start admits a durable pending record before dispatch.
+Workers capture into a bounded queue drained only by the owning engine, so they
+never write the main journal concurrently. The first request returns into a visible
+waiting-for-direction state. Addressed sends have caller message IDs, sender,
+recipient, bounded text/inbox and delivery deduplication. They run at the next
+request boundary; they cannot rewrite an in-flight provider request. Join seals
+admission, drains already accepted directions and returns results in requested
+order. Each direction is an explicitly accepted new one-request colleague call,
+with the prior answer selected explicitly and bounded, not a hidden transcript.
+
+Cancellation is a request flag propagated to native transport. Only worker return
+establishes local settlement; its remote disposition remains observed/unknown.
+Restart/session-switch refuses live participants; join/cancel and settle first.
+On process reopen unfinished runs become unknown, never restarted. Completed
+results remain readable. Archive settled runs to free resident slots; originals
+stay in retained history. Task badges observe run state, never complete the plan.
+No external service control, framework or arbitrary closure serialization.
+
+90 minutes including at most 25 minutes hardening, two layers. Direct deterministic
+barriers cover real overlap, configured cap, direction boundary/order/dedup,
+backpressure, cancellation-versus-settlement, declared join order and crash-reopen
+unknowns. Exercise model/Lua/operator on the same callable surface and a real UI
+case for reading/cancelling one run while another is active. No new startup trial.
