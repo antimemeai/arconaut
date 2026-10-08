@@ -1624,7 +1624,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       persist();
       continue;
     }
+    bool saved_last_input = false;
     for (ssize_t i = 0; i < count; ++i) {
+      saved_last_input = false; // Later bytes can change the submitted state.
       const bool was_escape = composer.escape_pending();
       auto result = composer.feed(bytes[i]);
       welcoming = false; // First operator input reveals retained chat and the avatar.
@@ -1734,14 +1736,17 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
             transcript += "\nQueue full; prompt retained in composer.\n";
           }
         } else {
-          if (persist())
+          if (persist()) {
+            saved_last_input = true;
             start(std::move(result.text));
-          else
+          } else
             composer.draft(std::move(result.text));
         }
       }
     }
-    persist();
+    // A final-byte submission already saved this exact state before dispatch.
+    // Do not serialize/rename/fsync it again; trailing input still gets saved.
+    if (!saved_last_input) persist();
   }
   persist();
 }

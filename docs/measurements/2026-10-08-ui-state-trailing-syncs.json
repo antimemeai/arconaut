@@ -1,0 +1,73 @@
+{
+  "binary_sha256": {
+    "baseline": "a55b4a1de7bfbe8b6e5dd32742a4d6a72bba964c253d512b521bc5638f91de27",
+    "candidate": "17db02d5720d5f5321604401b84139dbf5c114dafda4c2fb0527bd8c3e674b30"
+  },
+  "samples": [
+    {
+      "binary": "baseline",
+      "index": 0,
+      "first_frame_ms": 65.22483401931822,
+      "command_marker_ms": 34.43145798519254,
+      "command_complete_ms": 34.93362502194941,
+      "spawn_to_marker_ms": 99.65941694099456,
+      "idle_seconds": 0,
+      "trailing_input": "TRAILING_DRAFT",
+      "error": null,
+      "process_cpu_ms": 11.096,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "candidate",
+      "index": 0,
+      "first_frame_ms": 79.46987496688962,
+      "command_marker_ms": 37.522542057558894,
+      "command_complete_ms": 39.207042078487575,
+      "spawn_to_marker_ms": 117.00091697275639,
+      "idle_seconds": 0,
+      "trailing_input": "TRAILING_DRAFT",
+      "error": null,
+      "process_cpu_ms": 30.284,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "candidate",
+      "index": 1,
+      "first_frame_ms": 89.25470802932978,
+      "command_marker_ms": 43.43570803757757,
+      "command_complete_ms": 45.1285409508273,
+      "spawn_to_marker_ms": 132.699333014898,
+      "idle_seconds": 0,
+      "trailing_input": "TRAILING_DRAFT",
+      "error": null,
+      "process_cpu_ms": 40.648999999999994,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "baseline",
+      "index": 1,
+      "first_frame_ms": 94.91958294529468,
+      "command_marker_ms": 37.42412501014769,
+      "command_complete_ms": 38.893209071829915,
+      "spawn_to_marker_ms": 132.35220790375024,
+      "idle_seconds": 0,
+      "trailing_input": "TRAILING_DRAFT",
+      "error": null,
+      "process_cpu_ms": 37.946000000000005,
+      "ui_state_fsyncs": 4
+    }
+  ],
+  "load_before": [
+    1.37109375,
+    1.607421875,
+    1.8818359375
+  ],
+  "platform": "Darwin",
+  "direct_native": true,
+  "endpoints": "Fresh private sessions, ordinary cache. No provider. CPU includes all phases, not idle CPU.",
+  "load_after": [
+    1.37109375,
+    1.607421875,
+    1.8818359375
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "binary_sha256": {
+    "baseline": "a55b4a1de7bfbe8b6e5dd32742a4d6a72bba964c253d512b521bc5638f91de27",
+    "candidate": "17db02d5720d5f5321604401b84139dbf5c114dafda4c2fb0527bd8c3e674b30"
+  },
+  "samples": [
+    {
+      "binary": "baseline",
+      "index": 0,
+      "first_frame_ms": 250.78074994962662,
+      "command_marker_ms": 36.14116704557091,
+      "command_complete_ms": 37.42891701404005,
+      "spawn_to_marker_ms": 286.9273329852149,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 24.527
+    },
+    {
+      "binary": "candidate",
+      "index": 0,
+      "first_frame_ms": 104.92008307483047,
+      "command_marker_ms": 37.08420798648149,
+      "command_complete_ms": 38.86095806956291,
+      "spawn_to_marker_ms": 142.01070799026638,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 44.95699999999999
+    },
+    {
+      "binary": "candidate",
+      "index": 1,
+      "first_frame_ms": 101.6272499691695,
+      "command_marker_ms": 37.788666086271405,
+      "command_complete_ms": 39.10487506072968,
+      "spawn_to_marker_ms": 139.42208304069936,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 44.47
+    },
+    {
+      "binary": "baseline",
+      "index": 1,
+      "first_frame_ms": 105.60904198791832,
+      "command_marker_ms": 37.80954203102738,
+      "command_complete_ms": 39.36904203146696,
+      "spawn_to_marker_ms": 143.4252499602735,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 46.31400000000001
+    },
+    {
+      "binary": "baseline",
+      "index": 2,
+      "first_frame_ms": 75.60320908669382,
+      "command_marker_ms": 36.41791606787592,
+      "command_complete_ms": 36.98604099918157,
+      "spawn_to_marker_ms": 112.02462506480515,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 17.254999999999992
+    },
+    {
+      "binary": "candidate",
+      "index": 2,
+      "first_frame_ms": 108.21629199199378,
+      "command_marker_ms": 38.3698339574039,
+      "command_complete_ms": 39.59779196884483,
+      "spawn_to_marker_ms": 146.59108396153897,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 43.291999999999994
+    },
+    {
+      "binary": "candidate",
+      "index": 3,
+      "first_frame_ms": 103.97454199846834,
+      "command_marker_ms": 42.88666706997901,
+      "command_complete_ms": 44.71245803870261,
+      "spawn_to_marker_ms": 146.8674170318991,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 45.75899999999999
+    },
+    {
+      "binary": "baseline",
+      "index": 3,
+      "first_frame_ms": 101.43995902035385,
+      "command_marker_ms": 37.025292054750025,
+      "command_complete_ms": 38.63475006073713,
+      "spawn_to_marker_ms": 138.47195904236287,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 46.00399999999999
+    },
+    {
+      "binary": "baseline",
+      "index": 4,
+      "first_frame_ms": 65.9184999531135,
+      "command_marker_ms": 32.53974998369813,
+      "command_complete_ms": 32.86929102614522,
+      "spawn_to_marker_ms": 98.46029197797179,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 11.34099999999999
+    },
+    {
+      "binary": "candidate",
+      "index": 4,
+      "first_frame_ms": 100.13079200871289,
+      "command_marker_ms": 37.89933293592185,
+      "command_complete_ms": 38.7637079693377,
+      "spawn_to_marker_ms": 138.03695794194937,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 41.89700000000002
+    },
+    {
+      "binary": "candidate",
+      "index": 5,
+      "first_frame_ms": 99.1940840613097,
+      "command_marker_ms": 36.45583300385624,
+      "command_complete_ms": 41.79816599935293,
+      "spawn_to_marker_ms": 135.6562920846045,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 45.29499999999997
+    },
+    {
+      "binary": "baseline",
+      "index": 5,
+      "first_frame_ms": 101.67016601189971,
+      "command_marker_ms": 36.03220894001424,
+      "command_complete_ms": 37.65983390621841,
+      "spawn_to_marker_ms": 137.7090000314638,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 44.876000000000026
+    },
+    {
+      "binary": "baseline",
+      "index": 6,
+      "first_frame_ms": 78.75316706486046,
+      "command_marker_ms": 32.71050006151199,
+      "command_complete_ms": 32.99691702704877,
+      "spawn_to_marker_ms": 111.46575002931058,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 14.525999999999984
+    },
+    {
+      "binary": "candidate",
+      "index": 6,
+      "first_frame_ms": 90.81633307505399,
+      "command_marker_ms": 34.55900005064905,
+      "command_complete_ms": 36.27266699913889,
+      "spawn_to_marker_ms": 125.38095808122307,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 36.695000000000036
+    },
+    {
+      "binary": "candidate",
+      "index": 7,
+      "first_frame_ms": 99.91049999371171,
+      "command_marker_ms": 37.07262501120567,
+      "command_complete_ms": 38.630333030596375,
+      "spawn_to_marker_ms": 136.98945799842477,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 42.93099999999994
+    },
+    {
+      "binary": "baseline",
+      "index": 7,
+      "first_frame_ms": 99.37608300242573,
+      "command_marker_ms": 36.89962497446686,
+      "command_complete_ms": 38.61083404626697,
+      "spawn_to_marker_ms": 136.28245797008276,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 44.17100000000007
+    },
+    {
+      "binary": "baseline",
+      "index": 8,
+      "first_frame_ms": 99.2255830205977,
+      "command_marker_ms": 37.06708399113268,
+      "command_complete_ms": 38.99849997833371,
+      "spawn_to_marker_ms": 136.29925006534904,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 45.59599999999997
+    },
+    {
+      "binary": "candidate",
+      "index": 8,
+      "first_frame_ms": 97.95629209838808,
+      "command_marker_ms": 40.216792025603354,
+      "command_complete_ms": 41.96279193274677,
+      "spawn_to_marker_ms": 138.17841710988432,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 39.23500000000002
+    },
+    {
+      "binary": "candidate",
+      "index": 9,
+      "first_frame_ms": 82.82245905138552,
+      "command_marker_ms": 35.52095894701779,
+      "command_complete_ms": 36.33899998385459,
+      "spawn_to_marker_ms": 118.34733397699893,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 22.90700000000001
+    },
+    {
+      "binary": "baseline",
+      "index": 9,
+      "first_frame_ms": 98.08525000698864,
+      "command_marker_ms": 38.97854103706777,
+      "command_complete_ms": 40.57412501424551,
+      "spawn_to_marker_ms": 137.07054103724658,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 44.791999999999945
+    }
+  ],
+  "load_before": [
+    1.236328125,
+    1.736328125,
+    2.013671875
+  ],
+  "platform": "Darwin",
+  "endpoints": "Actual launcher, fresh private sessions, ordinary cache. No provider. CPU includes all phases, not idle CPU.",
+  "load_after": [
+    1.76123046875,
+    1.82958984375,
+    2.04150390625
+  ]
+}

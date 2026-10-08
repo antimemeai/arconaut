@@ -1,0 +1,125 @@
+{
+  "binary_sha256": {
+    "baseline": "a55b4a1de7bfbe8b6e5dd32742a4d6a72bba964c253d512b521bc5638f91de27",
+    "candidate": "17db02d5720d5f5321604401b84139dbf5c114dafda4c2fb0527bd8c3e674b30"
+  },
+  "samples": [
+    {
+      "binary": "baseline",
+      "index": 0,
+      "first_frame_ms": 62.22104106564075,
+      "command_marker_ms": 34.57670798525214,
+      "command_complete_ms": 35.03183298744261,
+      "spawn_to_marker_ms": 96.79979109205306,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 8.542,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "candidate",
+      "index": 0,
+      "first_frame_ms": 85.40095796342939,
+      "command_marker_ms": 35.90345801785588,
+      "command_complete_ms": 37.01200010254979,
+      "spawn_to_marker_ms": 121.30866595543921,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 31.842999999999996,
+      "ui_state_fsyncs": 3
+    },
+    {
+      "binary": "candidate",
+      "index": 1,
+      "first_frame_ms": 87.63566694688052,
+      "command_marker_ms": 38.11666707042605,
+      "command_complete_ms": 39.913375047035515,
+      "spawn_to_marker_ms": 125.7607500301674,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 38.627,
+      "ui_state_fsyncs": 3
+    },
+    {
+      "binary": "baseline",
+      "index": 1,
+      "first_frame_ms": 91.12337499391288,
+      "command_marker_ms": 37.65341697726399,
+      "command_complete_ms": 39.45420903619379,
+      "spawn_to_marker_ms": 128.78070794977248,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 39.583000000000006,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "baseline",
+      "index": 2,
+      "first_frame_ms": 68.2182910386473,
+      "command_marker_ms": 32.5284170685336,
+      "command_complete_ms": 32.92525000870228,
+      "spawn_to_marker_ms": 100.7488330360502,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 10.23199999999999,
+      "ui_state_fsyncs": 4
+    },
+    {
+      "binary": "candidate",
+      "index": 2,
+      "first_frame_ms": 79.69937496818602,
+      "command_marker_ms": 33.18191599100828,
+      "command_complete_ms": 34.416957991197705,
+      "spawn_to_marker_ms": 112.88675002288073,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 27.301999999999992,
+      "ui_state_fsyncs": 3
+    },
+    {
+      "binary": "candidate",
+      "index": 3,
+      "first_frame_ms": 87.17820793390274,
+      "command_marker_ms": 38.32599997986108,
+      "command_complete_ms": 40.140624972991645,
+      "spawn_to_marker_ms": 125.51283300854266,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 41.14100000000001,
+      "ui_state_fsyncs": 3
+    },
+    {
+      "binary": "baseline",
+      "index": 3,
+      "first_frame_ms": 85.31454100739211,
+      "command_marker_ms": 37.58329199627042,
+      "command_complete_ms": 39.283875026740134,
+      "spawn_to_marker_ms": 122.91049992199987,
+      "idle_seconds": 0,
+      "trailing_input": "",
+      "error": null,
+      "process_cpu_ms": 38.61500000000001,
+      "ui_state_fsyncs": 4
+    }
+  ],
+  "load_before": [
+    1.40380859375,
+    1.6181640625,
+    1.88720703125
+  ],
+  "platform": "Darwin",
+  "direct_native": true,
+  "endpoints": "Fresh private sessions, ordinary cache. No provider. CPU includes all phases, not idle CPU.",
+  "load_after": [
+    1.37109375,
+    1.607421875,
+    1.8818359375
+  ]
+}
