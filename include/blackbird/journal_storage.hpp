@@ -15,6 +15,10 @@ public:
   // Reader references retain storage ownership, not writer ownership.
   virtual void release_writer() noexcept {}
 };
+struct ScratchCleanup {
+  std::size_t scanned = 0, removed = 0;
+  bool complete = false;
+};
 class JournalDirectory {
 public:
   virtual ~JournalDirectory() = default;
@@ -23,6 +27,12 @@ public:
   virtual Result<std::unique_ptr<JournalFile>> open_existing(std::string_view name,
                                                              FileAccess access) = 0;
   virtual Result<void> synchronize_directory(SyncStrength strength) = 0;
+  // Caller must hold this journal's exclusive writer lease, with no publication
+  // in flight. Only reserved numeric publication scratch names are eligible.
+  virtual Result<ScratchCleanup> reclaim_publication_scratch(
+      std::string_view, std::size_t = 128, std::size_t = 16) {
+    return Result<ScratchCleanup>::failure({ErrorCode::unsupported});
+  }
   virtual Result<void> replace_file(std::string_view, std::string_view) {
     return Result<void>::failure({ErrorCode::unsupported});
   }
@@ -59,6 +69,8 @@ public:
                                                      FileAccess access) override;
   Result<void> synchronize_directory(SyncStrength strength) override;
   Result<void> replace_file(std::string_view from, std::string_view to) override;
+  Result<ScratchCleanup> reclaim_publication_scratch(std::string_view journal,
+      std::size_t max_scan = 128, std::size_t max_remove = 16) override;
 
 private:
   explicit NativeJournalDirectory(int descriptor) : descriptor_(descriptor) {}

@@ -1863,6 +1863,7 @@ Result<void> RetainedState::save_current_state(const Json &context) {
   if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
       !reconciled_ || !historical_.empty())
     return Result<void>::failure({ErrorCode::audit_unavailable});
+  (void)directory_->reclaim_publication_scratch(journal_name_);
   try {
     SavedState next{cursor(),
                     fact_count(),

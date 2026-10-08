@@ -257,6 +257,7 @@ FramedJournal::open(JournalDirectory &directory, std::string_view name,
   if (!scanned.has_value()) {
     return Result<std::unique_ptr<FramedJournal>>::failure(scanned.error());
   }
+  (void)directory.reclaim_publication_scratch(name); // exclusive writer lease held
   return Result<std::unique_ptr<FramedJournal>>::success(std::move(journal));
 }
 

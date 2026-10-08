@@ -145,6 +145,7 @@ Result<void> FramedJournal::publish_scan_checkpoint() {
   if (in_restage_ || state_ != JournalWriterState::live || historical_ || archived_records_)
     return Result<void>::failure({ErrorCode::audit_unavailable});
   if (records_.empty()) return Result<void>::success();
+  (void)directory_.reclaim_publication_scratch(name_);
   try {
     auto extent = file_->extent();
     if (!extent.has_value()) return Result<void>::failure(extent.error());
