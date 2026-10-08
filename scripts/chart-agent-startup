@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Draw the startup percentiles and their numbers from recorded benchmark batches."""
+import argparse
+import html
+import json
+import math
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("results", type=Path)
+    parser.add_argument("output", type=Path)
+    args = parser.parse_args()
+    data = json.loads(args.results.read_text())
+    names = {"blackbird": "Blackbird", "claude": "Claude Code", "codex": "Codex",
+             "hermes": "Hermes classic", "opencode": "OpenCode", "pi": "Bare Pi",
+             "kimi": "Kimi Code", "omp": "Oh My Pi"}
+    colors = {"p30": "#2563eb", "p50": "#07866a", "p70": "#b86200", "p90": "#9438a2"}
+    rows = sorted(data["summary"].items(), key=lambda pair: pair[1]["input_frame_ms"]["p50"])
+    batches = data.get("tool_batches", {})
+    all_values = [row["input_frame_ms"][label] for _, row in rows for label in colors]
+    decade = 10 ** math.floor(math.log10(min(all_values)))
+    low = max(multiplier * decade for multiplier in (1, 2, 5) if multiplier * decade <= min(all_values))
+    high = 10 ** math.ceil(math.log10(max(all_values)))
+    left, right = 240, 920
+    height = 240 + 75 * len(rows)
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="{height}" viewBox="0 0 1440 {height}">',
+           '<title>Agent startup: p30, p50, p70 and p90</title>',
+           '<desc>Time from spawn to the configured input screen, in milliseconds. '
+           'Each tool has 100 fresh launches. The plot uses a logarithmic time axis; '
+           'the adjacent table gives the exact rounded percentile values. '
+           'A and B identify separate serial rotation batches.</desc>',
+           '<rect width="100%" height="100%" fill="#fff"/>',
+           '<style>text{font-family:Arial,Helvetica,sans-serif;fill:#17212b} '
+           '.small{font-size:15px;fill:#536170}.num{font-size:18px;font-variant-numeric:tabular-nums}</style>']
+
+    def text(x, y, value, size=18, extra=""):
+        svg.append(f'<text x="{x}" y="{y}" font-size="{size}" {extra}>{html.escape(str(value))}</text>')
+
+    def xpos(value):
+        return left + (math.log10(value)-math.log10(low))/(math.log10(high)-math.log10(low))*(right-left)
+
+    text(32, 42, "Fresh agent startup", 30, 'font-weight="700"')
+    text(32, 73, "Spawn → configured input screen · milliseconds · 100 launches per tool", 18)
+    for index, (label, color) in enumerate(colors.items()):
+        x = 36 + index * 120
+        svg.append(f'<circle cx="{x}" cy="103" r="5" fill="{color}"/>')
+        text(x+13, 109, label, 17)
+    text(550, 109, "Logarithmic time axis; lower is faster", 16, 'class="small"')
+    table_columns = [1040, 1160, 1280, 1400]
+    for x, label in zip(table_columns, colors):
+        text(x, 145, label + " (ms)", 16, 'text-anchor="end" font-weight="700"')
+    bottom = 175 + 75*(len(rows)-1) + 28
+    for exponent in range(math.floor(math.log10(low)), math.ceil(math.log10(high))+1):
+        for multiplier in (1, 2, 5):
+            value = multiplier * 10**exponent
+            if not low <= value <= high:
+                continue
+            x = xpos(value)
+            svg.append(f'<line x1="{x:.2f}" y1="153" x2="{x:.2f}" y2="{bottom}" stroke="#e2e7ec"/>')
+            text(round(x, 2), bottom+27, f"{value:,}", 14, 'text-anchor="middle" class="small"')
+    for index, (tool, row) in enumerate(rows):
+        y = 175 + index * 75
+        if index % 2 == 0:
+            svg.append(f'<rect x="24" y="{y-25}" width="1392" height="62" fill="#f6f8fa" fill-opacity="0.6"/>')
+        batch = batches.get(tool, "")
+        text(32, y+4, names.get(tool, tool), 20)
+        text(32, y+25, f"batch {batch} · n={row['attempted']}", 13, 'class="small"')
+        for offset, (label, color), column in zip((-15, -5, 5, 15), colors.items(), table_columns):
+            value = row["input_frame_ms"][label]
+            x = xpos(value)
+            svg.append(f'<circle cx="{x:.3f}" cy="{y+offset}" r="5" fill="{color}"><title>'
+                       f'{html.escape(names.get(tool, tool))} {label}: {value:.3f} ms</title></circle>')
+            text(column, y+7, f"{value:,.1f}", 18, 'text-anchor="end" class="num"')
+    text(32, height-52, "A: earlier five-tool rotation · B: added Pi/Kimi/Oh My Pi rotation · same host and PTY method", 15, 'class="small"')
+    text(32, height-27, "No inference prompts. Codex includes a fresh local server; Hermes uses its classic CLI. Ordinary, unflushed OS caches.", 15, 'class="small"')
+    svg.append("</svg>")
+    args.output.write_text("\n".join(svg)+"\n")
+
+
+if __name__ == "__main__":
+    main()

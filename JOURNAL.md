@@ -5045,3 +5045,25 @@ identities unchanged, no accumulated private benchmark children observed. Tempor
 credential copies removed; existing account files untouched. No further source edits,
 review-of-review or additional test campaign. Back up Beads, checkpoint and push
 report/numeric results and documentation link under standing authorization.
+
+## 2026-10-08 — extend startup comparison with Pi, Kimi Code and Oh My Pi
+
+Operator requests the three shortlisted tools and a combined eight-tool chart.
+Use the existing owned PTY driver unchanged: 100 fresh launches per added tool,
+serial round robin, parent-spawn to configured input frame and visible unsubmitted
+marker. Prepare isolated Pi1.1.0 npm and Oh My Pi18.8.4 Bun installs under ignored
+context; use installed current Kimi Code2.1.1 arm64 binary. No production dependency
+adoption. Read upstream docs/help and retained source for home/config/endpoint
+selection. All three use OpenRouter claude-sonnet-4.6; no inference submissions.
+Bare Pi disables extensions/MCP/skills/templates/themes/context-file discovery.
+Oh My Pi disables external extensions/skills, retains normal default machinery and
+welcome animation, completes setup beforehand, and times fresh database creation.
+Kimi uses minimal static provider config, existing private banner/trust caches and
+an empty skills directory; avoid copying expired OAuth credentials/refresh tokens
+into repeated launches. Existing operator accounts and installations untouched.
+Updates/telemetry disabled where supported; no offline switch. Kimi trust preparation
+and Oh My Pi setup are excluded. Direct endpoint pilots then one requested batch;
+retain all trials/outliers and preliminary observations separately. Numeric results,
+configuration identities and chart will distinguish prior five-tool and added
+three-tool batches; do not imply eight-way simultaneous rotation. No source changes,
+extra hardening or speed certification. Delete temporary credential copies afterward.
