@@ -335,3 +335,8 @@ add_test(NAME archive_catalog COMMAND archive_catalog_test)
 add_executable(journal_resume_test tests/journal_resume_test.cpp)
 target_link_libraries(journal_resume_test PRIVATE blackbird_foundation)
 add_test(NAME journal_resume COMMAND journal_resume_test)
+
+add_executable(stream_capture_test tests/stream_capture_test.cpp)
+add_test(NAME stream_capture COMMAND stream_capture_test)
+add_test(NAME coding_stream_capture COMMAND coding_test stream-capture)
+set_tests_properties(coding_stream_capture PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

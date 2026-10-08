@@ -662,7 +662,7 @@ void retry_tests(const std::string &path) {
       if (string_field(original, "label") == "provider.stream")
         ++streams;
     }
-    if (attempts.size() != 2 || requests != 2 || streams != 2)
+    if (attempts.size() != 2 || requests != 2 || streams != 1)
       throw Error{ErrorCode::corrupt};
   }
   for (const auto fault :
@@ -767,7 +767,7 @@ public:
     ++calls;
     capture("retained-first-fragment");
     for (int i = 0; i < 500; ++i)
-      capture(std::string(records ? 80 : 120000, 'x'));
+      capture(std::string(records ? 65536 : 120000, 'x'));
     returned = true;
     return Json::object({{"output", Json{Json::Array{}}}});
   }
@@ -824,7 +824,7 @@ void workflow_capacity_test(const std::string &path, bool records) {
           for (const auto ref : fact.event.dependencies) {
             const auto bytes = unwrap(root->source(ref));
             if (std::string_view{reinterpret_cast<const char *>(bytes.data()),
-                                 bytes.size()} == "retained-first-fragment")
+                                 bytes.size()}.starts_with("retained-first-fragment"))
               first = true;
           }
         if (*label == Json{"capacity.stop"} &&
@@ -1090,12 +1090,63 @@ void file_selector_test(const std::string &path) {
   if (failed != 1)
     throw Error{ErrorCode::corrupt};
 }
-int main() {
+int main(int argc, char **argv) {
   char name[] = "/tmp/arco-coding-XXXXXX";
   auto path = mkdtemp(name);
   if (!path)
     return 2;
   try {
+    if (argc == 2 && std::string_view{argv[1]} == "stream-capture") {
+      workflow_capacity_test(std::string{path} + "/workflow-bytes", false);
+      workflow_capacity_test(std::string{path} + "/workflow-records", true);
+      retry_tests(std::string{path} + "/retries");
+      JournalHeader h{id<EnvironmentId>(1), id<AuditStreamId>(2), 3,
+                      {4 * 1024 * 1024, 16 * 1024 * 1024}, std::nullopt};
+      auto root = unwrap(RetainedState::create(
+          std::make_unique<NativeJournalDirectory>(unwrap(NativeJournalDirectory::open(path))),
+          "audit", h, {64 * 1024 * 1024, 10000}));
+      AuditLog log{*root}; ContextStore context{log}; Scripted provider;
+      provider.path = std::string{path} + "/source.cpp";
+      CodingEngine engine{log, context, provider, "test"};
+      std::string displayed;
+      engine.display = [&](std::string_view bytes) { displayed += bytes; };
+      provider.check_preview = [&] {
+        if (!displayed.ends_with("do")) throw Error{ErrorCode::corrupt};
+      };
+      engine.turn({"write a source", read_file("programs/turn.lua")});
+      if (provider.calls != 2 || read_file(provider.path) != "int answer = 42;\n")
+        throw Error{ErrorCode::corrupt};
+      provider.interrupt = true;
+      bool stopped = false;
+      try { engine.turn({"cancel", read_file("programs/turn.lua")}); }
+      catch (const Error &e) { stopped = e.code == ErrorCode::interrupted; }
+      if (!stopped || !displayed.ends_with("PARTIAL")) throw Error{ErrorCode::corrupt};
+      engine.validate_restart();
+      class Fragmented final : public CodingProvider {
+        Json respond(const Json &, const std::function<void(std::string_view)> &capture) override {
+          for (unsigned i = 0; i < 100000; ++i) capture("x");
+          return Json::object({{"output", Json{Json::Array{}}}});
+        }
+      } fragmented;
+      const auto before = root->committed_facts().size();
+      CodingEngine fragmented_engine{log, context, fragmented, "test"};
+      fragmented_engine.turn({"", "arco.request()"});
+      std::size_t blocks = 0, captured_bytes = 0;
+      const auto facts = root->committed_facts();
+      for (std::size_t i = before; i < facts.size(); ++i) {
+        const auto *record = std::get_if<ApplicationRecordEvent>(&facts[i].event.body);
+        if (!record || record->channel != ApplicationChannel::log) continue;
+        const auto packet = unwrap(parse_json(read_text(record->payload)));
+        if (string_field(packet, "label") != "provider.stream") continue;
+        ++blocks;
+        for (const auto ref : facts[i].event.dependencies)
+          captured_bytes += unwrap(root->source(ref)).size();
+      }
+      if (blocks != 2 || captured_bytes != 100000) throw Error{ErrorCode::corrupt};
+      std::cout << "engine: 100000 callbacks -> " << blocks << " source/log appends\n";
+      std::filesystem::remove_all(path);
+      return 0;
+    }
     file_selector_test(std::string{path} + "/file-selector");
     workflow_interruption_budget_test(std::string{path} + "/interruption-floor");
     workflow_settlement_limits_test(std::string{path} + "/settlement-payload", false);

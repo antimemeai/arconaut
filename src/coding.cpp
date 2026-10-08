@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "stream_capture.hpp"
 #include "blackbird/local_timing.hpp"
 #include "blackbird/process_lifetime.hpp"
 extern "C" {
@@ -1372,23 +1373,36 @@ Json CodingEngine::request(Json options) {
         if (transport.enabled())
           transport.linkage(origin, hex_identity(attempt.bytes()));
         transport.outcome("exception");
-        auto result = provider_.respond(request, [&](std::string_view raw) {
+        StreamCapture capture{[&](std::string_view block) {
           try {
             log_.original(
-                {"provider.stream", raw,
+                {"provider.stream", block,
                  Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                               {"revision", Json{origin}}})});
+                               {"revision", Json{origin}},
+                               {"capture_policy", Json{"bounded-blocks-v1"}}})});
           } catch (const Error &e) {
             if (e.code == ErrorCode::capacity)
-              unretained_bytes_ += raw.size();
+              unretained_bytes_ += block.size();
             throw;
           }
-          for (const auto &delta : preview.feed(raw)) {
-            previewed_[delta.item_id] += delta.text;
-            if (display)
-              display(delta.text);
-          }
-        });
+        }};
+        Json result;
+        try {
+          result = provider_.respond(request, [&](std::string_view raw) {
+            capture.append(raw);
+            // Preview follows transport delivery, not diagnostic flush cadence.
+            for (const auto &delta : preview.feed(raw)) {
+              previewed_[delta.item_id] += delta.text;
+              if (display)
+                display(delta.text);
+            }
+          });
+        } catch (...) {
+          // No destructor I/O and no retry if a prior sink write was uncertain.
+          capture.flush();
+          throw;
+        }
+        capture.flush();
         transport.outcome("returned");
         return result;
       });
