@@ -4815,3 +4815,30 @@ Record proposal, not silent plan replacement. Production code/binary unchanged,
 no provider/network call, no new campaign or broad tests. Report and full numeric
 samples under papers/2026-10-07-heavy-startup-assessment.md and docs/measurements.
 Update startup issue, back up Beads, commit/push research checkpoint.
+
+## 2026-10-08 — operator authorizes Astra saved-state proposal
+
+Start one native BB implementation owner in reused performance-pool slot0,
+candidate/saved-state-delivery-2026-10-08 from9f85eb3. Whole delivery targets actual
+RetainedState launcher reopen, compact current state at committed boundary, suffix
+recovery, exact historical reads and unresolved effects. Archive-sized RAM snapshots
+and physical hints alone are explicitly insufficient. Existing full replay fallback
+stays independent. Root owns review/integration/runtime/measurement. One25minute
+implementation allowance, direct remediation then one findings recheck; no expanded
+tribunals or surveys. Prior corpora supplied by absolute read-only locations.
+Native gpt-6.1-sol/medium, ordinary DEBUGOFF executable and provider-only transport
+supervisor. Immutable mission, deadline, audit and output under ignored
+context/saved-state-delivery-2026-10-08. Existing BB managed candidate pool/board
+reservation records lane; global unrelated admission stays paused.
+
+Prepared independent error-raising read oracle in development startup_loading_probe:
+open-forbid takes explicit immutable audit byte ranges and refuses overlapping
+reads before native storage access; any attempted forbidden read prevents a
+successful result. Sidecar files are excluded from the range address space.
+Generated640 candidate-body ranges from the known private heavy fixture; current
+Release/OFF baseline fails after one forbidden attempt (audit_unavailable).
+Probe initially expected raw io, but physical recovery correctly translates its
+blocked admission to audit_unavailable; strengthened the diagnostic to record
+actual denied attempts and checked the direct count. No production changes.
+Targeted developer build succeeds. Candidate implementation owns the separate
+slot; no concurrent source edits in its checkout.

@@ -16,12 +16,22 @@ template<class T> T fixed(unsigned char n) {
 }
 struct ProbeIO {
   std::uint64_t read_bytes = 0, write_bytes = 0, sync_calls = 0;
+  std::vector<std::pair<std::uint64_t, std::uint64_t>> forbidden;
+  std::size_t forbidden_attempts = 0;
 };
 class ProbeFile final : public JournalFile {
 public:
   ProbeFile(std::unique_ptr<JournalFile> file, ProbeIO &io) : file_(std::move(file)), io_(io) {}
   void release_writer() noexcept override { file_->release_writer(); }
   Result<std::size_t> read_at(std::uint64_t offset, MutableByteView bytes) override {
+    // Development oracle: a fast reopen must succeed even when archived rejected
+    // bodies are unreadable. These ranges refer only to the private audit file.
+    if (audit_ && !bytes.empty())
+      for (const auto &[begin, end] : io_.forbidden)
+        if (offset < end && (offset >= begin || bytes.size() > begin - offset)) {
+          ++io_.forbidden_attempts;
+          return Result<std::size_t>::failure({ErrorCode::io});
+        }
     auto result = file_->read_at(offset, bytes);
     if (result.has_value()) io_.read_bytes += result.value();
     return result;
@@ -34,9 +44,11 @@ public:
   Result<std::uint64_t> extent() override { return file_->extent(); }
   Result<void> synchronize(SyncStrength strength) override { ++io_.sync_calls; return file_->synchronize(strength); }
   Result<void> lock_writer() override { return file_->lock_writer(); }
+  void audit(bool value) noexcept { audit_ = value; }
 private:
   std::unique_ptr<JournalFile> file_;
   ProbeIO &io_;
+  bool audit_ = false;
 };
 class ProbeDirectory final : public JournalDirectory {
 public:
@@ -46,7 +58,7 @@ public:
     return wrap(directory_->create_exclusive(name));
   }
   Result<std::unique_ptr<JournalFile>> open_existing(std::string_view name, FileAccess access) override {
-    return wrap(directory_->open_existing(name, access));
+    return wrap(directory_->open_existing(name, access), name == "audit");
   }
   Result<void> synchronize_directory(SyncStrength strength) override {
     ++io_.sync_calls; return directory_->synchronize_directory(strength);
@@ -55,9 +67,11 @@ public:
     return directory_->replace_file(from, to);
   }
 private:
-  Result<std::unique_ptr<JournalFile>> wrap(Result<std::unique_ptr<JournalFile>> result) {
+  Result<std::unique_ptr<JournalFile>> wrap(Result<std::unique_ptr<JournalFile>> result, bool audit = false) {
     if (!result.has_value()) return result;
-    return Result<std::unique_ptr<JournalFile>>::success(std::make_unique<ProbeFile>(std::move(result).value(), io_));
+    auto wrapped = std::make_unique<ProbeFile>(std::move(result).value(), io_);
+    wrapped->audit(audit);
+    return Result<std::unique_ptr<JournalFile>>::success(std::move(wrapped));
   }
   std::unique_ptr<JournalDirectory> directory_;
   ProbeIO &io_;
@@ -77,6 +91,7 @@ int main(int argc, char **argv) {
   LocalTimingSession timing_session; // explicit per-process opt-in; shutdown flush
 #endif
   if(argc < 3) return 2;
+  ProbeIO io;
   try {
     const auto start=std::chrono::steady_clock::now();
     const std::filesystem::path path{argv[2]};
@@ -84,12 +99,25 @@ int main(int argc, char **argv) {
     JournalHeader h{fixed<EnvironmentId>(1),fixed<AuditStreamId>(2),3,
                     {2*1024*1024,4*1024*1024},std::nullopt};
     JournalCapacity cap{1024ULL*1024*1024,200000};
-    ProbeIO io;
     auto directory=std::make_unique<ProbeDirectory>(
       std::make_unique<NativeJournalDirectory>(unwrap(NativeJournalDirectory::open(path.string()))), io);
     const std::string_view mode{argv[1]};
     const bool create=mode=="create";
     const bool indexed=mode=="open-index";
+    if (mode == "open-forbid") {
+      if (argc != 4) return 2;
+      std::ifstream ranges_file{argv[3]};
+      const std::string text{std::istreambuf_iterator<char>{ranges_file}, {}};
+      const auto ranges = unwrap(parse_json(text));
+      for (const auto &range : ranges.array()) {
+        if (range.array().size() != 2) throw Error{ErrorCode::invalid_range};
+        const auto begin = std::stoull(range.array()[0].number().text);
+        const auto end = std::stoull(range.array()[1].number().text);
+        if (begin >= end) throw Error{ErrorCode::invalid_range};
+        io.forbidden.emplace_back(begin, end);
+      }
+      if (io.forbidden.empty()) throw Error{ErrorCode::invalid_range};
+    }
     if (!create) {
       std::array<std::byte, journal_header_size> bytes{};
       std::ifstream input{path / "audit", std::ios::binary};
@@ -224,6 +252,7 @@ int main(int argc, char **argv) {
         settled.observation->phase != AttemptPhase::terminal ||
         settled.observation->disposition != AttemptDisposition::success)
       throw Error{ErrorCode::corrupt};
+    if (io.forbidden_attempts != 0) throw Error{ErrorCode::corrupt};
     const auto admitted=provider.admitted;
     if(admitted == std::chrono::steady_clock::time_point{}) throw Error{ErrorCode::corrupt};
     auto ms=[&](auto t){return std::chrono::duration<double,std::milli>(t-start).count();};
@@ -237,5 +266,6 @@ int main(int argc, char **argv) {
               << " prompt_rss=" << prompt_memory.resident << " prompt_footprint=" << prompt_memory.footprint
               << " readiness_rss=" << provider.readiness_memory.resident << " readiness_footprint=" << provider.readiness_memory.footprint
               << " readiness_virtual=" << provider.readiness_memory.virtual_bytes << '\n';
-  } catch(const Error &e) {std::cerr << "error=" << error_name(e.code) << " detail=" << e.detail << '\n';return 1;}
+  } catch(const Error &e) {std::cerr << "error=" << error_name(e.code) << " detail=" << e.detail
+      << " forbidden_attempts=" << io.forbidden_attempts << '\n';return 1;}
 }

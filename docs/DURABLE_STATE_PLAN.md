@@ -5,6 +5,21 @@ in inspected code; not independently reviewed, implemented, or activated.
 No new worker is launched by this document. It replaces the broad durable-state
 mission and optional smaller-delivery language as the execution direction.
 
+Operator2026-10-08 authorizes the concrete sequencing correction in
+[the heavy startup assessment](../papers/2026-10-07-heavy-startup-assessment.md).
+One native implementation owner now works in the reused performance slot0,
+candidate/saved-state-delivery-2026-10-08 from master9f85eb3. The integrated target
+is ordinary RetainedState launcher reopen plus actual audited request admission,
+without reading rejected archived candidate bodies. Deliver current-state
+restoration alongside the minimum historical queries it requires; a broad generic
+index-first milestone is no longer the delivery sequence. Historical metadata
+remains paged/demand-read, and full replay remains independent fallback/oracle.
+Batch index updates before using per-key path copying in normal maintenance.
+Root owns one concrete-code review, findings fixes, integration and repeated
+launcher measurements. Its private mission/deadline/audit/resource observations
+are in context/saved-state-delivery-2026-10-08. No implemented recovery or latency
+claim follows merely from launching this work.
+
 ## The goal and the planning correction
 
 Ordinary reopen restores current state at a committed boundary, replays only the
