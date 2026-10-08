@@ -393,6 +393,15 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       return interrupted.load(std::memory_order_relaxed) || cancelled.load();
     };
     TerminalUI ui{"Blackbird · " + model + " · " + effort + " · " + session.string()};
+    struct ParticipantShutdown {
+      CodingEngine &engine;
+      ~ParticipantShutdown() {
+        try {
+          engine.shutdown_participants();
+        } catch (...) {
+        }
+      }
+    } participant_shutdown{engine}; // Before UI destruction, on every exit path.
     const bool tui = station_path.empty() && !plain && !one && isatty(STDIN_FILENO) &&
                      isatty(STDOUT_FILENO);
     auto emit = [&](std::string_view text) {
@@ -503,6 +512,52 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
             if (rows.empty())
               emit(items ? "No tasks.\n" : "Task list updated.\n");
           }
+        } else if (prompt == "/runs" || prompt.starts_with("/runs ")) {
+          Json result;
+          if (prompt.starts_with("/runs configure "))
+            result = engine.operator_call("participant_configure",
+                                          unwrap(parse_json(prompt.substr(16))));
+          else if (prompt.starts_with("/runs archive "))
+            result = engine.operator_call(
+                "participant_archive",
+                Json::object({{"run_id", Json{std::string{prompt.substr(14)}}}}));
+          else
+            result = engine.operator_call(
+                "participant_read",
+                prompt == "/runs"
+                    ? Json::object({})
+                    : Json::object({{"run_id", Json{std::string{prompt.substr(6)}}}}));
+          if (const auto *runs = result.find("runs")) {
+            if (runs->array().empty())
+              emit("No participant runs.\n");
+            for (const auto &run : runs->array())
+              emit(string_field(run, "run_id") + " [" + string_field(run, "state") +
+                   "] " + string_field(run, "provider") + "/" +
+                   string_field(run, "model") + " → " + string_field(run, "to") +
+                   (field(run, "cancel_requested") == Json{true}
+                        ? " · cancellation requested"
+                        : "") +
+                   "\n");
+          } else
+            emit(unwrap(dump_json(result)) + "\n");
+        } else if (prompt.starts_with("/run ") || prompt.starts_with("/send ") ||
+                   prompt.starts_with("/join ")) {
+          const auto name = prompt.starts_with("/run ")    ? "participant_start"
+                            : prompt.starts_with("/send ") ? "participant_send"
+                                                           : "participant_join";
+          const auto offset = prompt.starts_with("/run ") ? 5U : 6U;
+          emit(unwrap(dump_json(engine.operator_call(
+                   name, unwrap(parse_json(prompt.substr(offset)))))) +
+               "\n");
+        } else if (prompt.starts_with("/await ")) {
+          emit(unwrap(dump_json(engine.operator_call(
+                   "participant_await", unwrap(parse_json(prompt.substr(7)))))) +
+               "\n");
+        } else if (prompt.starts_with("/stop ")) {
+          emit(unwrap(dump_json(engine.operator_call(
+                   "participant_cancel",
+                   Json::object({{"run_id", Json{std::string{prompt.substr(6)}}}})))) +
+               "\n");
         } else if (prompt == "/colleagues") {
           emit(unwrap(dump_json(
                    engine.operator_call("colleague_catalog", Json::object({})))) +
@@ -538,6 +593,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
           if (destination == std::filesystem::weakly_canonical(session)) {
             emit("Already in this session.\n");
           } else {
+            engine.validate_session_switch();
             unwrap(context.checkpoint());
             next_session = {argv[0], "--session", destination.string(),
                             "--new-session-instance"};
@@ -552,6 +608,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
         } else if (prompt == "/new") {
           if (one || !station_path.empty())
             throw Error{ErrorCode::unsupported};
+          engine.validate_session_switch();
           unwrap(context.checkpoint());
           auto directory_template = (session.parent_path() / "session-XXXXXX").string();
           if (::mkdtemp(directory_template.data()) == nullptr)
@@ -821,6 +878,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       return restart_pending.load() ? 75 : 0;
     }
     if (tui) {
+      bool participant_retention_failed = false;
       ui.notice("/help lists commands. Workflow reloads each turn.\n");
       for (const auto &item : context.items()) {
         const auto *role = item.find("role");
@@ -845,7 +903,18 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       ui.run(
           perform, cancelled,
           [&] { return restart_pending.load() || new_pending.load(); },
-          resume_turn ? "continue" : "", session / "ui-state.json");
+          resume_turn ? "continue" : "", session / "ui-state.json",
+          [&] {
+            try {
+              engine.poll_participants();
+              participant_retention_failed = false;
+            } catch (const Error &error) {
+              if (!participant_retention_failed)
+                ui.notice(std::string{"Participant retention blocked: "} +
+                          error_name(error.code));
+              participant_retention_failed = true;
+            }
+          });
       return finish_interactive();
     }
     if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))

@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Real participant UI/control/reopen with a local fake Claude; no account calls."""
+import errno, fcntl, importlib.util, json, os, pty, re, select, signal, struct
+import subprocess, sys, tempfile, termios, time
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('screen',Path(__file__).with_name('terminal-screen-oracle.py'))
+oracle=importlib.util.module_from_spec(spec);spec.loader.exec_module(oracle)
+executable=str(Path(sys.argv[1]).resolve())
+with tempfile.TemporaryDirectory(prefix='blackbird-participants-') as work:
+    root=Path(work);session=root/'session';bin_dir=root/'bin';bin_dir.mkdir()
+    fake=bin_dir/'claude'
+    fake.write_text('#!/bin/sh\ncase "$*" in *alpha*) sleep 3;; *) sleep 1;; esac\nprintf \'%s\\n\' \'{"type":"result","subtype":"success","is_error":false,"result":"LOCAL_SELECTED_REVIEW","modelUsage":{"fake-claude":{}}}\'\n')
+    fake.chmod(0o700)
+    workflow=root/'local.lua';workflow.write_text("print('LOCAL_CONTINUATION')\n")
+    master,slave=pty.openpty();fcntl.ioctl(slave,termios.TIOCSWINSZ,struct.pack('HHHH',32,120,0,0))
+    screen=oracle.Screen()
+    child=subprocess.Popen([executable,'--session',str(session),'--workflow',str(workflow)],stdin=slave,stdout=slave,stderr=slave,start_new_session=True,env=dict(os.environ,PATH=str(bin_dir)+':'+os.environ['PATH'],BLACKBIRD_GRAPHICS='off'))
+    def wait(predicate,label,seconds=8):
+        deadline=time.monotonic()+seconds
+        while time.monotonic()<deadline:
+            if select.select([master],[],[],0.03)[0]:
+                try: screen.feed(os.read(master,65536))
+                except OSError as error:
+                    if error.errno!=errno.EIO:raise
+            if predicate():return
+        raise AssertionError(label+'\n'+screen.text())
+    def command(text):os.write(master,(text+'\r').encode())
+    def request(who):
+        return dict(request_id='initial-'+who,**{'from':'main','to':who},provider='claude',model='fake',task='Review selected code',context=[dict(id='source',text='selected')],profile=dict(name='context-only',provenance='PTY-local-fake',timeout_seconds=5,tools='none',requests=1))
+    try:
+        wait(lambda:'Workflow reloads' in screen.text(),'initial UI')
+        command('/new')
+        wait(lambda: len(list(root.glob('session-*/session-info.json'))) == 1 and 'Workflow reloads' in screen.text(), 'fresh session switch')
+        session=next(root.glob('session-*'))
+        command('/tasks add ALPHA_WORK');wait(lambda:'t1 ALPHA_WORK' in screen.text(),'first task')
+        command('/tasks add BETA_WORK');wait(lambda:'t2 BETA_WORK' in screen.text(),'second task')
+        a=json.dumps(dict(request=request('alpha'),task_id='t1'))
+        b=json.dumps(dict(request=request('beta'),task_id='t2'))
+        command("/lua local a=blackbird.participants.start(blackbird.decode([=["+a+"]=]));local b=blackbird.participants.start(blackbird.decode([=["+b+"]=]));print('ALPHA_ID '..a.run_id);print('BETA_ID '..b.run_id)")
+        wait(lambda:bool(re.search(r'ALPHA_ID ([a-f0-9]{32})',screen.text())) and bool(re.search(r'BETA_ID ([a-f0-9]{32})',screen.text())),'two participant IDs')
+        alpha=re.search(r'ALPHA_ID ([a-f0-9]{32})',screen.text()).group(1)
+        beta=re.search(r'BETA_ID ([a-f0-9]{32})',screen.text()).group(1)
+        command('/runs');wait(lambda:'[running] claude/fake' in screen.text(),'read during live work')
+        command('/stop '+alpha)
+        command('/join '+json.dumps(dict(run_ids=[alpha,beta])))
+        wait(lambda:'LOCAL_SELECTED_REVIEW' in screen.text() and 'fake-claude' in screen.text(),'join surviving participant')
+        command('/tasks read {}')
+        wait(lambda:'ALPHA_WORK' in screen.text() and 'BETA_WORK' in screen.text() and 'queued' in screen.text(),'tasks retain plan status')
+        command('/restart participant continuity')
+        wait(lambda:'LOCAL_CONTINUATION' in screen.text(),'quiescent restart')
+        command('/runs');wait(lambda:'[completed] claude/fake' in screen.text(),'completed result discovery after restart')
+        command('/runs '+beta);wait(lambda:'LOCAL_SELECTED_REVIEW' in screen.text(),'selected retained result after restart')
+        command('/quit');wait(lambda:child.poll() is not None,'normal exit')
+        assert child.returncode==0
+        result=subprocess.check_output([executable,'--session',str(session),'--once','/runs '+beta],text=True)
+        assert 'LOCAL_SELECTED_REVIEW' in result and 'completed' in result
+        print('Participant PTY: independent work, inspect/cancel/join, task status, native restart and retained results pass')
+    finally:
+        if child.poll() is None:
+            os.killpg(child.pid,signal.SIGKILL);child.wait(timeout=5)
+        os.close(master);os.close(slave)

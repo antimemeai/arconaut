@@ -157,3 +157,21 @@ barriers cover real overlap, configured cap, direction boundary/order/dedup,
 backpressure, cancellation-versus-settlement, declared join order and crash-reopen
 unknowns. Exercise model/Lua/operator on the same callable surface and a real UI
 case for reading/cancelling one run while another is active. No new startup trial.
+
+## Order 4 implementation note
+
+Use the new participant surface for a selected-source review of the actual tiny
+viewport rendering path, then the main Blackbird model for a concrete repair if
+source/direct physical-terminal checks expose one. The old clamp bug is already
+removed; do not manufacture that defect again. Scope implementation to minimal
+viewport clearing/rendering and its direct PTY case. Record actual model calls,
+source/result linkage, task state, context compaction/repair, build and quiescent
+restart/continuation. Keep the operator's live process untouched. No general uplift
+claim or matched timing experiment unless a useful comparison is available.
+
+90 minutes including at most25 minutes two-layer hardening. Claude's single source
+review timed out with unknown outcome; do not repeat it. One configured OpenAI
+participant call may establish the usable local loop without pretending this is
+heterogeneous collaboration. If that account also fails, retain the attempt and
+specific outcome and leave the live demonstration outstanding; finish independent
+product deliveries rather than repeating account probes.

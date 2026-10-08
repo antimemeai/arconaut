@@ -298,6 +298,12 @@ struct CodingEngine::Runtime {
         "function blackbird.decide(args) return blackbird.call('decision_model',args) "
         "end "
         "function blackbird.colleague(q) return blackbird.call('colleague',q) end "
+        "blackbird.participants={} "
+        "for _,n in "
+        "ipairs({'start','read','send','cancel','await','join','archive','configure'}) "
+        "do "
+        "blackbird.participants[n]=function(q) return "
+        "blackbird.call('participant_'..n,q or {}) end end "
         "blackbird.tasks={} "
         "function blackbird.tasks.read(q) return blackbird.call('tasks_read',{query=q "
         "or {}}) end "
@@ -828,11 +834,27 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
     budget_ = std::move(policy);
     budget_revision_ = string_field(packet, "revision");
   }
+  Json participants_saved;
+  for (const auto &packet : log_.root().current_programs())
+    if (string_field(packet, "label") == "participants-state-v1")
+      participants_saved = packet;
+  participants_ = std::make_unique<Participants>(
+      participants_saved,
+      [&](std::string_view label, std::string_view raw, const Json &metadata) {
+        log_.original({label, raw, metadata});
+      },
+      [&](const Json &snapshot) { log_.record(ApplicationChannel::program, snapshot); },
+      [&](const Json &activity) {
+        if (task_activity)
+          task_activity(activity);
+      });
   workflows_ = std::make_shared<WorkflowRegistry>(program_config_, program_revision_);
   if (context_.head().empty())
     context_.append({}, "initial");
 }
 CodingEngine::~CodingEngine() = default;
+void CodingEngine::poll_participants() { participants_->drain(); }
+void CodingEngine::shutdown_participants() { participants_->shutdown(); }
 void recover_coding_session(RetainedState &root) {
   struct ProviderCustody final : CustodyVerifier {
     RetainedState &root;
@@ -851,7 +873,15 @@ void recover_coding_session(RetainedState &root) {
           return Result<void>::failure({ErrorCode::external_unknown});
         const auto *operation = metadata.value().find("operation");
         if (!operation || !std::holds_alternative<std::string>(operation->value()) ||
-            operation->string() != "provider")
+            (operation->string() != "provider" && operation->string() != "colleague" &&
+             operation->string() != "participant_start" &&
+             operation->string() != "participant_send" &&
+             operation->string() != "participant_read" &&
+             operation->string() != "participant_cancel" &&
+             operation->string() != "participant_await" &&
+             operation->string() != "participant_join" &&
+             operation->string() != "participant_archive" &&
+             operation->string() != "participant_configure"))
           return Result<void>::failure({ErrorCode::external_unknown});
         const auto *input = metadata.value().find("input");
         const auto *generation = metadata.value().find("generation");
@@ -899,9 +929,9 @@ void recover_coding_session(RetainedState &root) {
   try {
     std::vector<RetainedEvent> observations;
     for (const auto attempt : custody.abandoned) {
-      const std::string message =
-          "Provider request abandoned during prior process; outcome unknown. "
-          "No response accepted and no request replayed.";
+      const std::string message = "Provider or participant operation abandoned during "
+                                  "prior process; outcome unknown. "
+                                  "No response accepted and no request replayed.";
       const auto bytes = std::as_bytes(std::span{message.data(), message.size()});
       observations.push_back({{},
                               AttemptObservationEvent{attempt,
@@ -1031,7 +1061,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
       if (!ended)
         emit("outcome unknown");
     }
-  } task_run{task_activity, task_id, hex_identity(attempt.bytes()), std::string{name}};
+  } task_run{task_activity, name == "participant_start" ? "" : task_id,
+             hex_identity(attempt.bytes()), std::string{name}};
   task_run.emit("running");
   struct Boundary final : EffectBoundary {
     const std::function<Json(OperationAttemptId)> &fn;
@@ -1816,6 +1847,34 @@ Json CodingEngine::call(std::string name, Json arguments) {
     }
     if (name == "audit_inspect")
       return log_.inspect(field(arguments, "query"));
+    if (name == "participant_configure")
+      return participants_->configure(arguments);
+    if (name == "participant_read")
+      return participants_->read(arguments);
+    if (name == "participant_send")
+      return participants_->send(arguments);
+    if (name == "participant_cancel")
+      return participants_->cancel(arguments);
+    if (name == "participant_await")
+      return participants_->await(arguments, cancelled);
+    if (name == "participant_join")
+      return participants_->join(arguments, cancelled);
+    if (name == "participant_archive")
+      return participants_->archive(arguments);
+    if (name == "participant_start") {
+      if (const auto *task = arguments.find("task_id"); task && !task->string().empty())
+        if (field(tasks_.read(Json::object({{"id", *task}})), "items").array().empty())
+          throw Error{ErrorCode::invalid_range};
+      const auto transport =
+          participant_transport
+              ? participant_transport
+              : ParticipantTransport{[&](const Json &prepared,
+                                         const ColleagueCapture &capture,
+                                         const std::function<bool()> &stop) {
+                  return native_colleague_transport(prepared, capture, stop);
+                }};
+      return participants_->start(hex_identity(attempt.bytes()), arguments, transport);
+    }
     if (name == "colleague_catalog")
       return colleague_catalog();
     if (name == "colleague") {
@@ -1924,7 +1983,14 @@ Json CodingEngine::stats() const {
       "request_scope", Json{"last request in this process; null if unavailable"});
   return result;
 }
-void CodingEngine::validate_restart() const { validate_protocol(context_.items()); }
+void CodingEngine::validate_session_switch() const {
+  if (participants_->active())
+    throw Error{ErrorCode::busy};
+}
+void CodingEngine::validate_restart() const {
+  validate_session_switch();
+  validate_protocol(context_.items());
+}
 void CodingEngine::effort(std::string value) {
   if (value != "low" && value != "medium" && value != "high" && value != "xhigh")
     throw Error{ErrorCode::invalid_range};

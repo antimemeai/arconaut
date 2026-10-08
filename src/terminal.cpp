@@ -66,7 +66,8 @@ const std::array builtin_commands{
                 "Pick a neighbouring saved session (list in plain mode)", "Session"},
     ChatCommand{"/resume", "DIRECTORY",
                 "Return to a saved session without sending a turn", "Session"},
-    ChatCommand{"/name", "NAME", "Name this session; empty clears its name", "Session"},
+    ChatCommand{"/name", "[NAME]", "Name this session; empty clears its name",
+                "Session"},
     ChatCommand{"/checkpoint", "", "Save session state and retry maintenance",
                 "Session"},
     ChatCommand{"/stats", "", "Context bytes and observed provider usage", "Session"},
@@ -86,6 +87,27 @@ const std::array builtin_commands{
                 "Programs"},
     ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)",
                 "Tools"},
+    ChatCommand{"/runs", "[ID | configure JSON | archive ID]",
+                "Read observed participant runs, configure concurrency or archive a "
+                "settled run",
+                "Participants"},
+    ChatCommand{"/run", "JSON",
+                "Start a selected-context participant: request, optional task_id",
+                "Participants"},
+    ChatCommand{
+        "/send", "JSON",
+        "Address direction by run_id, message_id, from, text; next request boundary",
+        "Participants"},
+    ChatCommand{"/join", "JSON",
+                "Seal run_ids, drain accepted directions, return in declared order",
+                "Participants"},
+    ChatCommand{
+        "/await", "JSON",
+        "Wait for run_id and accepted directions; keep run open. Optional timeout_ms",
+        "Participants"},
+    ChatCommand{"/stop", "ID",
+                "Request participant cancellation; observe settlement separately",
+                "Participants"},
     ChatCommand{"/colleagues", "",
                 "Show installed colleague transports; authentication observed on call",
                 "Tools"},
@@ -930,7 +952,8 @@ InputResult Composer::feed(char byte) {
       if (!matches.empty()) {
         const auto &command =
             commands[matches[std::min(palette_selected_, matches.size() - 1)]];
-        const bool arguments = !command.arguments.empty();
+        const bool arguments =
+            !command.arguments.empty() && !command.arguments.starts_with("[");
         draft(std::string{command.name} + (arguments ? " " : ""));
         if (arguments)
           return {};
@@ -1141,7 +1164,8 @@ void TerminalUI::task_activity(const Json &event) {
     return;
   auto &runs = task_runs_[id];
   const auto &attempt = string_field(event, "attempt");
-  if (string_field(event, "phase") == "running")
+  if (string_field(event, "phase") == "running" ||
+      string_field(event, "phase") == "waiting")
     runs.insert_or_assign(attempt, event);
   else
     runs.erase(attempt);
@@ -1157,7 +1181,8 @@ void TerminalUI::task_activity(const Json &event) {
 void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                      std::atomic_bool &cancelled,
                      const std::function<bool()> &exit_requested, std::string initial,
-                     std::filesystem::path state_path) {
+                     std::filesystem::path state_path,
+                     const std::function<void()> &idle_work) {
   (void)std::setlocale(LC_CTYPE, "");
   TerminalMode mode;
   ChatOutput output;
@@ -1460,6 +1485,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       }
       redraw = true;
     }
+    if (!busy && idle_work)
+      idle_work();
     if (!busy && exit_requested && exit_requested())
       break;
     if (!busy && quitting)

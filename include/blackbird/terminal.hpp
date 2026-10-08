@@ -106,7 +106,8 @@ public:
   void run(const std::function<void(std::string_view)> &perform,
            std::atomic_bool &cancelled,
            const std::function<bool()> &exit_requested = {}, std::string initial = {},
-           std::filesystem::path state_path = {});
+           std::filesystem::path state_path = {},
+           const std::function<void()> &idle_work = {});
 
 private:
   enum class Kind {

@@ -551,3 +551,45 @@ JSON`, model tool `colleague`, and `blackbird.colleague(request)` share one requ
 Calls have no tools, hidden transcript, continuation or automatic retries. Local
 interruption does not establish that remote work stopped. Admission, provider
 bytes and results are retained with the actual operation attempt.
+
+### Concurrent participants and direction
+
+`/run {"request":COLLEAGUE_REQUEST,"task_id":"t1"}` starts a participant. Use
+`/runs` for concise observed state, `/runs ID` for its bounded result, `/send
+{"run_id":"ID","message_id":"direction-1","from":"operator","text":"..."}`
+for direction, `/stop ID` to request cancellation, and `/join {"run_ids":["ID"]}`
+to seal message admission, finish accepted directions and return in that order.
+Tools `participant_start/read/send/cancel/await/join/archive/configure` and Lua
+`blackbird.participants.start/read/send/cancel/await/join/archive/configure` share those
+controls. Start's success means admission, not a completed remote request.
+
+A first reply leaves the participant `waiting` for direction. Each accepted
+message creates an explicit next request from the original selection plus the
+prior answer available at acceptance. It cannot rewrite an in-flight request.
+Each ID deduplicates exact repeats while this process lives; conflicting reuse is
+rejected. Queued directions that cancellation/failure prevents are dropped,
+without dispatch. Join stops accepting new directions. Interrupting a join stops
+waiting; it does not cancel participants.
+
+`/runs configure {"concurrency":4}` changes capacity while all runs are settled
+(default2, range1..16). At most32 current runs; `/runs archive ID` frees a settled
+slot while originals remain. Each inbox allows16 pending/64 lifetime messages,
+2048-byte direction text. Selected requests stay64KiB. Workers buffer at most8MiB
+and1024 capture packets for owner retention; pressure fails visibly, never grows
+without bound. Current results are bounded projections; detailed originals remain
+inspectable through `audit_inspect`. No diagnostic TTL is imposed on task/results.
+
+Task badges show observed running/waiting/settled states. They never mark a task
+done. `/new`, `/resume` and `/restart` require participants settled first. Exit
+requests local cancellation and waits for worker return; it does not govern shared
+services or establish remote cancellation. On process reopen unfinished runs are
+`unknown`, with no worker resurrection, direction replay or automatic redispatch.
+
+`/await {"run_id":"ID","timeout_ms":30000}` waits for accepted work without
+closing the participant to more direction. A timeout or interrupted await is
+separate from cancellation and does not stop the participant.
+
+Reopening also settles an interrupted colleague/participant **control admission**
+as unknown without replay. This covers a crash before its scheduling/result record
+was completed; it does not establish that remote work stopped. Unresolved general
+command/file custody keeps its existing refusal.

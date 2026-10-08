@@ -5342,3 +5342,52 @@ protocol. A single live Claude/sonnet source review through /colleague reached i
 not evidence of an authentication refusal or zero usage. No retry/account probe.
 The live heterogeneous outcome is still outstanding; deterministic interface work
 and concurrent participant machinery can proceed independently.
+
+## 2026-10-08 — Bounded native participants
+
+Order 3 builds owned C++ workers over the shared context-only colleague call, with
+explicit concurrency, bounded current runs/messages/capture buffering, addressed
+IDs, observe/join/archive and cooperative cancellation. Exact prepared admissions
+are retained by the owner before launch/enqueue. Worker capture queues are drained
+only by the serialized engine owner; workers never mutate its journal/Lua state.
+Waiting workers take accepted direction at request boundaries. Join seals input and
+returns declared order. Unfinished saved runs reopen unknown, never restart.
+Task/run separation is preserved and restart/session-switch refuses live workers.
+
+Source review fixed the actual lifetime boundaries: settle workers before UI
+callback destruction on every exit; prevent control admission from painting async
+work finished; include real run attempt IDs in badges; stop participants on failed
+owner retention; and discard request copies for settled/reopened runs. Result and
+inbox limits bound resident state; archived originals keep existing journal limits.
+No new dependency, durable heap scheduler, shared-service governor or performance
+claim. Changed optional-argument slash commands now submit on Enter instead of
+requiring a redundant second Enter for bare /runs and /tasks.
+
+Direct barriers establish two simultaneously active transports, capacity refusal,
+direction boundary/dedup/backpressure, cancel-request before observed settlement,
+declared-order joins and crash-reopen unknown state. Engine checks exercise common
+operator/Lua APIs, restart refusal and retained state after checkpoint; tasks remain
+queued. Real PTY uses a local fake Claude (no credentials) to inspect/cancel/join two
+runs and reopen the surviving result after /new and native restart. The first driver
+incorrectly expected an ordinary direct-native restart to bypass its launcher exit75
+contract; the corrected driver switches via /new, exercising the actual in-process
+replacement path already shipped. Mac debug cases pass. Release/Linux recheck runs
+within the same unit and two-layer allowance.
+
+Order 3's focused recovery review found a real integration gap: the old reopen
+verifier only settled abandoned provider admissions. A crash during participant
+control admission could block the new unknown-on-reopen behavior before the pool
+was reconstructed. The verifier now recognizes only the explicit built-in
+colleague/participant control operations as process-lifetime remote work, settling
+unknown with no redispatch. Unknown command/file custody remains fenced. A native
+reopen test constructs a dispatched incomplete participant admission and confirms
+unknown pool state and zero provider calls, with an exec admission still refused.
+This is the owning recheck/fix, not a broader recovery platform or replay authority.
+
+Mac release and Linux debug participant/engine/real PTY checks passed; ASan/UBSan
+participant/engine/real PTY checks passed. Native source lint removed two redundant
+argument copies and passes. Final recovery/await direct checks remain in the same
+bounded unit. A live OpenAI participant independently identified real tiny-viewport
+stale-row/cursor defects for order 4 in 21.3 seconds, requested/actual gpt-6.1-sol,
+6134 input and527 output tokens reported. Selected source and result retained in
+context/campaign-selfdev/session; Claude's earlier unknown timeout remains unknown.

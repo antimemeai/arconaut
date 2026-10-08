@@ -87,9 +87,45 @@ int main() {
     check(string_field(engine.operator_call("colleague", invalid), "status") ==
               "refused" &&
           dispatches == 3);
+    engine.participant_transport = [&](const Json &prepared,
+                                       const ColleagueCapture &capture,
+                                       const std::function<bool()> &) {
+      return engine.colleague_transport(prepared, capture);
+    };
+    const auto task = engine.tasks().operator_command("add WORK_STAYS_QUEUED");
+    const auto task_id = field(field(task, "changed").array()[0], "id");
+    const auto start = engine.operator_call(
+        "participant_start",
+        Json::object({{"request", request}, {"task_id", task_id}}));
+    const auto run_id = string_field(start, "run_id");
+    bool busy = false;
+    try {
+      engine.validate_restart();
+    } catch (const Error &e) {
+      busy = e.code == ErrorCode::busy;
+    }
+    check(busy);
+    engine.turn(
+        {"", "return blackbird.participants.join({run_ids={'" + run_id + "'}})"});
+    const auto &joined = field(engine.workflow_result(), "runs").array();
+    check(joined.size() == 1 && string_field(joined[0], "state") == "completed");
+    check(string_field(field(engine.tasks().read(), "items").array()[0], "status") ==
+          "queued");
+    engine.validate_restart();
+    check(string_field(engine.operator_call("participant_read",
+                                            Json::object({{"run_id", Json{run_id}}})),
+                       "state") == "completed");
+    unwrap(context.checkpoint());
+    bool participant_saved = false;
+    for (const auto &packet : root->current_programs())
+      if (string_field(packet, "label") == "participants-state-v1") {
+        participant_saved = true;
+        check(string_field(field(packet, "runs").array()[0], "state") == "completed");
+      }
+    check(participant_saved);
     unknown = true;
     const auto lost = engine.operator_call("colleague", request);
-    check(string_field(lost, "remote_disposition") == "unknown" && dispatches == 4);
+    check(string_field(lost, "remote_disposition") == "unknown" && dispatches == 5);
     const auto unresolved = root->unresolved_attempts();
     check(unresolved.has_value() && unresolved.value().empty());
     bool saw_unknown = false, saw_raw = false;

@@ -35,6 +35,8 @@ int main() {
     picker.choices({{"/resume /tmp/a", "", "/tmp/a", "Session", "Alpha"}}, "Sessions");
     feed(picker, "\x1b");
     check(picker.flush_escape() && picker.text() == "unsent draft");
+    Composer optional;
+    check(feed(optional, "/runs\r").text == "/runs");
     Composer slash;
     feed(slash, "/");
     check(!slash.palette_lines(8).empty());

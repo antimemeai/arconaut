@@ -3,6 +3,7 @@
 #include "blackbird/colleague.hpp"
 #include "blackbird/decision_models.hpp"
 #include "blackbird/openai.hpp"
+#include "blackbird/participants.hpp"
 #include "blackbird/session.hpp"
 #include "blackbird/tools.hpp"
 
@@ -47,6 +48,9 @@ public:
   void turn(TurnInput input);
   Json operator_call(std::string_view name, const Json &arguments);
   ColleagueTransport colleague_transport;
+  ParticipantTransport participant_transport;
+  void poll_participants();
+  void shutdown_participants();
   bool operator_turn(std::string_view prompt, std::string_view fallback);
   std::shared_ptr<const WorkflowRegistry> workflows() const { return workflows_; }
   // One cooperative failure ticket, consumed before creating a recovery audit.
@@ -72,6 +76,7 @@ public:
   std::function<void(std::string_view, const Json &)> effect_policy;
   void effort(std::string value);
   Json stats() const;
+  void validate_session_switch() const;
   void validate_restart() const;
   std::optional<std::string> take_restart_note() {
     return std::exchange(restart_note_, std::nullopt);
@@ -92,6 +97,7 @@ private:
   AuditLog &log_;
   ContextStore &context_;
   TaskStore tasks_;
+  std::unique_ptr<Participants> participants_;
   CodingProvider &provider_;
   std::string model_;
   std::string effort_ = "medium";
