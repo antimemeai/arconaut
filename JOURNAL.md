@@ -4869,3 +4869,6 @@ profilingOFF; external collector follows manager18002 and persists samples.
 Root owns review/integration/read-oracle and measurements; production owner in
 candidate fixes ordinal relocation and implements actual disk predicates plus
 saved-boundary recovery. Run context/saved-state-continuation-2026-10-08.
+## 2026-10-08 — activate saved-state recovery, finish the actual path
+
+Root took over inactive0f50907 and implemented saved-boundary selection, compact semantic restoration, checked historical queries, renewal/pruning and remaining explicit-history consumers. One adversarial review; four findings fixed. Seven affected tests pass plus compact lifecycle cases. Forbidden archive-read oracle now admits and settles the unchanged302,241-byte heavy request successfully:52.145ms initial diagnostic,56.2555ms after suffix accumulation, zero forbidden attempts. Unsupported unresolved/station/restart/multisegment states fall back; no blanket performance claim. See papers/2026-10-08-saved-state-delivery.md. Operator explicitly asks to finish; integrate and measure actual launcher rather than another prerequisite milestone.

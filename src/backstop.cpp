@@ -2,8 +2,8 @@
 #include "blackbird/process_lifetime.hpp"
 #include <fstream>
 #include <set>
-#include <sys/stat.h>
 #include <sys/random.h>
+#include <sys/stat.h>
 #include <unistd.h>
 namespace blackbird {
 namespace {
@@ -34,7 +34,8 @@ constexpr std::string_view instruction =
     "Mission packet is author-declared, not verified inherited context. Preserve "
     "dirty work and unknowns. Choose a changed approach or independent useful work "
     "where a resource is blocked. Return only JSON, no markdown, with string fields "
-    "retained, uncertain, change, next, action (an ordinary Blackbird Lua turn program), "
+    "retained, uncertain, change, next, action (an ordinary Blackbird Lua turn "
+    "program), "
     "and oracle:{path:absolute file path,content:exact expected new bytes}. Action "
     "must do useful work for the mission and produce the declared artifact, not a "
     "recovery-status facade. Use blackbird.call/read_file to reconcile uncertain file "
@@ -45,12 +46,13 @@ constexpr std::string_view instruction =
     "Calls return errors as JSON; check "
     "them. You have at most two assessment/pivot attempts, one request per assessment. "
     "Keep action and expected artifact small. The oracle must be absent or different "
-    "before action; stale output does not establish progress. Explicit pause stays paused.";
+    "before action; stale output does not establish progress. Explicit pause stays "
+    "paused.";
 void check_pause(const std::function<bool()> &paused) {
   if (paused && paused())
     throw Error{ErrorCode::interrupted};
 }
-}
+} // namespace
 Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
                   const std::filesystem::path &source_session, const Json &mission,
                   CodingProvider &assessor, const SessionSettings &settings,
@@ -71,18 +73,21 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   const auto cursor = source_log.root().cursor();
   std::array<std::byte, journal_header_size> bytes{};
   std::ifstream file{source_path / "audit", std::ios::binary};
-  file.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+  file.read(reinterpret_cast<char *>(bytes.data()),
+            static_cast<std::streamsize>(bytes.size()));
   if (!file)
     throw Error{ErrorCode::incomplete};
   const auto source_header = unwrap(decode_journal_header(bytes));
-  Json lineage = Json::object({
-      {"session", Json{source_path.string()}},
-      {"environment", Json{hex_identity(source_header.environment.bytes())}},
-      {"journal", Json{hex_identity(cursor.journal.bytes())}},
-      {"prefix_sequence", number(cursor.sequence)}, {"prefix_end", number(cursor.end_offset)},
-      {"context_revision", Json{source_engine.context().head()}},
-      {"status", Json{"unsettled"}},
-      {"reason", Json{"Cooperative backstop: remote effects remain unknown; no inherited admissions"}}});
+  Json lineage = Json::object(
+      {{"session", Json{source_path.string()}},
+       {"environment", Json{hex_identity(source_header.environment.bytes())}},
+       {"journal", Json{hex_identity(cursor.journal.bytes())}},
+       {"prefix_sequence", number(cursor.sequence)},
+       {"prefix_end", number(cursor.end_offset)},
+       {"context_revision", Json{source_engine.context().head()}},
+       {"status", Json{"unsettled"}},
+       {"reason", Json{"Cooperative backstop: remote effects remain unknown; no "
+                       "inherited admissions"}}});
   Json::Array selected;
   const auto view = source_engine.context().view();
   // Preserve all governing messages and the latest operator prompt, not the huge
@@ -92,49 +97,72 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   for (const auto &entry : entries) {
     const auto &item = field(entry, "item");
     const auto *role = item.find("role");
-    if (!role) continue;
+    if (!role)
+      continue;
     if (role->string() == "system" || role->string() == "developer")
       selected.push_back(entry);
-    if (role->string() == "user") last_user = &entry;
+    if (role->string() == "user")
+      last_user = &entry;
   }
-  if (last_user) selected.push_back(*last_user);
+  if (last_user)
+    selected.push_back(*last_user);
   if (selected.empty() || unwrap(dump_json(Json{selected})).size() > 65536)
     throw Error{ErrorCode::capacity};
   Json::Array attempts;
   std::size_t total = 0;
-  for (const auto &fact : source_log.root().committed_facts()) {
+  for (std::size_t ordinal = 0; ordinal < source_log.root().fact_count(); ++ordinal) {
+    const auto fact = unwrap(source_log.root().fact(ordinal));
     const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
-    if (!admission) continue;
+    if (!admission)
+      continue;
     ++total;
-    if (attempts.size() == 32) attempts.erase(attempts.begin());
+    if (attempts.size() == 32)
+      attempts.erase(attempts.begin());
     const auto state = unwrap(source_log.root().attempt(admission->attempt));
     const bool unknown = !state.observation ||
-        state.observation->disposition == AttemptDisposition::unknown;
-    attempts.push_back(Json::object({
-        {"attempt", Json{hex_identity(admission->attempt.bytes())}},
-        {"input", Json{std::string{reinterpret_cast<const char *>(admission->input.data()),
-                                  std::min<std::size_t>(admission->input.size(), 1024)}}},
-        {"input_truncated", Json{admission->input.size() > 1024}},
-        {"outcome_unknown", Json{unknown}}, {"replay_authority", Json{false}}}));
+                         state.observation->disposition == AttemptDisposition::unknown;
+    attempts.push_back(Json::object(
+        {{"attempt", Json{hex_identity(admission->attempt.bytes())}},
+         {"input",
+          Json{std::string{reinterpret_cast<const char *>(admission->input.data()),
+                           std::min<std::size_t>(admission->input.size(), 1024)}}},
+         {"input_truncated", Json{admission->input.size() > 1024}},
+         {"outcome_unknown", Json{unknown}},
+         {"replay_authority", Json{false}}}));
   }
-  Json packet = Json::object({{"mission", mission}, {"source", lineage},
-      {"cause", Json{std::string{error_name(cause.code)}}}, {"detail", Json{JsonNumber{std::to_string(cause.detail)}}},
-      {"local_quiescence", Json{"cooperative-native; no live callbacks or children; no uncontained exec"}},
-      {"attempts", Json{attempts}}, {"attempt_count", number(total)},
-      {"older_attempts", Json{"inspect exact original audit; not retroactively settled"}},
-      {"dirty_paths", Json{"unavailable unless supplied in root mission packet; do not reset checkout"}}});
+  Json packet = Json::object(
+      {{"mission", mission},
+       {"source", lineage},
+       {"cause", Json{std::string{error_name(cause.code)}}},
+       {"detail", Json{JsonNumber{std::to_string(cause.detail)}}},
+       {"local_quiescence",
+        Json{"cooperative-native; no live callbacks or children; no uncontained exec"}},
+       {"attempts", Json{attempts}},
+       {"attempt_count", number(total)},
+       {"older_attempts",
+        Json{"inspect exact original audit; not retroactively settled"}},
+       {"dirty_paths", Json{"unavailable unless supplied in root mission packet; do "
+                            "not reset checkout"}}});
   std::uint64_t issuer = 0;
   if (::getentropy(&issuer, sizeof(issuer)) != 0 || issuer == 0)
     throw Error{ErrorCode::io};
-  auto root = unwrap(RetainedState::create(
-      std::make_unique<NativeJournalDirectory>(unwrap(NativeJournalDirectory::open(destination.string()))),
-      "audit", JournalHeader{random_identity<EnvironmentId>(), random_identity<AuditStreamId>(),
-                              issuer, {32*1024*1024, 96*1024*1024}, std::nullopt},
-      {64ULL*1024*1024, 20000}));
+  auto root = unwrap(
+      RetainedState::create(std::make_unique<NativeJournalDirectory>(unwrap(
+                                NativeJournalDirectory::open(destination.string()))),
+                            "audit",
+                            JournalHeader{random_identity<EnvironmentId>(),
+                                          random_identity<AuditStreamId>(),
+                                          issuer,
+                                          {32 * 1024 * 1024, 96 * 1024 * 1024},
+                                          std::nullopt},
+                            {64ULL * 1024 * 1024, 20000}));
   AuditLog log{*root};
   ContextStore context{log};
-  context.seed_successor(Json::object({{"version", number(1)}, {"source", lineage}, {"entries", Json{selected}}}));
-  context.append({Json::object({{"role", Json{"developer"}}, {"content", Json{std::string{instruction}}}})}, "backstop.instructions");
+  context.seed_successor(Json::object(
+      {{"version", number(1)}, {"source", lineage}, {"entries", Json{selected}}}));
+  context.append({Json::object({{"role", Json{"developer"}},
+                                {"content", Json{std::string{instruction}}}})},
+                 "backstop.instructions");
   log.original({"backstop.packet", unwrap(dump_json(packet)), Json{}});
   // request() installs the engine cancellation callback on the shared adapter.
   // Restore it before this recovery lifetime ends; do not leave borrowed captures.
@@ -162,10 +190,12 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
     // workflow, not an OS sandbox against concurrent adversarial filesystem edits.
     if (std::filesystem::exists(resolved)) {
       std::size_t inspected = 0;
-      for (const auto &entry : std::filesystem::recursive_directory_iterator(protected_tree)) {
+      for (const auto &entry :
+           std::filesystem::recursive_directory_iterator(protected_tree)) {
         if (++inspected > 4096)
           throw Error{ErrorCode::capacity};
-        if (entry.is_regular_file() && std::filesystem::equivalent(resolved, entry.path()))
+        if (entry.is_regular_file() &&
+            std::filesystem::equivalent(resolved, entry.path()))
           throw Error{ErrorCode::conflict};
       }
     }
@@ -193,7 +223,8 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
       assessing = false;
       const auto choice = engine.workflow_result();
       for (const auto key : {"retained", "uncertain", "change", "next", "action"})
-        if (string_field(choice, key).empty() || string_field(choice, key).size() > 32768)
+        if (string_field(choice, key).empty() ||
+            string_field(choice, key).size() > 32768)
           throw Error{ErrorCode::invalid_range};
       const auto &oracle = field(choice, "oracle");
       const auto path = std::filesystem::path{string_field(oracle, "path")};
@@ -206,37 +237,49 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
         throw Error{ErrorCode::conflict};
       std::string prior;
       const bool existed = std::filesystem::exists(path);
-      if (existed) prior = read_file(path, 1024*1024);
+      if (existed)
+        prior = read_file(path, 1024 * 1024);
       if (existed && prior == expected)
         throw Error{ErrorCode::conflict};
       check_pause(paused);
-      log.original({"backstop.pivot", unwrap(dump_json(choice)), Json::object({{"ordinal", number(pivot)}})});
+      log.original({"backstop.pivot", unwrap(dump_json(choice)),
+                    Json::object({{"ordinal", number(pivot)}})});
       attempted_actions.insert(action);
       packet.object().emplace_back("selected_pivot_" + std::to_string(pivot), choice);
-      engine.turn({"Execute the explicitly selected pivot; preserve source unknowns.", action});
+      engine.turn(
+          {"Execute the explicitly selected pivot; preserve source unknowns.", action});
       check_pause(paused);
-      const auto actual = read_file(path, 1024*1024);
+      const auto actual = read_file(path, 1024 * 1024);
       if (actual != expected)
         throw Error{ErrorCode::conflict};
-      outcome = Json::object({{"phase", Json{"useful-work-observed"}}, {"pivot", number(pivot)},
-          {"artifact", Json{path.string()}}, {"content", Json{actual}},
-          {"session", Json{destination.string()}}, {"remote_effects_settled", Json{false}}});
+      outcome = Json::object({{"phase", Json{"useful-work-observed"}},
+                              {"pivot", number(pivot)},
+                              {"artifact", Json{path.string()}},
+                              {"content", Json{actual}},
+                              {"session", Json{destination.string()}},
+                              {"remote_effects_settled", Json{false}}});
       log.original({"backstop.outcome", unwrap(dump_json(outcome)), Json{}});
       return outcome;
     } catch (const Error &error) {
       const bool expired = std::chrono::steady_clock::now() >= deadline;
-      outcome = Json::object({{"phase", Json{expired ? "deadline-blocked" :
-          error.code == ErrorCode::interrupted ? "paused" : "no-progress"}}, 
-          {"pivot", number(pivot)}, {"error", Json{std::string{error_name(error.code)}}},
-          {"session", Json{destination.string()}}, {"effect_outcome", Json{"unknown; inspect recovery audit; no replay"}}});
+      outcome = Json::object(
+          {{"phase", Json{expired                                ? "deadline-blocked"
+                          : error.code == ErrorCode::interrupted ? "paused"
+                                                                 : "no-progress"}},
+           {"pivot", number(pivot)},
+           {"error", Json{std::string{error_name(error.code)}}},
+           {"session", Json{destination.string()}},
+           {"effect_outcome", Json{"unknown; inspect recovery audit; no replay"}}});
       log.original({"backstop.outcome", unwrap(dump_json(outcome)), Json{}});
       if (error.code == ErrorCode::interrupted || !detail::locally_quiescent() ||
           root->state() != JournalWriterState::live)
         return outcome;
-      packet.object().emplace_back("previous_pivot_outcome_" + std::to_string(pivot), outcome);
+      packet.object().emplace_back("previous_pivot_outcome_" + std::to_string(pivot),
+                                   outcome);
     }
   }
-  outcome.object().emplace_back("bound", Json{"two no-progress pivots exhausted; explicit inspection required"});
+  outcome.object().emplace_back(
+      "bound", Json{"two no-progress pivots exhausted; explicit inspection required"});
   log.original({"backstop.blocked", unwrap(dump_json(outcome)), Json{}});
   return outcome;
 }

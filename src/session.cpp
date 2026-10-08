@@ -140,15 +140,14 @@ Json list_sessions(const std::filesystem::path &requested) {
 }
 SessionIdentity session_identity(AuditLog &log) {
   std::optional<SessionIdentity> result;
-  for (const auto &fact : log.root().committed_facts()) {
-    if (const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-        record && record->channel == ApplicationChannel::program) {
-      const auto value = packet(*record);
-      if (labelled(value, "session.identity"))
-        return {identity<ParticipantId>(string_field(value, "actor")),
-                identity<ConversationId>(string_field(value, "conversation")),
-                identity<WorkflowId>(string_field(value, "workflow"))};
-    }
+  for (const auto &value : log.root().current_programs())
+    if (labelled(value, "session.identity"))
+      return {identity<ParticipantId>(string_field(value, "actor")),
+              identity<ConversationId>(string_field(value, "conversation")),
+              identity<WorkflowId>(string_field(value, "workflow"))};
+  // Legacy sessions may not have an explicit identity packet.
+  for (std::size_t ordinal = 0; ordinal < log.root().fact_count(); ++ordinal) {
+    const auto fact = unwrap(log.root().fact(ordinal));
     if (const auto *decision = std::get_if<DecisionEvent>(&fact.event.body))
       result =
           SessionIdentity{decision->actor, decision->conversation, decision->workflow};
@@ -166,11 +165,7 @@ SessionIdentity session_identity(AuditLog &log) {
   return *result;
 }
 SessionStore::SessionStore(AuditLog &log) : log_(log) {
-  for (const auto &fact : log.root().committed_facts()) {
-    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-    if (!record || record->channel != ApplicationChannel::program)
-      continue;
-    const auto value = packet(*record);
+  for (const auto &value : log.root().current_programs()) {
     if (labelled(value, "session.settings")) {
       settings_ = {string_field(value, "model"), string_field(value, "effort"),
                    string_field(value, "workflow")};
@@ -196,12 +191,8 @@ void SessionStore::restart(std::string_view note) {
   if (!std::holds_alternative<std::nullptr_t>(restart_.value()) &&
       string_field(restart_, "state") == "pending")
     throw Error{ErrorCode::busy};
-  for (const auto &fact : log_.root().committed_facts())
-    if (const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body)) {
-      const auto attempt = unwrap(log_.root().attempt(admission->attempt));
-      if (!attempt.observation || attempt.observation->phase != AttemptPhase::terminal)
-        throw Error{ErrorCode::busy};
-    }
+  if (!unwrap(log_.root().unresolved_attempts()).empty())
+    throw Error{ErrorCode::busy};
   const auto token = hex_identity(log_.issue().bytes());
   auto value = Json::object({{"label", Json{"session.restart"}},
                              {"token", Json{token}},
@@ -216,7 +207,7 @@ bool SessionStore::resume(ContextStore &context) {
     return false;
   const auto origin = "rrc:" + string_field(restart_, "token");
   bool injected = false;
-  for (const auto &fact : log_.root().committed_facts()) {
+  for (const auto &fact : log_.root().tail_facts()) {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (!record || record->channel != ApplicationChannel::context)
       continue;

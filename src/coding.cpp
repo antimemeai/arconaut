@@ -1,5 +1,5 @@
-#include "blackbird/local_timing.hpp"
 #include "blackbird/coding.hpp"
+#include "blackbird/local_timing.hpp"
 #include "blackbird/process_lifetime.hpp"
 extern "C" {
 #include <lauxlib.h>
@@ -294,7 +294,8 @@ struct CodingEngine::Runtime {
     lua_setglobal(L, "blackbird");
     lua_setglobal(L, "arco"); // Compatibility alias for retained programs.
     constexpr const char *tool_api =
-        "function blackbird.decide(args) return blackbird.call('decision_model',args) end "
+        "function blackbird.decide(args) return blackbird.call('decision_model',args) "
+        "end "
         "function blackbird.define_tool(d) return blackbird.call('tool_define',"
         "{definition=d}) end "
         "do local cache,loading={},{}; function blackbird.module(name) "
@@ -792,7 +793,8 @@ Json CodingEngine::context_budget(const Json &arguments) {
   return result;
 }
 CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
-                           CodingProvider &provider, std::string model, DecisionModelConfig decisions)
+                           CodingProvider &provider, std::string model,
+                           DecisionModelConfig decisions)
     : log_(log), context_(context), provider_(provider), model_(std::move(model)),
       decision_models_(std::move(decisions)), identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
@@ -800,12 +802,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
   program_config_.object().emplace_back("workflow_prefix", Json{""});
   program_revision_ = "builtin-ultracode-v1";
   budget_ = default_context_budget();
-  for (const auto &fact : log_.root().committed_facts()) {
-    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-    if (!record || record->channel != ApplicationChannel::program)
-      continue;
-    auto packet = unwrap(parse_json(
-        read_text(record->payload)));
+  for (const auto &packet : log_.root().current_programs()) {
     const auto *label = packet.find("label");
     if (label && label->string() == "workflow-config-effective-v1") {
       if (const auto *config = packet.find("program_config")) {
@@ -836,13 +833,10 @@ void recover_coding_session(RetainedState &root) {
     explicit ProviderCustody(RetainedState &value) : root(value) {}
     Result<void> verify(std::span<const AttemptState> attempts) override {
       for (const auto &attempt : attempts) {
-        const DecisionEvent *decision = nullptr;
-        for (const auto &fact : root.committed_facts())
-          if (const auto *candidate = std::get_if<DecisionEvent>(&fact.event.body);
-              candidate && candidate->decision == attempt.admission.decision)
-            decision = candidate;
-        if (!decision)
-          return Result<void>::failure({ErrorCode::external_unknown});
+        const auto recovered_decision = root.decision(attempt.admission.decision);
+        if (!recovered_decision.has_value())
+          return Result<void>::failure(recovered_decision.error());
+        const auto *decision = &recovered_decision.value();
         const auto metadata = parse_json(std::string_view{
             reinterpret_cast<const char *>(decision->continuation.data()),
             decision->continuation.size()});
@@ -861,13 +855,13 @@ void recover_coding_session(RetainedState &root) {
         const std::string_view admitted_input{
             reinterpret_cast<const char *>(attempt.admission.input.data()),
             attempt.admission.input.size()};
-        bool linked = false;
-        for (const auto &fact : root.committed_facts())
-          if (const auto *invocation = std::get_if<InvocationEvent>(&fact.event.body);
-              invocation && invocation->invocation == attempt.admission.invocation)
-            linked = invocation->decision == decision->decision &&
-                     invocation->definition == decision->definition &&
-                     invocation->input == attempt.admission.input;
+        const auto recovered_invocation = root.invocation(attempt.admission.invocation);
+        if (!recovered_invocation.has_value())
+          return Result<void>::failure(recovered_invocation.error());
+        const auto &invocation = recovered_invocation.value();
+        const bool linked = invocation.decision == decision->decision &&
+                            invocation.definition == decision->definition &&
+                            invocation.input == attempt.admission.input;
         if (!linked || !encoded_input.has_value() ||
             encoded_input.value() != admitted_input || !generation || !revision ||
             !std::holds_alternative<std::string>(generation->value()) ||
@@ -1097,7 +1091,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     const auto state = string_field(result, "status");
     disposition = state == "unknown" ? AttemptDisposition::unknown
                   : (state == "ok" || state == "configured" || state == "cached")
-                      ? AttemptDisposition::success : AttemptDisposition::failure;
+                      ? AttemptDisposition::success
+                      : AttemptDisposition::failure;
   }
   RetainedEvent terminal{{},
                          AttemptObservationEvent{attempt,
@@ -1150,7 +1145,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     throw *boundary.error;
   if (name == "beads") {
     const auto *stopped = result.find("interrupted");
-    if (stopped && std::get<bool>(stopped->value())) throw Error{ErrorCode::interrupted};
+    if (stopped && std::get<bool>(stopped->value()))
+      throw Error{ErrorCode::interrupted};
   }
   return result;
 }
@@ -1331,8 +1327,9 @@ Json CodingEngine::request(Json options) {
   const auto origin = context_.head();
   if (preparation.enabled()) {
     preparation.linkage(origin);
-    preparation.observe(log_.root().cursor().sequence,
-                        static_cast<std::uint64_t>(std::stoull(last_request_bytes_.number().text)));
+    preparation.observe(
+        log_.root().cursor().sequence,
+        static_cast<std::uint64_t>(std::stoull(last_request_bytes_.number().text)));
     preparation.outcome("success");
   }
   preparation.finish();
@@ -1370,8 +1367,10 @@ Json CodingEngine::request(Json options) {
                            {"generation", Json{hex_identity(generation_.bytes())}},
                            {"retry_group", Json{retry_group}},
                            {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})});
-        LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond", false};
-        if (transport.enabled()) transport.linkage(origin, hex_identity(attempt.bytes()));
+        LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond",
+                            false};
+        if (transport.enabled())
+          transport.linkage(origin, hex_identity(attempt.bytes()));
         transport.outcome("exception");
         auto result = provider_.respond(request, [&](std::string_view raw) {
           try {
@@ -1473,7 +1472,9 @@ Json CodingEngine::call(std::string name, Json arguments) {
     if (name == "decision_model") {
       decision_models_.cancelled = cancelled;
       decision_models_.observer = [&](std::string_view label, std::string_view raw) {
-        log_.original({label, raw, Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+        log_.original(
+            {label, raw,
+             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
       };
       auto result = decision_models_.evaluate(arguments);
       result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
@@ -1482,7 +1483,9 @@ Json CodingEngine::call(std::string name, Json arguments) {
     if (name == "beads") {
       beads_.cancelled = cancelled;
       beads_.observer = [&](std::string_view label, std::string_view raw) {
-        log_.original({label, raw, Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+        log_.original(
+            {label, raw,
+             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
       };
       auto result = beads_.run(arguments);
       result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
@@ -1549,12 +1552,12 @@ Json CodingEngine::call(std::string name, Json arguments) {
       const auto &reference = string_field(arguments, "output_ref");
       bool known = false;
       std::string raw;
-      for (const auto &fact : log_.root().committed_facts()) {
+      for (std::size_t ordinal = 0; ordinal < log_.root().fact_count(); ++ordinal) {
+        const auto fact = unwrap(log_.root().fact(ordinal));
         const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         if (!record || record->channel != ApplicationChannel::log)
           continue;
-        const auto packet = unwrap(parse_json(
-            read_text(record->payload)));
+        const auto packet = unwrap(parse_json(read_text(record->payload)));
         const auto &metadata = field(packet, "metadata");
         const auto *old_attempt = metadata.find("attempt");
         if (!old_attempt || old_attempt->string() != reference)
@@ -1637,13 +1640,8 @@ Json CodingEngine::call(std::string name, Json arguments) {
           unwrap(dump_json(references)).size() > 65536)
         throw Error{ErrorCode::invalid_range};
       std::set<std::string> active;
-      for (const auto &fact : log_.root().committed_facts()) {
-        if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body))
-          active.insert(hex_identity(a->attempt.bytes()));
-        if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
-            o && o->phase == AttemptPhase::terminal)
-          active.erase(hex_identity(o->attempt.bytes()));
-      }
+      for (const auto &unresolved : unwrap(log_.root().unresolved_attempts()))
+        active.insert(hex_identity(unresolved.admission.attempt.bytes()));
       Json::Array active_ids;
       for (const auto &id : active) {
         if (active_ids.size() == 64)
@@ -1662,8 +1660,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
            {"workflow", Json{hex_identity(identity_.workflow.bytes())}},
            {"model", Json{model_}},
            {"effort", Json{effort_}},
-           {"audit_end",
-            Json{JsonNumber{std::to_string(log_.root().committed_facts().size())}}},
+           {"audit_end", Json{JsonNumber{std::to_string(log_.root().fact_count())}}},
            {"reporting_attempt", Json{hex_identity(attempt.bytes())}},
            {"repair_required_now", Json{false}}});
       const auto complaint = log_.original(

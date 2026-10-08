@@ -43,6 +43,10 @@ private:
 class ContextStore {
 public:
   explicit ContextStore(AuditLog &log);
+  Result<void> checkpoint();
+  const std::optional<Error> &checkpoint_error() const noexcept {
+    return checkpoint_error_;
+  }
   const std::string &head() const noexcept { return head_; }
   Json view() const;
   Json stats() const;
@@ -65,7 +69,13 @@ public:
   Json finish_workflow(bool success, const Json &boundary_program = Json{});
 
 private:
+  ContextStore(AuditLog &log, bool restore_saved);
+  std::optional<Json> original_entry(std::string_view id) const;
+  void maybe_checkpoint();
+  mutable bool archive_loaded_ = true;
+  std::optional<Error> checkpoint_error_;
   AuditLog &log_;
+  RetainedState::FactHistory historical_;
   std::string head_;
   Json::Array entries_;
   struct Original {
@@ -75,17 +85,18 @@ private:
     std::string id;
     Original(const Json &entry);
     Original(ImmutableBytes source, std::size_t ordinal, std::string identity)
-        : payload(std::move(source)), index(ordinal), packet(true), id(std::move(identity)) {}
+        : payload(std::move(source)), index(ordinal), packet(true),
+          id(std::move(identity)) {}
     Json entry() const;
   };
-  std::map<std::string, Original> originals_;
-  std::vector<Original> captured_;
+  mutable std::map<std::string, Original> originals_;
+  mutable std::vector<Original> captured_;
   Json::Array captured_entries() const;
   struct HistoryRecord {
     ImmutableBytes payload;
     std::string revision;
   };
-  std::vector<HistoryRecord> history_;
+  mutable std::vector<HistoryRecord> history_;
   static HistoryRecord history_record(const Json &packet);
   bool workflow_ = false;
   struct Pending {

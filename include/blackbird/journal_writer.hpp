@@ -3,8 +3,8 @@
 #include "blackbird/journal.hpp"
 #include "blackbird/journal_storage.hpp"
 #include <algorithm>
-#include <string>
 #include <functional>
+#include <string>
 
 namespace blackbird {
 
@@ -31,6 +31,13 @@ struct JournalCursor {
   AuditStreamId journal;
   std::uint64_t sequence;
   std::uint64_t end_offset;
+};
+// Native saved reducer supplies this only after selecting a complete root and
+// archive catalog. A physical cursor alone is never semantic recovery permission.
+struct JournalResume {
+  JournalCursor cursor;
+  std::size_t indexed_records;
+  std::uint32_t commit_checksum;
 };
 enum class JournalWriterState : std::uint8_t {
   live,
@@ -87,16 +94,23 @@ public:
   static Result<std::unique_ptr<FramedJournal>>
   create(JournalDirectory &directory, std::string_view name, JournalHeader header,
          JournalCapacity capacity, SyncStrength strength = SyncStrength::full);
+  using ResumeSelector =
+      std::function<Result<std::optional<JournalResume>>(FramedJournal &)>;
   static Result<std::unique_ptr<FramedJournal>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader expected,
        JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
-       bool use_scan_checkpoint = false);
+       bool use_scan_checkpoint = false,
+       std::optional<JournalResume> resume = std::nullopt,
+       ResumeSelector selector = {});
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
-  using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
+  using PayloadReader = std::function<Result<std::vector<std::byte>>()>;
   Result<PayloadReader> payload_reader(const PhysicalJournalRecord &record);
   bool used_scan_checkpoint() const noexcept { return used_scan_checkpoint_; }
-  ~FramedJournal() { if (file_) file_->release_writer(); }
+  ~FramedJournal() {
+    if (file_)
+      file_->release_writer();
+  }
   FramedJournal(const FramedJournal &) = delete;
   FramedJournal &operator=(const FramedJournal &) = delete;
   Result<JournalCursor> append(std::span<const JournalDraft> drafts);
@@ -131,6 +145,16 @@ public:
   }
 
 private:
+  friend class RetainedState;
+  using ArchiveReader =
+      std::function<Result<std::vector<std::byte>>(const PhysicalJournalRecord &)>;
+  ArchiveReader archive_reader(JournalCursor boundary) const;
+  // Only an authenticated catalog locator selected by RetainedState may bypass
+  // the resident descriptor vector. Validate the complete frame on every read.
+  Result<std::vector<std::byte>>
+  read_catalog_payload(const PhysicalJournalRecord &record, JournalCursor boundary);
+  Result<std::vector<std::byte>>
+  read_checked_payload(const PhysicalJournalRecord &record);
   FramedJournal(JournalDirectory &directory, JournalHeader header,
                 JournalCapacity capacity, SyncStrength strength);
   static Result<std::unique_ptr<FramedJournal>> allocate(JournalDirectory &directory,
@@ -146,6 +170,7 @@ private:
   Result<void> scan(bool propagate_read_errors = false);
   Result<void> read_exact(std::uint64_t offset, MutableByteView output);
   Result<void> write_exact(std::uint64_t offset, ByteView input);
+  std::size_t archived_records_ = 0;
   std::string name_;
   bool used_scan_checkpoint_ = false;
   std::uint64_t checkpoint_attempt_ = 0;

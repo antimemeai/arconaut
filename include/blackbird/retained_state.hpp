@@ -1,10 +1,13 @@
 #pragma once
 
 #include "blackbird/journal_writer.hpp"
-#include "blackbird/retained_events.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/recovery_index.hpp"
+#include "blackbird/retained_events.hpp"
 
 namespace blackbird {
+struct SavedState;
+class ArchiveCatalog;
 struct RecordReference {
   AuditStreamId journal;
   std::uint64_t sequence;
@@ -63,11 +66,20 @@ public:
        JournalHeader header, JournalCapacity capacity,
        bool use_scan_checkpoint = false);
   Result<void> publish_scan_checkpoint() {
-    if (state() != JournalWriterState::live || in_transaction_ || prepared_ || !reconciled_)
+    if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
+        !reconciled_)
       return Result<void>::failure({ErrorCode::audit_unavailable});
     return journal_->publish_scan_checkpoint();
   }
-  bool used_scan_checkpoint() const noexcept { return journal_->used_scan_checkpoint(); }
+  bool used_scan_checkpoint() const noexcept {
+    return journal_->used_scan_checkpoint();
+  }
+  ~RetainedState();
+  // Current projection only. Full ledger replay remains the safe fallback until
+  // archive-locator migration covers all semantic predicates.
+  const SavedState *saved_state() const noexcept { return saved_.get(); }
+  Result<void> save_current_state(const Json &context);
+  Json::Array current_programs() const;
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
   // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.
@@ -98,6 +110,9 @@ public:
                                std::span<const RetainedEvent> events);
   Result<DispatchReport> dispatch(OperationAttemptId attempt, EffectBoundary &boundary);
   Result<AttemptState> attempt(OperationAttemptId identity) const;
+  Result<std::vector<AttemptState>> unresolved_attempts() const;
+  Result<DecisionEvent> decision(DecisionId identity) const;
+  Result<InvocationEvent> invocation(InvocationId identity) const;
   Result<std::vector<std::byte>> source(SourceReference reference);
   // Unvalidated bounded inspection remains available while admission is closed.
   Result<ObservedJournalBytes> read_original_range(std::uint64_t offset,
@@ -136,9 +151,26 @@ public:
                                       std::uint64_t max_bytes);
   bool indexed_queries() const noexcept { return query_index_ != nullptr; }
   Result<RetainedFact> fact(std::size_t ordinal) const;
-  std::size_t fact_count() const noexcept { return committed_.facts.size(); }
+  Result<std::vector<RetainedFact>> fact_page(std::size_t first,
+                                              std::size_t limit) const;
+  struct FactHistory {
+    std::size_t count = 0;
+    std::function<Result<RetainedFact>(std::size_t)> read;
+    Result<std::vector<RetainedFact>> page(std::size_t first, std::size_t limit) const;
+  };
+  // Owns immutable derived-file/byte readers, never the custodian or a lease.
+  // Full-replay fallback may retain its legacy facts; saved history owns only
+  // the selected generation handles and the bounded suffix overlay.
+  FactHistory history_snapshot() const;
+  std::size_t fact_count() const noexcept {
+    return committed_.archived_facts + committed_.facts.size();
+  }
   // Borrow lasts until the next mutation; no staged/uncertain facts appear here.
-  std::span<const RetainedFact> committed_facts() const noexcept {
+  std::span<const RetainedFact> tail_facts() const noexcept { return committed_.facts; }
+  bool compact_recovery() const noexcept { return compact_; }
+  std::span<const RetainedFact> committed_facts() const {
+    if (compact_)
+      throw Error{ErrorCode::unsupported};
     return committed_.facts;
   }
   // Durable/pending upper reservation bound, not the volatile last-issued ID.
@@ -166,7 +198,11 @@ private:
     bool previous_;
   };
   bool maintenance_ = false;
+  bool compact_ = false;
+  std::uint64_t live_from_sequence_ = 1;
   struct Snapshot {
+    std::size_t archived_facts = 0;
+    std::size_t archived_records = 0;
     std::vector<RetainedFact> facts;
     std::vector<PhysicalJournalRecord> sources;
     std::vector<RetainedFact> uncertain_facts;
@@ -185,9 +221,9 @@ private:
                       std::uint64_t maintenance_end = 0);
   bool has_room(const Snapshot &snapshot, std::size_t count) const noexcept;
   FramedJournal *segment(AuditStreamId identity) const noexcept;
-  const RetainedFact *lookup(const Snapshot &snapshot, unsigned char family,
-      RetainedKind kind, const IdentityBytes &identity,
-      const IdentityBytes &second = {}) const;
+  std::optional<RetainedFact> lookup(const Snapshot &snapshot, unsigned char family,
+                                     RetainedKind kind, const IdentityBytes &identity,
+                                     const IdentityBytes &second = {}) const;
   void index_fact(Snapshot &snapshot, std::size_t ordinal);
   void index_source(Snapshot &snapshot, std::size_t ordinal);
   void populate_index(Snapshot &snapshot);
@@ -204,7 +240,7 @@ private:
                                 std::span<const ByteView> sources,
                                 std::span<const std::vector<std::byte>> events,
                                 Error reason, const RetainedEvent *conflict);
-  const RetainedFact *
+  std::optional<RetainedFact>
   existing(const Snapshot &snapshot, const RetainedEvent &event,
            std::optional<std::uint64_t> issuer_namespace = std::nullopt,
            const ReplayIndex *index = nullptr) const;
@@ -214,6 +250,9 @@ private:
   static bool has_identity(const RetainedEvent &event);
   const Snapshot &visible() const noexcept;
   Result<IdentityBytes> reserve_identity();
+  std::string journal_name_;
+  std::unique_ptr<SavedState> saved_;
+  std::shared_ptr<ArchiveCatalog> archive_;
   std::unique_ptr<JournalDirectory> directory_;
   std::vector<std::unique_ptr<FramedJournal>> historical_;
   std::unique_ptr<FramedJournal> journal_;

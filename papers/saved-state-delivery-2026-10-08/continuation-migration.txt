@@ -1,0 +1,2 @@
+resident_application_bytes=0 cold_application_bytes=336251594
+saved_current_bytes=1469740 read_bytes=1087247736 syncs=10

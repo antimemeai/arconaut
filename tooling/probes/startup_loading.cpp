@@ -142,9 +142,9 @@ int main(int argc, char **argv) {
     replay_timing.outcome("success");
     replay_timing.finish();
     const auto initial_bytes=std::filesystem::file_size(path/"audit");
-    const auto initial_facts=root->committed_facts().size();
+    const auto initial_facts=root->fact_count();
     std::size_t resident_payload = 0, cold_payload = 0;
-    for (const auto &fact : root->committed_facts())
+    for (const auto &fact : root->tail_facts())
       if (const auto *app = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
         resident_payload += app->payload.resident_bytes();
         if (app->payload.is_cold()) cold_payload += app->payload.size();
@@ -169,7 +169,12 @@ int main(int argc, char **argv) {
           {"observed",Json{context.head()}},{"accepted",Json{false}},
           {"candidate",Json{payload}},{"entries",Json{Json::Array{}}}}));
       }
-      std::cout << "created_bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->committed_facts().size() << '\n';
+      std::cout << "created_bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->fact_count() << '\n';
+      return 0;
+    }
+    if (mode=="save-current") {
+      unwrap(context.checkpoint());
+      std::cout << "saved_current_bytes=" << io.write_bytes << " read_bytes=" << io.read_bytes << " syncs=" << io.sync_calls << '\n';
       return 0;
     }
     if (mode=="checkpoint") {
@@ -193,7 +198,7 @@ int main(int argc, char **argv) {
       std::size_t input_bytes = 0;
       std::size_t first_fact;
       std::optional<AttemptAdmissionEvent> admission;
-      explicit LocalProvider(RetainedState &r, ProbeIO &p) : root(r), io(p), first_fact(r.committed_facts().size()) {}
+      explicit LocalProvider(RetainedState &r, ProbeIO &p) : root(r), io(p), first_fact(r.tail_facts().size()) {}
       std::string_view provider_identity() const noexcept override { return "deterministic-local-fixture"; }
       Json respond(const Json &request,
                    const std::function<void(std::string_view)> &capture) override {
@@ -209,7 +214,7 @@ int main(int argc, char **argv) {
         const DecisionEvent *decision = nullptr;
         const InvocationEvent *invocation = nullptr;
         bool opened = false;
-        const auto &facts = root.committed_facts();
+        const auto facts = root.tail_facts();
         for (std::size_t i = first_fact; i < facts.size(); ++i) {
           const auto &body = facts[i].event.body;
           if (const auto *a = std::get_if<AttemptAdmissionEvent>(&body); a && a->input == expected) {
@@ -253,12 +258,15 @@ int main(int argc, char **argv) {
         settled.observation->disposition != AttemptDisposition::success)
       throw Error{ErrorCode::corrupt};
     if (io.forbidden_attempts != 0) throw Error{ErrorCode::corrupt};
+    if (mode == "migrate") unwrap(context.checkpoint());
     const auto admitted=provider.admitted;
     if(admitted == std::chrono::steady_clock::time_point{}) throw Error{ErrorCode::corrupt};
     auto ms=[&](auto t){return std::chrono::duration<double,std::milli>(t-start).count();};
-    std::cout << "initial_bytes=" << initial_bytes << " initial_facts=" << initial_facts << " bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->committed_facts().size()
+    std::cout << "initial_bytes=" << initial_bytes << " initial_facts=" << initial_facts << " bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->fact_count()
               << " live_bytes=" << serialized.size() << " request_input_bytes=" << provider.input_bytes << " replay_ms=" << ms(replay)
               << " restored_ms=" << ms(restored) << " prompt_ms=" << ms(ready) << " admitted_ms=" << ms(admitted)
+              << " compact=" << root->compact_recovery()
+              << " saved_current=" << (root->saved_state() != nullptr)
               << " indexed=" << root->used_scan_checkpoint()
               << " replay_read_bytes=" << replay_io.read_bytes << " replay_cpu_ms=" << replay_cpu_ms
               << " prompt_read_bytes=" << prompt_io.read_bytes << " readiness_read_bytes=" << provider.readiness_io.read_bytes

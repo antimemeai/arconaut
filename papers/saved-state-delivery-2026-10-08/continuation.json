@@ -1,0 +1,32 @@
+{
+  "status": "partial-not-complete",
+  "owner": "slot-0",
+  "checkout": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0",
+  "branch": "candidate/saved-state-delivery-2026-10-08",
+  "code_checkpoint": "8d377dacab8f5c74ba0ec56ee96a1d9e4c5b79f9",
+  "deadline_epoch": 1791431497.25,
+  "completion_marker_created": false,
+  "restart_requested": false,
+  "compact_path": "coded but INACTIVE: selector requires context.semantic_coverage=settled-no-station-v1; no generated root emits this marker",
+  "actual_oracle": {"private_clone":"/tmp/astra-continuation-1791431378","migration_read_bytes":1087247736,"migration_write_bytes":1469740,"migration_syncs":10,"open_forbid_exit":1,"open_forbid_error":"audit_unavailable","forbidden_attempts":1,"request_admitted":false},
+  "checks": {"configuration":"Release BLACKBIRD_DEBUG=OFF -j2","blackbird":"built","startup_loading_probe":"built; b238ef8 delta only","single_scoped_recheck":"archive_catalog, journal_resume, saved_state, context, cold_history, session_store, session_recovery all passed"},
+  "implemented_this_continuation": [
+    "Catalog v2 stores uint32 ordinal inside CRC coverage, bounds count, validates selected address; intact relocated-entry test passes",
+    "Typed semantic lookup returns owned optional facts via checked selected-frame disk read; no resident lower_bound resolver prerequisite; source reads use checked catalog reader",
+    "Context original fallback restricted to selected journal and saved boundary; contains-first resident existence checks; accepted tail no full ContextStore reconstruction",
+    "Context original/history/index explicit traversal uses bounded fallible pages with owned immutable generation/file readers, not installed historical metadata caches",
+    "Root/catalog selection callback runs after writer lease/header/extent validation before full physical scan",
+    "Compact Snapshot base fact/physical counts and issuer highwater restore + JournalResume suffix seam coded, not activated",
+    "Unresolved reduction keeps latest observation and original invocation decision closure; exact attempt/decision/invocation queries are disk-capable",
+    "Reconcile, session restart prerequisite, provider recovery linkage and complaint active-set consumers use unresolved closure or exact lookups; context/station/RRC suffix consumers use explicit tail_facts"
+  ],
+  "remaining_for_coherent_activation": [
+    "NO semantic-envelope subsystem is needed. Follow Root correction: typed selected reads serve exact predicates; explicit historical queries may read old bodies on demand",
+    "Migrate remaining full-span consumers by intent, especially probe initial resident/cold diagnostic (must not force historical reconstruction), legacy session identity fallback, main inspect, coding read_process_output, backstop. committed_facts now explicitly throws unsupported on compact state, never silently incomplete",
+    "Complete safe supported-root coverage emission: certify settled/no-station base and identity; unsupported unresolved/station/pending-origin populations may use independent full replay. Current conservative selector requires empty unresolved closure, explicit session.identity and no pending restart; marker absent keeps all roots on full replay",
+    "Complete compact checkpoint maintenance: save_current_state currently returns unsupported for compact state. Implement bounded suffix/backpressure with protected settlement credit and metadata publication preserving old catalog without reading archived rejected bodies; do not activate before this is coherent",
+    "Validate compact path exact counts/evidence/source predicates, unsupported-root fallback, duplicates/transitions and issuer burns, then actual APFS clone save-current migration and open-forbid admitted 302241-byte request with known-success settlement",
+    "Only then emit coverage marker and unit-complete.json; current oracle FAILS and generated recovery remains full replay"
+  ],
+  "artifacts": ["papers/saved-state-delivery-2026-10-08/continuation-migration.txt","papers/saved-state-delivery-2026-10-08/continuation-forbidden.txt"]
+}

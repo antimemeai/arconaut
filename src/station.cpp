@@ -17,7 +17,7 @@ auto key(const Json &e) {
 }
 } // namespace
 StationStore::StationStore(AuditLog &log) : log_(log) {
-  for (const auto &fact : log.root().committed_facts()) {
+  for (const auto &fact : log.root().tail_facts()) {
     const auto *r = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (!r || r->channel != ApplicationChannel::program)
       continue;
