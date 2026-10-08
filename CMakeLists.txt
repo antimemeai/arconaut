@@ -343,3 +343,6 @@ set_tests_properties(coding_stream_capture PROPERTIES WORKING_DIRECTORY ${CMAKE_
 add_executable(request_storage_test tests/request_storage_test.cpp)
 target_link_libraries(request_storage_test PRIVATE blackbird_coding)
 add_test(NAME request_storage COMMAND request_storage_test)
+add_executable(context_delta_test tests/context_delta_test.cpp)
+target_link_libraries(context_delta_test PRIVATE blackbird_foundation)
+add_test(NAME context_delta COMMAND context_delta_test)

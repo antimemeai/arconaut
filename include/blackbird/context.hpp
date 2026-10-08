@@ -92,12 +92,6 @@ private:
   mutable std::map<std::string, Original> originals_;
   mutable std::vector<Original> captured_;
   Json::Array captured_entries() const;
-  struct HistoryRecord {
-    ImmutableBytes payload;
-    std::string revision;
-  };
-  mutable std::vector<HistoryRecord> history_;
-  static HistoryRecord history_record(const Json &packet);
   bool workflow_ = false;
   struct Pending {
     Json proposal;
