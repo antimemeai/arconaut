@@ -76,8 +76,10 @@ Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
       unresolved > facts || anchor_crc > UINT32_MAX || context_size > view.size() - prefix - 4 ||
       program_size > view.size() - prefix - 4 - context_size) return ignored();
   // A checksummed root beyond the known prefix must not burn fewer IDs silently.
-  if (sequence > journal.cursor().sequence || end > journal.cursor().end_offset)
+  if (end > journal.recovery_report().available_end)
     return Answer::failure({ErrorCode::incomplete}); // durable root evidence prevents identity reuse
+  if (sequence > journal.cursor().sequence || end > journal.cursor().end_offset)
+    return ignored(); // full replay has already fenced the damaged semantic prefix
   auto anchor = journal.read_original_range(end - commit_size, commit_size);
   if (!anchor.has_value() || anchor.value().bytes.size() != commit_size ||
       crc32c(anchor.value().bytes) != anchor_crc) return ignored();
@@ -94,6 +96,21 @@ Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
   auto context = json_blob(context_size);
   auto programs = json_blob(program_size);
   if (!context.has_value() || !programs.has_value()) return ignored();
+  if (!std::holds_alternative<Json::Object>(context.value().value()) ||
+      !std::holds_alternative<Json::Array>(programs.value().value())) return ignored();
+  const auto *version = context.value().find("version");
+  const auto *base = context.value().find("base");
+  const auto *live = context.value().find("entries");
+  const auto *originals = context.value().find("live_originals");
+  if (!version || !std::holds_alternative<JsonNumber>(version->value()) || version->number().text != "1" ||
+      !base || !std::holds_alternative<std::string>(base->value()) || base->string().size() != 32 ||
+      !live || !std::holds_alternative<Json::Array>(live->value()) ||
+      !originals || !std::holds_alternative<Json::Array>(originals->value())) return ignored();
+  for (const auto &packet : programs.value().array()) {
+    if (!std::holds_alternative<Json::Object>(packet.value())) return ignored();
+    const auto *label = packet.find("label");
+    if (!label || !std::holds_alternative<std::string>(label->value())) return ignored();
+  }
   SavedState saved{{journal.header().journal, sequence, end}, facts, counter,
                    std::move(context).value(), std::move(programs).value(), {}, slot};
   for (std::uint64_t i = 0; i < unresolved; ++i) {

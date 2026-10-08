@@ -299,6 +299,8 @@ const RetainedFact *RetainedState::lookup(const Snapshot &snapshot,
   }
   for (std::size_t i = snapshot.facts.size(); i > 0; --i) {
     const auto &fact = snapshot.facts[i-1];
+    if (archive_ && saved_ && fact.record.journal == saved_->boundary.journal &&
+        fact.record.sequence <= saved_->boundary.sequence) continue;
     const auto *origin = segment(fact.record.journal);
     if (!origin) throw Error{ErrorCode::corrupt};
     if (retained_kind(fact.event.body) != kind) continue;
@@ -319,6 +321,21 @@ const RetainedFact *RetainedState::lookup(const Snapshot &snapshot,
           body && body->decision.bytes() == identity && body->invocation.bytes() == second)
         return &fact;
     }
+  }
+  if (archive_ && saved_) {
+    auto selected = archive_->find(wanted);
+    if (!selected.has_value()) throw selected.error();
+    if (!selected.value()) return nullptr;
+    // The remaining full-replay oracle still owns fact/evidence lifetimes. Use
+    // the disk locator, not a persisted RAM ordinal, to resolve its exact record.
+    // The future compact reducer can replace this resolver without changing keys.
+    const auto found = std::lower_bound(snapshot.facts.begin(), snapshot.facts.end(),
+        selected.value()->sequence, [](const auto &fact, std::uint64_t sequence) {
+          return fact.record.sequence < sequence;
+        });
+    if (found == snapshot.facts.end() || found->record.sequence != selected.value()->sequence ||
+        found->record.journal != selected.value()->journal) throw Error{ErrorCode::corrupt};
+    return &*found;
   }
   return nullptr;
 }
@@ -362,12 +379,12 @@ RetainedState::existing(const Snapshot &snapshot, const RetainedEvent &event,
                         const ReplayIndex *index) const {
   const auto identity =
       key(event.body, issuer_namespace.value_or(snapshot.issuer_namespace));
-  if (query_index_) {
+  if (query_index_ || archive_) {
     if (identity) return lookup(snapshot,1,identity->kind,identity->identity);
     if (const auto *observation = std::get_if<AttemptObservationEvent>(&event.body);
         observation && observation->phase == AttemptPhase::terminal)
       return lookup(snapshot,1,retained_kind(event.body),observation->attempt.bytes());
-    return nullptr;
+    if (query_index_) return nullptr;
   }
   if (identity && index) {
     const auto found = index->facts.find(*identity);
@@ -452,6 +469,13 @@ Result<void> RetainedState::apply(Snapshot &snapshot, RetainedEvent event,
   if (!has_room(snapshot, 1))
     return Result<void>::failure({ErrorCode::capacity});
   for (const auto &dependency : event.dependencies) {
+    if (archive_ && saved_ && dependency.journal == saved_->boundary.journal &&
+        dependency.sequence <= saved_->boundary.sequence) {
+      auto found = archive_->find(ordinal_key(5, dependency.journal.bytes(), dependency.sequence));
+      if (!found.has_value()) return Result<void>::failure(found.error());
+      if (!found.value()) return Result<void>::failure({ErrorCode::conflict});
+      continue;
+    }
     if (query_index_) {
       auto found = query_index_->find(snapshot.query_root,
           ordinal_key(5,dependency.journal.bytes(),dependency.sequence));

@@ -150,6 +150,8 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
       archive_loaded_ = false;
     } catch (const Error &) {
       head_.clear(); entries_.clear(); originals_.clear();
+    } catch (const std::bad_variant_access &) {
+      head_.clear(); entries_.clear(); originals_.clear();
     }
   }
   for (const auto &fact : log.root().committed_facts()) {
