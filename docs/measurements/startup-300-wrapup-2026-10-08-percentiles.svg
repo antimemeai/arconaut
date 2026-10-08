@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="610" viewBox="0 0 1000 610"><rect width="1000" height="610" fill="white"/><g font-family="Arial, sans-serif" fill="#222">
+<text x="75" y="40" font-size="24">300 startups: p30, p50, p70, p90</text>
+<text x="75" y="67" font-size="15" fill="#555">Milliseconds from launcher spawn · 100 starts per scenario · all 300 succeeded</text>
+<path d="M 75 450.0 H 925" stroke="#e5e7eb"/><text x="60" y="455.0" text-anchor="end" font-size="14">0</text>
+<path d="M 75 406.25 H 925" stroke="#e5e7eb"/><text x="60" y="411.25" text-anchor="end" font-size="14">20</text>
+<path d="M 75 362.5 H 925" stroke="#e5e7eb"/><text x="60" y="367.5" text-anchor="end" font-size="14">40</text>
+<path d="M 75 318.75 H 925" stroke="#e5e7eb"/><text x="60" y="323.75" text-anchor="end" font-size="14">60</text>
+<path d="M 75 275.0 H 925" stroke="#e5e7eb"/><text x="60" y="280.0" text-anchor="end" font-size="14">80</text>
+<path d="M 75 231.25 H 925" stroke="#e5e7eb"/><text x="60" y="236.25" text-anchor="end" font-size="14">100</text>
+<path d="M 75 187.5 H 925" stroke="#e5e7eb"/><text x="60" y="192.5" text-anchor="end" font-size="14">120</text>
+<path d="M 75 143.75 H 925" stroke="#e5e7eb"/><text x="60" y="148.75" text-anchor="end" font-size="14">140</text>
+<path d="M 75 100.0 H 925" stroke="#e5e7eb"/><text x="60" y="105.0" text-anchor="end" font-size="14">160</text>
+<text x="75.0" y="480" text-anchor="middle" font-size="17">p30</text>
+<text x="358.3333333333333" y="480" text-anchor="middle" font-size="17">p50</text>
+<text x="641.6666666666666" y="480" text-anchor="middle" font-size="17">p70</text>
+<text x="925.0" y="480" text-anchor="middle" font-size="17">p90</text>
+<polyline points="75.0,247.53958406249998 358.3333333333333,234.17933593749999 641.6666666666666,224.82239656250002 925.0,205.85248625" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="8 6"/>
+<circle cx="75.0" cy="247.53958406249998" r="4" fill="#2563eb"/>
+<circle cx="358.3333333333333" cy="234.17933593749999" r="4" fill="#2563eb"/>
+<circle cx="641.6666666666666" cy="224.82239656250002" r="4" fill="#2563eb"/>
+<circle cx="925.0" cy="205.85248625" r="4" fill="#2563eb"/>
+<polyline points="75.0,176.71653718750002 358.3333333333333,161.0849334375 641.6666666666666,152.67436125 925.0,127.728203125" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray=""/>
+<circle cx="75.0" cy="176.71653718750002" r="4" fill="#2563eb"/>
+<circle cx="358.3333333333333" cy="161.0849334375" r="4" fill="#2563eb"/>
+<circle cx="641.6666666666666" cy="152.67436125" r="4" fill="#2563eb"/>
+<circle cx="925.0" cy="127.728203125" r="4" fill="#2563eb"/>
+<polyline points="75.0,286.4113671875 358.3333333333333,270.0368359375 641.6666666666666,262.5163946875 925.0,245.7862109375" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="8 6"/>
+<circle cx="75.0" cy="286.4113671875" r="4" fill="#d97706"/>
+<circle cx="358.3333333333333" cy="270.0368359375" r="4" fill="#d97706"/>
+<circle cx="641.6666666666666" cy="262.5163946875" r="4" fill="#d97706"/>
+<circle cx="925.0" cy="245.7862109375" r="4" fill="#d97706"/>
+<polyline points="75.0,211.88378906249997 358.3333333333333,198.669738125 641.6666666666666,185.8149884375 925.0,170.79834562500002" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray=""/>
+<circle cx="75.0" cy="211.88378906249997" r="4" fill="#d97706"/>
+<circle cx="358.3333333333333" cy="198.669738125" r="4" fill="#d97706"/>
+<circle cx="641.6666666666666" cy="185.8149884375" r="4" fill="#d97706"/>
+<circle cx="925.0" cy="170.79834562500002" r="4" fill="#d97706"/>
+<polyline points="75.0,287.34625000000005 358.3333333333333,269.5471990625 641.6666666666666,259.66863281250005 925.0,251.71433593749998" fill="none" stroke="#059669" stroke-width="3" stroke-dasharray="8 6"/>
+<circle cx="75.0" cy="287.34625000000005" r="4" fill="#059669"/>
+<circle cx="358.3333333333333" cy="269.5471990625" r="4" fill="#059669"/>
+<circle cx="641.6666666666666" cy="259.66863281250005" r="4" fill="#059669"/>
+<circle cx="925.0" cy="251.71433593749998" r="4" fill="#059669"/>
+<polyline points="75.0,213.16921874999997 358.3333333333333,192.35962312499998 641.6666666666666,181.57187500000003 925.0,170.43649593749996" fill="none" stroke="#059669" stroke-width="3" stroke-dasharray=""/>
+<circle cx="75.0" cy="213.16921874999997" r="4" fill="#059669"/>
+<circle cx="358.3333333333333" cy="192.35962312499998" r="4" fill="#059669"/>
+<circle cx="641.6666666666666" cy="181.57187500000003" r="4" fill="#059669"/>
+<circle cx="925.0" cy="170.43649593749996" r="4" fill="#059669"/>
+<path d="M 75 520 h 40" stroke="#2563eb" stroke-width="3" stroke-dasharray="8 6"/><text x="125" y="525" font-size="15">Fresh — first frame</text>
+<path d="M 75 550 h 40" stroke="#2563eb" stroke-width="3" stroke-dasharray=""/><text x="125" y="555" font-size="15">Fresh — audited command</text>
+<path d="M 370 520 h 40" stroke="#d97706" stroke-width="3" stroke-dasharray="8 6"/><text x="420" y="525" font-size="15">Heavy — first frame</text>
+<path d="M 370 550 h 40" stroke="#d97706" stroke-width="3" stroke-dasharray=""/><text x="420" y="555" font-size="15">Heavy — audited command</text>
+<path d="M 665 520 h 40" stroke="#059669" stroke-width="3" stroke-dasharray="8 6"/><text x="715" y="525" font-size="15">Weird — first frame</text>
+<path d="M 665 550 h 40" stroke="#059669" stroke-width="3" stroke-dasharray=""/><text x="715" y="555" font-size="15">Weird — audited command</text>
+<text x="75" y="590" font-size="13" fill="#555">Published Release binary · unchanged trial method and retained seeds · serial round robin</text></g></svg>

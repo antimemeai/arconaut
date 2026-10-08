@@ -4984,3 +4984,7 @@ run, local response medians faster; different host load means no causal attribut
 Full public samples/report and private transcripts retained under new names,
 prior seeds/results unchanged. No source edits or additional test campaign.
 Back up Beads and checkpoint/push measurement results.
+
+2026-10-08: Added requested single chart of startup rerun p30/p50/p70/p90,
+using retained numeric results for all three scenarios and both spawn endpoints.
+Owned SVG generation; no dependency added or measurements rerun.
