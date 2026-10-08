@@ -234,7 +234,9 @@ int main(int argc, char **argv) {
             decision->planned_invocations != std::vector<InvocationId>{invocation->invocation})
           throw Error{ErrorCode::corrupt};
         const auto meta = unwrap(parse_json({reinterpret_cast<const char *>(decision->continuation.data()), decision->continuation.size()}));
-        if (string_field(meta, "operation") != "provider" || field(meta, "input") != request ||
+        if (string_field(meta, "operation") != "provider" || meta.find("input") ||
+            string_field(meta, "input_binding") != "invocation-v1" ||
+            string_field(meta, "invocation") != hex_identity(invocation->invocation.bytes()) ||
             string_field(meta, "revision") != hex_identity(decision->context.bytes()) ||
             string_field(meta, "generation") != hex_identity(decision->definition.bytes()))
           throw Error{ErrorCode::corrupt};

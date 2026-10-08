@@ -1,5 +1,6 @@
 #include "blackbird/coding.hpp"
 #include <iostream>
+#include <algorithm>
 #include <sys/stat.h>
 #include <unistd.h>
 using namespace blackbird;
@@ -33,7 +34,8 @@ int main() {
     const JournalCapacity capacity{16 * 1024 * 1024, 10000};
     for (const std::string operation :
          {"provider", "unopened", "capacity", "badinput", "exec", "write_file",
-          "unrecognized", "mixed"}) {
+          "unrecognized", "mixed", "bound-provider", "bound-unopened",
+          "bound-wrong-invocation", "bound-wrong-tag", "bound-extra-input", "bound-bad-input"}) {
       const auto directory = std::filesystem::path{path} / operation;
       std::filesystem::create_directory(directory);
       check(::chmod(directory.c_str(), 0700) == 0);
@@ -49,14 +51,25 @@ int main() {
       const auto before = context.items();
       const bool provider_kind = operation == "provider" || operation == "mixed" ||
                                  operation == "unopened" || operation == "capacity" ||
-                                 operation == "badinput";
-      const auto metadata = unwrap(dump_json(Json::object(
+                                 operation == "badinput" || operation.starts_with("bound-");
+      auto metadata_packet = Json::object(
           {{"operation", Json{provider_kind ? "provider" : operation}},
            {"input", operation == "badinput" ? Json{Json::Array{}} : Json::object({})},
            {"revision", Json{hex_identity(id<ContextRevisionId>(10).bytes())}},
            {"generation",
-            Json{hex_identity(id<DefinitionGenerationId>(7).bytes())}}})));
-      const std::vector<std::byte> input_bytes{std::byte{0x7b}, std::byte{0x7d}};
+            Json{hex_identity(id<DefinitionGenerationId>(7).bytes())}}});
+      if (operation.starts_with("bound-")) {
+        auto &fields = metadata_packet.object();
+        if (operation != "bound-extra-input")
+          fields.erase(std::remove_if(fields.begin(), fields.end(),
+              [](const auto &entry) { return entry.first == "input"; }), fields.end());
+        fields.emplace_back("input_binding", Json{operation == "bound-wrong-tag" ? "unknown-v1" : "invocation-v1"});
+        fields.emplace_back("invocation", Json{hex_identity(id<InvocationId>(operation == "bound-wrong-invocation" ? 20 : 9).bytes())});
+      }
+      const auto metadata = unwrap(dump_json(metadata_packet));
+      const std::vector<std::byte> input_bytes = operation == "bound-bad-input"
+          ? std::vector<std::byte>{std::byte{0x5b}, std::byte{0x5d}}
+          : std::vector<std::byte>{std::byte{0x7b}, std::byte{0x7d}};
       const auto raw = std::as_bytes(std::span{metadata.data(), metadata.size()});
       (void)unwrap(root->submit({{},
                                  DecisionEvent{id<DecisionId>(8),
@@ -75,7 +88,7 @@ int main() {
           {{},
            AttemptAdmissionEvent{id<OperationAttemptId>(11), id<InvocationId>(9),
                                  id<DecisionId>(8), input_bytes}}));
-      if (operation != "unopened")
+      if (operation != "unopened" && operation != "bound-unopened")
         (void)unwrap(root->submit({{}, AttemptOpenEvent{id<OperationAttemptId>(11)}}));
       if (operation == "mixed") {
         const std::string metadata_exec = "{\"operation\":\"exec\"}";
@@ -135,7 +148,8 @@ int main() {
               effect.calls == 0);
         continue;
       }
-      if (operation != "provider" && operation != "unopened") {
+      if (operation != "provider" && operation != "unopened" &&
+          operation != "bound-provider" && operation != "bound-unopened") {
         check(blocked && root->state() == JournalWriterState::recovered);
         check(root->committed_facts().size() == prior_facts);
         check(!unwrap(root->attempt(id<OperationAttemptId>(11))).observation);

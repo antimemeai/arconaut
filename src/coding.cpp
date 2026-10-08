@@ -850,9 +850,6 @@ void recover_coding_session(RetainedState &root) {
         const auto *input = metadata.value().find("input");
         const auto *generation = metadata.value().find("generation");
         const auto *revision = metadata.value().find("revision");
-        const auto encoded_input =
-            input ? dump_json(*input)
-                  : Result<std::string>::failure({ErrorCode::corrupt});
         const std::string_view admitted_input{
             reinterpret_cast<const char *>(attempt.admission.input.data()),
             attempt.admission.input.size()};
@@ -863,8 +860,24 @@ void recover_coding_session(RetainedState &root) {
         const bool linked = invocation.decision == decision->decision &&
                             invocation.definition == decision->definition &&
                             invocation.input == attempt.admission.input;
-        if (!linked || !encoded_input.has_value() ||
-            encoded_input.value() != admitted_input || !generation || !revision ||
+        // New decisions bind the already-retained invocation rather than embedding
+        // another full input. Older decisions keep their explicit input check.
+        bool input_bound = false;
+        if (const auto *binding = metadata.value().find("input_binding")) {
+          const auto *invocation_id = metadata.value().find("invocation");
+          const auto parsed_input = parse_json(admitted_input);
+          input_bound = parsed_input.has_value() &&
+                        std::holds_alternative<Json::Object>(parsed_input.value().value()) &&
+                        !input && *binding == Json{"invocation-v1"} &&
+                        invocation_id &&
+                        *invocation_id == Json{hex_identity(invocation.invocation.bytes())} &&
+                        decision->planned_invocations.size() == 1 &&
+                        decision->planned_invocations.front() == invocation.invocation;
+        } else if (input) {
+          const auto encoded_input = dump_json(*input);
+          input_bound = encoded_input.has_value() && encoded_input.value() == admitted_input;
+        }
+        if (!linked || !input_bound || !generation || !revision ||
             !std::holds_alternative<std::string>(generation->value()) ||
             !std::holds_alternative<std::string>(revision->value()) ||
             generation->string() != hex_identity(decision->definition.bytes()) ||
@@ -959,7 +972,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   const auto context = parse_id<ContextRevisionId>(context_.head());
   const auto meta =
       Json::object({{"operation", Json{std::string{name}}},
-                    {"input", input},
+                    {"input_binding", Json{"invocation-v1"}},
+                    {"invocation", Json{hex_identity(invocation.bytes())}},
                     {"revision", Json{context_.head()}},
                     {"generation", Json{hex_identity(generation_.bytes())}}});
   const auto continuation = unwrap(dump_json(meta));
@@ -1361,13 +1375,14 @@ Json CodingEngine::request(Json options) {
     previewed_.clear();
     try {
       response = operation("provider", request, [&](OperationAttemptId attempt) {
-        log_.original(
-            {"provider.request", unwrap(dump_json(request)),
-             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+        log_.record(ApplicationChannel::log,
+            Json::object({{"label", Json{"provider.request"}},
+              {"metadata", Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
                            {"revision", Json{origin}},
                            {"generation", Json{hex_identity(generation_.bytes())}},
+                           {"input_binding", Json{"attempt-invocation-v1"}},
                            {"retry_group", Json{retry_group}},
-                           {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})});
+                           {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})}}));
         LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond",
                             false};
         if (transport.enabled())
