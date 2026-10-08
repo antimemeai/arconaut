@@ -4856,3 +4856,16 @@ in papers/2026-10-08-saved-state-delivery-status.md. Manager hard deadline retur
 unknown; observed managed processes stopped, native slot settled/checkpointed,
 board marked incomplete and active reservation released.687 resource observations
 persisted. No allowance reset. Bead stays open for integrated semantic recovery.
+
+## 2026-10-08 — explicit operator continuation of Astra delivery
+
+Operator says proceed. Resume same candidate c06615e in slot0 under managed
+25-minute continuation, deadline1791431497; no new architecture/review gate or
+prerequisite finish line. Fresh native working session inherits exact source/progress
+notes, not the130k-token prior transcript. Explicit workflow starts with12-request
+boundaries, shortened to4 for future turns after bulk source reads grow input;
+advisory managed-context policy stages at successful turn end. Native steady-state
+profilingOFF; external collector follows manager18002 and persists samples.
+Root owns review/integration/read-oracle and measurements; production owner in
+candidate fixes ordinal relocation and implements actual disk predicates plus
+saved-boundary recovery. Run context/saved-state-continuation-2026-10-08.
