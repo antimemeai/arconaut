@@ -1,0 +1,3140 @@
+{
+  "metadata": {
+    "source_commit": "4644d59f7aa622171c6985ce6caa27e6e9e11d59",
+    "binary_sha256": "0976a6b3a091627cd2bd6f58771940a46d8fa35e9752bcc8c41d0cb2861cae22",
+    "count_per_scenario": 100,
+    "order": "round robin, serial",
+    "terminal": "110x35 PTY; Ghostty image path; consumer drains bytes",
+    "cache": "ordinary macOS cache; no cache flush; fresh process and private session each run",
+    "measurement": "parent monotonic clock before launcher spawn to first completed TUI frame and successful audited Lua workflow_registry result; excludes fixture cloning",
+    "provider_calls": 0,
+    "profiling": false
+  },
+  "summary": {
+    "fresh": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "tui_frame_ms": {
+        "p30": 84.699083,
+        "p50": 89.345042,
+        "p70": 92.131084,
+        "p90": 96.087459,
+        "p95": 99.239125,
+        "p99": 199.423208,
+        "max": 381.949584
+      },
+      "audited_command_ms": {
+        "p30": 123.82525,
+        "p50": 128.247292,
+        "p70": 132.003334,
+        "p90": 136.106875,
+        "p95": 139.150625,
+        "p99": 241.509583,
+        "max": 420.944709
+      },
+      "command_response_ms": {
+        "p30": 38.029959,
+        "p50": 38.990167,
+        "p70": 39.343167,
+        "p90": 41.101458,
+        "p95": 42.442291,
+        "p99": 44.081042,
+        "max": 49.971458
+      },
+      "process_total_ms": {
+        "p30": 125.679167,
+        "p50": 129.986375,
+        "p70": 133.89325,
+        "p90": 138.367583,
+        "p95": 141.270375,
+        "p99": 243.189333,
+        "max": 423.2025
+      }
+    },
+    "heavy": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "tui_frame_ms": {
+        "p30": 66.234208,
+        "p50": 69.607292,
+        "p70": 75.496959,
+        "p90": 79.017333,
+        "p95": 80.449042,
+        "p99": 221.356125,
+        "max": 570.518458
+      },
+      "audited_command_ms": {
+        "p30": 104.458459,
+        "p50": 109.158458,
+        "p70": 114.924709,
+        "p90": 118.62375,
+        "p95": 121.445166,
+        "p99": 589.146208,
+        "max": 678.561291
+      },
+      "command_response_ms": {
+        "p30": 37.8885,
+        "p50": 39.101125,
+        "p70": 39.919541,
+        "p90": 41.398792,
+        "p95": 43.787458,
+        "p99": 108.03825,
+        "max": 367.783708
+      },
+      "process_total_ms": {
+        "p30": 106.506625,
+        "p50": 111.288291,
+        "p70": 117.302459,
+        "p90": 121.202167,
+        "p95": 123.9095,
+        "p99": 592.08575,
+        "max": 680.259708
+      }
+    },
+    "weird": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "tui_frame_ms": {
+        "p30": 66.141,
+        "p50": 69.956042,
+        "p70": 74.568208,
+        "p90": 77.978042,
+        "p95": 79.077833,
+        "p99": 81.087708,
+        "max": 83.265167
+      },
+      "audited_command_ms": {
+        "p30": 105.090041,
+        "p50": 111.151334,
+        "p70": 115.479333,
+        "p90": 119.741584,
+        "p95": 122.644666,
+        "p99": 124.11575,
+        "max": 124.451292
+      },
+      "command_response_ms": {
+        "p30": 39.508084,
+        "p50": 40.522833,
+        "p70": 41.289708,
+        "p90": 42.691167,
+        "p95": 43.88875,
+        "p99": 46.868,
+        "max": 54.924875
+      },
+      "process_total_ms": {
+        "p30": 107.26025,
+        "p50": 113.648625,
+        "p70": 118.401333,
+        "p90": 122.6695,
+        "p95": 125.635,
+        "p99": 126.713083,
+        "max": 127.181333
+      }
+    }
+  },
+  "samples": [
+    {
+      "scenario": "fresh",
+      "trial": 1,
+      "tui_frame_ms": 381.949584,
+      "audited_command_ms": 420.944709,
+      "command_response_ms": 38.990167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 423.2025
+    },
+    {
+      "scenario": "heavy",
+      "trial": 1,
+      "tui_frame_ms": 73.201084,
+      "audited_command_ms": 113.158292,
+      "command_response_ms": 39.949792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.531792
+    },
+    {
+      "scenario": "weird",
+      "trial": 1,
+      "tui_frame_ms": 73.757833,
+      "audited_command_ms": 115.26675,
+      "command_response_ms": 41.50175,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.128083
+    },
+    {
+      "scenario": "fresh",
+      "trial": 2,
+      "tui_frame_ms": 100.937292,
+      "audited_command_ms": 138.180417,
+      "command_response_ms": 37.235708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 140.210375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 2,
+      "tui_frame_ms": 75.233792,
+      "audited_command_ms": 115.919125,
+      "command_response_ms": 40.679958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.525417
+    },
+    {
+      "scenario": "weird",
+      "trial": 2,
+      "tui_frame_ms": 67.767833,
+      "audited_command_ms": 108.857708,
+      "command_response_ms": 41.086292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.459791
+    },
+    {
+      "scenario": "fresh",
+      "trial": 3,
+      "tui_frame_ms": 82.791875,
+      "audited_command_ms": 117.126375,
+      "command_response_ms": 34.331875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.096834
+    },
+    {
+      "scenario": "heavy",
+      "trial": 3,
+      "tui_frame_ms": 69.607083,
+      "audited_command_ms": 107.378667,
+      "command_response_ms": 37.768375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.503167
+    },
+    {
+      "scenario": "weird",
+      "trial": 3,
+      "tui_frame_ms": 68.736292,
+      "audited_command_ms": 104.673667,
+      "command_response_ms": 35.934333,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.286417
+    },
+    {
+      "scenario": "fresh",
+      "trial": 4,
+      "tui_frame_ms": 85.848125,
+      "audited_command_ms": 122.118958,
+      "command_response_ms": 36.267083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 124.086
+    },
+    {
+      "scenario": "heavy",
+      "trial": 4,
+      "tui_frame_ms": 69.4885,
+      "audited_command_ms": 106.612041,
+      "command_response_ms": 37.119875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.093791
+    },
+    {
+      "scenario": "weird",
+      "trial": 4,
+      "tui_frame_ms": 78.043708,
+      "audited_command_ms": 119.273625,
+      "command_response_ms": 41.225834,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.386041
+    },
+    {
+      "scenario": "fresh",
+      "trial": 5,
+      "tui_frame_ms": 90.829333,
+      "audited_command_ms": 130.098292,
+      "command_response_ms": 39.265417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.365625
+    },
+    {
+      "scenario": "heavy",
+      "trial": 5,
+      "tui_frame_ms": 74.722167,
+      "audited_command_ms": 114.64625,
+      "command_response_ms": 39.919541,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.329
+    },
+    {
+      "scenario": "weird",
+      "trial": 5,
+      "tui_frame_ms": 76.911208,
+      "audited_command_ms": 123.465625,
+      "command_response_ms": 46.550167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.713083
+    },
+    {
+      "scenario": "fresh",
+      "trial": 6,
+      "tui_frame_ms": 96.342041,
+      "audited_command_ms": 134.752833,
+      "command_response_ms": 38.405167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 137.246875
+    },
+    {
+      "scenario": "heavy",
+      "trial": 6,
+      "tui_frame_ms": 74.075041,
+      "audited_command_ms": 111.270208,
+      "command_response_ms": 37.189917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.866375
+    },
+    {
+      "scenario": "weird",
+      "trial": 6,
+      "tui_frame_ms": 77.6595,
+      "audited_command_ms": 118.732833,
+      "command_response_ms": 41.069166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.28075
+    },
+    {
+      "scenario": "fresh",
+      "trial": 7,
+      "tui_frame_ms": 94.471667,
+      "audited_command_ms": 134.174667,
+      "command_response_ms": 39.698167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 136.507334
+    },
+    {
+      "scenario": "heavy",
+      "trial": 7,
+      "tui_frame_ms": 80.312917,
+      "audited_command_ms": 118.62375,
+      "command_response_ms": 38.306375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.202167
+    },
+    {
+      "scenario": "weird",
+      "trial": 7,
+      "tui_frame_ms": 74.626584,
+      "audited_command_ms": 114.303584,
+      "command_response_ms": 39.672625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.494
+    },
+    {
+      "scenario": "fresh",
+      "trial": 8,
+      "tui_frame_ms": 89.345042,
+      "audited_command_ms": 126.470125,
+      "command_response_ms": 37.120708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 128.745292
+    },
+    {
+      "scenario": "heavy",
+      "trial": 8,
+      "tui_frame_ms": 75.842083,
+      "audited_command_ms": 115.346875,
+      "command_response_ms": 39.499709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.385458
+    },
+    {
+      "scenario": "weird",
+      "trial": 8,
+      "tui_frame_ms": 75.595625,
+      "audited_command_ms": 115.479333,
+      "command_response_ms": 39.878708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.901833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 9,
+      "tui_frame_ms": 94.3365,
+      "audited_command_ms": 132.371542,
+      "command_response_ms": 38.029959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.744042
+    },
+    {
+      "scenario": "heavy",
+      "trial": 9,
+      "tui_frame_ms": 221.356125,
+      "audited_command_ms": 589.146208,
+      "command_response_ms": 367.783708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 592.08575
+    },
+    {
+      "scenario": "weird",
+      "trial": 9,
+      "tui_frame_ms": 71.811833,
+      "audited_command_ms": 112.828458,
+      "command_response_ms": 41.013,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.598041
+    },
+    {
+      "scenario": "fresh",
+      "trial": 10,
+      "tui_frame_ms": 91.37675,
+      "audited_command_ms": 130.407,
+      "command_response_ms": 39.026208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.507833
+    },
+    {
+      "scenario": "heavy",
+      "trial": 10,
+      "tui_frame_ms": 72.188166,
+      "audited_command_ms": 110.399833,
+      "command_response_ms": 38.207125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.709375
+    },
+    {
+      "scenario": "weird",
+      "trial": 10,
+      "tui_frame_ms": 71.911958,
+      "audited_command_ms": 112.097458,
+      "command_response_ms": 40.181208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.739083
+    },
+    {
+      "scenario": "fresh",
+      "trial": 11,
+      "tui_frame_ms": 89.869667,
+      "audited_command_ms": 129.089459,
+      "command_response_ms": 39.215125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.314625
+    },
+    {
+      "scenario": "heavy",
+      "trial": 11,
+      "tui_frame_ms": 69.607292,
+      "audited_command_ms": 107.014834,
+      "command_response_ms": 37.404375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.150959
+    },
+    {
+      "scenario": "weird",
+      "trial": 11,
+      "tui_frame_ms": 68.795875,
+      "audited_command_ms": 112.523041,
+      "command_response_ms": 43.723541,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.947833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 12,
+      "tui_frame_ms": 83.528708,
+      "audited_command_ms": 119.840208,
+      "command_response_ms": 36.308875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.741208
+    },
+    {
+      "scenario": "heavy",
+      "trial": 12,
+      "tui_frame_ms": 68.625542,
+      "audited_command_ms": 104.458459,
+      "command_response_ms": 35.829542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.619959
+    },
+    {
+      "scenario": "weird",
+      "trial": 12,
+      "tui_frame_ms": 67.036041,
+      "audited_command_ms": 103.330375,
+      "command_response_ms": 36.290709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.828625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 13,
+      "tui_frame_ms": 81.707208,
+      "audited_command_ms": 119.854917,
+      "command_response_ms": 38.141125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.984833
+    },
+    {
+      "scenario": "heavy",
+      "trial": 13,
+      "tui_frame_ms": 69.715791,
+      "audited_command_ms": 109.294291,
+      "command_response_ms": 39.574166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.288583
+    },
+    {
+      "scenario": "weird",
+      "trial": 13,
+      "tui_frame_ms": 76.7925,
+      "audited_command_ms": 117.644833,
+      "command_response_ms": 40.849208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.939958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 14,
+      "tui_frame_ms": 87.39,
+      "audited_command_ms": 124.684083,
+      "command_response_ms": 37.290583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.551
+    },
+    {
+      "scenario": "heavy",
+      "trial": 14,
+      "tui_frame_ms": 66.427917,
+      "audited_command_ms": 105.328209,
+      "command_response_ms": 38.896875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.457584
+    },
+    {
+      "scenario": "weird",
+      "trial": 14,
+      "tui_frame_ms": 65.932792,
+      "audited_command_ms": 106.1125,
+      "command_response_ms": 40.176875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 108.561792
+    },
+    {
+      "scenario": "fresh",
+      "trial": 15,
+      "tui_frame_ms": 85.281958,
+      "audited_command_ms": 122.549208,
+      "command_response_ms": 37.264166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 124.234417
+    },
+    {
+      "scenario": "heavy",
+      "trial": 15,
+      "tui_frame_ms": 62.811459,
+      "audited_command_ms": 99.015292,
+      "command_response_ms": 36.201458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 100.772209
+    },
+    {
+      "scenario": "weird",
+      "trial": 15,
+      "tui_frame_ms": 65.579541,
+      "audited_command_ms": 105.090041,
+      "command_response_ms": 39.507083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.221041
+    },
+    {
+      "scenario": "fresh",
+      "trial": 16,
+      "tui_frame_ms": 81.579,
+      "audited_command_ms": 119.964459,
+      "command_response_ms": 38.372875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.517
+    },
+    {
+      "scenario": "heavy",
+      "trial": 16,
+      "tui_frame_ms": 63.849625,
+      "audited_command_ms": 104.522834,
+      "command_response_ms": 40.670875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.506625
+    },
+    {
+      "scenario": "weird",
+      "trial": 16,
+      "tui_frame_ms": 64.693166,
+      "audited_command_ms": 104.2035,
+      "command_response_ms": 39.508084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.098625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 17,
+      "tui_frame_ms": 83.189583,
+      "audited_command_ms": 124.295541,
+      "command_response_ms": 41.101458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.948416
+    },
+    {
+      "scenario": "heavy",
+      "trial": 17,
+      "tui_frame_ms": 63.564,
+      "audited_command_ms": 103.15025,
+      "command_response_ms": 39.583666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.871625
+    },
+    {
+      "scenario": "weird",
+      "trial": 17,
+      "tui_frame_ms": 63.160208,
+      "audited_command_ms": 103.156875,
+      "command_response_ms": 39.994,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.937083
+    },
+    {
+      "scenario": "fresh",
+      "trial": 18,
+      "tui_frame_ms": 88.9475,
+      "audited_command_ms": 128.3755,
+      "command_response_ms": 39.4255,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.823584
+    },
+    {
+      "scenario": "heavy",
+      "trial": 18,
+      "tui_frame_ms": 58.383959,
+      "audited_command_ms": 95.468625,
+      "command_response_ms": 37.082583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 96.939167
+    },
+    {
+      "scenario": "weird",
+      "trial": 18,
+      "tui_frame_ms": 59.65,
+      "audited_command_ms": 100.532125,
+      "command_response_ms": 40.880209,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 102.203958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 19,
+      "tui_frame_ms": 81.066791,
+      "audited_command_ms": 117.440541,
+      "command_response_ms": 36.370625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.844125
+    },
+    {
+      "scenario": "heavy",
+      "trial": 19,
+      "tui_frame_ms": 56.715,
+      "audited_command_ms": 95.797042,
+      "command_response_ms": 39.079584,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 97.311125
+    },
+    {
+      "scenario": "weird",
+      "trial": 19,
+      "tui_frame_ms": 58.836917,
+      "audited_command_ms": 102.727667,
+      "command_response_ms": 43.88875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.56775
+    },
+    {
+      "scenario": "fresh",
+      "trial": 20,
+      "tui_frame_ms": 90.803167,
+      "audited_command_ms": 131.1565,
+      "command_response_ms": 40.349333,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.822084
+    },
+    {
+      "scenario": "heavy",
+      "trial": 20,
+      "tui_frame_ms": 62.502542,
+      "audited_command_ms": 102.060084,
+      "command_response_ms": 39.554709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.045625
+    },
+    {
+      "scenario": "weird",
+      "trial": 20,
+      "tui_frame_ms": 64.761542,
+      "audited_command_ms": 105.259542,
+      "command_response_ms": 40.494708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.26025
+    },
+    {
+      "scenario": "fresh",
+      "trial": 21,
+      "tui_frame_ms": 86.833333,
+      "audited_command_ms": 128.162791,
+      "command_response_ms": 41.325125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.907291
+    },
+    {
+      "scenario": "heavy",
+      "trial": 21,
+      "tui_frame_ms": 63.64625,
+      "audited_command_ms": 110.342416,
+      "command_response_ms": 46.693666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.140125
+    },
+    {
+      "scenario": "weird",
+      "trial": 21,
+      "tui_frame_ms": 62.750125,
+      "audited_command_ms": 109.621084,
+      "command_response_ms": 46.868,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.17125
+    },
+    {
+      "scenario": "fresh",
+      "trial": 22,
+      "tui_frame_ms": 199.423208,
+      "audited_command_ms": 241.509583,
+      "command_response_ms": 42.0835,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 243.189333
+    },
+    {
+      "scenario": "heavy",
+      "trial": 22,
+      "tui_frame_ms": 63.434459,
+      "audited_command_ms": 101.147375,
+      "command_response_ms": 37.710083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 102.987084
+    },
+    {
+      "scenario": "weird",
+      "trial": 22,
+      "tui_frame_ms": 62.483125,
+      "audited_command_ms": 99.437583,
+      "command_response_ms": 36.918,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.678917
+    },
+    {
+      "scenario": "fresh",
+      "trial": 23,
+      "tui_frame_ms": 88.744375,
+      "audited_command_ms": 128.897084,
+      "command_response_ms": 40.1415,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 130.764334
+    },
+    {
+      "scenario": "heavy",
+      "trial": 23,
+      "tui_frame_ms": 65.432667,
+      "audited_command_ms": 107.694208,
+      "command_response_ms": 42.146833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.998333
+    },
+    {
+      "scenario": "weird",
+      "trial": 23,
+      "tui_frame_ms": 71.712959,
+      "audited_command_ms": 114.902,
+      "command_response_ms": 43.185458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.52925
+    },
+    {
+      "scenario": "fresh",
+      "trial": 24,
+      "tui_frame_ms": 91.078958,
+      "audited_command_ms": 131.184458,
+      "command_response_ms": 40.101792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 133.430083
+    },
+    {
+      "scenario": "heavy",
+      "trial": 24,
+      "tui_frame_ms": 73.269375,
+      "audited_command_ms": 114.311584,
+      "command_response_ms": 41.038875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.762959
+    },
+    {
+      "scenario": "weird",
+      "trial": 24,
+      "tui_frame_ms": 73.888834,
+      "audited_command_ms": 116.585042,
+      "command_response_ms": 42.691167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.454167
+    },
+    {
+      "scenario": "fresh",
+      "trial": 25,
+      "tui_frame_ms": 96.040083,
+      "audited_command_ms": 136.106875,
+      "command_response_ms": 40.057625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 138.256375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 25,
+      "tui_frame_ms": 78.555959,
+      "audited_command_ms": 120.695125,
+      "command_response_ms": 42.135291,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.011875
+    },
+    {
+      "scenario": "weird",
+      "trial": 25,
+      "tui_frame_ms": 74.083375,
+      "audited_command_ms": 115.379708,
+      "command_response_ms": 41.289708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.881
+    },
+    {
+      "scenario": "fresh",
+      "trial": 26,
+      "tui_frame_ms": 92.095375,
+      "audited_command_ms": 132.377458,
+      "command_response_ms": 40.279,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.564
+    },
+    {
+      "scenario": "heavy",
+      "trial": 26,
+      "tui_frame_ms": 76.944667,
+      "audited_command_ms": 117.775084,
+      "command_response_ms": 40.823792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.33225
+    },
+    {
+      "scenario": "weird",
+      "trial": 26,
+      "tui_frame_ms": 76.551208,
+      "audited_command_ms": 118.586791,
+      "command_response_ms": 42.031666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.221291
+    },
+    {
+      "scenario": "fresh",
+      "trial": 27,
+      "tui_frame_ms": 91.232541,
+      "audited_command_ms": 129.298625,
+      "command_response_ms": 38.061584,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.545416
+    },
+    {
+      "scenario": "heavy",
+      "trial": 27,
+      "tui_frame_ms": 79.909584,
+      "audited_command_ms": 117.371875,
+      "command_response_ms": 37.458291,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.796834
+    },
+    {
+      "scenario": "weird",
+      "trial": 27,
+      "tui_frame_ms": 76.564458,
+      "audited_command_ms": 118.03775,
+      "command_response_ms": 41.465292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.901666
+    },
+    {
+      "scenario": "fresh",
+      "trial": 28,
+      "tui_frame_ms": 95.34,
+      "audited_command_ms": 135.573667,
+      "command_response_ms": 40.229875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 137.587209
+    },
+    {
+      "scenario": "heavy",
+      "trial": 28,
+      "tui_frame_ms": 78.040375,
+      "audited_command_ms": 117.597916,
+      "command_response_ms": 39.553291,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.081666
+    },
+    {
+      "scenario": "weird",
+      "trial": 28,
+      "tui_frame_ms": 69.956042,
+      "audited_command_ms": 110.988709,
+      "command_response_ms": 41.02575,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.614209
+    },
+    {
+      "scenario": "fresh",
+      "trial": 29,
+      "tui_frame_ms": 93.980209,
+      "audited_command_ms": 137.991209,
+      "command_response_ms": 44.006959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 140.605834
+    },
+    {
+      "scenario": "heavy",
+      "trial": 29,
+      "tui_frame_ms": 77.3455,
+      "audited_command_ms": 117.787542,
+      "command_response_ms": 40.437667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.251834
+    },
+    {
+      "scenario": "weird",
+      "trial": 29,
+      "tui_frame_ms": 75.834875,
+      "audited_command_ms": 117.244833,
+      "command_response_ms": 41.40625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.033958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 30,
+      "tui_frame_ms": 94.992708,
+      "audited_command_ms": 136.013167,
+      "command_response_ms": 41.016375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 138.367583
+    },
+    {
+      "scenario": "heavy",
+      "trial": 30,
+      "tui_frame_ms": 83.533,
+      "audited_command_ms": 124.9365,
+      "command_response_ms": 41.398792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 127.292958
+    },
+    {
+      "scenario": "weird",
+      "trial": 30,
+      "tui_frame_ms": 75.158458,
+      "audited_command_ms": 118.352375,
+      "command_response_ms": 43.188459,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.617958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 31,
+      "tui_frame_ms": 97.734708,
+      "audited_command_ms": 137.363875,
+      "command_response_ms": 39.625875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 139.464166
+    },
+    {
+      "scenario": "heavy",
+      "trial": 31,
+      "tui_frame_ms": 74.689708,
+      "audited_command_ms": 115.083875,
+      "command_response_ms": 40.391292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.103
+    },
+    {
+      "scenario": "weird",
+      "trial": 31,
+      "tui_frame_ms": 72.769042,
+      "audited_command_ms": 109.7475,
+      "command_response_ms": 36.963666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.381625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 32,
+      "tui_frame_ms": 80.967625,
+      "audited_command_ms": 120.851958,
+      "command_response_ms": 39.870917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.896166
+    },
+    {
+      "scenario": "heavy",
+      "trial": 32,
+      "tui_frame_ms": 69.879875,
+      "audited_command_ms": 108.984291,
+      "command_response_ms": 39.101125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.288291
+    },
+    {
+      "scenario": "weird",
+      "trial": 32,
+      "tui_frame_ms": 72.360833,
+      "audited_command_ms": 113.238541,
+      "command_response_ms": 40.873666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.0785
+    },
+    {
+      "scenario": "fresh",
+      "trial": 33,
+      "tui_frame_ms": 95.573459,
+      "audited_command_ms": 133.754459,
+      "command_response_ms": 38.175334,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 135.864834
+    },
+    {
+      "scenario": "heavy",
+      "trial": 33,
+      "tui_frame_ms": 77.282125,
+      "audited_command_ms": 116.784166,
+      "command_response_ms": 39.498375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.953125
+    },
+    {
+      "scenario": "weird",
+      "trial": 33,
+      "tui_frame_ms": 74.203708,
+      "audited_command_ms": 116.034875,
+      "command_response_ms": 41.825792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.963125
+    },
+    {
+      "scenario": "fresh",
+      "trial": 34,
+      "tui_frame_ms": 95.301958,
+      "audited_command_ms": 134.543333,
+      "command_response_ms": 39.236791,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 136.672708
+    },
+    {
+      "scenario": "heavy",
+      "trial": 34,
+      "tui_frame_ms": 79.3515,
+      "audited_command_ms": 118.41225,
+      "command_response_ms": 39.056459,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.904208
+    },
+    {
+      "scenario": "weird",
+      "trial": 34,
+      "tui_frame_ms": 77.558042,
+      "audited_command_ms": 119.741584,
+      "command_response_ms": 42.1795,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.483834
+    },
+    {
+      "scenario": "fresh",
+      "trial": 35,
+      "tui_frame_ms": 99.87825,
+      "audited_command_ms": 140.358125,
+      "command_response_ms": 40.458333,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 142.489209
+    },
+    {
+      "scenario": "heavy",
+      "trial": 35,
+      "tui_frame_ms": 79.017333,
+      "audited_command_ms": 116.577042,
+      "command_response_ms": 37.555042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.9795
+    },
+    {
+      "scenario": "weird",
+      "trial": 35,
+      "tui_frame_ms": 81.087708,
+      "audited_command_ms": 122.644666,
+      "command_response_ms": 41.5375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.314791
+    },
+    {
+      "scenario": "fresh",
+      "trial": 36,
+      "tui_frame_ms": 93.25025,
+      "audited_command_ms": 131.579375,
+      "command_response_ms": 38.323958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 133.690958
+    },
+    {
+      "scenario": "heavy",
+      "trial": 36,
+      "tui_frame_ms": 77.62425,
+      "audited_command_ms": 116.58675,
+      "command_response_ms": 38.947125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.8175
+    },
+    {
+      "scenario": "weird",
+      "trial": 36,
+      "tui_frame_ms": 76.306584,
+      "audited_command_ms": 117.789292,
+      "command_response_ms": 41.477958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.511959
+    },
+    {
+      "scenario": "fresh",
+      "trial": 37,
+      "tui_frame_ms": 91.078834,
+      "audited_command_ms": 130.330959,
+      "command_response_ms": 39.2365,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.455417
+    },
+    {
+      "scenario": "heavy",
+      "trial": 37,
+      "tui_frame_ms": 76.800166,
+      "audited_command_ms": 121.445166,
+      "command_response_ms": 44.640875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.9095
+    },
+    {
+      "scenario": "weird",
+      "trial": 37,
+      "tui_frame_ms": 78.155083,
+      "audited_command_ms": 118.430875,
+      "command_response_ms": 40.259667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.028208
+    },
+    {
+      "scenario": "fresh",
+      "trial": 38,
+      "tui_frame_ms": 92.902583,
+      "audited_command_ms": 132.045125,
+      "command_response_ms": 39.137875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.072375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 38,
+      "tui_frame_ms": 76.043167,
+      "audited_command_ms": 116.193875,
+      "command_response_ms": 40.146792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.258667
+    },
+    {
+      "scenario": "weird",
+      "trial": 38,
+      "tui_frame_ms": 70.950583,
+      "audited_command_ms": 110.715,
+      "command_response_ms": 39.74675,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.023833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 39,
+      "tui_frame_ms": 87.204708,
+      "audited_command_ms": 124.464416,
+      "command_response_ms": 37.251666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.438666
+    },
+    {
+      "scenario": "heavy",
+      "trial": 39,
+      "tui_frame_ms": 69.591416,
+      "audited_command_ms": 108.634875,
+      "command_response_ms": 39.036292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 110.759875
+    },
+    {
+      "scenario": "weird",
+      "trial": 39,
+      "tui_frame_ms": 63.745042,
+      "audited_command_ms": 103.7645,
+      "command_response_ms": 40.017,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.804834
+    },
+    {
+      "scenario": "fresh",
+      "trial": 40,
+      "tui_frame_ms": 84.631958,
+      "audited_command_ms": 123.82525,
+      "command_response_ms": 39.18875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.679167
+    },
+    {
+      "scenario": "heavy",
+      "trial": 40,
+      "tui_frame_ms": 63.161625,
+      "audited_command_ms": 98.721167,
+      "command_response_ms": 35.556958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 100.532375
+    },
+    {
+      "scenario": "weird",
+      "trial": 40,
+      "tui_frame_ms": 60.718166,
+      "audited_command_ms": 95.034041,
+      "command_response_ms": 34.305583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 97.017416
+    },
+    {
+      "scenario": "fresh",
+      "trial": 41,
+      "tui_frame_ms": 81.347417,
+      "audited_command_ms": 115.659417,
+      "command_response_ms": 34.302417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.196042
+    },
+    {
+      "scenario": "heavy",
+      "trial": 41,
+      "tui_frame_ms": 67.554333,
+      "audited_command_ms": 102.665125,
+      "command_response_ms": 35.107833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.266417
+    },
+    {
+      "scenario": "weird",
+      "trial": 41,
+      "tui_frame_ms": 59.993542,
+      "audited_command_ms": 95.529083,
+      "command_response_ms": 35.532708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 97.62225
+    },
+    {
+      "scenario": "fresh",
+      "trial": 42,
+      "tui_frame_ms": 76.145542,
+      "audited_command_ms": 111.53825,
+      "command_response_ms": 35.390417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.02525
+    },
+    {
+      "scenario": "heavy",
+      "trial": 42,
+      "tui_frame_ms": 61.36825,
+      "audited_command_ms": 96.90275,
+      "command_response_ms": 35.531666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 98.717625
+    },
+    {
+      "scenario": "weird",
+      "trial": 42,
+      "tui_frame_ms": 65.1615,
+      "audited_command_ms": 102.664583,
+      "command_response_ms": 37.499833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.737375
+    },
+    {
+      "scenario": "fresh",
+      "trial": 43,
+      "tui_frame_ms": 78.880875,
+      "audited_command_ms": 116.276333,
+      "command_response_ms": 37.390791,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.902583
+    },
+    {
+      "scenario": "heavy",
+      "trial": 43,
+      "tui_frame_ms": 63.13775,
+      "audited_command_ms": 103.469375,
+      "command_response_ms": 40.328833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.140917
+    },
+    {
+      "scenario": "weird",
+      "trial": 43,
+      "tui_frame_ms": 64.458125,
+      "audited_command_ms": 102.738459,
+      "command_response_ms": 38.270834,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.76775
+    },
+    {
+      "scenario": "fresh",
+      "trial": 44,
+      "tui_frame_ms": 84.699083,
+      "audited_command_ms": 123.005458,
+      "command_response_ms": 38.292125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 124.7205
+    },
+    {
+      "scenario": "heavy",
+      "trial": 44,
+      "tui_frame_ms": 63.544875,
+      "audited_command_ms": 99.975833,
+      "command_response_ms": 36.428958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.618917
+    },
+    {
+      "scenario": "weird",
+      "trial": 44,
+      "tui_frame_ms": 62.501209,
+      "audited_command_ms": 100.635584,
+      "command_response_ms": 38.132042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 102.689125
+    },
+    {
+      "scenario": "fresh",
+      "trial": 45,
+      "tui_frame_ms": 81.697833,
+      "audited_command_ms": 119.003,
+      "command_response_ms": 37.301583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.770083
+    },
+    {
+      "scenario": "heavy",
+      "trial": 45,
+      "tui_frame_ms": 63.57675,
+      "audited_command_ms": 103.489208,
+      "command_response_ms": 39.91,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.121875
+    },
+    {
+      "scenario": "weird",
+      "trial": 45,
+      "tui_frame_ms": 61.842375,
+      "audited_command_ms": 99.155167,
+      "command_response_ms": 37.309792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.138292
+    },
+    {
+      "scenario": "fresh",
+      "trial": 46,
+      "tui_frame_ms": 81.876,
+      "audited_command_ms": 118.307584,
+      "command_response_ms": 36.428334,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.956709
+    },
+    {
+      "scenario": "heavy",
+      "trial": 46,
+      "tui_frame_ms": 64.097917,
+      "audited_command_ms": 101.541084,
+      "command_response_ms": 37.438084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.378167
+    },
+    {
+      "scenario": "weird",
+      "trial": 46,
+      "tui_frame_ms": 63.104125,
+      "audited_command_ms": 99.639708,
+      "command_response_ms": 36.533583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.56275
+    },
+    {
+      "scenario": "fresh",
+      "trial": 47,
+      "tui_frame_ms": 82.904,
+      "audited_command_ms": 118.270542,
+      "command_response_ms": 35.351,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.972792
+    },
+    {
+      "scenario": "heavy",
+      "trial": 47,
+      "tui_frame_ms": 61.631916,
+      "audited_command_ms": 97.276708,
+      "command_response_ms": 35.641833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 99.564541
+    },
+    {
+      "scenario": "weird",
+      "trial": 47,
+      "tui_frame_ms": 61.531916,
+      "audited_command_ms": 101.810416,
+      "command_response_ms": 40.27375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.79975
+    },
+    {
+      "scenario": "fresh",
+      "trial": 48,
+      "tui_frame_ms": 83.180458,
+      "audited_command_ms": 122.502333,
+      "command_response_ms": 39.318916,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 124.163667
+    },
+    {
+      "scenario": "heavy",
+      "trial": 48,
+      "tui_frame_ms": 63.753375,
+      "audited_command_ms": 100.724291,
+      "command_response_ms": 36.966083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 102.519666
+    },
+    {
+      "scenario": "weird",
+      "trial": 48,
+      "tui_frame_ms": 66.612,
+      "audited_command_ms": 104.130417,
+      "command_response_ms": 37.515375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.468625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 49,
+      "tui_frame_ms": 85.613209,
+      "audited_command_ms": 124.94525,
+      "command_response_ms": 39.327791,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.825042
+    },
+    {
+      "scenario": "heavy",
+      "trial": 49,
+      "tui_frame_ms": 70.50775,
+      "audited_command_ms": 114.312208,
+      "command_response_ms": 43.787458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.417417
+    },
+    {
+      "scenario": "weird",
+      "trial": 49,
+      "tui_frame_ms": 67.548625,
+      "audited_command_ms": 107.225542,
+      "command_response_ms": 39.674042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.530209
+    },
+    {
+      "scenario": "fresh",
+      "trial": 50,
+      "tui_frame_ms": 84.407041,
+      "audited_command_ms": 121.530166,
+      "command_response_ms": 37.118958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.347666
+    },
+    {
+      "scenario": "heavy",
+      "trial": 50,
+      "tui_frame_ms": 76.036459,
+      "audited_command_ms": 113.626459,
+      "command_response_ms": 37.583959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.619667
+    },
+    {
+      "scenario": "weird",
+      "trial": 50,
+      "tui_frame_ms": 71.535,
+      "audited_command_ms": 110.53075,
+      "command_response_ms": 38.993083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.951959
+    },
+    {
+      "scenario": "fresh",
+      "trial": 51,
+      "tui_frame_ms": 87.322791,
+      "audited_command_ms": 124.274291,
+      "command_response_ms": 36.948458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.9705
+    },
+    {
+      "scenario": "heavy",
+      "trial": 51,
+      "tui_frame_ms": 67.349209,
+      "audited_command_ms": 101.478,
+      "command_response_ms": 34.121958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.374042
+    },
+    {
+      "scenario": "weird",
+      "trial": 51,
+      "tui_frame_ms": 65.043334,
+      "audited_command_ms": 104.339292,
+      "command_response_ms": 39.292458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.438792
+    },
+    {
+      "scenario": "fresh",
+      "trial": 52,
+      "tui_frame_ms": 78.168916,
+      "audited_command_ms": 113.573083,
+      "command_response_ms": 35.400625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.5155
+    },
+    {
+      "scenario": "heavy",
+      "trial": 52,
+      "tui_frame_ms": 69.347542,
+      "audited_command_ms": 104.739334,
+      "command_response_ms": 35.382084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.8065
+    },
+    {
+      "scenario": "weird",
+      "trial": 52,
+      "tui_frame_ms": 69.743666,
+      "audited_command_ms": 110.305375,
+      "command_response_ms": 40.558667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.999958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 53,
+      "tui_frame_ms": 92.842334,
+      "audited_command_ms": 132.003334,
+      "command_response_ms": 39.15725,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 133.89325
+    },
+    {
+      "scenario": "heavy",
+      "trial": 53,
+      "tui_frame_ms": 82.649666,
+      "audited_command_ms": 122.827583,
+      "command_response_ms": 40.159667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.124958
+    },
+    {
+      "scenario": "weird",
+      "trial": 53,
+      "tui_frame_ms": 78.748042,
+      "audited_command_ms": 120.020917,
+      "command_response_ms": 41.269292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.763959
+    },
+    {
+      "scenario": "fresh",
+      "trial": 54,
+      "tui_frame_ms": 92.131084,
+      "audited_command_ms": 129.242459,
+      "command_response_ms": 37.106667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.239084
+    },
+    {
+      "scenario": "heavy",
+      "trial": 54,
+      "tui_frame_ms": 75.221833,
+      "audited_command_ms": 114.345667,
+      "command_response_ms": 39.11925,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.791208
+    },
+    {
+      "scenario": "weird",
+      "trial": 54,
+      "tui_frame_ms": 74.976458,
+      "audited_command_ms": 119.774625,
+      "command_response_ms": 44.794292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.6695
+    },
+    {
+      "scenario": "fresh",
+      "trial": 55,
+      "tui_frame_ms": 93.109208,
+      "audited_command_ms": 133.7715,
+      "command_response_ms": 40.658125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 135.897
+    },
+    {
+      "scenario": "heavy",
+      "trial": 55,
+      "tui_frame_ms": 72.655166,
+      "audited_command_ms": 111.871875,
+      "command_response_ms": 39.213084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.244125
+    },
+    {
+      "scenario": "weird",
+      "trial": 55,
+      "tui_frame_ms": 73.343709,
+      "audited_command_ms": 115.106459,
+      "command_response_ms": 41.758,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.939667
+    },
+    {
+      "scenario": "fresh",
+      "trial": 56,
+      "tui_frame_ms": 90.521417,
+      "audited_command_ms": 128.737459,
+      "command_response_ms": 38.210709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 130.808417
+    },
+    {
+      "scenario": "heavy",
+      "trial": 56,
+      "tui_frame_ms": 75.496959,
+      "audited_command_ms": 114.390959,
+      "command_response_ms": 38.887959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.891584
+    },
+    {
+      "scenario": "weird",
+      "trial": 56,
+      "tui_frame_ms": 74.839166,
+      "audited_command_ms": 115.709625,
+      "command_response_ms": 40.851792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.401333
+    },
+    {
+      "scenario": "fresh",
+      "trial": 57,
+      "tui_frame_ms": 94.07275,
+      "audited_command_ms": 129.079875,
+      "command_response_ms": 34.990542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.185833
+    },
+    {
+      "scenario": "heavy",
+      "trial": 57,
+      "tui_frame_ms": 77.943417,
+      "audited_command_ms": 117.363583,
+      "command_response_ms": 39.415958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.837875
+    },
+    {
+      "scenario": "weird",
+      "trial": 57,
+      "tui_frame_ms": 80.189291,
+      "audited_command_ms": 121.13875,
+      "command_response_ms": 40.931084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.970791
+    },
+    {
+      "scenario": "fresh",
+      "trial": 58,
+      "tui_frame_ms": 92.320583,
+      "audited_command_ms": 130.367833,
+      "command_response_ms": 38.027292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.419916
+    },
+    {
+      "scenario": "heavy",
+      "trial": 58,
+      "tui_frame_ms": 73.842917,
+      "audited_command_ms": 113.745583,
+      "command_response_ms": 39.895125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.959333
+    },
+    {
+      "scenario": "weird",
+      "trial": 58,
+      "tui_frame_ms": 83.265167,
+      "audited_command_ms": 124.451292,
+      "command_response_ms": 41.168209,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 127.181333
+    },
+    {
+      "scenario": "fresh",
+      "trial": 59,
+      "tui_frame_ms": 90.66225,
+      "audited_command_ms": 132.502,
+      "command_response_ms": 41.814416,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.583792
+    },
+    {
+      "scenario": "heavy",
+      "trial": 59,
+      "tui_frame_ms": 77.036416,
+      "audited_command_ms": 118.131083,
+      "command_response_ms": 41.090917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.4925
+    },
+    {
+      "scenario": "weird",
+      "trial": 59,
+      "tui_frame_ms": 73.934542,
+      "audited_command_ms": 113.268917,
+      "command_response_ms": 39.320167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.098459
+    },
+    {
+      "scenario": "fresh",
+      "trial": 60,
+      "tui_frame_ms": 99.239125,
+      "audited_command_ms": 138.2635,
+      "command_response_ms": 39.005667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 140.250333
+    },
+    {
+      "scenario": "heavy",
+      "trial": 60,
+      "tui_frame_ms": 69.123083,
+      "audited_command_ms": 112.334625,
+      "command_response_ms": 43.206334,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.244625
+    },
+    {
+      "scenario": "weird",
+      "trial": 60,
+      "tui_frame_ms": 69.426542,
+      "audited_command_ms": 111.151334,
+      "command_response_ms": 41.71825,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.648625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 61,
+      "tui_frame_ms": 83.726625,
+      "audited_command_ms": 122.938291,
+      "command_response_ms": 39.20425,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 124.610375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 61,
+      "tui_frame_ms": 65.996375,
+      "audited_command_ms": 104.045875,
+      "command_response_ms": 38.044167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.893375
+    },
+    {
+      "scenario": "weird",
+      "trial": 61,
+      "tui_frame_ms": 63.063834,
+      "audited_command_ms": 100.960834,
+      "command_response_ms": 37.881167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.157417
+    },
+    {
+      "scenario": "fresh",
+      "trial": 62,
+      "tui_frame_ms": 81.50725,
+      "audited_command_ms": 119.6325,
+      "command_response_ms": 38.112875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.253167
+    },
+    {
+      "scenario": "heavy",
+      "trial": 62,
+      "tui_frame_ms": 68.958708,
+      "audited_command_ms": 113.340417,
+      "command_response_ms": 44.374167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.328292
+    },
+    {
+      "scenario": "weird",
+      "trial": 62,
+      "tui_frame_ms": 69.18775,
+      "audited_command_ms": 124.11575,
+      "command_response_ms": 54.924875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.654458
+    },
+    {
+      "scenario": "fresh",
+      "trial": 63,
+      "tui_frame_ms": 90.220167,
+      "audited_command_ms": 129.305125,
+      "command_response_ms": 39.081083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.210375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 63,
+      "tui_frame_ms": 69.959542,
+      "audited_command_ms": 109.158458,
+      "command_response_ms": 39.189833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.21125
+    },
+    {
+      "scenario": "weird",
+      "trial": 63,
+      "tui_frame_ms": 68.816042,
+      "audited_command_ms": 110.660125,
+      "command_response_ms": 41.841083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 112.991917
+    },
+    {
+      "scenario": "fresh",
+      "trial": 64,
+      "tui_frame_ms": 88.333667,
+      "audited_command_ms": 126.499334,
+      "command_response_ms": 38.161959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 128.442292
+    },
+    {
+      "scenario": "heavy",
+      "trial": 64,
+      "tui_frame_ms": 63.910208,
+      "audited_command_ms": 102.295166,
+      "command_response_ms": 38.381333,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.447291
+    },
+    {
+      "scenario": "weird",
+      "trial": 64,
+      "tui_frame_ms": 72.431792,
+      "audited_command_ms": 111.936459,
+      "command_response_ms": 39.497,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.160167
+    },
+    {
+      "scenario": "fresh",
+      "trial": 65,
+      "tui_frame_ms": 87.945125,
+      "audited_command_ms": 127.22575,
+      "command_response_ms": 39.273542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.1015
+    },
+    {
+      "scenario": "heavy",
+      "trial": 65,
+      "tui_frame_ms": 66.350834,
+      "audited_command_ms": 105.361334,
+      "command_response_ms": 39.007,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.485875
+    },
+    {
+      "scenario": "weird",
+      "trial": 65,
+      "tui_frame_ms": 71.237959,
+      "audited_command_ms": 113.63825,
+      "command_response_ms": 42.393916,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.107792
+    },
+    {
+      "scenario": "fresh",
+      "trial": 66,
+      "tui_frame_ms": 89.653583,
+      "audited_command_ms": 133.7555,
+      "command_response_ms": 44.081042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 135.66825
+    },
+    {
+      "scenario": "heavy",
+      "trial": 66,
+      "tui_frame_ms": 66.234208,
+      "audited_command_ms": 106.54375,
+      "command_response_ms": 40.30325,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 108.658958
+    },
+    {
+      "scenario": "weird",
+      "trial": 66,
+      "tui_frame_ms": 67.271084,
+      "audited_command_ms": 107.075542,
+      "command_response_ms": 39.79925,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.375709
+    },
+    {
+      "scenario": "fresh",
+      "trial": 67,
+      "tui_frame_ms": 87.511584,
+      "audited_command_ms": 124.739042,
+      "command_response_ms": 37.220458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.539125
+    },
+    {
+      "scenario": "heavy",
+      "trial": 67,
+      "tui_frame_ms": 68.039833,
+      "audited_command_ms": 103.678167,
+      "command_response_ms": 35.635417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.787333
+    },
+    {
+      "scenario": "weird",
+      "trial": 67,
+      "tui_frame_ms": 68.757667,
+      "audited_command_ms": 106.72625,
+      "command_response_ms": 37.965625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.093583
+    },
+    {
+      "scenario": "fresh",
+      "trial": 68,
+      "tui_frame_ms": 93.26475,
+      "audited_command_ms": 131.856792,
+      "command_response_ms": 38.575667,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 133.64275
+    },
+    {
+      "scenario": "heavy",
+      "trial": 68,
+      "tui_frame_ms": 70.089417,
+      "audited_command_ms": 109.600917,
+      "command_response_ms": 39.507292,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.588459
+    },
+    {
+      "scenario": "weird",
+      "trial": 68,
+      "tui_frame_ms": 64.154542,
+      "audited_command_ms": 101.525,
+      "command_response_ms": 37.367166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.623584
+    },
+    {
+      "scenario": "fresh",
+      "trial": 69,
+      "tui_frame_ms": 81.669459,
+      "audited_command_ms": 120.032667,
+      "command_response_ms": 38.359875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.767375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 69,
+      "tui_frame_ms": 63.035917,
+      "audited_command_ms": 99.024583,
+      "command_response_ms": 35.983083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 100.75475
+    },
+    {
+      "scenario": "weird",
+      "trial": 69,
+      "tui_frame_ms": 64.44225,
+      "audited_command_ms": 103.870125,
+      "command_response_ms": 39.425166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.935334
+    },
+    {
+      "scenario": "fresh",
+      "trial": 70,
+      "tui_frame_ms": 76.6065,
+      "audited_command_ms": 119.053458,
+      "command_response_ms": 42.442291,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.545292
+    },
+    {
+      "scenario": "heavy",
+      "trial": 70,
+      "tui_frame_ms": 63.265208,
+      "audited_command_ms": 101.692291,
+      "command_response_ms": 38.424666,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.43025
+    },
+    {
+      "scenario": "weird",
+      "trial": 70,
+      "tui_frame_ms": 62.0305,
+      "audited_command_ms": 99.189542,
+      "command_response_ms": 37.1505,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.696084
+    },
+    {
+      "scenario": "fresh",
+      "trial": 71,
+      "tui_frame_ms": 91.22625,
+      "audited_command_ms": 124.554792,
+      "command_response_ms": 33.325625,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.207917
+    },
+    {
+      "scenario": "heavy",
+      "trial": 71,
+      "tui_frame_ms": 63.995917,
+      "audited_command_ms": 100.02125,
+      "command_response_ms": 36.019208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 101.987667
+    },
+    {
+      "scenario": "weird",
+      "trial": 71,
+      "tui_frame_ms": 67.104917,
+      "audited_command_ms": 104.367042,
+      "command_response_ms": 37.259375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.593208
+    },
+    {
+      "scenario": "fresh",
+      "trial": 72,
+      "tui_frame_ms": 80.080083,
+      "audited_command_ms": 116.432417,
+      "command_response_ms": 36.346875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.057083
+    },
+    {
+      "scenario": "heavy",
+      "trial": 72,
+      "tui_frame_ms": 66.401917,
+      "audited_command_ms": 103.926375,
+      "command_response_ms": 37.519167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 105.973417
+    },
+    {
+      "scenario": "weird",
+      "trial": 72,
+      "tui_frame_ms": 73.156791,
+      "audited_command_ms": 114.118458,
+      "command_response_ms": 40.956917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.055833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 73,
+      "tui_frame_ms": 96.087459,
+      "audited_command_ms": 135.079834,
+      "command_response_ms": 38.988042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 137.259459
+    },
+    {
+      "scenario": "heavy",
+      "trial": 73,
+      "tui_frame_ms": 76.437125,
+      "audited_command_ms": 114.614042,
+      "command_response_ms": 38.172917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.157375
+    },
+    {
+      "scenario": "weird",
+      "trial": 73,
+      "tui_frame_ms": 74.568208,
+      "audited_command_ms": 114.911916,
+      "command_response_ms": 40.339083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.488625
+    },
+    {
+      "scenario": "fresh",
+      "trial": 74,
+      "tui_frame_ms": 95.199917,
+      "audited_command_ms": 132.326542,
+      "command_response_ms": 37.121833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.345375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 74,
+      "tui_frame_ms": 78.982416,
+      "audited_command_ms": 116.879041,
+      "command_response_ms": 37.8885,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.354208
+    },
+    {
+      "scenario": "weird",
+      "trial": 74,
+      "tui_frame_ms": 78.475875,
+      "audited_command_ms": 119.623625,
+      "command_response_ms": 41.142959,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.236166
+    },
+    {
+      "scenario": "fresh",
+      "trial": 75,
+      "tui_frame_ms": 90.194958,
+      "audited_command_ms": 128.247292,
+      "command_response_ms": 38.044917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 130.423042
+    },
+    {
+      "scenario": "heavy",
+      "trial": 75,
+      "tui_frame_ms": 80.449042,
+      "audited_command_ms": 119.568875,
+      "command_response_ms": 39.111083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 121.888625
+    },
+    {
+      "scenario": "weird",
+      "trial": 75,
+      "tui_frame_ms": 77.978042,
+      "audited_command_ms": 117.77825,
+      "command_response_ms": 39.796208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.455708
+    },
+    {
+      "scenario": "fresh",
+      "trial": 76,
+      "tui_frame_ms": 88.560083,
+      "audited_command_ms": 126.699916,
+      "command_response_ms": 38.136208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 128.815041
+    },
+    {
+      "scenario": "heavy",
+      "trial": 76,
+      "tui_frame_ms": 75.757875,
+      "audited_command_ms": 115.73375,
+      "command_response_ms": 39.971416,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.1305
+    },
+    {
+      "scenario": "weird",
+      "trial": 76,
+      "tui_frame_ms": 76.420542,
+      "audited_command_ms": 118.249292,
+      "command_response_ms": 41.824375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.991167
+    },
+    {
+      "scenario": "fresh",
+      "trial": 77,
+      "tui_frame_ms": 89.993,
+      "audited_command_ms": 129.212667,
+      "command_response_ms": 39.216459,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.384708
+    },
+    {
+      "scenario": "heavy",
+      "trial": 77,
+      "tui_frame_ms": 76.835084,
+      "audited_command_ms": 115.965167,
+      "command_response_ms": 39.119583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.316584
+    },
+    {
+      "scenario": "weird",
+      "trial": 77,
+      "tui_frame_ms": 77.233375,
+      "audited_command_ms": 116.859833,
+      "command_response_ms": 39.621958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.71175
+    },
+    {
+      "scenario": "fresh",
+      "trial": 78,
+      "tui_frame_ms": 90.197416,
+      "audited_command_ms": 129.37475,
+      "command_response_ms": 39.17275,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 131.530708
+    },
+    {
+      "scenario": "heavy",
+      "trial": 78,
+      "tui_frame_ms": 75.398,
+      "audited_command_ms": 113.920875,
+      "command_response_ms": 38.518417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.999458
+    },
+    {
+      "scenario": "weird",
+      "trial": 78,
+      "tui_frame_ms": 69.178417,
+      "audited_command_ms": 105.648333,
+      "command_response_ms": 36.465416,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.848833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 79,
+      "tui_frame_ms": 80.730542,
+      "audited_command_ms": 118.964125,
+      "command_response_ms": 38.229792,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.883208
+    },
+    {
+      "scenario": "heavy",
+      "trial": 79,
+      "tui_frame_ms": 69.16175,
+      "audited_command_ms": 107.551917,
+      "command_response_ms": 38.38075,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.704542
+    },
+    {
+      "scenario": "weird",
+      "trial": 79,
+      "tui_frame_ms": 70.751125,
+      "audited_command_ms": 110.755125,
+      "command_response_ms": 39.99925,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 113.203833
+    },
+    {
+      "scenario": "fresh",
+      "trial": 80,
+      "tui_frame_ms": 94.878041,
+      "audited_command_ms": 144.853541,
+      "command_response_ms": 49.971458,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 146.585125
+    },
+    {
+      "scenario": "heavy",
+      "trial": 80,
+      "tui_frame_ms": 570.518458,
+      "audited_command_ms": 678.561291,
+      "command_response_ms": 108.03825,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 680.259708
+    },
+    {
+      "scenario": "weird",
+      "trial": 80,
+      "tui_frame_ms": 66.141,
+      "audited_command_ms": 105.535625,
+      "command_response_ms": 39.392,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.509875
+    },
+    {
+      "scenario": "fresh",
+      "trial": 81,
+      "tui_frame_ms": 81.654167,
+      "audited_command_ms": 116.032667,
+      "command_response_ms": 34.376417,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.521792
+    },
+    {
+      "scenario": "heavy",
+      "trial": 81,
+      "tui_frame_ms": 58.456292,
+      "audited_command_ms": 93.017333,
+      "command_response_ms": 34.55575,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 94.784792
+    },
+    {
+      "scenario": "weird",
+      "trial": 81,
+      "tui_frame_ms": 60.601375,
+      "audited_command_ms": 97.855292,
+      "command_response_ms": 37.250875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 99.768333
+    },
+    {
+      "scenario": "fresh",
+      "trial": 82,
+      "tui_frame_ms": 77.200208,
+      "audited_command_ms": 114.554292,
+      "command_response_ms": 37.351,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.088958
+    },
+    {
+      "scenario": "heavy",
+      "trial": 82,
+      "tui_frame_ms": 63.728,
+      "audited_command_ms": 97.996083,
+      "command_response_ms": 34.262875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 99.717416
+    },
+    {
+      "scenario": "weird",
+      "trial": 82,
+      "tui_frame_ms": 64.507458,
+      "audited_command_ms": 100.128666,
+      "command_response_ms": 35.6185,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 102.066291
+    },
+    {
+      "scenario": "fresh",
+      "trial": 83,
+      "tui_frame_ms": 81.133083,
+      "audited_command_ms": 118.504125,
+      "command_response_ms": 37.3685,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 120.221208
+    },
+    {
+      "scenario": "heavy",
+      "trial": 83,
+      "tui_frame_ms": 62.9505,
+      "audited_command_ms": 101.3265,
+      "command_response_ms": 38.368583,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 103.503625
+    },
+    {
+      "scenario": "weird",
+      "trial": 83,
+      "tui_frame_ms": 67.667667,
+      "audited_command_ms": 107.427042,
+      "command_response_ms": 39.755709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.828708
+    },
+    {
+      "scenario": "fresh",
+      "trial": 84,
+      "tui_frame_ms": 89.308708,
+      "audited_command_ms": 126.514167,
+      "command_response_ms": 37.197709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 128.491083
+    },
+    {
+      "scenario": "heavy",
+      "trial": 84,
+      "tui_frame_ms": 70.006583,
+      "audited_command_ms": 108.930083,
+      "command_response_ms": 38.920166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.04825
+    },
+    {
+      "scenario": "weird",
+      "trial": 84,
+      "tui_frame_ms": 70.934084,
+      "audited_command_ms": 112.710209,
+      "command_response_ms": 41.769,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.055
+    },
+    {
+      "scenario": "fresh",
+      "trial": 85,
+      "tui_frame_ms": 82.821,
+      "audited_command_ms": 122.178333,
+      "command_response_ms": 39.353708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.708666
+    },
+    {
+      "scenario": "heavy",
+      "trial": 85,
+      "tui_frame_ms": 60.603834,
+      "audited_command_ms": 98.382125,
+      "command_response_ms": 37.772541,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 100.118167
+    },
+    {
+      "scenario": "weird",
+      "trial": 85,
+      "tui_frame_ms": 62.7665,
+      "audited_command_ms": 102.355333,
+      "command_response_ms": 39.585875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.393041
+    },
+    {
+      "scenario": "fresh",
+      "trial": 86,
+      "tui_frame_ms": 82.127292,
+      "audited_command_ms": 120.409042,
+      "command_response_ms": 38.274,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.0875
+    },
+    {
+      "scenario": "heavy",
+      "trial": 86,
+      "tui_frame_ms": 68.824584,
+      "audited_command_ms": 106.857,
+      "command_response_ms": 38.028375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.154834
+    },
+    {
+      "scenario": "weird",
+      "trial": 86,
+      "tui_frame_ms": 70.037542,
+      "audited_command_ms": 111.819667,
+      "command_response_ms": 41.774375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.120042
+    },
+    {
+      "scenario": "fresh",
+      "trial": 87,
+      "tui_frame_ms": 88.801125,
+      "audited_command_ms": 128.077333,
+      "command_response_ms": 39.273208,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.986375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 87,
+      "tui_frame_ms": 67.18575,
+      "audited_command_ms": 106.71975,
+      "command_response_ms": 39.52675,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 108.6465
+    },
+    {
+      "scenario": "weird",
+      "trial": 87,
+      "tui_frame_ms": 67.662417,
+      "audited_command_ms": 113.767167,
+      "command_response_ms": 46.097875,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 116.038167
+    },
+    {
+      "scenario": "fresh",
+      "trial": 88,
+      "tui_frame_ms": 96.213667,
+      "audited_command_ms": 134.514708,
+      "command_response_ms": 38.295791,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 136.162458
+    },
+    {
+      "scenario": "heavy",
+      "trial": 88,
+      "tui_frame_ms": 64.461333,
+      "audited_command_ms": 103.265375,
+      "command_response_ms": 38.801125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 104.969458
+    },
+    {
+      "scenario": "weird",
+      "trial": 88,
+      "tui_frame_ms": 62.166416,
+      "audited_command_ms": 104.007583,
+      "command_response_ms": 41.834708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.217708
+    },
+    {
+      "scenario": "fresh",
+      "trial": 89,
+      "tui_frame_ms": 86.375708,
+      "audited_command_ms": 125.60825,
+      "command_response_ms": 39.224917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 127.48475
+    },
+    {
+      "scenario": "heavy",
+      "trial": 89,
+      "tui_frame_ms": 72.406583,
+      "audited_command_ms": 113.391916,
+      "command_response_ms": 40.981916,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 115.492458
+    },
+    {
+      "scenario": "weird",
+      "trial": 89,
+      "tui_frame_ms": 75.272292,
+      "audited_command_ms": 116.56175,
+      "command_response_ms": 41.282708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.932958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 90,
+      "tui_frame_ms": 84.4055,
+      "audited_command_ms": 124.724916,
+      "command_response_ms": 40.315375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.695291
+    },
+    {
+      "scenario": "heavy",
+      "trial": 90,
+      "tui_frame_ms": 65.15125,
+      "audited_command_ms": 104.99475,
+      "command_response_ms": 39.835916,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.244292
+    },
+    {
+      "scenario": "weird",
+      "trial": 90,
+      "tui_frame_ms": 68.656875,
+      "audited_command_ms": 109.300834,
+      "command_response_ms": 40.641084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 111.451959
+    },
+    {
+      "scenario": "fresh",
+      "trial": 91,
+      "tui_frame_ms": 87.772208,
+      "audited_command_ms": 127.958,
+      "command_response_ms": 40.183042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.728416
+    },
+    {
+      "scenario": "heavy",
+      "trial": 91,
+      "tui_frame_ms": 66.916416,
+      "audited_command_ms": 104.334791,
+      "command_response_ms": 37.415166,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.1695
+    },
+    {
+      "scenario": "weird",
+      "trial": 91,
+      "tui_frame_ms": 64.820708,
+      "audited_command_ms": 104.052083,
+      "command_response_ms": 39.228083,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.624583
+    },
+    {
+      "scenario": "fresh",
+      "trial": 92,
+      "tui_frame_ms": 85.257208,
+      "audited_command_ms": 124.604208,
+      "command_response_ms": 39.343167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 126.828708
+    },
+    {
+      "scenario": "heavy",
+      "trial": 92,
+      "tui_frame_ms": 77.925875,
+      "audited_command_ms": 120.215125,
+      "command_response_ms": 42.283333,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.4745
+    },
+    {
+      "scenario": "weird",
+      "trial": 92,
+      "tui_frame_ms": 75.638333,
+      "audited_command_ms": 116.164916,
+      "command_response_ms": 40.522833,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.937958
+    },
+    {
+      "scenario": "fresh",
+      "trial": 93,
+      "tui_frame_ms": 100.82125,
+      "audited_command_ms": 142.81025,
+      "command_response_ms": 41.982958,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 144.835208
+    },
+    {
+      "scenario": "heavy",
+      "trial": 93,
+      "tui_frame_ms": 85.352958,
+      "audited_command_ms": 125.924666,
+      "command_response_ms": 40.567125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 128.354333
+    },
+    {
+      "scenario": "weird",
+      "trial": 93,
+      "tui_frame_ms": 79.15875,
+      "audited_command_ms": 121.091167,
+      "command_response_ms": 41.928542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 123.842125
+    },
+    {
+      "scenario": "fresh",
+      "trial": 94,
+      "tui_frame_ms": 98.106416,
+      "audited_command_ms": 139.150625,
+      "command_response_ms": 41.0405,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 141.270375
+    },
+    {
+      "scenario": "heavy",
+      "trial": 94,
+      "tui_frame_ms": 79.31975,
+      "audited_command_ms": 120.482125,
+      "command_response_ms": 41.154541,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 122.881875
+    },
+    {
+      "scenario": "weird",
+      "trial": 94,
+      "tui_frame_ms": 79.077833,
+      "audited_command_ms": 122.954167,
+      "command_response_ms": 43.873167,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.635
+    },
+    {
+      "scenario": "fresh",
+      "trial": 95,
+      "tui_frame_ms": 91.677166,
+      "audited_command_ms": 134.309125,
+      "command_response_ms": 42.623917,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 136.310541
+    },
+    {
+      "scenario": "heavy",
+      "trial": 95,
+      "tui_frame_ms": 77.106833,
+      "audited_command_ms": 117.4885,
+      "command_response_ms": 40.37125,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.746083
+    },
+    {
+      "scenario": "weird",
+      "trial": 95,
+      "tui_frame_ms": 80.459333,
+      "audited_command_ms": 122.896792,
+      "command_response_ms": 42.427084,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 125.694708
+    },
+    {
+      "scenario": "fresh",
+      "trial": 96,
+      "tui_frame_ms": 91.922417,
+      "audited_command_ms": 132.159334,
+      "command_response_ms": 40.226459,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 134.21025
+    },
+    {
+      "scenario": "heavy",
+      "trial": 96,
+      "tui_frame_ms": 78.484459,
+      "audited_command_ms": 115.660875,
+      "command_response_ms": 37.173791,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 118.474
+    },
+    {
+      "scenario": "weird",
+      "trial": 96,
+      "tui_frame_ms": 75.603292,
+      "audited_command_ms": 114.843583,
+      "command_response_ms": 39.237041,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.460792
+    },
+    {
+      "scenario": "fresh",
+      "trial": 97,
+      "tui_frame_ms": 88.8515,
+      "audited_command_ms": 127.014333,
+      "command_response_ms": 38.15275,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 129.061583
+    },
+    {
+      "scenario": "heavy",
+      "trial": 97,
+      "tui_frame_ms": 74.84725,
+      "audited_command_ms": 114.924709,
+      "command_response_ms": 40.073375,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 117.302459
+    },
+    {
+      "scenario": "weird",
+      "trial": 97,
+      "tui_frame_ms": 76.359,
+      "audited_command_ms": 117.076292,
+      "command_response_ms": 40.712542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 119.901834
+    },
+    {
+      "scenario": "fresh",
+      "trial": 98,
+      "tui_frame_ms": 92.60275,
+      "audited_command_ms": 135.837541,
+      "command_response_ms": 43.2305,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 138.212
+    },
+    {
+      "scenario": "heavy",
+      "trial": 98,
+      "tui_frame_ms": 65.872917,
+      "audited_command_ms": 105.183875,
+      "command_response_ms": 39.308,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 107.152083
+    },
+    {
+      "scenario": "weird",
+      "trial": 98,
+      "tui_frame_ms": 69.885125,
+      "audited_command_ms": 111.650583,
+      "command_response_ms": 41.762708,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 114.089333
+    },
+    {
+      "scenario": "fresh",
+      "trial": 99,
+      "tui_frame_ms": 90.159958,
+      "audited_command_ms": 130.427542,
+      "command_response_ms": 40.263709,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 132.311917
+    },
+    {
+      "scenario": "heavy",
+      "trial": 99,
+      "tui_frame_ms": 68.941417,
+      "audited_command_ms": 108.389167,
+      "command_response_ms": 39.444542,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 110.370375
+    },
+    {
+      "scenario": "weird",
+      "trial": 99,
+      "tui_frame_ms": 67.149125,
+      "audited_command_ms": 107.216416,
+      "command_response_ms": 40.064291,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 109.790375
+    },
+    {
+      "scenario": "fresh",
+      "trial": 100,
+      "tui_frame_ms": 94.493833,
+      "audited_command_ms": 133.733167,
+      "command_response_ms": 39.236042,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 135.415042
+    },
+    {
+      "scenario": "heavy",
+      "trial": 100,
+      "tui_frame_ms": 68.338833,
+      "audited_command_ms": 108.276166,
+      "command_response_ms": 39.930416,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 110.100208
+    },
+    {
+      "scenario": "weird",
+      "trial": 100,
+      "tui_frame_ms": 63.3245,
+      "audited_command_ms": 103.885333,
+      "command_response_ms": 40.5575,
+      "exit_code": 0,
+      "status": "ok",
+      "process_total_ms": 106.113333
+    }
+  ]
+}

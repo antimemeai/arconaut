@@ -1,4 +1,4 @@
-# Current Blackbird stock — 2026-10-07
+# Current Blackbird stock — 2026-10-08
 
 The operator explicitly directed merging all remaining source. All12 candidate
 branch tips are now included in master, including cold history, physical recovery
@@ -21,7 +21,7 @@ launcher/Lua smoke passed. No autodev or new review campaign was started.
 | Multiplexing | Supported external phux launcher, actual TUI turn, detach/reattach and RRC checked. | Shell run probe timed out; native lifecycle projection is backlog. Relay TLS does not establish application E2EE. |
 | Decision models | Native Jev model tool, Lua `blackbird.decide`, `/decision JSON`; batched Choice/Score/Noul, lazy credentials, audited requests/results. | Jev only; workflows compose judgments and explicit retries. |
 | Callable workflows | Retained Lua definitions, configurable slash prefix/aliases and bare invocation, operator POWERWORDS and terminal colors; model/Lua discovery/invocation. | Sequential same-turn execution; no parallel or durable scheduler. |
-| Local efficiency | Durable 1,024-ID ranges, validated historical JSON projection and descriptor-backed historical application payloads. Physical checkpoint and paged index APIs are available. | Index attachment is opt-in and still references resident ordinals; native startup still replays history. Under100ms target not delivered. |
+| Local efficiency | Saved current-state and suffix recovery for settled single-segment sessions; paged checked archive queries and original repair; checkpoint renewal prunes resident history. Heavy TUI startup p90 79ms in100runs. | Unresolved/station/pending-restart/multisegment states fall back to full recovery; bulk metadata renewal and audited command latency remain work. See [delivery](../papers/2026-10-08-saved-state-delivery.md) and [measurements](../papers/2026-10-08-startup-300.md). |
 | Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. | One synchronous context-only call; broader provider coverage and useful live collaboration remain unfinished. |
 | Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link; BLACKBIRD wordmark and supplied SR-71 startup/status image. | Ghostty/Kitty image support; terminal fallback. |
 
