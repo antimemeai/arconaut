@@ -1,0 +1,27 @@
+{
+  "status": "partial-not-complete",
+  "owner": "slot-0",
+  "checkout": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0",
+  "branch": "candidate/saved-state-delivery-2026-10-08",
+  "code_checkpoint": "1e34d31",
+  "deadline_epoch": 1791429733,
+  "unsafe_path_inactive": "RetainedState never supplies JournalResume; physical/semantic full replay remains authoritative",
+  "completion_marker_created": false,
+  "actual_heavy_final": {"prompt_ms":339.268,"admitted_ms":397.796,"read_bytes":673841790,"request_input_bytes":302241,"known_success_settlement":true,"zero_rejected_body_reads":false},
+  "build": {"directory":"build/release","scope":"private candidate checkout only","target":"blackbird","jobs":2,"debug":"OFF","restart_requested":false},
+  "checks": {"saved_state":"passed","archive_catalog":"passed","journal_resume":"passed","context":"passed","cold_history":"recheck finding fixed; failed check alone rerun passed","independent_review":"Root pending"},
+  "next_edit": {
+    "files":["src/retained_state.cpp","include/blackbird/retained_state.hpp","src/saved_state.cpp","src/journal_writer.cpp"],
+    "action":"Move saved root+paired ArchiveCatalog selection under the FramedJournal writer lease before scan/rebuild. Add callback/open-header selection seam, validating root/cursor/anchor/catalog as one decision. Restore compact Snapshot issuer/unresolved closure and pass JournalResume only after complete coverage. Do not simply populate Snapshot::facts from the root or bypass semantic replay without disk predicates."
+  },
+  "remaining_in_dependency_order": [
+    "Replace lookup's resident lower_bound fact/evidence resolver with a checked archive payload reader and explicit bounded ownership/cache. Archived physical locator reads must validate selected frame/identity/CRC without requiring historical descriptor vectors. Preserve exact duplicate, source and transition predicates.",
+    "Redesign Snapshot as archive semantic/source counts + bounded tail overlay + unresolved current closure. Reduce unresolved observations to latest; preserve original invocation decision for retry closure and unknown effects. No historic dispatch permission or resurrected issuer allocation cursor.",
+    "Add original ID/capture ordinal/context history locators, and migrate ContextStore accepted tail validation and explicit history queries to paged reads. Remove first-history-access whole materialization, preserve canonical duplicates/transitions/exact originals.",
+    "Migrate committed_facts startup consumers, attempt/reconcile, RRC injection origin and StationStore state. Explicit forensic traversal must be fallible/paged rather than noexcept borrowed whole-history spans. RetainedEnvironment continues safe full replay until selected predecessor chain state is covered.",
+    "Activate the same selected projection+tail path through actual main RetainedState open only after those predicates are complete. Add full replay versus saved+tail tests for settled histories, retries, sources, corrupt/stale catalog pairing and unresolved effects.",
+    "Implement bounded records/bytes maintenance with stalled-publication backpressure preserving settlement credit; reclaim failed derived temporaries and document/cap derived storage growth.",
+    "Repeat private-clone audited request probes to demonstrate ZERO archived rejected body reads and report actual latency. Root handles integration, broader measurements, independent review, installed binary and board."
+  ],
+  "details":"papers/saved-state-delivery-2026-10-08/PROGRESS.md"
+}
