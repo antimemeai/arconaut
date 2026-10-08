@@ -188,12 +188,7 @@ void SessionStore::restart(std::string_view note) {
   if (!std::holds_alternative<std::nullptr_t>(restart_.value()) &&
       string_field(restart_, "state") == "pending")
     throw Error{ErrorCode::busy};
-  for (const auto &fact : log_.root().committed_facts())
-    if (const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body)) {
-      const auto attempt = unwrap(log_.root().attempt(admission->attempt));
-      if (!attempt.observation || attempt.observation->phase != AttemptPhase::terminal)
-        throw Error{ErrorCode::busy};
-    }
+  if (!unwrap(log_.root().unresolved_attempts()).empty()) throw Error{ErrorCode::busy};
   const auto token = hex_identity(log_.issue().bytes());
   auto value = Json::object({{"label", Json{"session.restart"}},
                              {"token", Json{token}},
@@ -208,7 +203,7 @@ bool SessionStore::resume(ContextStore &context) {
     return false;
   const auto origin = "rrc:" + string_field(restart_, "token");
   bool injected = false;
-  for (const auto &fact : log_.root().committed_facts()) {
+  for (const auto &fact : log_.root().tail_facts()) {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (!record || record->channel != ApplicationChannel::context)
       continue;

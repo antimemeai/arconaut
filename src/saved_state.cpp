@@ -46,7 +46,7 @@ Result<void> write_all(Storage &file, ByteView in) {
   return Result<void>::success();
 }
 Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
-    std::string_view name, FramedJournal &journal, JournalCapacity capacity, unsigned slot) {
+    std::string_view name, FramedJournal &journal, JournalCapacity capacity, unsigned slot, bool before_scan) {
   using Answer = Result<std::optional<SavedState>>;
   const auto ignored = [] { return Answer::success(std::nullopt); };
   auto opened = directory.open_existing(std::string{name} + ".state." + std::to_string(slot),
@@ -78,7 +78,7 @@ Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
   // A checksummed root beyond the known prefix must not burn fewer IDs silently.
   if (end > journal.recovery_report().available_end)
     return Answer::failure({ErrorCode::incomplete}); // durable root evidence prevents identity reuse
-  if (sequence > journal.cursor().sequence || end > journal.cursor().end_offset)
+  if (!before_scan && (sequence > journal.cursor().sequence || end > journal.cursor().end_offset))
     return ignored(); // full replay has already fenced the damaged semantic prefix
   auto anchor = journal.read_original_range(end - commit_size, commit_size);
   if (!anchor.has_value() || anchor.value().bytes.size() != commit_size ||
@@ -132,11 +132,11 @@ Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
 }
 } // namespace
 Result<std::optional<SavedState>> load_saved_state(JournalDirectory &directory,
-    std::string_view name, FramedJournal &journal, JournalCapacity capacity) {
+    std::string_view name, FramedJournal &journal, JournalCapacity capacity, bool before_scan) {
   try {
-    auto first = load_slot(directory, name, journal, capacity, 0);
+    auto first = load_slot(directory, name, journal, capacity, 0, before_scan);
     if (!first.has_value()) return first;
-    auto second = load_slot(directory, name, journal, capacity, 1);
+    auto second = load_slot(directory, name, journal, capacity, 1, before_scan);
     if (!second.has_value()) return second;
     if (second.value() && (!first.value() ||
         second.value()->boundary.sequence > first.value()->boundary.sequence)) return second;

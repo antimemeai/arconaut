@@ -831,13 +831,9 @@ void recover_coding_session(RetainedState &root) {
     explicit ProviderCustody(RetainedState &value) : root(value) {}
     Result<void> verify(std::span<const AttemptState> attempts) override {
       for (const auto &attempt : attempts) {
-        const DecisionEvent *decision = nullptr;
-        for (const auto &fact : root.committed_facts())
-          if (const auto *candidate = std::get_if<DecisionEvent>(&fact.event.body);
-              candidate && candidate->decision == attempt.admission.decision)
-            decision = candidate;
-        if (!decision)
-          return Result<void>::failure({ErrorCode::external_unknown});
+const auto recovered_decision = root.decision(attempt.admission.decision);
+if (!recovered_decision.has_value()) return Result<void>::failure(recovered_decision.error());
+const auto *decision = &recovered_decision.value();
         const auto metadata = parse_json(std::string_view{
             reinterpret_cast<const char *>(decision->continuation.data()),
             decision->continuation.size()});
@@ -856,13 +852,12 @@ void recover_coding_session(RetainedState &root) {
         const std::string_view admitted_input{
             reinterpret_cast<const char *>(attempt.admission.input.data()),
             attempt.admission.input.size()};
-        bool linked = false;
-        for (const auto &fact : root.committed_facts())
-          if (const auto *invocation = std::get_if<InvocationEvent>(&fact.event.body);
-              invocation && invocation->invocation == attempt.admission.invocation)
-            linked = invocation->decision == decision->decision &&
-                     invocation->definition == decision->definition &&
-                     invocation->input == attempt.admission.input;
+const auto recovered_invocation = root.invocation(attempt.admission.invocation);
+if (!recovered_invocation.has_value()) return Result<void>::failure(recovered_invocation.error());
+const auto &invocation = recovered_invocation.value();
+const bool linked = invocation.decision == decision->decision &&
+             invocation.definition == decision->definition &&
+             invocation.input == attempt.admission.input;
         if (!linked || !encoded_input.has_value() ||
             encoded_input.value() != admitted_input || !generation || !revision ||
             !std::holds_alternative<std::string>(generation->value()) ||
@@ -1632,13 +1627,8 @@ Json CodingEngine::call(std::string name, Json arguments) {
           unwrap(dump_json(references)).size() > 65536)
         throw Error{ErrorCode::invalid_range};
       std::set<std::string> active;
-      for (const auto &fact : log_.root().committed_facts()) {
-        if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body))
-          active.insert(hex_identity(a->attempt.bytes()));
-        if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
-            o && o->phase == AttemptPhase::terminal)
-          active.erase(hex_identity(o->attempt.bytes()));
-      }
+for (const auto &unresolved : unwrap(log_.root().unresolved_attempts()))
+  active.insert(hex_identity(unresolved.admission.attempt.bytes()));
       Json::Array active_ids;
       for (const auto &id : active) {
         if (active_ids.size() == 64)
@@ -1658,7 +1648,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
            {"model", Json{model_}},
            {"effort", Json{effort_}},
            {"audit_end",
-            Json{JsonNumber{std::to_string(log_.root().committed_facts().size())}}},
+            Json{JsonNumber{std::to_string(log_.root().fact_count())}}},
            {"reporting_attempt", Json{hex_identity(attempt.bytes())}},
            {"repair_required_now", Json{false}}});
       const auto complaint = log_.original(

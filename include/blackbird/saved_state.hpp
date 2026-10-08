@@ -16,7 +16,7 @@ struct SavedState {
 };
 Result<std::optional<SavedState>> load_saved_state(
     JournalDirectory &directory, std::string_view name, FramedJournal &journal,
-    JournalCapacity capacity);
+    JournalCapacity capacity, bool before_scan = false);
 Result<void> publish_saved_state(JournalDirectory &directory, std::string_view name,
     FramedJournal &journal, const SavedState &saved, unsigned slot);
 } // namespace blackbird

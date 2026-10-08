@@ -21,7 +21,16 @@ int main() {
       for (unsigned i=0;i<3;++i) unwrap(journal->append(draft));
     }
     {
-      auto journal=unwrap(FramedJournal::open(dir,"audit",h,cap,SyncStrength::full,false,resume));
+unsigned selected = 0;
+auto journal=unwrap(FramedJournal::open(dir,"audit",h,cap,SyncStrength::full,false,std::nullopt,
+    [&](FramedJournal &locked) -> Result<std::optional<JournalResume>> {
+      ++selected; CHECK(locked.header()==h);
+      CHECK(locked.staged_records().empty()); // before the archive scan
+      auto rival=unwrap(dir.open_existing("audit",FileAccess::read_write));
+      CHECK(!rival->lock_writer().has_value()); // selection owns writer custody
+      return Result<std::optional<JournalResume>>::success(resume);
+    }));
+CHECK(selected==1);
       CHECK(journal->staged_records().size()==3); CHECK(journal->usage().indexed_records==11);
       unwrap(journal->confirm_recovery()); unwrap(journal->resume_after_reconciliation());
       for (unsigned i=0;i<5;++i) unwrap(journal->append(draft));

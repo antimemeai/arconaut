@@ -94,11 +94,13 @@ public:
   static Result<std::unique_ptr<FramedJournal>>
   create(JournalDirectory &directory, std::string_view name, JournalHeader header,
          JournalCapacity capacity, SyncStrength strength = SyncStrength::full);
+  using ResumeSelector = std::function<Result<std::optional<JournalResume>>(FramedJournal &)>;
   static Result<std::unique_ptr<FramedJournal>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader expected,
        JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
        bool use_scan_checkpoint = false,
-       std::optional<JournalResume> resume = std::nullopt);
+       std::optional<JournalResume> resume = std::nullopt,
+       ResumeSelector selector = {});
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
   using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
@@ -139,8 +141,10 @@ public:
   }
 
 private:
-friend class RetainedState;
-// Only an authenticated catalog locator selected by RetainedState may bypass
+  friend class RetainedState;
+  using ArchiveReader = std::function<Result<std::vector<std::byte>>(const PhysicalJournalRecord &)>;
+  ArchiveReader archive_reader(JournalCursor boundary) const;
+  // Only an authenticated catalog locator selected by RetainedState may bypass
 // the resident descriptor vector. Validate the complete frame on every read.
 Result<std::vector<std::byte>> read_catalog_payload(
     const PhysicalJournalRecord &record, JournalCursor boundary);

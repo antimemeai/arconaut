@@ -97,7 +97,7 @@ int main() {
       // Exact archived original remains restorable, not replaced by its edited live item.
       ctx.restore(archived); CHECK(ctx.view().find("entries")->array().size()==view.find("entries")->array().size()+1);
       unwrap(ctx.checkpoint());
-      // Accepted uncheckpointed suffix goes through independent complete reducer.
+      // Accepted uncheckpointed suffix uses boundary-limited disk original predicates.
       ctx.append({Json::object({{"role",Json{"user"}},{"content",Json{"tail"}}})},"tail");
       view=ctx.view(); originals=ctx.originals(); history=ctx.inspect(history_query);
     }
@@ -134,7 +134,10 @@ int main() {
         RetainedEvent{{}, AttemptAdmissionEvent{effect,id<InvocationId>(57),id<DecisionId>(50),input}},
         RetainedEvent{{}, AttemptOpenEvent{effect}}};
       unwrap(root->append(root->cursor(),{},events));
-      unwrap(ctx.checkpoint()); CHECK(root->saved_state()->unresolved.size()==4);
+unwrap(root->submit({{},AttemptObservationEvent{effect,AttemptPhase::running,AttemptDisposition::none,{}}}));
+unwrap(root->submit({{},AttemptObservationEvent{effect,AttemptPhase::settling,AttemptDisposition::none,{}}}));
+unwrap(ctx.checkpoint()); CHECK(root->saved_state()->unresolved.size()==5);
+CHECK(std::get<AttemptObservationEvent>(root->saved_state()->unresolved.back().event.body).phase==AttemptPhase::settling);
       // Catalog ordinal and source queries fetch exact historical bytes.
       for (std::size_t i=0;i<root->fact_count();++i)
         CHECK(unwrap(root->fact(i)).event==root->committed_facts()[i].event);
@@ -142,7 +145,7 @@ int main() {
     }
     {
       auto root=unwrap(RetainedState::open(directory(),"audit",h,cap));
-      CHECK(root->saved_state() && root->saved_state()->unresolved.size()==4);
+      CHECK(root->saved_state() && root->saved_state()->unresolved.size()==5);
       unwrap(root->confirm_recovery()); CHECK(unwrap(root->attempt(effect)).reconciliation_required);
       Empty custody; CHECK(!root->reconcile(custody).has_value());
       CHECK(root->issuer_counter()==highwater); CHECK(!root->issue<ApplicationRecordId>().has_value());

@@ -102,7 +102,7 @@ bool ContextStore::valid_entries(const Json &entries) const {
         !std::holds_alternative<std::string>(id->value()) ||
         !std::holds_alternative<Json::Object>(item->value()))
       return false;
-    if (!originals_.contains(id->string()) || !ids.insert(id->string()).second)
+    if ((!originals_.contains(id->string()) && !original_entry(id->string())) || !ids.insert(id->string()).second)
       return false;
   }
   return true;
@@ -121,10 +121,29 @@ Json ContextStore::Original::entry() const {
     throw Error{ErrorCode::corrupt};
   return fresh[index];
 }
+namespace {
+template<class Visitor> void visit_context_records(const RetainedState::FactHistory &history, Visitor visitor) {
+  // Explicit history is fallible, one bounded page at a time. No retained
+  // metadata vector or historical keydir is installed by this traversal.
+  const auto count = history.count;
+  for (std::size_t first = 0; first < count;) {
+    auto page = unwrap(history.page(first, 16));
+    if (page.empty()) throw Error{ErrorCode::corrupt};
+    first += page.size();
+    for (const auto &fact : page)
+      if (const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+          record && record->channel == ApplicationChannel::context)
+        visitor(unwrap(parse_json(read_text(record->payload))));
+  }
+}
+}
 Json::Array ContextStore::captured_entries() const {
-  load_archive();
   Json::Array result;
-  for (const auto &original : captured_) result.push_back(original.entry());
+  visit_context_records(historical_, [&](const Json &packet) {
+    if (!accepted(packet)) return;
+    if (const auto *fresh = packet.find("originals"))
+      for (const auto &entry : fresh->array()) result.push_back(entry);
+  });
   return result;
 }
 ContextStore::HistoryRecord ContextStore::history_record(const Json &packet) {
@@ -154,7 +173,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
       head_.clear(); entries_.clear(); originals_.clear();
     }
   }
-  for (const auto &fact : log.root().committed_facts()) {
+  for (const auto &fact : log.root().tail_facts()) {
     if (boundary && fact.record.journal == log.root().cursor().journal &&
         fact.record.sequence <= boundary) continue;
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
@@ -171,16 +190,6 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
     if (op != "append" && op != "edit" && op != "managed")
       throw Error{ErrorCode::corrupt};
     const bool publishes = accepted(packet);
-    // Until archived original identity queries are paged, accepted context tail
-    // transitions use the independent full reducer. Never infer absence from
-    // the saved live-original subset.
-    if (boundary && publishes) {
-      ContextStore complete{log_, false};
-      head_.swap(complete.head_); entries_.swap(complete.entries_);
-      originals_.swap(complete.originals_); captured_.swap(complete.captured_);
-      history_.swap(complete.history_); archive_loaded_ = true;
-      break;
-    }
     if (publishes) {
       if (string_field(packet, "base") != head_)
         throw Error{ErrorCode::corrupt};
@@ -193,7 +202,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
           const auto &id = string_field(entry, "id");
           Original original{record->payload, ordinal++, id};
           captured_.push_back(original);
-          if (!originals_.emplace(id, std::move(original)).second)
+          if (original_entry(id) || !originals_.emplace(id, std::move(original)).second)
             throw Error{ErrorCode::corrupt};
         }
       }
@@ -205,29 +214,54 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
     }
   }
   if (restore_saved) maybe_checkpoint();
+  historical_ = log_.root().history_snapshot();
 }
-void ContextStore::load_archive() const {
-  if (archive_loaded_) return;
-  // Explicit historical access currently materializes the cold archive metadata.
-  // This is a safe continuation seam, not claimed bounded paged history access.
-  ContextStore complete{log_, false};
-  if (complete.head_ != head_ || complete.entries_ != entries_) throw Error{ErrorCode::corrupt};
-  originals_.swap(complete.originals_);
-  captured_.swap(complete.captured_);
-  history_.swap(complete.history_);
-  archive_loaded_ = true;
+std::optional<Json> ContextStore::original_entry(std::string_view id) const {
+  if (const auto found = originals_.find(std::string{id}); found != originals_.end())
+    return found->second.entry();
+  if (archive_loaded_ || !log_.root().saved_state()) return std::nullopt;
+  if (id.size() < 34 || id.size() > 53 || id[32] != '.') return std::nullopt;
+  IdentityBytes bytes{};
+  for (std::size_t i = 0; i < 16; ++i) {
+    unsigned byte = 0;
+    const auto result = std::from_chars(id.data() + i * 2, id.data() + i * 2 + 2, byte, 16);
+    if (result.ec != std::errc{} || result.ptr != id.data() + i * 2 + 2 ||
+        id.substr(i * 2, 2).find_first_not_of("0123456789abcdef") != std::string_view::npos)
+      return std::nullopt;
+    bytes[i] = static_cast<std::byte>(byte);
+  }
+  std::size_t ordinal = 0;
+  const auto parsed = std::from_chars(id.data() + 33, id.data() + id.size(), ordinal);
+  if (parsed.ec != std::errc{} || parsed.ptr != id.data() + id.size() ||
+      std::to_string(ordinal) != id.substr(33)) return std::nullopt;
+  const auto identity = ApplicationRecordId::from_bytes(bytes);
+  if (!identity.has_value()) return std::nullopt;
+  const auto fact = log_.root().lookup(log_.root().visible(), 1, RetainedKind::application, bytes);
+  if (!fact || fact->record.journal != log_.root().saved_state()->boundary.journal ||
+      fact->record.sequence > log_.root().saved_state()->boundary.sequence) return std::nullopt;
+  const auto *record = std::get_if<ApplicationRecordEvent>(&fact->event.body);
+  if (!record || record->identity != identity.value() || record->channel != ApplicationChannel::context)
+    return std::nullopt;
+  const auto packet = unwrap(parse_json(read_text(record->payload)));
+  if (!accepted(packet)) return std::nullopt;
+  const auto *fresh = packet.find("originals");
+  if (!fresh || ordinal >= fresh->array().size()) return std::nullopt;
+  const auto &entry = fresh->array()[ordinal];
+  if (string_field(entry, "id") != id) throw Error{ErrorCode::corrupt};
+  return entry;
 }
 Result<void> ContextStore::checkpoint() {
   try {
     Json::Array live;
     for (const auto &entry : entries_) {
-      const auto found = originals_.find(string_field(entry, "id"));
-      if (found == originals_.end()) return Result<void>::failure({ErrorCode::corrupt});
-      live.push_back(found->second.entry());
+      const auto found = original_entry(string_field(entry, "id"));
+      if (!found) return Result<void>::failure({ErrorCode::corrupt});
+      live.push_back(*found);
     }
     auto result = log_.root().save_current_state(Json::object(
         {{"version", Json{JsonNumber{"1"}}}, {"base", Json{head_}},
          {"entries", Json{entries_}}, {"live_originals", Json{std::move(live)}}}));
+    if (result.has_value()) historical_ = log_.root().history_snapshot();
     checkpoint_error_ = result.has_value() ? std::nullopt : std::optional<Error>{result.error()};
     return result;
   } catch (const Error &error) {
@@ -396,7 +430,7 @@ void ContextStore::validate_successor_seed(const Json &seed) {
 void ContextStore::seed_successor(const Json &seed) {
   validate_successor_seed(seed);
   if (workflow_ || pending_ || !entries_.empty() ||
-      !log_.root().committed_facts().empty() ||
+      log_.root().fact_count() != 0 ||
       log_.root().state() != JournalWriterState::live ||
       string_field(field(seed, "source"), "journal") ==
           hex_identity(log_.root().cursor().journal.bytes()))
@@ -453,6 +487,7 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
   if (protect)
     protect(next, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
+  historical_ = log_.root().history_snapshot();
   history_.swap(history);
   captured_.swap(captured);
   if (pending_ && pending_->expected == head_)
@@ -463,14 +498,6 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
   maybe_checkpoint();
 }
 Json ContextStore::edit(const Json &candidate) {
-  // References to archived/nonlive identities require exact archive lookup.
-  if (const auto *entries = candidate.find("entries"); entries &&
-      std::holds_alternative<Json::Array>(entries->value()))
-    for (const auto &entry : entries->array())
-      if (const auto *id = entry.find("id"); id &&
-          std::holds_alternative<std::string>(id->value()) && !originals_.contains(id->string())) {
-        load_archive(); break;
-      }
   const auto *base = candidate.find("base");
   const auto *entries = candidate.find("entries");
   const bool representation = base != nullptr &&
@@ -502,6 +529,7 @@ Json ContextStore::edit(const Json &candidate) {
   if (protect)
     protect(publishes ? next : entries_, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
+  historical_ = log_.root().history_snapshot();
   history_.swap(history);
   if (publishes) {
     entries_.swap(next);
@@ -511,29 +539,30 @@ Json ContextStore::edit(const Json &candidate) {
   return outcome;
 }
 void ContextStore::restore(std::string_view entry) {
-  if (!originals_.contains(std::string{entry})) load_archive();
-  const auto original = originals_.find(std::string{entry});
-  if (original == originals_.end())
+  const auto original = original_entry(entry);
+  if (!original)
     throw Error{ErrorCode::invalid_identity};
   auto next = entries_;
   bool present = false;
   for (auto &value : next)
     if (string_field(value, "id") == entry) {
       value =
-          Json::object({{"id", Json{std::string{entry}}}, {"item", field(original->second.entry(), "item")}});
+          Json::object({{"id", Json{std::string{entry}}}, {"item", field(*original, "item")}});
       present = true;
       break;
     }
   if (!present)
     next.push_back(
-        Json::object({{"id", Json{std::string{entry}}}, {"item", field(original->second.entry(), "item")}}));
+        Json::object({{"id", Json{std::string{entry}}}, {"item", field(*original, "item")}}));
   (void)edit(Json::object({{"base", Json{head_}}, {"entries", Json{std::move(next)}}}));
 }
 Json ContextStore::originals() const {
-  load_archive();
-  Json::Array out;
-  for (const auto &[id, item] : originals_)
-    out.push_back(Json::object({{"id", Json{id}}, {"item", field(item.entry(), "item")}}));
+  auto out = captured_entries();
+  std::sort(out.begin(), out.end(), [](const Json &a, const Json &b) {
+    return string_field(a, "id") < string_field(b, "id");
+  });
+  for (auto &entry : out)
+    entry = Json::object({{"id", field(entry, "id")}, {"item", field(entry, "item")}});
   return Json{std::move(out)};
 }
 // Managed transformations share the native context journal and publication owner.
@@ -620,6 +649,7 @@ Json ContextStore::reject_managed(const Json &proposal, std::string_view why) {
   auto history = history_;
   history.push_back(history_record(packet));
   log_.record(identity, ApplicationChannel::context, packet);
+  historical_ = log_.root().history_snapshot();
   history_.swap(history);
   return outcome;
 }
@@ -722,7 +752,6 @@ void ContextStore::begin_workflow() {
   workflow_ = true;
 }
 Json ContextStore::manage(const Json &proposal) {
-  load_archive();
   try {
     if (string_field(proposal, "base") != head_)
       return reject_managed(proposal, "stale-base");
@@ -741,7 +770,7 @@ Json ContextStore::manage(const Json &proposal) {
     std::set<std::string> selected;
     for (const auto &id : ids.array()) {
       if (!std::holds_alternative<std::string>(id.value()) ||
-          !originals_.contains(id.string()) || !selected.insert(id.string()).second)
+          (!originals_.contains(id.string()) && !original_entry(id.string())) || !selected.insert(id.string()).second)
         return reject_managed(proposal, "invalid-ids");
       if (mode != "restore" &&
           std::none_of(entries_.begin(), entries_.end(), [&](const Json &e) {
@@ -789,6 +818,7 @@ Json ContextStore::finish_workflow(bool success, const Json &boundary_program) {
   if (!pending_) {
     if (success && boundary_program != Json{})
       log_.record(ApplicationChannel::program, boundary_program);
+  historical_ = log_.root().history_snapshot();
     return Json{};
   }
   auto pending = *pending_;
@@ -805,6 +835,7 @@ Json ContextStore::finish_workflow(bool success, const Json &boundary_program) {
                                       boundary_program);
   if (!accepted(result) && boundary_program != Json{})
     log_.record(ApplicationChannel::program, boundary_program);
+  historical_ = log_.root().history_snapshot();
   pending_.reset();
   return result;
 }
@@ -933,11 +964,11 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
   return outcome;
 }
 Json ContextStore::inspect(const Json &query) const {
-  load_archive();
   const auto &kind = string_field(query, "kind");
-  const auto &snapshot = kind == "history" && !history_.empty()
-                             ? history_.back().revision
-                             : head_;
+auto snapshot = head_;
+if (kind == "history") visit_context_records(historical_, [&](const Json &packet) {
+  snapshot = string_field(packet, "revision");
+});
   if (query.find("revision") && string_field(query, "revision") != snapshot)
     throw Error{ErrorCode::conflict};
   const auto requested = index_field(query, "offset", 0);
@@ -961,20 +992,21 @@ Json ContextStore::inspect(const Json &query) const {
   if (kind == "history") {
     emit("[");
     bool first = true;
-    for (const auto &record : history_) {
-      if (!first)
-        emit(",");
-      first = false;
-      // Preserve canonical serialized history, including noncanonical audit JSON.
-      emit(unwrap(dump_json(unwrap(parse_json(read_text(record.payload))))));
-    }
+visit_context_records(historical_, [&](const Json &packet) {
+  if (!first) emit(",");
+  first = false;
+  emit(unwrap(dump_json(packet)));
+});
     emit("]");
   }
   else if (kind == "index") {
     emit("[");
     std::size_t capture_index = 0;
-    for (const auto &handle : captured_) {
-      const auto entry = handle.entry();
+    visit_context_records(historical_, [&](const Json &packet) {
+      if (!accepted(packet)) return;
+      const auto *fresh = packet.find("originals");
+      if (!fresh) return;
+      for (const auto &entry : fresh->array()) {
       if (capture_index != 0)
         emit(",");
       auto item = Json::object(
@@ -986,25 +1018,29 @@ Json ContextStore::inspect(const Json &query) const {
       if (const auto *a = entry.find("ancestry"))
         item.object().emplace_back("ancestry", *a);
       emit(unwrap(dump_json(item)));
-    }
+      }
+    });
     emit("]");
   } else if (kind == "originals") {
     if (const auto *id = query.find("entry")) {
-      const auto found =
-          std::find_if(captured_.begin(), captured_.end(),
-                       [&](const Original &entry) { return Json{entry.id} == *id; });
-      if (found == captured_.end())
-        throw Error{ErrorCode::invalid_identity};
-      emit(unwrap(dump_json(found->entry())));
+if (!std::holds_alternative<std::string>(id->value())) throw Error{ErrorCode::invalid_identity};
+const auto found = original_entry(id->string());
+if (!found) throw Error{ErrorCode::invalid_identity};
+emit(unwrap(dump_json(*found)));
     } else
       {
       emit("[");
       bool first = true;
-      for (const auto &entry : captured_) {
-        if (!first) emit(",");
-        first = false;
-        emit(unwrap(dump_json(entry.entry())));
-      }
+visit_context_records(historical_, [&](const Json &packet) {
+  if (!accepted(packet)) return;
+  const auto *fresh = packet.find("originals");
+  if (!fresh) return;
+  for (const auto &entry : fresh->array()) {
+    if (!first) emit(",");
+    first = false;
+    emit(unwrap(dump_json(entry)));
+  }
+});
       emit("]");
     }
   } else

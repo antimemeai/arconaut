@@ -68,11 +68,12 @@ public:
 
 private:
   ContextStore(AuditLog &log, bool restore_saved);
-  void load_archive() const;
+  std::optional<Json> original_entry(std::string_view id) const;
   void maybe_checkpoint();
   mutable bool archive_loaded_ = true;
   std::optional<Error> checkpoint_error_;
   AuditLog &log_;
+  RetainedState::FactHistory historical_;
   std::string head_;
   Json::Array entries_;
   struct Original {

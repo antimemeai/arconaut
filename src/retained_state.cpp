@@ -147,6 +147,8 @@ struct RetainedState::ReplayIndex {
   std::unordered_set<SourceReference, SourceHash> sources;
 };
 void RetainedState::Snapshot::swap(Snapshot &other) noexcept {
+  std::swap(archived_facts, other.archived_facts);
+  std::swap(archived_records, other.archived_records);
   std::swap(query_root, other.query_root);
   facts.swap(other.facts);
   sources.swap(other.sources);
@@ -160,8 +162,8 @@ RetainedState::RetainedState(std::unique_ptr<JournalDirectory> directory,
                              JournalCapacity capacity)
     : directory_(std::move(directory)), capacity_(capacity),
       max_history_entries_(capacity.max_records) {
-  committed_.facts.reserve(capacity.max_records);
-  committed_.sources.reserve(capacity.max_records);
+  committed_.facts.reserve(std::min<std::size_t>(capacity.max_records, 64));
+  committed_.sources.reserve(std::min<std::size_t>(capacity.max_records, 64));
 }
 Result<std::unique_ptr<RetainedState>>
 RetainedState::allocate(std::unique_ptr<JournalDirectory> directory,
@@ -215,8 +217,26 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return allocated;
   }
   auto owner = std::move(allocated).value();
-  auto journal = FramedJournal::open(*owner->directory_, name, header, capacity,
-                                     SyncStrength::full, use_scan_checkpoint);
+FramedJournal::ResumeSelector selector;
+if (!use_scan_checkpoint) selector = [&](FramedJournal &locked) -> Result<std::optional<JournalResume>> {
+  auto saved = load_saved_state(*owner->directory_, name, locked, capacity, true);
+  if (!saved.has_value()) return Result<std::optional<JournalResume>>::failure(saved.error());
+  if (saved.value()) {
+    auto catalog = ArchiveCatalog::open(*owner->directory_, std::string{name} + ".archive." +
+        std::to_string(saved.value()->slot), header, saved.value()->boundary,
+        static_cast<std::uint64_t>(capacity.max_records) * 6);
+    if (catalog.has_value()) {
+      owner->saved_ = std::make_unique<SavedState>(std::move(*saved.value()));
+      owner->archive_ = std::move(catalog).value();
+    }
+  }
+  // Selection is under custody, but current roots do not cover semantic
+  // envelope traversal/station/origin reducers. Never authorize suffix replay
+  // from a projection alone. Keep the independent full replay authoritative.
+  return Result<std::optional<JournalResume>>::success(std::nullopt);
+};
+auto journal = FramedJournal::open(*owner->directory_, name, header, capacity,
+    SyncStrength::full, use_scan_checkpoint, std::nullopt, std::move(selector));
   if (!journal.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
@@ -224,22 +244,27 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
   owner->journal_name_ = name;
   owner->pending_namespace_ = header.issuer_namespace;
   owner->reconciled_ = false;
+  auto selected_saved = owner->compact_ ? nullptr : std::move(owner->saved_);
+  auto selected_archive = owner->compact_ ? nullptr : std::move(owner->archive_);
   const auto rebuilt = owner->rebuild();
   if (!rebuilt.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(rebuilt.error());
   }
+if (selected_saved && selected_saved->boundary.sequence <= owner->journal_->cursor().sequence &&
+    selected_saved->boundary.end_offset <= owner->journal_->cursor().end_offset) {
+  owner->saved_ = std::move(selected_saved);
+  owner->archive_ = std::move(selected_archive);
+} else {
   auto saved = load_saved_state(*owner->directory_, name, *owner->journal_, capacity);
-  if (!saved.has_value())
-    return Result<std::unique_ptr<RetainedState>>::failure(saved.error());
+  if (!saved.has_value()) return Result<std::unique_ptr<RetainedState>>::failure(saved.error());
   if (saved.value()) {
     owner->saved_ = std::make_unique<SavedState>(std::move(*saved.value()));
     auto archive = ArchiveCatalog::open(*owner->directory_, std::string{name} + ".archive." +
         std::to_string(owner->saved_->slot), header, owner->saved_->boundary,
         static_cast<std::uint64_t>(capacity.max_records) * 6);
     if (archive.has_value()) owner->archive_ = std::move(archive).value();
-    // Missing/corrupt derived history cannot authorize absence. This candidate
-    // keeps full replay active, so its independent resident oracle remains usable.
   }
+}
   return Result<std::unique_ptr<RetainedState>>::success(std::move(owner));
 }
 void RetainedState::index_fact(Snapshot &snapshot, std::size_t ordinal) {
@@ -348,18 +373,18 @@ return result;
 }
 Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
   try {
-    if (ordinal >= committed_.facts.size())
+    if (ordinal >= fact_count())
       return Result<RetainedFact>::failure({ErrorCode::invalid_range});
     if (archive_ && saved_ && ordinal < saved_->fact_count) {
       auto found = archive_->find(ordinal_key(6, {}, ordinal));
       if (!found.has_value()) return Result<RetainedFact>::failure(found.error());
       if (!found.value()) return Result<RetainedFact>::failure({ErrorCode::corrupt});
-      auto payload = journal_->read_payload(*found.value());
+      auto payload = journal_->read_catalog_payload(*found.value(), saved_->boundary);
       if (!payload.has_value()) return Result<RetainedFact>::failure(payload.error());
       auto decoded = decode_retained_event(payload.value(), journal_->header().limits.max_payload);
       if (!decoded.has_value()) return Result<RetainedFact>::failure(decoded.error());
       return Result<RetainedFact>::success({{found.value()->journal, found.value()->sequence},
-          std::move(decoded).value(), committed_.facts[ordinal].evidence});
+          std::move(decoded).value(), compact_ ? RetainedEvidence::recovered : committed_.facts[ordinal].evidence});
     }
     if (query_index_) {
       auto found = query_index_->find(committed_.query_root,ordinal_key(6,{},ordinal));
@@ -367,10 +392,55 @@ Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
       if (!found.value() || *found.value() != ordinal)
         return Result<RetainedFact>::failure({ErrorCode::corrupt});
     }
-    return Result<RetainedFact>::success(committed_.facts[ordinal]);
+    return Result<RetainedFact>::success(committed_.facts[ordinal - committed_.archived_facts]);
   } catch (const std::bad_alloc &) {
     return Result<RetainedFact>::failure({ErrorCode::allocation});
   }
+}
+Result<std::vector<RetainedFact>> RetainedState::FactHistory::page(std::size_t first, std::size_t limit) const {
+  if (!limit || limit > 16 || first > count || !read)
+    return Result<std::vector<RetainedFact>>::failure({ErrorCode::invalid_range});
+  try {
+    std::vector<RetainedFact> page;
+    const auto end = first + std::min(limit, count - first);
+    page.reserve(end - first);
+    for (auto i = first; i < end; ++i) {
+      auto loaded = read(i);
+      if (!loaded.has_value()) return Result<std::vector<RetainedFact>>::failure(loaded.error());
+      page.push_back(std::move(loaded).value());
+    }
+    return Result<std::vector<RetainedFact>>::success(std::move(page));
+  } catch (const std::bad_alloc &) {
+    return Result<std::vector<RetainedFact>>::failure({ErrorCode::allocation});
+  }
+}
+Result<std::vector<RetainedFact>> RetainedState::fact_page(std::size_t first, std::size_t limit) const {
+  return FactHistory{fact_count(), [this](std::size_t i) { return fact(i); }}.page(first, limit);
+}
+RetainedState::FactHistory RetainedState::history_snapshot() const {
+  const auto archived = archive_ && saved_ ? static_cast<std::size_t>(saved_->fact_count) : 0;
+  if (!compact_ && archived > committed_.facts.size()) throw Error{ErrorCode::corrupt};
+  auto tail = std::make_shared<const std::vector<RetainedFact>>(
+      committed_.facts.begin() + static_cast<std::ptrdiff_t>(compact_ ? 0 : archived), committed_.facts.end());
+  const auto limit = journal_->header().limits.max_payload;
+  auto reader = journal_->archive_reader(saved_ ? saved_->boundary : cursor());
+  return {archived + tail->size(), [archive = archive_, archived, tail, reader, limit](std::size_t ordinal) -> Result<RetainedFact> {
+    try {
+      if (ordinal >= archived) {
+        if (ordinal - archived >= tail->size()) return Result<RetainedFact>::failure({ErrorCode::invalid_range});
+        return Result<RetainedFact>::success((*tail)[ordinal - archived]);
+      }
+      auto found = archive->find(ordinal_key(6, {}, ordinal));
+      if (!found.has_value()) return Result<RetainedFact>::failure(found.error());
+      if (!found.value()) return Result<RetainedFact>::failure({ErrorCode::corrupt});
+      auto body = reader(*found.value());
+      if (!body.has_value()) return Result<RetainedFact>::failure(body.error());
+      auto decoded = decode_retained_event(body.value(), limit);
+      if (!decoded.has_value()) return Result<RetainedFact>::failure(decoded.error());
+      return Result<RetainedFact>::success({{found.value()->journal, found.value()->sequence},
+          std::move(decoded).value(), RetainedEvidence::recovered});
+    } catch (const std::bad_alloc &) { return Result<RetainedFact>::failure({ErrorCode::allocation}); }
+  }};
 }
 const RetainedState::Snapshot &RetainedState::visible() const noexcept {
   return prepared_ ? *prepared_ : committed_;
@@ -450,7 +520,7 @@ FramedJournal *RetainedState::segment(AuditStreamId identity) const noexcept {
 bool RetainedState::has_room(const Snapshot &snapshot,
                              std::size_t count) const noexcept {
   auto remaining = max_history_entries_;
-  const std::array sizes{snapshot.facts.size(), snapshot.sources.size(),
+  const std::array sizes{snapshot.archived_records, snapshot.facts.size(), snapshot.sources.size(),
                          snapshot.uncertain_facts.size(),
                          snapshot.provisional_originals.size()};
   for (const auto size : sizes) {
@@ -611,6 +681,11 @@ Result<void> RetainedState::rebuild() {
   try {
     auto &staging = prepared_.emplace(Snapshot{});
     staging.issuer_namespace = journal_->header().issuer_namespace;
+    if (compact_) {
+      staging.counter = saved_->issuer_counter;
+      staging.archived_facts = static_cast<std::size_t>(saved_->fact_count);
+      staging.archived_records = journal_->usage().indexed_records - journal_->staged_records().size();
+    }
     return replay(staging, *journal_);
   } catch (const std::bad_alloc &) {
     return Result<void>::failure({ErrorCode::allocation});
@@ -1184,7 +1259,7 @@ Result<Submission> RetainedState::submit_impl(const RetainedEvent &event,
 Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
   try {
     const auto &snapshot = visible();
-    if (query_index_) {
+    if (query_index_ || archive_) {
       const auto admission = lookup(snapshot,1,RetainedKind::attempt_admitted,identity.bytes());
       if (!admission) return Result<AttemptState>::failure({ErrorCode::stale_handle});
       const auto opened = lookup(snapshot,1,RetainedKind::attempt_open,identity.bytes());
@@ -1192,6 +1267,7 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
       const auto receipt = lookup(snapshot,1,RetainedKind::adapter_receipt,identity.bytes());
       auto evidence = admission->evidence;
       const bool uncertain_observation = observed && observed->evidence == RetainedEvidence::uncertain;
+      if (query_index_) {
       auto inspected = query_index_->range(snapshot.query_root,ordinal_key(9,identity.bytes(),0),
           snapshot.facts.size(),[&](RecoveryIndexEntry entry) -> Result<bool> {
         if (entry.key[0] != std::byte{9} ||
@@ -1205,6 +1281,20 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
         return Result<bool>::success(true);
       });
       if (!inspected.has_value()) return Result<AttemptState>::failure(inspected.error());
+} else {
+  for (const auto &related : snapshot.facts) {
+    const bool matches = std::visit([&](const auto &body) {
+      using T = std::decay_t<decltype(body)>;
+      if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
+                    std::is_same_v<T, AttemptObservationEvent> ||
+                    std::is_same_v<T, AdapterReceiptEvent>) return body.attempt == identity;
+      return false;
+    }, related.event.body);
+    if (matches && (related.evidence == RetainedEvidence::uncertain ||
+        (evidence == RetainedEvidence::live && related.evidence != RetainedEvidence::live)))
+      evidence = related.evidence;
+  }
+}
       const auto *observation = observed ? std::get_if<AttemptObservationEvent>(&observed->event.body) : nullptr;
       const bool terminal = observation && !uncertain_observation && observation->phase == AttemptPhase::terminal;
       return Result<AttemptState>::success({std::get<AttemptAdmissionEvent>(admission->event.body),
@@ -1267,6 +1357,50 @@ Result<AttemptState> RetainedState::attempt(OperationAttemptId identity) const {
     return Result<AttemptState>::failure({ErrorCode::allocation});
   }
 }
+Result<DecisionEvent> RetainedState::decision(DecisionId identity) const {
+  try {
+    auto fact = lookup(visible(), 1, RetainedKind::decision, identity.bytes());
+    if (!fact) return Result<DecisionEvent>::failure({ErrorCode::stale_handle});
+    const auto *body = std::get_if<DecisionEvent>(&fact->event.body);
+    if (!body) return Result<DecisionEvent>::failure({ErrorCode::corrupt});
+    return Result<DecisionEvent>::success(*body);
+  } catch (const Error &error) { return Result<DecisionEvent>::failure(error); }
+  catch (const std::bad_alloc &) { return Result<DecisionEvent>::failure({ErrorCode::allocation}); }
+}
+Result<InvocationEvent> RetainedState::invocation(InvocationId identity) const {
+  try {
+    auto fact = lookup(visible(), 1, RetainedKind::invocation, identity.bytes());
+    if (!fact) return Result<InvocationEvent>::failure({ErrorCode::stale_handle});
+    const auto *body = std::get_if<InvocationEvent>(&fact->event.body);
+    if (!body) return Result<InvocationEvent>::failure({ErrorCode::corrupt});
+    return Result<InvocationEvent>::success(*body);
+  } catch (const Error &error) { return Result<InvocationEvent>::failure(error); }
+  catch (const std::bad_alloc &) { return Result<InvocationEvent>::failure({ErrorCode::allocation}); }
+}
+Result<std::vector<AttemptState>> RetainedState::unresolved_attempts() const {
+  try {
+    std::vector<AttemptState> result;
+    const auto add = [&](const RetainedFact &fact) {
+      if (const auto *admitted = std::get_if<AttemptAdmissionEvent>(&fact.event.body)) {
+        auto inspected = attempt(admitted->attempt);
+        if (!inspected.has_value()) throw inspected.error();
+        if (!inspected.value().observation || inspected.value().observation->phase != AttemptPhase::terminal)
+          result.push_back(std::move(inspected).value());
+      }
+    };
+    // The root closure contains precisely the nonterminal admissions at its
+    // boundary. An accepted suffix can close them; always apply the disk/tail
+    // transition predicates, never treat closure membership as dispatch rights.
+    if (saved_) for (const auto &fact : saved_->unresolved) add(fact);
+    for (const auto &fact : visible().facts) {
+      if (saved_ && fact.record.journal == saved_->boundary.journal &&
+          fact.record.sequence <= saved_->boundary.sequence) continue;
+      add(fact);
+    }
+    return Result<std::vector<AttemptState>>::success(std::move(result));
+  } catch (const Error &error) { return Result<std::vector<AttemptState>>::failure(error); }
+  catch (const std::bad_alloc &) { return Result<std::vector<AttemptState>>::failure({ErrorCode::allocation}); }
+}
 Result<DispatchReport> RetainedState::dispatch(OperationAttemptId identity,
                                                EffectBoundary &boundary) {
   if (state() != JournalWriterState::live || in_transaction_) {
@@ -1318,7 +1452,7 @@ Result<std::vector<std::byte>> RetainedState::source(SourceReference reference) 
       reference.sequence <= saved_->boundary.sequence) {
     auto found = archive_->find(ordinal_key(5, reference.journal.bytes(), reference.sequence));
     if (!found.has_value()) return Result<std::vector<std::byte>>::failure(found.error());
-    if (found.value()) return journal_->read_payload(*found.value());
+    if (found.value()) return journal_->read_catalog_payload(*found.value(), saved_->boundary);
     return Result<std::vector<std::byte>>::failure({ErrorCode::stale_handle});
   }
   if (query_index_) {
@@ -1375,18 +1509,11 @@ Result<void> RetainedState::reconcile(CustodyVerifier &verifier) {
     return Result<void>::failure({ErrorCode::audit_unavailable});
   }
   try {
-    std::vector<AttemptState> attempts;
-    for (const auto &fact : committed_.facts) {
-      if (const auto *admitted = std::get_if<AttemptAdmissionEvent>(&fact.event.body)) {
-        auto inspected = attempt(admitted->attempt);
-        if (!inspected.has_value()) {
-          return Result<void>::failure(inspected.error());
-        }
-        if (inspected.value().reconciliation_required) {
-          attempts.push_back(std::move(inspected).value());
-        }
-      }
-    }
+auto unresolved = unresolved_attempts();
+if (!unresolved.has_value()) return Result<void>::failure(unresolved.error());
+std::vector<AttemptState> attempts;
+for (auto &attempt : unresolved.value())
+  if (attempt.reconciliation_required) attempts.push_back(std::move(attempt));
     const auto verified = verifier.verify(attempts);
     if (!verified.has_value()) {
       return verified;
@@ -1504,10 +1631,12 @@ Result<void> RetainedState::save_current_state(const Json &context) {
   if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
       !reconciled_ || !historical_.empty())
     return Result<void>::failure({ErrorCode::audit_unavailable});
+  if (compact_) return Result<void>::failure({ErrorCode::unsupported});
   try {
     SavedState next{cursor(), committed_.facts.size(), issuer_counter(), context,
                     Json{current_programs()}, {}, saved_ ? saved_->slot ^ 1U : 0U};
     std::set<IdentityBytes> attempts, decisions, invocations;
+    std::map<IdentityBytes, RecordReference> observations;
     for (const auto &fact : committed_.facts) {
       const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
       if (!admission) continue;
@@ -1527,10 +1656,18 @@ Result<void> RetainedState::save_current_state(const Json &context) {
       if (const auto *invocation = std::get_if<InvocationEvent>(&fact.event.body);
           invocation && invocations.contains(invocation->invocation.bytes()))
         decisions.insert(invocation->decision.bytes());
+for (const auto &fact : committed_.facts) {
+  if (const auto *observation = std::get_if<AttemptObservationEvent>(&fact.event.body);
+      observation && attempts.contains(observation->attempt.bytes()))
+    observations.insert_or_assign(observation->attempt.bytes(), fact.record);
+}
     for (const auto &fact : committed_.facts) {
       const bool keep = std::visit([&](const auto &body) {
         using T = std::decay_t<decltype(body)>;
-        if constexpr (std::is_same_v<T, AttemptAdmissionEvent> ||
+        if constexpr (std::is_same_v<T, AttemptObservationEvent>) {
+          const auto found = observations.find(body.attempt.bytes());
+          return found != observations.end() && found->second == fact.record;
+        } else if constexpr (std::is_same_v<T, AttemptAdmissionEvent> ||
                       std::is_same_v<T, AttemptOpenEvent> ||
                       std::is_same_v<T, AttemptObservationEvent> ||
                       std::is_same_v<T, AdapterReceiptEvent> ||
