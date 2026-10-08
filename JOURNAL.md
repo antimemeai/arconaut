@@ -5007,3 +5007,15 @@ shutdown can need TERM despite successful startup/input. Track exit and forced
 shutdown separately from endpoint success; retain every sample/outlier.
 No source performance edits or broad tests. Run one requested measurement batch;
 private pilot transcripts/logs under context/agent-startup-comparison-2026-10-08.
+
+Cross-agent observer correction: stopped initial batch after23records when Codex
+input marker was drawn as B, then an unrelated footer, then B_BENCH_READY. Plain
+stream concatenation missed the visible full marker, so that timeout is an
+observer error. Preserve initial batch/transcripts as excluded method-development
+observations. Replaced marker predicate with a small cursor-aware VT text observer
+committed at each tool's frame boundary. Retained failed transcript now yields the
+exact marker, and one serial pilot of all five tools reaches both endpoints.
+Codex quit still exceeds3s allowance; record forced TERM separately, without
+turning endpoint success into a clean-exit claim. Restart full300/tool batch under
+new output directory; first observations are not pooled or erased. Driver identity
+and Git source recorded with the run. No third assurance/certification layer.
