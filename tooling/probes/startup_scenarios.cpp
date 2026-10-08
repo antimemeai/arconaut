@@ -31,10 +31,10 @@ int main(int argc, char **argv) {
     Json::Array items;
     const std::string code = "// source evidence\nstruct Item { unsigned id; };\n"
                              "bool ready(const Item& item) { return item.id != 0; }\n";
-    if (mode != "heavy" && mode != "weird")
+    if (mode != "heavy" && mode != "live" && mode != "weird")
       return 2;
     std::size_t live_bytes = 0;
-    for (unsigned i = 0; i < (mode == "heavy" ? 64U : 32U); ++i) {
+    for (unsigned i = 0; i < (mode != "weird" ? 64U : 32U); ++i) {
       std::string content;
       if (mode == "weird")
         content = "Unicode: 日本語 · 🐦 · é · tabs\tand code\n";
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
                                  {"candidate", Json{discarded}},
                                  {"entries", Json{Json::Array{}}}}));
       }
-    } else {
+    } else if (mode == "weird") {
       for (unsigned i = 0; i < 2048; ++i)
         log.record(ApplicationChannel::log,
                    Json::object({{"label", Json{"benchmark.historical-event"}},

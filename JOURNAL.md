@@ -4788,3 +4788,30 @@ explicitly a loaded-machine observation, no idle baseline or per-delay causal cl
 No phase instrumentation or provider-request readiness measurement. Full300 numeric
 samples/summary/build/workload/cache/host data committed with paper and reusable
 owned fixture/PTY utility. Private terminal captures retained. Under100ms not met.
+
+## 2026-10-07 — heavy archive startup diagnosis and proposal
+
+Operator asks Astra to study and comment on heavy context/archive performance.
+Read doctrine, current source and stored research/plan; inspect LMDB writable-page/
+root publication and Aeron snapshot replay code, re-read official SQLite WAL docs.
+Current launcher uses RetainedState directly; optional physical scan hints/index
+are not enabled. Trace three payload passes and decode/discard/cold-read copies.
+
+Extend development-only fixtures with same-live/no-rejected-history control and
+probe header discovery plus replay byte/CPU counters. Both targets build Release
+OFF against existing native libraries. Five alternating private fresh-process
+trials per case, APFS-cloned seeds; all10 exit0, deterministic local provider
+checks admission/linkage/known settlement. Initial611608-byte audit prefix exactly
+matches heavy seed. Same262144live content bytes,302241serialized input bytes.
+Prompt medians13.60/748.75ms; admission68.32/817.07ms; read1.83/1008.98MB; process
+CPU at admission30.94/642.46ms. Load4.69–5.03. Component timings exclude launcher
+and TUI; ordinary cache; not replacement100-run distribution. Header inspection
+adds112bytes outside JournalFile counter. Raw samples and report retained.
+
+Recommend complete current-state/suffix integration; existing plan direction sound,
+broad index-first prerequisite delayed useful restoration. Per-key path COW has
+large measured write amplification; reference transaction batching is applicable.
+Record proposal, not silent plan replacement. Production code/binary unchanged,
+no provider/network call, no new campaign or broad tests. Report and full numeric
+samples under papers/2026-10-07-heavy-startup-assessment.md and docs/measurements.
+Update startup issue, back up Beads, commit/push research checkpoint.

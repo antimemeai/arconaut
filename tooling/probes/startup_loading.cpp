@@ -4,6 +4,7 @@
 #include "blackbird/local_timing.hpp"
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <ctime>
 #if defined(__APPLE__)
@@ -89,6 +90,14 @@ int main(int argc, char **argv) {
     const std::string_view mode{argv[1]};
     const bool create=mode=="create";
     const bool indexed=mode=="open-index";
+    if (!create) {
+      std::array<std::byte, journal_header_size> bytes{};
+      std::ifstream input{path / "audit", std::ios::binary};
+      input.read(reinterpret_cast<char *>(bytes.data()),
+                 static_cast<std::streamsize>(bytes.size()));
+      if (!input) throw Error{ErrorCode::incomplete};
+      h = unwrap(decode_journal_header(bytes));
+    }
     LocalSpan replay_timing{"startup.replay", "tooling/probes/startup_loading.cpp"};
     auto root=create ? unwrap(RetainedState::create(std::move(directory),"audit",h,cap))
                      : unwrap(RetainedState::open(std::move(directory),"audit",h,cap,indexed));
@@ -115,6 +124,8 @@ int main(int argc, char **argv) {
     std::cerr << "resident_application_bytes=" << resident_payload
               << " cold_application_bytes=" << cold_payload << '\n';
     const auto replay=std::chrono::steady_clock::now();
+    const auto replay_io=io;
+    const double replay_cpu_ms=1000.0 * static_cast<double>(std::clock()) / CLOCKS_PER_SEC;
     LocalSpan context_timing{"startup.context", "tooling/probes/startup_loading.cpp"};
     AuditLog log{*root}; ContextStore context{log};
     context_timing.outcome("success");
@@ -220,6 +231,7 @@ int main(int argc, char **argv) {
               << " live_bytes=" << serialized.size() << " request_input_bytes=" << provider.input_bytes << " replay_ms=" << ms(replay)
               << " restored_ms=" << ms(restored) << " prompt_ms=" << ms(ready) << " admitted_ms=" << ms(admitted)
               << " indexed=" << root->used_scan_checkpoint()
+              << " replay_read_bytes=" << replay_io.read_bytes << " replay_cpu_ms=" << replay_cpu_ms
               << " prompt_read_bytes=" << prompt_io.read_bytes << " readiness_read_bytes=" << provider.readiness_io.read_bytes
               << " readiness_syncs=" << provider.readiness_io.sync_calls << " readiness_cpu_ms=" << provider.readiness_cpu_ms
               << " prompt_rss=" << prompt_memory.resident << " prompt_footprint=" << prompt_memory.footprint
