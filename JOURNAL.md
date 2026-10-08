@@ -5088,3 +5088,18 @@ browser children remained. Exported the complete SVG with installed rsvg-convert
 Direct numerical count/driver identity and visual chart checks; no production
 performance edits or additional test/hardening campaign. Beads backup, checkpoint
 and push results/chart/report under standing operator authorization.
+
+## 2026-10-08 — consolidate versions and exact startup test design
+
+Operator requests the complete chat table in a repository document with measured
+versions and exact test design. Expanded the existing eight-tool report instead
+of duplicating it. Added one version/runtime/model table for all eight tools,
+batch ordering/timestamps, spawn/read/write timing definitions, PTY/query behavior,
+exact command arguments and readiness strings, environment overrides/removals,
+private seed/setup boundaries, quit bytes and deadlines, and nearest-rank selection.
+Grounded details in saved A/B metadata, private credential-free adapter specs and
+the unchanged driver source. Describe stream-based configured-frame detection and
+cursor-aware marker observation accurately; no real-terminal pixel-paint timing
+claim. Keep all existing percentile/maximum/typing/shutdown tables and chart links.
+No measurement rerun or production edits; documentation whitespace check, Beads
+backup, checkpoint commit and push under standing authorization.
