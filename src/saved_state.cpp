@@ -77,7 +77,7 @@ Result<std::optional<SavedState>> load_slot(JournalDirectory &directory,
       program_size > view.size() - prefix - 4 - context_size) return ignored();
   // A checksummed root beyond the known prefix must not burn fewer IDs silently.
   if (sequence > journal.cursor().sequence || end > journal.cursor().end_offset)
-    return ignored(); // full authoritative replay remains active in this candidate
+    return Answer::failure({ErrorCode::incomplete}); // durable root evidence prevents identity reuse
   auto anchor = journal.read_original_range(end - commit_size, commit_size);
   if (!anchor.has_value() || anchor.value().bytes.size() != commit_size ||
       crc32c(anchor.value().bytes) != anchor_crc) return ignored();

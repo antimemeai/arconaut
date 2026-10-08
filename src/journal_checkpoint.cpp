@@ -142,7 +142,7 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
 }
 
 Result<void> FramedJournal::publish_scan_checkpoint() {
-  if (in_restage_ || state_ != JournalWriterState::live || historical_)
+  if (in_restage_ || state_ != JournalWriterState::live || historical_ || archived_records_)
     return Result<void>::failure({ErrorCode::audit_unavailable});
   if (records_.empty()) return Result<void>::success();
   try {

@@ -62,7 +62,7 @@ JournalUsage FramedJournal::usage() const {
           cursor_,
           extent.has_value() ? std::optional{extent.value()} : std::nullopt,
           extent.has_value() ? std::nullopt : std::optional{extent.error()},
-          std::max(records_.size(), staged_.size() + pending_.size()),
+          archived_records_ + std::max(records_.size(), staged_.size() + pending_.size()),
           state_};
 }
 
@@ -148,7 +148,8 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
                                                            JournalHeader expected,
                                                            JournalCapacity capacity,
                                                            SyncStrength strength,
-                                                           bool use_scan_checkpoint) {
+                                                           bool use_scan_checkpoint,
+                                                           std::optional<JournalResume> resume) {
   auto allocated = allocate(directory, expected, capacity, strength);
   if (!allocated.has_value()) {
     return allocated;
@@ -195,6 +196,24 @@ Result<std::unique_ptr<FramedJournal>> FramedJournal::open(JournalDirectory &dir
   }
   if (decoded.value() != expected) {
     return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::conflict});
+  }
+  if (resume) {
+    constexpr std::size_t commit_size = journal_frame_header_size + 24;
+    const auto &selected = *resume;
+    if (use_scan_checkpoint || selected.cursor.journal != expected.journal ||
+        !selected.cursor.sequence || selected.cursor.end_offset < journal_header_size + commit_size ||
+        selected.cursor.end_offset > size.value() || selected.indexed_records > capacity.max_records)
+      return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::invalid_range});
+    std::array<std::byte, commit_size> anchor{};
+    auto loaded = journal->read_exact(selected.cursor.end_offset - commit_size, anchor);
+    if (!loaded.has_value()) return Result<std::unique_ptr<FramedJournal>>::failure(loaded.error());
+    auto commit = decode_journal_frame(anchor, expected.limits);
+    if (crc32c(anchor) != selected.commit_checksum || !commit.has_value() ||
+        commit.value().kind != FrameKind::commit || commit.value().sequence != selected.cursor.sequence ||
+        commit.value().payload.size() != 24)
+      return Result<std::unique_ptr<FramedJournal>>::failure({ErrorCode::corrupt});
+    journal->cursor_ = selected.cursor;
+    journal->archived_records_ = selected.indexed_records;
   }
   if (use_scan_checkpoint) {
     auto a = journal->load_scan_checkpoint(0);
@@ -270,7 +289,7 @@ Result<JournalCursor> FramedJournal::append(std::span<const JournalDraft> drafts
   if (drafts.empty()) {
     return Result<JournalCursor>::failure({ErrorCode::invalid_range});
   }
-  if (drafts.size() > capacity_.max_records - records_.size()) {
+  if (drafts.size() > capacity_.max_records - archived_records_ - records_.size()) {
     return Result<JournalCursor>::failure({ErrorCode::capacity});
   }
   if (drafts.size() >= UINT64_MAX - cursor_.sequence) {
@@ -445,7 +464,7 @@ Result<void> FramedJournal::scan(bool propagate_read_errors) {
         batch_checksum = 0;
         batch_offset = cursor_.end_offset;
       } else {
-        if (staged_.size() + pending_.size() >= capacity_.max_records) {
+        if (archived_records_ + staged_.size() + pending_.size() >= capacity_.max_records) {
           failed({ErrorCode::capacity}, offset);
           break;
         }
@@ -478,6 +497,12 @@ Result<void> FramedJournal::scan(bool propagate_read_errors) {
 }
 
 Result<void> FramedJournal::restage() {
+  if (archived_records_) {
+    // The selected-root owner must reopen/reselect root+tail. Do not lose the
+    // archive accounting or compare a suffix vector to a full-history prefix.
+    state_ = JournalWriterState::blocked;
+    return Result<void>::failure({ErrorCode::unsupported});
+  }
   if (in_restage_) {
     return Result<void>::failure({ErrorCode::busy});
   }

@@ -7,6 +7,7 @@
 
 namespace blackbird {
 struct SavedState;
+class ArchiveCatalog;
 struct RecordReference {
   AuditStreamId journal;
   std::uint64_t sequence;
@@ -224,6 +225,7 @@ private:
   Result<IdentityBytes> reserve_identity();
   std::string journal_name_;
   std::unique_ptr<SavedState> saved_;
+  std::unique_ptr<ArchiveCatalog> archive_;
   std::unique_ptr<JournalDirectory> directory_;
   std::vector<std::unique_ptr<FramedJournal>> historical_;
   std::unique_ptr<FramedJournal> journal_;

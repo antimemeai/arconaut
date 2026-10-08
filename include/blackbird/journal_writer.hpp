@@ -32,6 +32,13 @@ struct JournalCursor {
   std::uint64_t sequence;
   std::uint64_t end_offset;
 };
+// Native saved reducer supplies this only after selecting a complete root and
+// archive catalog. A physical cursor alone is never semantic recovery permission.
+struct JournalResume {
+  JournalCursor cursor;
+  std::size_t indexed_records;
+  std::uint32_t commit_checksum;
+};
 enum class JournalWriterState : std::uint8_t {
   live,
   recovery_pending,
@@ -90,7 +97,8 @@ public:
   static Result<std::unique_ptr<FramedJournal>>
   open(JournalDirectory &directory, std::string_view name, JournalHeader expected,
        JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
-       bool use_scan_checkpoint = false);
+       bool use_scan_checkpoint = false,
+       std::optional<JournalResume> resume = std::nullopt);
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
   using PayloadReader = std::function<Result<std::vector<std::byte>>() >;
@@ -146,6 +154,7 @@ private:
   Result<void> scan(bool propagate_read_errors = false);
   Result<void> read_exact(std::uint64_t offset, MutableByteView output);
   Result<void> write_exact(std::uint64_t offset, ByteView input);
+  std::size_t archived_records_ = 0;
   std::string name_;
   bool used_scan_checkpoint_ = false;
   std::uint64_t checkpoint_attempt_ = 0;

@@ -2,6 +2,7 @@
 #include "blackbird/retained_state.hpp"
 #include "blackbird/retained_proposal.hpp"
 #include "blackbird/saved_state.hpp"
+#include "blackbird/archive_catalog.hpp"
 #include "blackbird/context.hpp"
 #include <map>
 #include <set>
@@ -230,7 +231,15 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
   auto saved = load_saved_state(*owner->directory_, name, *owner->journal_, capacity);
   if (!saved.has_value())
     return Result<std::unique_ptr<RetainedState>>::failure(saved.error());
-  if (saved.value()) owner->saved_ = std::make_unique<SavedState>(std::move(*saved.value()));
+  if (saved.value()) {
+    owner->saved_ = std::make_unique<SavedState>(std::move(*saved.value()));
+    auto archive = ArchiveCatalog::open(*owner->directory_, std::string{name} + ".archive." +
+        std::to_string(owner->saved_->slot), header, owner->saved_->boundary,
+        static_cast<std::uint64_t>(capacity.max_records) * 6);
+    if (archive.has_value()) owner->archive_ = std::move(archive).value();
+    // Missing/corrupt derived history cannot authorize absence. This candidate
+    // keeps full replay active, so its independent resident oracle remains usable.
+  }
   return Result<std::unique_ptr<RetainedState>>::success(std::move(owner));
 }
 void RetainedState::index_fact(Snapshot &snapshot, std::size_t ordinal) {
@@ -317,6 +326,17 @@ Result<RetainedFact> RetainedState::fact(std::size_t ordinal) const {
   try {
     if (ordinal >= committed_.facts.size())
       return Result<RetainedFact>::failure({ErrorCode::invalid_range});
+    if (archive_ && saved_ && ordinal < saved_->fact_count) {
+      auto found = archive_->find(ordinal_key(6, {}, ordinal));
+      if (!found.has_value()) return Result<RetainedFact>::failure(found.error());
+      if (!found.value()) return Result<RetainedFact>::failure({ErrorCode::corrupt});
+      auto payload = journal_->read_payload(*found.value());
+      if (!payload.has_value()) return Result<RetainedFact>::failure(payload.error());
+      auto decoded = decode_retained_event(payload.value(), journal_->header().limits.max_payload);
+      if (!decoded.has_value()) return Result<RetainedFact>::failure(decoded.error());
+      return Result<RetainedFact>::success({{found.value()->journal, found.value()->sequence},
+          std::move(decoded).value(), committed_.facts[ordinal].evidence});
+    }
     if (query_index_) {
       auto found = query_index_->find(committed_.query_root,ordinal_key(6,{},ordinal));
       if (!found.has_value()) return Result<RetainedFact>::failure(found.error());
@@ -1270,6 +1290,13 @@ Result<DispatchReport> RetainedState::dispatch(OperationAttemptId identity,
                             : Result<void>::failure(recorded.error())});
 }
 Result<std::vector<std::byte>> RetainedState::source(SourceReference reference) {
+  if (archive_ && saved_ && reference.journal == saved_->boundary.journal &&
+      reference.sequence <= saved_->boundary.sequence) {
+    auto found = archive_->find(ordinal_key(5, reference.journal.bytes(), reference.sequence));
+    if (!found.has_value()) return Result<std::vector<std::byte>>::failure(found.error());
+    if (found.value()) return journal_->read_payload(*found.value());
+    return Result<std::vector<std::byte>>::failure({ErrorCode::stale_handle});
+  }
   if (query_index_) {
     const auto k = ordinal_key(5,reference.journal.bytes(),reference.sequence);
     auto found = query_index_->find(committed_.query_root,k);
@@ -1470,6 +1497,12 @@ Result<void> RetainedState::save_current_state(const Json &context) {
         invocations.insert(admission->invocation.bytes());
       }
     }
+    // An invocation can name an earlier decision than a retry admission. Include
+    // that original decision in the unresolved transitive closure as well.
+    for (const auto &fact : committed_.facts)
+      if (const auto *invocation = std::get_if<InvocationEvent>(&fact.event.body);
+          invocation && invocations.contains(invocation->invocation.bytes()))
+        decisions.insert(invocation->decision.bytes());
     for (const auto &fact : committed_.facts) {
       const bool keep = std::visit([&](const auto &body) {
         using T = std::decay_t<decltype(body)>;
@@ -1484,8 +1517,32 @@ Result<void> RetainedState::save_current_state(const Json &context) {
       }, fact.event.body);
       if (keep) next.unresolved.push_back(fact);
     }
+    // Historical catalog is derived disk data, never a vector in SavedState.
+    std::map<RecoveryKey, PhysicalJournalRecord> locators;
+    const auto physical = journal_->physical_records();
+    for (std::size_t ordinal = 0; ordinal < committed_.facts.size(); ++ordinal) {
+      const auto &fact = committed_.facts[ordinal];
+      const auto found = std::lower_bound(physical.begin(), physical.end(), fact.record.sequence,
+          [](const auto &record, std::uint64_t sequence) { return record.sequence < sequence; });
+      if (found == physical.end() || found->sequence != fact.record.sequence ||
+          found->kind != FrameKind::semantic) return Result<void>::failure({ErrorCode::corrupt});
+      for (const auto &k : fact_keys(fact, journal_->header().issuer_namespace, ordinal)) locators.insert_or_assign(k, *found);
+    }
+    for (const auto &source : committed_.sources)
+      locators.insert_or_assign(ordinal_key(5, source.journal.bytes(), source.sequence), source);
+    std::vector<ArchiveEntry> entries; entries.reserve(locators.size());
+    for (const auto &[k, record] : locators) entries.push_back({k, record});
+    const auto catalog_name = journal_name_ + ".archive." + std::to_string(next.slot);
+    auto indexed = ArchiveCatalog::publish(*directory_, catalog_name, journal_->header(), next.boundary, entries);
+    if (!indexed.has_value()) return indexed;
+    next.context.object().emplace_back("physical_records", Json{JsonNumber{std::to_string(physical.size())}});
+    next.context.object().emplace_back("archive_entries", Json{JsonNumber{std::to_string(entries.size())}});
+    auto opened = ArchiveCatalog::open(*directory_, catalog_name, journal_->header(), next.boundary,
+                                       static_cast<std::uint64_t>(capacity_.max_records) * 6);
+    if (!opened.has_value()) return Result<void>::failure(opened.error());
     auto published = publish_saved_state(*directory_, journal_name_, *journal_, next, next.slot);
     if (!published.has_value()) return published;
+    archive_ = std::move(opened).value();
     saved_ = std::make_unique<SavedState>(std::move(next));
     return Result<void>::success();
   } catch (const Error &error) { return Result<void>::failure(error); }
