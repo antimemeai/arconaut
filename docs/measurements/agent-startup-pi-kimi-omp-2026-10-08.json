@@ -1,0 +1,3432 @@
+{
+  "metadata": {
+    "count_per_tool": 100,
+    "order": "round robin, serial",
+    "terminal": "110x35 PTY; Ghostty identity; consumer drains bytes and answers terminal queries",
+    "cache": "ordinary macOS caches; private APFS-cloned state per process; cloning excluded",
+    "measurement": "parent monotonic clock before spawn to input frame, then unsubmitted marker rendered",
+    "inference_prompts_submitted": 0,
+    "driver_sha256": "4d3225532bae81ebe2d0cf6723d96d4e8d7905c65e80c975107cb1e5f8e0b090",
+    "source_commit": "7b876e0a2ceacf1922b3c270f23c02d46ea0e55f",
+    "started_utc": "2026-10-08T13:40:00Z",
+    "host_load_before": [
+      7.869140625,
+      9.77587890625,
+      7.07861328125
+    ],
+    "tools": {
+      "pi": {
+        "command": [
+          "/Users/patrickbeam/projects/blackbird/context/agent-startup-pi-kimi-omp-2026-10-08/pi-install/node_modules/.bin/pi",
+          "--provider",
+          "openrouter",
+          "--model",
+          "anthropic/claude-sonnet-4.6",
+          "--no-extensions",
+          "--no-skills",
+          "--no-mcp",
+          "--no-prompt-templates",
+          "--no-themes",
+          "--no-context-files"
+        ],
+        "ready_text": [
+          "v1.1.0",
+          "anthropic/claude-sonnet-4.6",
+          "ctrl+c/ctrl+d clear/exit"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "Pi 1.1.0, isolated npm --ignore-scripts install; Node 24.7.0; bare defaults with extensions/MCP/skills/templates/themes/context discovery disabled; standard fullscreen TUI; OpenRouter claude-sonnet-4.6; no offline flag.",
+        "executable_sha256": "e79626f2dd6f94aa45d30f3fa63cd84319a6eefcd150b353cfaf274366926774"
+      },
+      "kimi": {
+        "command": [
+          "/Users/patrickbeam/.kimi-code/bin/kimi",
+          "--skills-dir",
+          "{run}/session"
+        ],
+        "ready_text": [
+          "Welcome to Kimi Code!",
+          "Version:",
+          "2.1.1",
+          "context: 0%",
+          "anthropic/claude-sonnet-4.6"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "Kimi Code 2.1.1 installed arm64 compiled executable; isolated config/trust/banner caches; no OAuth copied; OpenRouter claude-sonnet-4.6; updates and telemetry disabled; empty explicit skills directory.",
+        "executable_sha256": "4bab6f96c2c289368b7f05a04f66737c53a59ce740f932d8f149240584758efb"
+      },
+      "omp": {
+        "command": [
+          "/Users/patrickbeam/projects/blackbird/context/agent-startup-pi-kimi-omp-2026-10-08/node_modules/.bin/omp",
+          "--model",
+          "openrouter/anthropic/claude-sonnet-4.6",
+          "--no-extensions",
+          "--no-skills"
+        ],
+        "ready_text": [
+          "v18.8.4",
+          "Sonnet 4.6",
+          "\u2570\u2500",
+          "thinking effort"
+        ],
+        "frame_end": "\\x1b[?2026l",
+        "notes": "Oh My Pi 18.8.4 isolated Bun package install; Bun 1.4.2; extensions/skills disabled; setup completed before timing; OpenRouter claude-sonnet-4.6; fresh database initialization included. Startup update checks disabled; normal welcome animation retained (composer appears with it).",
+        "executable_sha256": "8622c84bd2560675fe671b2a45da2c1566547334046ef277d1bf3e8d47e2db78"
+      }
+    },
+    "finished_utc": "2026-10-08T13:50:26Z",
+    "host_load_after": [
+      9.765625,
+      11.95458984375,
+      10.19091796875
+    ]
+  },
+  "summary": {
+    "pi": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 486.891375,
+        "p50": 531.216667,
+        "p70": 616.274792,
+        "p90": 1055.236416,
+        "max": 2486.376667
+      },
+      "input_echo_ms": {
+        "p30": 565.222041,
+        "p50": 611.801625,
+        "p70": 696.914417,
+        "p90": 1183.676833,
+        "max": 2630.45575
+      },
+      "input_response_ms": {
+        "p30": 76.702458,
+        "p50": 79.483834,
+        "p70": 87.317291,
+        "p90": 120.844959,
+        "max": 501.812
+      }
+    },
+    "kimi": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 0,
+      "nonzero_exits": 0,
+      "input_frame_ms": {
+        "p30": 819.818292,
+        "p50": 908.238584,
+        "p70": 1121.222958,
+        "p90": 1850.710584,
+        "max": 4168.017875
+      },
+      "input_echo_ms": {
+        "p30": 829.349084,
+        "p50": 919.737041,
+        "p70": 1137.449708,
+        "p90": 1862.697584,
+        "max": 4207.705625
+      },
+      "input_response_ms": {
+        "p30": 10.086958,
+        "p50": 12.409666,
+        "p70": 16.066375,
+        "p90": 22.743125,
+        "max": 40.7435
+      }
+    },
+    "omp": {
+      "attempted": 100,
+      "successful": 100,
+      "failed": 0,
+      "forced_shutdowns": 6,
+      "nonzero_exits": 6,
+      "input_frame_ms": {
+        "p30": 1656.04125,
+        "p50": 1802.545375,
+        "p70": 2115.853625,
+        "p90": 3352.868833,
+        "max": 5793.897208
+      },
+      "input_echo_ms": {
+        "p30": 1712.761541,
+        "p50": 1863.728583,
+        "p70": 2162.607709,
+        "p90": 3578.689292,
+        "max": 6528.768417
+      },
+      "input_response_ms": {
+        "p30": 45.552666,
+        "p50": 54.079875,
+        "p70": 66.946541,
+        "p90": 124.563042,
+        "max": 1652.129125
+      }
+    }
+  },
+  "samples": [
+    {
+      "tool": "pi",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 363.200292,
+      "input_echo_ms": 427.98325,
+      "input_response_ms": 64.343,
+      "exit_code": 0,
+      "process_total_ms": 826.651625
+    },
+    {
+      "tool": "kimi",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 1987.383708,
+      "input_echo_ms": 1998.848208,
+      "input_response_ms": 10.509458,
+      "exit_code": 0,
+      "process_total_ms": 2461.351083
+    },
+    {
+      "tool": "omp",
+      "trial": 1,
+      "status": "ok",
+      "input_frame_ms": 1863.122209,
+      "input_echo_ms": 1899.059167,
+      "input_response_ms": 35.730167,
+      "exit_code": 0,
+      "process_total_ms": 2493.739459
+    },
+    {
+      "tool": "pi",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 461.826167,
+      "input_echo_ms": 547.243209,
+      "input_response_ms": 84.957292,
+      "exit_code": 0,
+      "process_total_ms": 942.112167
+    },
+    {
+      "tool": "kimi",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 1149.309375,
+      "input_echo_ms": 1168.248542,
+      "input_response_ms": 18.334042,
+      "exit_code": 0,
+      "process_total_ms": 1658.993834
+    },
+    {
+      "tool": "omp",
+      "trial": 2,
+      "status": "ok",
+      "input_frame_ms": 1867.953209,
+      "input_echo_ms": 1919.512042,
+      "input_response_ms": 51.219458,
+      "exit_code": 0,
+      "process_total_ms": 2527.873584
+    },
+    {
+      "tool": "pi",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 551.422959,
+      "input_echo_ms": 639.482417,
+      "input_response_ms": 87.351833,
+      "exit_code": 0,
+      "process_total_ms": 1045.373584
+    },
+    {
+      "tool": "kimi",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 991.747834,
+      "input_echo_ms": 999.722667,
+      "input_response_ms": 7.356625,
+      "exit_code": 0,
+      "process_total_ms": 1470.040417
+    },
+    {
+      "tool": "omp",
+      "trial": 3,
+      "status": "ok",
+      "input_frame_ms": 1741.858834,
+      "input_echo_ms": 1796.94625,
+      "input_response_ms": 54.829583,
+      "exit_code": 0,
+      "process_total_ms": 2570.8605
+    },
+    {
+      "tool": "pi",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 989.136833,
+      "input_echo_ms": 1110.446875,
+      "input_response_ms": 120.844959,
+      "exit_code": 0,
+      "process_total_ms": 1523.1235
+    },
+    {
+      "tool": "kimi",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 1039.410125,
+      "input_echo_ms": 1053.585458,
+      "input_response_ms": 12.026042,
+      "exit_code": 0,
+      "process_total_ms": 1478.559291
+    },
+    {
+      "tool": "omp",
+      "trial": 4,
+      "status": "ok",
+      "input_frame_ms": 1789.202083,
+      "input_echo_ms": 1873.438208,
+      "input_response_ms": 83.96175,
+      "exit_code": 0,
+      "process_total_ms": 2593.893875
+    },
+    {
+      "tool": "pi",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 531.103375,
+      "input_echo_ms": 616.187,
+      "input_response_ms": 84.638458,
+      "exit_code": 0,
+      "process_total_ms": 1012.848375
+    },
+    {
+      "tool": "kimi",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 1007.418,
+      "input_echo_ms": 1030.35425,
+      "input_response_ms": 22.010375,
+      "exit_code": 0,
+      "process_total_ms": 1450.285542
+    },
+    {
+      "tool": "omp",
+      "trial": 5,
+      "status": "ok",
+      "input_frame_ms": 1999.317833,
+      "input_echo_ms": 2049.060666,
+      "input_response_ms": 49.429833,
+      "exit_code": 0,
+      "process_total_ms": 2868.1245
+    },
+    {
+      "tool": "pi",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 653.977625,
+      "input_echo_ms": 751.742875,
+      "input_response_ms": 97.212417,
+      "exit_code": 0,
+      "process_total_ms": 1163.097958
+    },
+    {
+      "tool": "kimi",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 1357.288875,
+      "input_echo_ms": 1370.346291,
+      "input_response_ms": 12.409666,
+      "exit_code": 0,
+      "process_total_ms": 1982.315125
+    },
+    {
+      "tool": "omp",
+      "trial": 6,
+      "status": "ok",
+      "input_frame_ms": 2450.33175,
+      "input_echo_ms": 2646.441167,
+      "input_response_ms": 195.410542,
+      "exit_code": 0,
+      "process_total_ms": 3247.3745
+    },
+    {
+      "tool": "pi",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 672.643708,
+      "input_echo_ms": 769.536667,
+      "input_response_ms": 96.23925,
+      "exit_code": 0,
+      "process_total_ms": 1174.893875
+    },
+    {
+      "tool": "kimi",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 912.236666,
+      "input_echo_ms": 919.626666,
+      "input_response_ms": 6.824625,
+      "exit_code": 0,
+      "process_total_ms": 1339.627166
+    },
+    {
+      "tool": "omp",
+      "trial": 7,
+      "status": "ok",
+      "input_frame_ms": 1573.062375,
+      "input_echo_ms": 1626.126375,
+      "input_response_ms": 52.119167,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 7336.914791
+    },
+    {
+      "tool": "pi",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 353.956792,
+      "input_echo_ms": 418.438458,
+      "input_response_ms": 64.059916,
+      "exit_code": 0,
+      "process_total_ms": 808.092625
+    },
+    {
+      "tool": "kimi",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 4168.017875,
+      "input_echo_ms": 4207.705625,
+      "input_response_ms": 38.873875,
+      "exit_code": 0,
+      "process_total_ms": 4704.700292
+    },
+    {
+      "tool": "omp",
+      "trial": 8,
+      "status": "ok",
+      "input_frame_ms": 3655.64675,
+      "input_echo_ms": 3711.261709,
+      "input_response_ms": 55.285625,
+      "exit_code": 0,
+      "process_total_ms": 5145.74225
+    },
+    {
+      "tool": "pi",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 556.828792,
+      "input_echo_ms": 641.188417,
+      "input_response_ms": 83.848292,
+      "exit_code": 0,
+      "process_total_ms": 1097.913209
+    },
+    {
+      "tool": "kimi",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 2305.97625,
+      "input_echo_ms": 2346.468125,
+      "input_response_ms": 38.315834,
+      "exit_code": 0,
+      "process_total_ms": 2843.898541
+    },
+    {
+      "tool": "omp",
+      "trial": 9,
+      "status": "ok",
+      "input_frame_ms": 3134.951334,
+      "input_echo_ms": 3176.366917,
+      "input_response_ms": 41.047167,
+      "exit_code": 0,
+      "process_total_ms": 4058.830709
+    },
+    {
+      "tool": "pi",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 610.394042,
+      "input_echo_ms": 693.261125,
+      "input_response_ms": 82.398416,
+      "exit_code": 0,
+      "process_total_ms": 1088.914
+    },
+    {
+      "tool": "kimi",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 965.074417,
+      "input_echo_ms": 976.896,
+      "input_response_ms": 11.306458,
+      "exit_code": 0,
+      "process_total_ms": 1402.422375
+    },
+    {
+      "tool": "omp",
+      "trial": 10,
+      "status": "ok",
+      "input_frame_ms": 3502.561917,
+      "input_echo_ms": 3619.127708,
+      "input_response_ms": 116.142333,
+      "exit_code": 0,
+      "process_total_ms": 5073.188708
+    },
+    {
+      "tool": "pi",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 506.389083,
+      "input_echo_ms": 583.684458,
+      "input_response_ms": 76.839833,
+      "exit_code": 0,
+      "process_total_ms": 972.518458
+    },
+    {
+      "tool": "kimi",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 987.146458,
+      "input_echo_ms": 1007.015083,
+      "input_response_ms": 19.237541,
+      "exit_code": 0,
+      "process_total_ms": 1436.835833
+    },
+    {
+      "tool": "omp",
+      "trial": 11,
+      "status": "ok",
+      "input_frame_ms": 2334.7135,
+      "input_echo_ms": 2380.146541,
+      "input_response_ms": 45.206083,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 8064.3775
+    },
+    {
+      "tool": "pi",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 361.556791,
+      "input_echo_ms": 425.094083,
+      "input_response_ms": 63.118125,
+      "exit_code": 0,
+      "process_total_ms": 813.072166
+    },
+    {
+      "tool": "kimi",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 660.869,
+      "input_echo_ms": 680.00425,
+      "input_response_ms": 18.59125,
+      "exit_code": 0,
+      "process_total_ms": 1161.59525
+    },
+    {
+      "tool": "omp",
+      "trial": 12,
+      "status": "ok",
+      "input_frame_ms": 5793.897208,
+      "input_echo_ms": 6528.768417,
+      "input_response_ms": 732.200834,
+      "exit_code": 0,
+      "process_total_ms": 6997.6605
+    },
+    {
+      "tool": "pi",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 1529.911792,
+      "input_echo_ms": 1692.035792,
+      "input_response_ms": 161.499167,
+      "exit_code": 0,
+      "process_total_ms": 2109.858959
+    },
+    {
+      "tool": "kimi",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 1674.581833,
+      "input_echo_ms": 1689.214292,
+      "input_response_ms": 13.7445,
+      "exit_code": 0,
+      "process_total_ms": 2124.862625
+    },
+    {
+      "tool": "omp",
+      "trial": 13,
+      "status": "ok",
+      "input_frame_ms": 1958.230166,
+      "input_echo_ms": 2022.17775,
+      "input_response_ms": 63.663292,
+      "exit_code": 0,
+      "process_total_ms": 2641.21175
+    },
+    {
+      "tool": "pi",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 586.1775,
+      "input_echo_ms": 672.144292,
+      "input_response_ms": 85.108375,
+      "exit_code": 0,
+      "process_total_ms": 1077.289042
+    },
+    {
+      "tool": "kimi",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 996.025083,
+      "input_echo_ms": 1007.137166,
+      "input_response_ms": 10.23925,
+      "exit_code": 0,
+      "process_total_ms": 1428.41925
+    },
+    {
+      "tool": "omp",
+      "trial": 14,
+      "status": "ok",
+      "input_frame_ms": 1698.564417,
+      "input_echo_ms": 1766.858584,
+      "input_response_ms": 67.829167,
+      "exit_code": 0,
+      "process_total_ms": 2411.427542
+    },
+    {
+      "tool": "pi",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 616.274792,
+      "input_echo_ms": 695.44425,
+      "input_response_ms": 78.640791,
+      "exit_code": 0,
+      "process_total_ms": 1099.352792
+    },
+    {
+      "tool": "kimi",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 837.892125,
+      "input_echo_ms": 846.314625,
+      "input_response_ms": 7.742958,
+      "exit_code": 0,
+      "process_total_ms": 1256.898375
+    },
+    {
+      "tool": "omp",
+      "trial": 15,
+      "status": "ok",
+      "input_frame_ms": 1613.296792,
+      "input_echo_ms": 1669.006917,
+      "input_response_ms": 55.210959,
+      "exit_code": 0,
+      "process_total_ms": 2262.416208
+    },
+    {
+      "tool": "pi",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 2326.821625,
+      "input_echo_ms": 2426.887083,
+      "input_response_ms": 99.356,
+      "exit_code": 0,
+      "process_total_ms": 2826.632541
+    },
+    {
+      "tool": "kimi",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 1011.44975,
+      "input_echo_ms": 1023.70725,
+      "input_response_ms": 11.749458,
+      "exit_code": 0,
+      "process_total_ms": 1436.536875
+    },
+    {
+      "tool": "omp",
+      "trial": 16,
+      "status": "ok",
+      "input_frame_ms": 1717.438375,
+      "input_echo_ms": 1784.559583,
+      "input_response_ms": 66.737,
+      "exit_code": 0,
+      "process_total_ms": 2772.459916
+    },
+    {
+      "tool": "pi",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 752.816083,
+      "input_echo_ms": 850.390583,
+      "input_response_ms": 96.915458,
+      "exit_code": 0,
+      "process_total_ms": 1247.839125
+    },
+    {
+      "tool": "kimi",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 1606.414417,
+      "input_echo_ms": 1628.300458,
+      "input_response_ms": 20.58375,
+      "exit_code": 0,
+      "process_total_ms": 2092.135708
+    },
+    {
+      "tool": "omp",
+      "trial": 17,
+      "status": "ok",
+      "input_frame_ms": 2192.644042,
+      "input_echo_ms": 2254.114167,
+      "input_response_ms": 61.09,
+      "exit_code": 0,
+      "process_total_ms": 2720.434792
+    },
+    {
+      "tool": "pi",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 703.742125,
+      "input_echo_ms": 806.144708,
+      "input_response_ms": 101.822958,
+      "exit_code": 0,
+      "process_total_ms": 1207.070708
+    },
+    {
+      "tool": "kimi",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 3726.679583,
+      "input_echo_ms": 3758.371125,
+      "input_response_ms": 30.581958,
+      "exit_code": 0,
+      "process_total_ms": 4229.3485
+    },
+    {
+      "tool": "omp",
+      "trial": 18,
+      "status": "ok",
+      "input_frame_ms": 4220.148833,
+      "input_echo_ms": 4264.679792,
+      "input_response_ms": 44.206042,
+      "exit_code": 0,
+      "process_total_ms": 4908.6905
+    },
+    {
+      "tool": "pi",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 503.412583,
+      "input_echo_ms": 575.64525,
+      "input_response_ms": 71.73175,
+      "exit_code": 0,
+      "process_total_ms": 972.614458
+    },
+    {
+      "tool": "kimi",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 759.837791,
+      "input_echo_ms": 769.006625,
+      "input_response_ms": 8.662459,
+      "exit_code": 0,
+      "process_total_ms": 1178.003458
+    },
+    {
+      "tool": "omp",
+      "trial": 19,
+      "status": "ok",
+      "input_frame_ms": 1862.267958,
+      "input_echo_ms": 1919.585458,
+      "input_response_ms": 56.870333,
+      "exit_code": 0,
+      "process_total_ms": 2497.349791
+    },
+    {
+      "tool": "pi",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 508.535584,
+      "input_echo_ms": 586.216625,
+      "input_response_ms": 77.225708,
+      "exit_code": 0,
+      "process_total_ms": 979.183417
+    },
+    {
+      "tool": "kimi",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 851.038417,
+      "input_echo_ms": 866.018417,
+      "input_response_ms": 14.491959,
+      "exit_code": 0,
+      "process_total_ms": 1292.907125
+    },
+    {
+      "tool": "omp",
+      "trial": 20,
+      "status": "ok",
+      "input_frame_ms": 1775.58175,
+      "input_echo_ms": 1858.459959,
+      "input_response_ms": 82.577,
+      "exit_code": 0,
+      "process_total_ms": 2346.955667
+    },
+    {
+      "tool": "pi",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 499.507708,
+      "input_echo_ms": 580.773708,
+      "input_response_ms": 80.489625,
+      "exit_code": 0,
+      "process_total_ms": 976.620333
+    },
+    {
+      "tool": "kimi",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 721.605875,
+      "input_echo_ms": 744.859291,
+      "input_response_ms": 22.743125,
+      "exit_code": 0,
+      "process_total_ms": 1198.535041
+    },
+    {
+      "tool": "omp",
+      "trial": 21,
+      "status": "ok",
+      "input_frame_ms": 1878.445041,
+      "input_echo_ms": 1962.916666,
+      "input_response_ms": 83.995916,
+      "exit_code": 0,
+      "process_total_ms": 2949.694541
+    },
+    {
+      "tool": "pi",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 1083.965,
+      "input_echo_ms": 1586.354209,
+      "input_response_ms": 501.812,
+      "exit_code": 0,
+      "process_total_ms": 2198.000417
+    },
+    {
+      "tool": "kimi",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 2132.031916,
+      "input_echo_ms": 2144.589791,
+      "input_response_ms": 12.0415,
+      "exit_code": 0,
+      "process_total_ms": 2600.365958
+    },
+    {
+      "tool": "omp",
+      "trial": 22,
+      "status": "ok",
+      "input_frame_ms": 1806.526875,
+      "input_echo_ms": 1840.118833,
+      "input_response_ms": 33.351208,
+      "exit_code": 0,
+      "process_total_ms": 2326.786833
+    },
+    {
+      "tool": "pi",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 510.774042,
+      "input_echo_ms": 610.93075,
+      "input_response_ms": 99.713,
+      "exit_code": 0,
+      "process_total_ms": 1023.139
+    },
+    {
+      "tool": "kimi",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 1870.341916,
+      "input_echo_ms": 1886.842208,
+      "input_response_ms": 15.732792,
+      "exit_code": 0,
+      "process_total_ms": 2338.478791
+    },
+    {
+      "tool": "omp",
+      "trial": 23,
+      "status": "ok",
+      "input_frame_ms": 2707.135667,
+      "input_echo_ms": 4360.142042,
+      "input_response_ms": 1652.129125,
+      "exit_code": 0,
+      "process_total_ms": 4820.942667
+    },
+    {
+      "tool": "pi",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 898.935834,
+      "input_echo_ms": 1013.648292,
+      "input_response_ms": 108.930792,
+      "exit_code": 0,
+      "process_total_ms": 1418.327792
+    },
+    {
+      "tool": "kimi",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 904.248834,
+      "input_echo_ms": 922.002209,
+      "input_response_ms": 17.066834,
+      "exit_code": 0,
+      "process_total_ms": 1345.068459
+    },
+    {
+      "tool": "omp",
+      "trial": 24,
+      "status": "ok",
+      "input_frame_ms": 1445.946708,
+      "input_echo_ms": 1513.969291,
+      "input_response_ms": 66.946541,
+      "exit_code": 0,
+      "process_total_ms": 3536.887958
+    },
+    {
+      "tool": "pi",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 633.089834,
+      "input_echo_ms": 728.043792,
+      "input_response_ms": 94.471833,
+      "exit_code": 0,
+      "process_total_ms": 1132.426584
+    },
+    {
+      "tool": "kimi",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 969.248916,
+      "input_echo_ms": 978.341791,
+      "input_response_ms": 8.574625,
+      "exit_code": 0,
+      "process_total_ms": 1394.305541
+    },
+    {
+      "tool": "omp",
+      "trial": 25,
+      "status": "ok",
+      "input_frame_ms": 3492.39475,
+      "input_echo_ms": 3578.689292,
+      "input_response_ms": 85.667625,
+      "exit_code": 0,
+      "process_total_ms": 4096.256958
+    },
+    {
+      "tool": "pi",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 618.293834,
+      "input_echo_ms": 696.914417,
+      "input_response_ms": 77.961708,
+      "exit_code": 0,
+      "process_total_ms": 1096.816042
+    },
+    {
+      "tool": "kimi",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 961.315,
+      "input_echo_ms": 972.431542,
+      "input_response_ms": 10.625125,
+      "exit_code": 0,
+      "process_total_ms": 1397.710625
+    },
+    {
+      "tool": "omp",
+      "trial": 26,
+      "status": "ok",
+      "input_frame_ms": 1911.51425,
+      "input_echo_ms": 1965.810458,
+      "input_response_ms": 53.957,
+      "exit_code": 0,
+      "process_total_ms": 2440.651
+    },
+    {
+      "tool": "pi",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 508.721166,
+      "input_echo_ms": 584.115333,
+      "input_response_ms": 74.905875,
+      "exit_code": 0,
+      "process_total_ms": 1005.509458
+    },
+    {
+      "tool": "kimi",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 1144.198458,
+      "input_echo_ms": 1157.845708,
+      "input_response_ms": 13.040291,
+      "exit_code": 0,
+      "process_total_ms": 1614.1975
+    },
+    {
+      "tool": "omp",
+      "trial": 27,
+      "status": "ok",
+      "input_frame_ms": 2837.620709,
+      "input_echo_ms": 2930.782375,
+      "input_response_ms": 92.8975,
+      "exit_code": 0,
+      "process_total_ms": 3807.5655
+    },
+    {
+      "tool": "pi",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 2216.48225,
+      "input_echo_ms": 2347.470916,
+      "input_response_ms": 130.130458,
+      "exit_code": 0,
+      "process_total_ms": 2753.472416
+    },
+    {
+      "tool": "kimi",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 1158.684791,
+      "input_echo_ms": 1178.063791,
+      "input_response_ms": 18.751166,
+      "exit_code": 0,
+      "process_total_ms": 1617.596083
+    },
+    {
+      "tool": "omp",
+      "trial": 28,
+      "status": "ok",
+      "input_frame_ms": 1876.919959,
+      "input_echo_ms": 1924.091459,
+      "input_response_ms": 46.826792,
+      "exit_code": 0,
+      "process_total_ms": 2599.746917
+    },
+    {
+      "tool": "pi",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 640.015791,
+      "input_echo_ms": 718.139666,
+      "input_response_ms": 77.663,
+      "exit_code": 0,
+      "process_total_ms": 1118.227916
+    },
+    {
+      "tool": "kimi",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 1511.658041,
+      "input_echo_ms": 1525.08175,
+      "input_response_ms": 12.862209,
+      "exit_code": 0,
+      "process_total_ms": 2754.290625
+    },
+    {
+      "tool": "omp",
+      "trial": 29,
+      "status": "ok",
+      "input_frame_ms": 4287.136208,
+      "input_echo_ms": 4376.032625,
+      "input_response_ms": 88.543792,
+      "exit_code": 0,
+      "process_total_ms": 4866.448958
+    },
+    {
+      "tool": "pi",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 627.552958,
+      "input_echo_ms": 704.716625,
+      "input_response_ms": 76.702458,
+      "exit_code": 0,
+      "process_total_ms": 1110.795583
+    },
+    {
+      "tool": "kimi",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 1150.753417,
+      "input_echo_ms": 1173.443792,
+      "input_response_ms": 22.19625,
+      "exit_code": 0,
+      "process_total_ms": 1600.73125
+    },
+    {
+      "tool": "omp",
+      "trial": 30,
+      "status": "ok",
+      "input_frame_ms": 1953.491833,
+      "input_echo_ms": 1986.997542,
+      "input_response_ms": 33.206084,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 7687.749833
+    },
+    {
+      "tool": "pi",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 359.080292,
+      "input_echo_ms": 422.176625,
+      "input_response_ms": 62.691125,
+      "exit_code": 0,
+      "process_total_ms": 814.269292
+    },
+    {
+      "tool": "kimi",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 1732.943584,
+      "input_echo_ms": 1769.272625,
+      "input_response_ms": 35.588875,
+      "exit_code": 0,
+      "process_total_ms": 2232.730625
+    },
+    {
+      "tool": "omp",
+      "trial": 31,
+      "status": "ok",
+      "input_frame_ms": 2281.310041,
+      "input_echo_ms": 2319.883458,
+      "input_response_ms": 35.758417,
+      "exit_code": 0,
+      "process_total_ms": 4515.546916
+    },
+    {
+      "tool": "pi",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 1167.797625,
+      "input_echo_ms": 1254.030542,
+      "input_response_ms": 85.688375,
+      "exit_code": 0,
+      "process_total_ms": 1654.523417
+    },
+    {
+      "tool": "kimi",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 908.238584,
+      "input_echo_ms": 928.458292,
+      "input_response_ms": 19.435125,
+      "exit_code": 0,
+      "process_total_ms": 1360.556917
+    },
+    {
+      "tool": "omp",
+      "trial": 32,
+      "status": "ok",
+      "input_frame_ms": 1885.989584,
+      "input_echo_ms": 1931.101084,
+      "input_response_ms": 44.819459,
+      "exit_code": 0,
+      "process_total_ms": 2785.183417
+    },
+    {
+      "tool": "pi",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 744.815625,
+      "input_echo_ms": 1003.480125,
+      "input_response_ms": 257.943334,
+      "exit_code": 0,
+      "process_total_ms": 1530.070083
+    },
+    {
+      "tool": "kimi",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 2064.347625,
+      "input_echo_ms": 2091.286917,
+      "input_response_ms": 24.99075,
+      "exit_code": 0,
+      "process_total_ms": 2592.510458
+    },
+    {
+      "tool": "omp",
+      "trial": 33,
+      "status": "ok",
+      "input_frame_ms": 1853.562209,
+      "input_echo_ms": 1978.856084,
+      "input_response_ms": 124.563042,
+      "exit_code": 0,
+      "process_total_ms": 3316.84075
+    },
+    {
+      "tool": "pi",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 856.965708,
+      "input_echo_ms": 954.306708,
+      "input_response_ms": 96.881291,
+      "exit_code": 0,
+      "process_total_ms": 1367.199833
+    },
+    {
+      "tool": "kimi",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 1182.1635,
+      "input_echo_ms": 1194.933875,
+      "input_response_ms": 12.027916,
+      "exit_code": 0,
+      "process_total_ms": 1611.240792
+    },
+    {
+      "tool": "omp",
+      "trial": 34,
+      "status": "ok",
+      "input_frame_ms": 1784.981084,
+      "input_echo_ms": 1837.120125,
+      "input_response_ms": 51.463083,
+      "exit_code": 0,
+      "process_total_ms": 2492.087625
+    },
+    {
+      "tool": "pi",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 473.55625,
+      "input_echo_ms": 549.256875,
+      "input_response_ms": 75.253459,
+      "exit_code": 0,
+      "process_total_ms": 949.491291
+    },
+    {
+      "tool": "kimi",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 808.774541,
+      "input_echo_ms": 819.506625,
+      "input_response_ms": 10.033,
+      "exit_code": 0,
+      "process_total_ms": 1242.867041
+    },
+    {
+      "tool": "omp",
+      "trial": 35,
+      "status": "ok",
+      "input_frame_ms": 2193.261625,
+      "input_echo_ms": 3408.838666,
+      "input_response_ms": 1215.213291,
+      "exit_code": 0,
+      "process_total_ms": 4036.481583
+    },
+    {
+      "tool": "pi",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 1021.465333,
+      "input_echo_ms": 1120.885833,
+      "input_response_ms": 98.833708,
+      "exit_code": 0,
+      "process_total_ms": 1521.157
+    },
+    {
+      "tool": "kimi",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 1850.710584,
+      "input_echo_ms": 1862.697584,
+      "input_response_ms": 11.485834,
+      "exit_code": 0,
+      "process_total_ms": 2284.23425
+    },
+    {
+      "tool": "omp",
+      "trial": 36,
+      "status": "ok",
+      "input_frame_ms": 1675.433458,
+      "input_echo_ms": 1735.3275,
+      "input_response_ms": 59.555,
+      "exit_code": 0,
+      "process_total_ms": 2441.735458
+    },
+    {
+      "tool": "pi",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 520.992041,
+      "input_echo_ms": 600.548041,
+      "input_response_ms": 79.030083,
+      "exit_code": 0,
+      "process_total_ms": 1002.174083
+    },
+    {
+      "tool": "kimi",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 826.41025,
+      "input_echo_ms": 842.67225,
+      "input_response_ms": 15.794792,
+      "exit_code": 0,
+      "process_total_ms": 1263.75225
+    },
+    {
+      "tool": "omp",
+      "trial": 37,
+      "status": "ok",
+      "input_frame_ms": 4656.00575,
+      "input_echo_ms": 4789.0905,
+      "input_response_ms": 132.666542,
+      "exit_code": 0,
+      "process_total_ms": 7238.89475
+    },
+    {
+      "tool": "pi",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 551.663333,
+      "input_echo_ms": 645.493958,
+      "input_response_ms": 93.39075,
+      "exit_code": 0,
+      "process_total_ms": 1046.735375
+    },
+    {
+      "tool": "kimi",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 889.585125,
+      "input_echo_ms": 898.888917,
+      "input_response_ms": 8.79925,
+      "exit_code": 0,
+      "process_total_ms": 1317.551417
+    },
+    {
+      "tool": "omp",
+      "trial": 38,
+      "status": "ok",
+      "input_frame_ms": 2811.328958,
+      "input_echo_ms": 2973.655583,
+      "input_response_ms": 162.0425,
+      "exit_code": 0,
+      "process_total_ms": 3459.922875
+    },
+    {
+      "tool": "pi",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 637.633625,
+      "input_echo_ms": 754.9905,
+      "input_response_ms": 116.707125,
+      "exit_code": 0,
+      "process_total_ms": 1159.877083
+    },
+    {
+      "tool": "kimi",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 2508.460875,
+      "input_echo_ms": 2534.588667,
+      "input_response_ms": 25.345,
+      "exit_code": 0,
+      "process_total_ms": 3092.772042
+    },
+    {
+      "tool": "omp",
+      "trial": 39,
+      "status": "ok",
+      "input_frame_ms": 4752.113959,
+      "input_echo_ms": 4898.089334,
+      "input_response_ms": 141.572167,
+      "exit_code": 0,
+      "process_total_ms": 5425.434542
+    },
+    {
+      "tool": "pi",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 1946.662333,
+      "input_echo_ms": 2121.869958,
+      "input_response_ms": 174.581917,
+      "exit_code": 0,
+      "process_total_ms": 2558.676375
+    },
+    {
+      "tool": "kimi",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 2280.97475,
+      "input_echo_ms": 2298.156834,
+      "input_response_ms": 15.980542,
+      "exit_code": 0,
+      "process_total_ms": 2765.840959
+    },
+    {
+      "tool": "omp",
+      "trial": 40,
+      "status": "ok",
+      "input_frame_ms": 2651.834042,
+      "input_echo_ms": 2727.950042,
+      "input_response_ms": 75.731209,
+      "exit_code": 0,
+      "process_total_ms": 3803.350125
+    },
+    {
+      "tool": "pi",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 2150.862542,
+      "input_echo_ms": 2333.18425,
+      "input_response_ms": 181.713708,
+      "exit_code": 0,
+      "process_total_ms": 2758.174208
+    },
+    {
+      "tool": "kimi",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 1577.472,
+      "input_echo_ms": 1593.066041,
+      "input_response_ms": 14.736083,
+      "exit_code": 0,
+      "process_total_ms": 2045.75325
+    },
+    {
+      "tool": "omp",
+      "trial": 41,
+      "status": "ok",
+      "input_frame_ms": 3378.35325,
+      "input_echo_ms": 4045.312625,
+      "input_response_ms": 666.621625,
+      "exit_code": 0,
+      "process_total_ms": 5993.642125
+    },
+    {
+      "tool": "pi",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 740.675416,
+      "input_echo_ms": 833.271541,
+      "input_response_ms": 91.944666,
+      "exit_code": 0,
+      "process_total_ms": 1237.027166
+    },
+    {
+      "tool": "kimi",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 1066.2215,
+      "input_echo_ms": 1080.412916,
+      "input_response_ms": 13.674541,
+      "exit_code": 0,
+      "process_total_ms": 1516.0215
+    },
+    {
+      "tool": "omp",
+      "trial": 42,
+      "status": "ok",
+      "input_frame_ms": 2255.455958,
+      "input_echo_ms": 2339.201708,
+      "input_response_ms": 83.326042,
+      "exit_code": 0,
+      "process_total_ms": 2991.773458
+    },
+    {
+      "tool": "pi",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 594.884875,
+      "input_echo_ms": 687.679125,
+      "input_response_ms": 92.346917,
+      "exit_code": 0,
+      "process_total_ms": 1084.391458
+    },
+    {
+      "tool": "kimi",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 908.19025,
+      "input_echo_ms": 919.737041,
+      "input_response_ms": 11.05625,
+      "exit_code": 0,
+      "process_total_ms": 1328.189166
+    },
+    {
+      "tool": "omp",
+      "trial": 43,
+      "status": "ok",
+      "input_frame_ms": 2121.511834,
+      "input_echo_ms": 2232.206959,
+      "input_response_ms": 110.357167,
+      "exit_code": 0,
+      "process_total_ms": 3879.438125
+    },
+    {
+      "tool": "pi",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 629.204,
+      "input_echo_ms": 714.892084,
+      "input_response_ms": 82.711459,
+      "exit_code": 0,
+      "process_total_ms": 1131.375959
+    },
+    {
+      "tool": "kimi",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 1644.480417,
+      "input_echo_ms": 1667.18675,
+      "input_response_ms": 20.596542,
+      "exit_code": 0,
+      "process_total_ms": 2126.732708
+    },
+    {
+      "tool": "omp",
+      "trial": 44,
+      "status": "ok",
+      "input_frame_ms": 1779.965583,
+      "input_echo_ms": 1834.389708,
+      "input_response_ms": 54.079875,
+      "exit_code": 0,
+      "process_total_ms": 2284.088
+    },
+    {
+      "tool": "pi",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 531.216667,
+      "input_echo_ms": 607.168042,
+      "input_response_ms": 75.461292,
+      "exit_code": 0,
+      "process_total_ms": 999.089334
+    },
+    {
+      "tool": "kimi",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 680.460792,
+      "input_echo_ms": 690.897042,
+      "input_response_ms": 9.976708,
+      "exit_code": 0,
+      "process_total_ms": 1144.444959
+    },
+    {
+      "tool": "omp",
+      "trial": 45,
+      "status": "ok",
+      "input_frame_ms": 2888.042375,
+      "input_echo_ms": 2966.850584,
+      "input_response_ms": 78.359084,
+      "exit_code": 0,
+      "process_total_ms": 3427.761959
+    },
+    {
+      "tool": "pi",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 598.12625,
+      "input_echo_ms": 675.8625,
+      "input_response_ms": 77.046208,
+      "exit_code": 0,
+      "process_total_ms": 1078.333792
+    },
+    {
+      "tool": "kimi",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 978.786292,
+      "input_echo_ms": 1009.79225,
+      "input_response_ms": 26.071542,
+      "exit_code": 0,
+      "process_total_ms": 1449.153125
+    },
+    {
+      "tool": "omp",
+      "trial": 46,
+      "status": "ok",
+      "input_frame_ms": 1946.4335,
+      "input_echo_ms": 1991.437417,
+      "input_response_ms": 44.65775,
+      "exit_code": 0,
+      "process_total_ms": 2592.888375
+    },
+    {
+      "tool": "pi",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 543.120917,
+      "input_echo_ms": 619.8495,
+      "input_response_ms": 76.197041,
+      "exit_code": 0,
+      "process_total_ms": 1011.284084
+    },
+    {
+      "tool": "kimi",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 837.800208,
+      "input_echo_ms": 850.565333,
+      "input_response_ms": 11.458458,
+      "exit_code": 0,
+      "process_total_ms": 1273.471291
+    },
+    {
+      "tool": "omp",
+      "trial": 47,
+      "status": "ok",
+      "input_frame_ms": 1785.867,
+      "input_echo_ms": 1840.386125,
+      "input_response_ms": 54.14275,
+      "exit_code": 0,
+      "process_total_ms": 2442.839792
+    },
+    {
+      "tool": "pi",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 531.445792,
+      "input_echo_ms": 707.870792,
+      "input_response_ms": 175.983667,
+      "exit_code": 0,
+      "process_total_ms": 1111.235834
+    },
+    {
+      "tool": "kimi",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 1813.756541,
+      "input_echo_ms": 1825.336458,
+      "input_response_ms": 10.805583,
+      "exit_code": 0,
+      "process_total_ms": 2306.069
+    },
+    {
+      "tool": "omp",
+      "trial": 48,
+      "status": "ok",
+      "input_frame_ms": 2541.205041,
+      "input_echo_ms": 3274.771833,
+      "input_response_ms": 732.118708,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 9034.1165
+    },
+    {
+      "tool": "pi",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 802.307416,
+      "input_echo_ms": 912.480333,
+      "input_response_ms": 109.492708,
+      "exit_code": 0,
+      "process_total_ms": 1326.378333
+    },
+    {
+      "tool": "kimi",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 1184.138,
+      "input_echo_ms": 1193.219167,
+      "input_response_ms": 8.320834,
+      "exit_code": 0,
+      "process_total_ms": 1636.099708
+    },
+    {
+      "tool": "omp",
+      "trial": 49,
+      "status": "ok",
+      "input_frame_ms": 3313.123709,
+      "input_echo_ms": 3364.427292,
+      "input_response_ms": 50.685083,
+      "exit_code": 0,
+      "process_total_ms": 3947.934917
+    },
+    {
+      "tool": "pi",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 499.773041,
+      "input_echo_ms": 575.550125,
+      "input_response_ms": 75.338667,
+      "exit_code": 0,
+      "process_total_ms": 970.355916
+    },
+    {
+      "tool": "kimi",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 858.971333,
+      "input_echo_ms": 870.019667,
+      "input_response_ms": 10.369459,
+      "exit_code": 0,
+      "process_total_ms": 1288.00525
+    },
+    {
+      "tool": "omp",
+      "trial": 50,
+      "status": "ok",
+      "input_frame_ms": 1656.070333,
+      "input_echo_ms": 1708.388375,
+      "input_response_ms": 52.046375,
+      "exit_code": 0,
+      "process_total_ms": 2347.554458
+    },
+    {
+      "tool": "pi",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 449.947458,
+      "input_echo_ms": 517.787125,
+      "input_response_ms": 67.42275,
+      "exit_code": 0,
+      "process_total_ms": 908.794708
+    },
+    {
+      "tool": "kimi",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 1166.769625,
+      "input_echo_ms": 1182.551792,
+      "input_response_ms": 15.024167,
+      "exit_code": 0,
+      "process_total_ms": 1602.683667
+    },
+    {
+      "tool": "omp",
+      "trial": 51,
+      "status": "ok",
+      "input_frame_ms": 1669.545333,
+      "input_echo_ms": 1722.264,
+      "input_response_ms": 52.293417,
+      "exit_code": 0,
+      "process_total_ms": 2275.241541
+    },
+    {
+      "tool": "pi",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 531.710292,
+      "input_echo_ms": 611.801625,
+      "input_response_ms": 79.563208,
+      "exit_code": 0,
+      "process_total_ms": 1007.322167
+    },
+    {
+      "tool": "kimi",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 866.275959,
+      "input_echo_ms": 875.833709,
+      "input_response_ms": 9.060875,
+      "exit_code": 0,
+      "process_total_ms": 1285.038834
+    },
+    {
+      "tool": "omp",
+      "trial": 52,
+      "status": "ok",
+      "input_frame_ms": 1620.662167,
+      "input_echo_ms": 1694.111167,
+      "input_response_ms": 72.901208,
+      "exit_code": 0,
+      "process_total_ms": 2184.767667
+    },
+    {
+      "tool": "pi",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 2486.376667,
+      "input_echo_ms": 2630.45575,
+      "input_response_ms": 143.515333,
+      "exit_code": 0,
+      "process_total_ms": 3046.260375
+    },
+    {
+      "tool": "kimi",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 1006.58525,
+      "input_echo_ms": 1026.221209,
+      "input_response_ms": 19.137334,
+      "exit_code": 0,
+      "process_total_ms": 1457.268584
+    },
+    {
+      "tool": "omp",
+      "trial": 53,
+      "status": "ok",
+      "input_frame_ms": 1712.4755,
+      "input_echo_ms": 1769.803666,
+      "input_response_ms": 56.978333,
+      "exit_code": 0,
+      "process_total_ms": 2426.17225
+    },
+    {
+      "tool": "pi",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 1296.333959,
+      "input_echo_ms": 1409.377334,
+      "input_response_ms": 112.354417,
+      "exit_code": 0,
+      "process_total_ms": 1982.033417
+    },
+    {
+      "tool": "kimi",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 1121.222958,
+      "input_echo_ms": 1137.449708,
+      "input_response_ms": 15.563916,
+      "exit_code": 0,
+      "process_total_ms": 1576.274583
+    },
+    {
+      "tool": "omp",
+      "trial": 54,
+      "status": "ok",
+      "input_frame_ms": 1680.301542,
+      "input_echo_ms": 1716.838542,
+      "input_response_ms": 36.166167,
+      "exit_code": 0,
+      "process_total_ms": 2369.574709
+    },
+    {
+      "tool": "pi",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 449.938333,
+      "input_echo_ms": 531.327292,
+      "input_response_ms": 80.508875,
+      "exit_code": 0,
+      "process_total_ms": 926.915792
+    },
+    {
+      "tool": "kimi",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 1226.6165,
+      "input_echo_ms": 1268.038042,
+      "input_response_ms": 40.7435,
+      "exit_code": 0,
+      "process_total_ms": 1750.859209
+    },
+    {
+      "tool": "omp",
+      "trial": 55,
+      "status": "ok",
+      "input_frame_ms": 2270.953625,
+      "input_echo_ms": 2338.56375,
+      "input_response_ms": 67.3195,
+      "exit_code": 0,
+      "process_total_ms": 2914.102458
+    },
+    {
+      "tool": "pi",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 793.223292,
+      "input_echo_ms": 877.892542,
+      "input_response_ms": 83.828917,
+      "exit_code": 0,
+      "process_total_ms": 1278.780375
+    },
+    {
+      "tool": "kimi",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 853.142792,
+      "input_echo_ms": 869.694709,
+      "input_response_ms": 16.066375,
+      "exit_code": 0,
+      "process_total_ms": 1274.716042
+    },
+    {
+      "tool": "omp",
+      "trial": 56,
+      "status": "ok",
+      "input_frame_ms": 1651.484,
+      "input_echo_ms": 1713.345458,
+      "input_response_ms": 61.506792,
+      "exit_code": 0,
+      "process_total_ms": 2188.663833
+    },
+    {
+      "tool": "pi",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 632.750542,
+      "input_echo_ms": 711.341875,
+      "input_response_ms": 78.066416,
+      "exit_code": 0,
+      "process_total_ms": 1111.584417
+    },
+    {
+      "tool": "kimi",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 1670.834375,
+      "input_echo_ms": 1687.732416,
+      "input_response_ms": 16.286041,
+      "exit_code": 0,
+      "process_total_ms": 2165.557
+    },
+    {
+      "tool": "omp",
+      "trial": 57,
+      "status": "ok",
+      "input_frame_ms": 2287.752375,
+      "input_echo_ms": 2350.065291,
+      "input_response_ms": 61.968666,
+      "exit_code": 0,
+      "process_total_ms": 2902.170166
+    },
+    {
+      "tool": "pi",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 552.853916,
+      "input_echo_ms": 636.335708,
+      "input_response_ms": 82.556208,
+      "exit_code": 0,
+      "process_total_ms": 1029.466708
+    },
+    {
+      "tool": "kimi",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 972.562,
+      "input_echo_ms": 981.524833,
+      "input_response_ms": 8.317375,
+      "exit_code": 0,
+      "process_total_ms": 1406.237292
+    },
+    {
+      "tool": "omp",
+      "trial": 58,
+      "status": "ok",
+      "input_frame_ms": 1854.55875,
+      "input_echo_ms": 1900.302917,
+      "input_response_ms": 45.376334,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 7592.696292
+    },
+    {
+      "tool": "pi",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 609.790125,
+      "input_echo_ms": 685.6915,
+      "input_response_ms": 75.447,
+      "exit_code": 0,
+      "process_total_ms": 1090.472625
+    },
+    {
+      "tool": "kimi",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 1359.077208,
+      "input_echo_ms": 1369.460083,
+      "input_response_ms": 9.768583,
+      "exit_code": 0,
+      "process_total_ms": 1801.494083
+    },
+    {
+      "tool": "omp",
+      "trial": 59,
+      "status": "ok",
+      "input_frame_ms": 1861.076167,
+      "input_echo_ms": 1868.660334,
+      "input_response_ms": 7.319334,
+      "exit_code": 0,
+      "process_total_ms": 2657.763625
+    },
+    {
+      "tool": "pi",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 1055.236416,
+      "input_echo_ms": 1183.676833,
+      "input_response_ms": 127.815208,
+      "exit_code": 0,
+      "process_total_ms": 1717.377708
+    },
+    {
+      "tool": "kimi",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 3441.540625,
+      "input_echo_ms": 3457.251959,
+      "input_response_ms": 15.214917,
+      "exit_code": 0,
+      "process_total_ms": 3944.973625
+    },
+    {
+      "tool": "omp",
+      "trial": 60,
+      "status": "ok",
+      "input_frame_ms": 4988.856084,
+      "input_echo_ms": 5075.044167,
+      "input_response_ms": 85.903875,
+      "exit_code": 0,
+      "process_total_ms": 6174.680625
+    },
+    {
+      "tool": "pi",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 598.934916,
+      "input_echo_ms": 691.487041,
+      "input_response_ms": 91.8515,
+      "exit_code": 0,
+      "process_total_ms": 1086.552583
+    },
+    {
+      "tool": "kimi",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 1024.121292,
+      "input_echo_ms": 1049.334375,
+      "input_response_ms": 24.305416,
+      "exit_code": 0,
+      "process_total_ms": 1477.311584
+    },
+    {
+      "tool": "omp",
+      "trial": 61,
+      "status": "ok",
+      "input_frame_ms": 3352.868833,
+      "input_echo_ms": 3403.547125,
+      "input_response_ms": 50.337709,
+      "exit_code": 0,
+      "process_total_ms": 4086.78675
+    },
+    {
+      "tool": "pi",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 1073.856375,
+      "input_echo_ms": 1262.384209,
+      "input_response_ms": 185.694542,
+      "exit_code": 0,
+      "process_total_ms": 1731.450084
+    },
+    {
+      "tool": "kimi",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 1377.16075,
+      "input_echo_ms": 1409.6285,
+      "input_response_ms": 30.733042,
+      "exit_code": 0,
+      "process_total_ms": 1834.053667
+    },
+    {
+      "tool": "omp",
+      "trial": 62,
+      "status": "ok",
+      "input_frame_ms": 1617.49475,
+      "input_echo_ms": 1653.918917,
+      "input_response_ms": 36.047625,
+      "exit_code": 0,
+      "process_total_ms": 2244.419084
+    },
+    {
+      "tool": "pi",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 453.468958,
+      "input_echo_ms": 528.059916,
+      "input_response_ms": 74.111916,
+      "exit_code": 0,
+      "process_total_ms": 927.509833
+    },
+    {
+      "tool": "kimi",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 820.433959,
+      "input_echo_ms": 829.558584,
+      "input_response_ms": 8.627959,
+      "exit_code": 0,
+      "process_total_ms": 1236.045709
+    },
+    {
+      "tool": "omp",
+      "trial": 63,
+      "status": "ok",
+      "input_frame_ms": 2652.969834,
+      "input_echo_ms": 2736.783209,
+      "input_response_ms": 83.459917,
+      "exit_code": 0,
+      "process_total_ms": 3250.691125
+    },
+    {
+      "tool": "pi",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 489.073084,
+      "input_echo_ms": 563.1785,
+      "input_response_ms": 73.657666,
+      "exit_code": 0,
+      "process_total_ms": 965.964042
+    },
+    {
+      "tool": "kimi",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 708.262292,
+      "input_echo_ms": 724.309084,
+      "input_response_ms": 15.530959,
+      "exit_code": 0,
+      "process_total_ms": 1159.85525
+    },
+    {
+      "tool": "omp",
+      "trial": 64,
+      "status": "ok",
+      "input_frame_ms": 2693.235625,
+      "input_echo_ms": 2826.845125,
+      "input_response_ms": 133.250375,
+      "exit_code": 0,
+      "process_total_ms": 3302.207375
+    },
+    {
+      "tool": "pi",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 507.5265,
+      "input_echo_ms": 576.845125,
+      "input_response_ms": 68.815,
+      "exit_code": 0,
+      "process_total_ms": 969.899125
+    },
+    {
+      "tool": "kimi",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 684.193333,
+      "input_echo_ms": 691.492667,
+      "input_response_ms": 6.8095,
+      "exit_code": 0,
+      "process_total_ms": 1111.252125
+    },
+    {
+      "tool": "omp",
+      "trial": 65,
+      "status": "ok",
+      "input_frame_ms": 2115.853625,
+      "input_echo_ms": 2162.607709,
+      "input_response_ms": 46.399959,
+      "exit_code": 0,
+      "process_total_ms": 2810.398584
+    },
+    {
+      "tool": "pi",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 443.582834,
+      "input_echo_ms": 532.127042,
+      "input_response_ms": 88.004292,
+      "exit_code": 0,
+      "process_total_ms": 936.303209
+    },
+    {
+      "tool": "kimi",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 1108.803958,
+      "input_echo_ms": 1128.881792,
+      "input_response_ms": 18.983292,
+      "exit_code": 0,
+      "process_total_ms": 1566.156708
+    },
+    {
+      "tool": "omp",
+      "trial": 66,
+      "status": "ok",
+      "input_frame_ms": 1879.798,
+      "input_echo_ms": 1909.909667,
+      "input_response_ms": 29.760375,
+      "exit_code": 0,
+      "process_total_ms": 2453.922167
+    },
+    {
+      "tool": "pi",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 467.50225,
+      "input_echo_ms": 551.51075,
+      "input_response_ms": 83.555792,
+      "exit_code": 0,
+      "process_total_ms": 952.805208
+    },
+    {
+      "tool": "kimi",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 909.248,
+      "input_echo_ms": 918.758542,
+      "input_response_ms": 9.019125,
+      "exit_code": 0,
+      "process_total_ms": 1334.330125
+    },
+    {
+      "tool": "omp",
+      "trial": 67,
+      "status": "ok",
+      "input_frame_ms": 1646.498791,
+      "input_echo_ms": 1712.761541,
+      "input_response_ms": 65.962625,
+      "exit_code": 0,
+      "process_total_ms": 2253.465041
+    },
+    {
+      "tool": "pi",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 486.891375,
+      "input_echo_ms": 565.222041,
+      "input_response_ms": 77.810125,
+      "exit_code": 0,
+      "process_total_ms": 965.326958
+    },
+    {
+      "tool": "kimi",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 824.305917,
+      "input_echo_ms": 844.782584,
+      "input_response_ms": 19.984792,
+      "exit_code": 0,
+      "process_total_ms": 1256.827375
+    },
+    {
+      "tool": "omp",
+      "trial": 68,
+      "status": "ok",
+      "input_frame_ms": 1612.237583,
+      "input_echo_ms": 1672.840791,
+      "input_response_ms": 60.375458,
+      "exit_code": 0,
+      "process_total_ms": 2156.238791
+    },
+    {
+      "tool": "pi",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 488.919916,
+      "input_echo_ms": 566.897541,
+      "input_response_ms": 77.455666,
+      "exit_code": 0,
+      "process_total_ms": 966.084458
+    },
+    {
+      "tool": "kimi",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 707.946792,
+      "input_echo_ms": 722.686583,
+      "input_response_ms": 14.276208,
+      "exit_code": 0,
+      "process_total_ms": 1135.446958
+    },
+    {
+      "tool": "omp",
+      "trial": 69,
+      "status": "ok",
+      "input_frame_ms": 1656.04125,
+      "input_echo_ms": 1705.911416,
+      "input_response_ms": 49.557791,
+      "exit_code": 0,
+      "process_total_ms": 2308.510208
+    },
+    {
+      "tool": "pi",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 517.787208,
+      "input_echo_ms": 596.935542,
+      "input_response_ms": 78.605084,
+      "exit_code": 0,
+      "process_total_ms": 990.573375
+    },
+    {
+      "tool": "kimi",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 739.413708,
+      "input_echo_ms": 749.4725,
+      "input_response_ms": 9.578542,
+      "exit_code": 0,
+      "process_total_ms": 1163.895042
+    },
+    {
+      "tool": "omp",
+      "trial": 70,
+      "status": "ok",
+      "input_frame_ms": 1596.737875,
+      "input_echo_ms": 1638.389125,
+      "input_response_ms": 41.315459,
+      "exit_code": 0,
+      "process_total_ms": 2184.408041
+    },
+    {
+      "tool": "pi",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 513.677833,
+      "input_echo_ms": 601.516291,
+      "input_response_ms": 87.317291,
+      "exit_code": 0,
+      "process_total_ms": 1007.661
+    },
+    {
+      "tool": "kimi",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 735.461667,
+      "input_echo_ms": 749.76475,
+      "input_response_ms": 13.829708,
+      "exit_code": 0,
+      "process_total_ms": 1157.142417
+    },
+    {
+      "tool": "omp",
+      "trial": 71,
+      "status": "ok",
+      "input_frame_ms": 1653.0785,
+      "input_echo_ms": 1702.881541,
+      "input_response_ms": 49.52475,
+      "exit_code": 0,
+      "process_total_ms": 2215.663708
+    },
+    {
+      "tool": "pi",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 464.219458,
+      "input_echo_ms": 540.60775,
+      "input_response_ms": 75.825333,
+      "exit_code": 0,
+      "process_total_ms": 932.742667
+    },
+    {
+      "tool": "kimi",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 730.349542,
+      "input_echo_ms": 737.983459,
+      "input_response_ms": 7.139417,
+      "exit_code": 0,
+      "process_total_ms": 1163.136334
+    },
+    {
+      "tool": "omp",
+      "trial": 72,
+      "status": "ok",
+      "input_frame_ms": 1753.77025,
+      "input_echo_ms": 1799.749541,
+      "input_response_ms": 45.671333,
+      "exit_code": 0,
+      "process_total_ms": 2432.477
+    },
+    {
+      "tool": "pi",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 443.479709,
+      "input_echo_ms": 518.652959,
+      "input_response_ms": 74.709459,
+      "exit_code": 0,
+      "process_total_ms": 912.577667
+    },
+    {
+      "tool": "kimi",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 747.509,
+      "input_echo_ms": 760.403584,
+      "input_response_ms": 12.303167,
+      "exit_code": 0,
+      "process_total_ms": 1192.313584
+    },
+    {
+      "tool": "omp",
+      "trial": 73,
+      "status": "ok",
+      "input_frame_ms": 1500.481125,
+      "input_echo_ms": 1546.838958,
+      "input_response_ms": 45.986916,
+      "exit_code": 0,
+      "process_total_ms": 1999.545042
+    },
+    {
+      "tool": "pi",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 451.928292,
+      "input_echo_ms": 527.540875,
+      "input_response_ms": 75.161541,
+      "exit_code": 0,
+      "process_total_ms": 913.846417
+    },
+    {
+      "tool": "kimi",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 660.287417,
+      "input_echo_ms": 674.502542,
+      "input_response_ms": 13.726209,
+      "exit_code": 0,
+      "process_total_ms": 1088.022833
+    },
+    {
+      "tool": "omp",
+      "trial": 74,
+      "status": "ok",
+      "input_frame_ms": 1838.946292,
+      "input_echo_ms": 1880.186,
+      "input_response_ms": 40.873583,
+      "exit_code": 0,
+      "process_total_ms": 2401.815042
+    },
+    {
+      "tool": "pi",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 469.939583,
+      "input_echo_ms": 545.681417,
+      "input_response_ms": 75.292917,
+      "exit_code": 0,
+      "process_total_ms": 940.307833
+    },
+    {
+      "tool": "kimi",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 693.605416,
+      "input_echo_ms": 711.70325,
+      "input_response_ms": 17.602542,
+      "exit_code": 0,
+      "process_total_ms": 1134.275041
+    },
+    {
+      "tool": "omp",
+      "trial": 75,
+      "status": "ok",
+      "input_frame_ms": 1636.385916,
+      "input_echo_ms": 1666.272166,
+      "input_response_ms": 29.614041,
+      "exit_code": 0,
+      "process_total_ms": 2210.606541
+    },
+    {
+      "tool": "pi",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 433.212125,
+      "input_echo_ms": 501.32375,
+      "input_response_ms": 67.705208,
+      "exit_code": 0,
+      "process_total_ms": 890.940542
+    },
+    {
+      "tool": "kimi",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 956.479459,
+      "input_echo_ms": 968.285875,
+      "input_response_ms": 11.316,
+      "exit_code": 0,
+      "process_total_ms": 1392.013417
+    },
+    {
+      "tool": "omp",
+      "trial": 76,
+      "status": "ok",
+      "input_frame_ms": 1699.562667,
+      "input_echo_ms": 1754.392125,
+      "input_response_ms": 54.599875,
+      "exit_code": 0,
+      "process_total_ms": 2227.323458
+    },
+    {
+      "tool": "pi",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 401.338917,
+      "input_echo_ms": 480.394542,
+      "input_response_ms": 78.623042,
+      "exit_code": 0,
+      "process_total_ms": 889.906833
+    },
+    {
+      "tool": "kimi",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 850.297083,
+      "input_echo_ms": 859.093333,
+      "input_response_ms": 8.290916,
+      "exit_code": 0,
+      "process_total_ms": 1260.98725
+    },
+    {
+      "tool": "omp",
+      "trial": 77,
+      "status": "ok",
+      "input_frame_ms": 1536.23125,
+      "input_echo_ms": 1583.755,
+      "input_response_ms": 47.206167,
+      "exit_code": 0,
+      "process_total_ms": 2080.5395
+    },
+    {
+      "tool": "pi",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 517.298,
+      "input_echo_ms": 594.731583,
+      "input_response_ms": 77.00925,
+      "exit_code": 0,
+      "process_total_ms": 992.431208
+    },
+    {
+      "tool": "kimi",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 812.031209,
+      "input_echo_ms": 829.349084,
+      "input_response_ms": 16.522042,
+      "exit_code": 0,
+      "process_total_ms": 1251.599917
+    },
+    {
+      "tool": "omp",
+      "trial": 78,
+      "status": "ok",
+      "input_frame_ms": 1405.562417,
+      "input_echo_ms": 1456.34175,
+      "input_response_ms": 50.294916,
+      "exit_code": 0,
+      "process_total_ms": 2096.018959
+    },
+    {
+      "tool": "pi",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 565.982708,
+      "input_echo_ms": 646.905542,
+      "input_response_ms": 80.45775,
+      "exit_code": 0,
+      "process_total_ms": 1036.406042
+    },
+    {
+      "tool": "kimi",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 862.397708,
+      "input_echo_ms": 873.983708,
+      "input_response_ms": 11.04825,
+      "exit_code": 0,
+      "process_total_ms": 1277.254292
+    },
+    {
+      "tool": "omp",
+      "trial": 79,
+      "status": "ok",
+      "input_frame_ms": 1339.081625,
+      "input_echo_ms": 1407.774917,
+      "input_response_ms": 68.34525,
+      "exit_code": 0,
+      "process_total_ms": 2053.938667
+    },
+    {
+      "tool": "pi",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 576.8015,
+      "input_echo_ms": 663.65475,
+      "input_response_ms": 86.410875,
+      "exit_code": 0,
+      "process_total_ms": 1061.817084
+    },
+    {
+      "tool": "kimi",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 840.070291,
+      "input_echo_ms": 850.938833,
+      "input_response_ms": 10.380375,
+      "exit_code": 0,
+      "process_total_ms": 1262.627875
+    },
+    {
+      "tool": "omp",
+      "trial": 80,
+      "status": "ok",
+      "input_frame_ms": 1416.429709,
+      "input_echo_ms": 1460.218542,
+      "input_response_ms": 43.540875,
+      "exit_code": 0,
+      "process_total_ms": 2152.501709
+    },
+    {
+      "tool": "pi",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 538.214292,
+      "input_echo_ms": 625.539625,
+      "input_response_ms": 86.810708,
+      "exit_code": 0,
+      "process_total_ms": 1022.693875
+    },
+    {
+      "tool": "kimi",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 784.577791,
+      "input_echo_ms": 791.572041,
+      "input_response_ms": 6.518875,
+      "exit_code": 0,
+      "process_total_ms": 1198.754333
+    },
+    {
+      "tool": "omp",
+      "trial": 81,
+      "status": "ok",
+      "input_frame_ms": 1562.075208,
+      "input_echo_ms": 1618.374708,
+      "input_response_ms": 55.995458,
+      "exit_code": 0,
+      "process_total_ms": 2106.810917
+    },
+    {
+      "tool": "pi",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 552.027042,
+      "input_echo_ms": 630.426125,
+      "input_response_ms": 77.962875,
+      "exit_code": 0,
+      "process_total_ms": 1019.718709
+    },
+    {
+      "tool": "kimi",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 757.254458,
+      "input_echo_ms": 768.138166,
+      "input_response_ms": 10.086958,
+      "exit_code": 0,
+      "process_total_ms": 1181.754791
+    },
+    {
+      "tool": "omp",
+      "trial": 82,
+      "status": "ok",
+      "input_frame_ms": 1601.791333,
+      "input_echo_ms": 1677.246833,
+      "input_response_ms": 75.0015,
+      "exit_code": 0,
+      "process_total_ms": 2143.334833
+    },
+    {
+      "tool": "pi",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 484.015375,
+      "input_echo_ms": 562.455042,
+      "input_response_ms": 77.989833,
+      "exit_code": 0,
+      "process_total_ms": 956.742917
+    },
+    {
+      "tool": "kimi",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 725.225625,
+      "input_echo_ms": 732.121916,
+      "input_response_ms": 6.413333,
+      "exit_code": 0,
+      "process_total_ms": 1145.052666
+    },
+    {
+      "tool": "omp",
+      "trial": 83,
+      "status": "ok",
+      "input_frame_ms": 1570.398416,
+      "input_echo_ms": 1618.2595,
+      "input_response_ms": 47.574459,
+      "exit_code": 0,
+      "process_total_ms": 2221.65775
+    },
+    {
+      "tool": "pi",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 511.750292,
+      "input_echo_ms": 590.276708,
+      "input_response_ms": 77.91975,
+      "exit_code": 0,
+      "process_total_ms": 985.00325
+    },
+    {
+      "tool": "kimi",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 735.592708,
+      "input_echo_ms": 746.088958,
+      "input_response_ms": 10.027542,
+      "exit_code": 0,
+      "process_total_ms": 1149.719291
+    },
+    {
+      "tool": "omp",
+      "trial": 84,
+      "status": "ok",
+      "input_frame_ms": 1741.479333,
+      "input_echo_ms": 1822.18725,
+      "input_response_ms": 80.354167,
+      "exit_code": 0,
+      "process_total_ms": 2368.107083
+    },
+    {
+      "tool": "pi",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 461.306625,
+      "input_echo_ms": 536.096292,
+      "input_response_ms": 74.168,
+      "exit_code": 0,
+      "process_total_ms": 932.352125
+    },
+    {
+      "tool": "kimi",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 761.097416,
+      "input_echo_ms": 774.863083,
+      "input_response_ms": 13.277417,
+      "exit_code": 0,
+      "process_total_ms": 1188.018083
+    },
+    {
+      "tool": "omp",
+      "trial": 85,
+      "status": "ok",
+      "input_frame_ms": 1667.244291,
+      "input_echo_ms": 1732.806583,
+      "input_response_ms": 65.219958,
+      "exit_code": 0,
+      "process_total_ms": 2227.803666
+    },
+    {
+      "tool": "pi",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 486.528375,
+      "input_echo_ms": 559.581833,
+      "input_response_ms": 72.619125,
+      "exit_code": 0,
+      "process_total_ms": 955.345792
+    },
+    {
+      "tool": "kimi",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 704.513125,
+      "input_echo_ms": 716.00875,
+      "input_response_ms": 10.882375,
+      "exit_code": 0,
+      "process_total_ms": 1140.469541
+    },
+    {
+      "tool": "omp",
+      "trial": 86,
+      "status": "ok",
+      "input_frame_ms": 1791.137916,
+      "input_echo_ms": 1858.035208,
+      "input_response_ms": 66.628042,
+      "exit_code": 0,
+      "process_total_ms": 2374.37825
+    },
+    {
+      "tool": "pi",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 490.670167,
+      "input_echo_ms": 566.428417,
+      "input_response_ms": 75.318125,
+      "exit_code": 0,
+      "process_total_ms": 969.07475
+    },
+    {
+      "tool": "kimi",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 768.887625,
+      "input_echo_ms": 788.761875,
+      "input_response_ms": 19.207625,
+      "exit_code": 0,
+      "process_total_ms": 1207.154791
+    },
+    {
+      "tool": "omp",
+      "trial": 87,
+      "status": "ok",
+      "input_frame_ms": 1501.556709,
+      "input_echo_ms": 1539.747792,
+      "input_response_ms": 37.932,
+      "exit_code": 0,
+      "process_total_ms": 2066.8635
+    },
+    {
+      "tool": "pi",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 485.99675,
+      "input_echo_ms": 568.110417,
+      "input_response_ms": 81.664083,
+      "exit_code": 0,
+      "process_total_ms": 957.778167
+    },
+    {
+      "tool": "kimi",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 777.497041,
+      "input_echo_ms": 788.208125,
+      "input_response_ms": 10.014417,
+      "exit_code": 0,
+      "process_total_ms": 1198.581291
+    },
+    {
+      "tool": "omp",
+      "trial": 88,
+      "status": "ok",
+      "input_frame_ms": 1525.702292,
+      "input_echo_ms": 1571.706958,
+      "input_response_ms": 45.552666,
+      "exit_code": 0,
+      "process_total_ms": 2096.843708
+    },
+    {
+      "tool": "pi",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 473.922333,
+      "input_echo_ms": 553.552541,
+      "input_response_ms": 78.983416,
+      "exit_code": 0,
+      "process_total_ms": 951.900958
+    },
+    {
+      "tool": "kimi",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 715.382667,
+      "input_echo_ms": 724.381042,
+      "input_response_ms": 8.357917,
+      "exit_code": 0,
+      "process_total_ms": 1150.719334
+    },
+    {
+      "tool": "omp",
+      "trial": 89,
+      "status": "ok",
+      "input_frame_ms": 1646.965541,
+      "input_echo_ms": 1691.459875,
+      "input_response_ms": 44.174042,
+      "exit_code": 0,
+      "process_total_ms": 2186.18775
+    },
+    {
+      "tool": "pi",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 422.167125,
+      "input_echo_ms": 498.110583,
+      "input_response_ms": 75.339125,
+      "exit_code": 0,
+      "process_total_ms": 888.290792
+    },
+    {
+      "tool": "kimi",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 887.7005,
+      "input_echo_ms": 897.312417,
+      "input_response_ms": 9.097875,
+      "exit_code": 0,
+      "process_total_ms": 1305.284083
+    },
+    {
+      "tool": "omp",
+      "trial": 90,
+      "status": "ok",
+      "input_frame_ms": 1461.832041,
+      "input_echo_ms": 1504.269875,
+      "input_response_ms": 41.875292,
+      "exit_code": 0,
+      "process_total_ms": 2005.102958
+    },
+    {
+      "tool": "pi",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 527.982625,
+      "input_echo_ms": 596.64475,
+      "input_response_ms": 68.113917,
+      "exit_code": 0,
+      "process_total_ms": 997.332
+    },
+    {
+      "tool": "kimi",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 894.22525,
+      "input_echo_ms": 912.144709,
+      "input_response_ms": 17.268709,
+      "exit_code": 0,
+      "process_total_ms": 1333.645834
+    },
+    {
+      "tool": "omp",
+      "trial": 91,
+      "status": "ok",
+      "input_frame_ms": 1335.278042,
+      "input_echo_ms": 1386.022667,
+      "input_response_ms": 50.306917,
+      "exit_code": 0,
+      "process_total_ms": 2096.449333
+    },
+    {
+      "tool": "pi",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 572.229125,
+      "input_echo_ms": 652.191042,
+      "input_response_ms": 79.483834,
+      "exit_code": 0,
+      "process_total_ms": 1046.532
+    },
+    {
+      "tool": "kimi",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 845.192542,
+      "input_echo_ms": 860.965084,
+      "input_response_ms": 15.233209,
+      "exit_code": 0,
+      "process_total_ms": 1272.694959
+    },
+    {
+      "tool": "omp",
+      "trial": 92,
+      "status": "ok",
+      "input_frame_ms": 1364.983625,
+      "input_echo_ms": 1410.414416,
+      "input_response_ms": 45.160958,
+      "forced_shutdown": true,
+      "exit_code": -9,
+      "process_total_ms": 7031.956791
+    },
+    {
+      "tool": "pi",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 372.602375,
+      "input_echo_ms": 442.318084,
+      "input_response_ms": 69.284,
+      "exit_code": 0,
+      "process_total_ms": 835.843417
+    },
+    {
+      "tool": "kimi",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 792.800208,
+      "input_echo_ms": 810.383333,
+      "input_response_ms": 17.093667,
+      "exit_code": 0,
+      "process_total_ms": 1242.084333
+    },
+    {
+      "tool": "omp",
+      "trial": 93,
+      "status": "ok",
+      "input_frame_ms": 1830.259917,
+      "input_echo_ms": 1863.728583,
+      "input_response_ms": 33.21575,
+      "exit_code": 0,
+      "process_total_ms": 2356.031625
+    },
+    {
+      "tool": "pi",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 479.123,
+      "input_echo_ms": 555.561458,
+      "input_response_ms": 75.992333,
+      "exit_code": 0,
+      "process_total_ms": 950.928667
+    },
+    {
+      "tool": "kimi",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 711.505625,
+      "input_echo_ms": 719.097,
+      "input_response_ms": 7.089834,
+      "exit_code": 0,
+      "process_total_ms": 1151.178708
+    },
+    {
+      "tool": "omp",
+      "trial": 94,
+      "status": "ok",
+      "input_frame_ms": 1802.545375,
+      "input_echo_ms": 1866.822708,
+      "input_response_ms": 63.978875,
+      "exit_code": 0,
+      "process_total_ms": 2361.033375
+    },
+    {
+      "tool": "pi",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 478.420416,
+      "input_echo_ms": 547.863958,
+      "input_response_ms": 69.005833,
+      "exit_code": 0,
+      "process_total_ms": 946.484791
+    },
+    {
+      "tool": "kimi",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 678.221292,
+      "input_echo_ms": 687.431083,
+      "input_response_ms": 8.732916,
+      "exit_code": 0,
+      "process_total_ms": 1085.918125
+    },
+    {
+      "tool": "omp",
+      "trial": 95,
+      "status": "ok",
+      "input_frame_ms": 1995.204792,
+      "input_echo_ms": 2040.777125,
+      "input_response_ms": 45.306083,
+      "exit_code": 0,
+      "process_total_ms": 2597.171083
+    },
+    {
+      "tool": "pi",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 458.946625,
+      "input_echo_ms": 537.201917,
+      "input_response_ms": 77.816625,
+      "exit_code": 0,
+      "process_total_ms": 931.2305
+    },
+    {
+      "tool": "kimi",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 687.49775,
+      "input_echo_ms": 700.427875,
+      "input_response_ms": 12.45875,
+      "exit_code": 0,
+      "process_total_ms": 1158.602084
+    },
+    {
+      "tool": "omp",
+      "trial": 96,
+      "status": "ok",
+      "input_frame_ms": 1738.362792,
+      "input_echo_ms": 1779.947084,
+      "input_response_ms": 41.275875,
+      "exit_code": 0,
+      "process_total_ms": 2373.758209
+    },
+    {
+      "tool": "pi",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 386.183333,
+      "input_echo_ms": 450.879791,
+      "input_response_ms": 64.292958,
+      "exit_code": 0,
+      "process_total_ms": 845.525041
+    },
+    {
+      "tool": "kimi",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 960.273167,
+      "input_echo_ms": 971.277625,
+      "input_response_ms": 10.492042,
+      "exit_code": 0,
+      "process_total_ms": 1396.3485
+    },
+    {
+      "tool": "omp",
+      "trial": 97,
+      "status": "ok",
+      "input_frame_ms": 1640.589667,
+      "input_echo_ms": 1674.723042,
+      "input_response_ms": 33.855917,
+      "exit_code": 0,
+      "process_total_ms": 2285.540084
+    },
+    {
+      "tool": "pi",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 444.290791,
+      "input_echo_ms": 528.09,
+      "input_response_ms": 83.131959,
+      "exit_code": 0,
+      "process_total_ms": 922.731458
+    },
+    {
+      "tool": "kimi",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 866.375375,
+      "input_echo_ms": 876.255666,
+      "input_response_ms": 9.377916,
+      "exit_code": 0,
+      "process_total_ms": 1292.56875
+    },
+    {
+      "tool": "omp",
+      "trial": 98,
+      "status": "ok",
+      "input_frame_ms": 1410.690208,
+      "input_echo_ms": 1451.992792,
+      "input_response_ms": 40.986042,
+      "exit_code": 0,
+      "process_total_ms": 2097.597083
+    },
+    {
+      "tool": "pi",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 559.109667,
+      "input_echo_ms": 638.096708,
+      "input_response_ms": 78.558875,
+      "exit_code": 0,
+      "process_total_ms": 1037.180375
+    },
+    {
+      "tool": "kimi",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 819.818292,
+      "input_echo_ms": 826.667375,
+      "input_response_ms": 6.357833,
+      "exit_code": 0,
+      "process_total_ms": 1232.840083
+    },
+    {
+      "tool": "omp",
+      "trial": 99,
+      "status": "ok",
+      "input_frame_ms": 1567.583792,
+      "input_echo_ms": 1610.595875,
+      "input_response_ms": 42.359458,
+      "exit_code": 0,
+      "process_total_ms": 2135.9495
+    },
+    {
+      "tool": "pi",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 516.927667,
+      "input_echo_ms": 597.334708,
+      "input_response_ms": 79.980625,
+      "exit_code": 0,
+      "process_total_ms": 992.728542
+    },
+    {
+      "tool": "kimi",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 802.480125,
+      "input_echo_ms": 809.22275,
+      "input_response_ms": 6.246541,
+      "exit_code": 0,
+      "process_total_ms": 1221.62975
+    },
+    {
+      "tool": "omp",
+      "trial": 100,
+      "status": "ok",
+      "input_frame_ms": 1593.733167,
+      "input_echo_ms": 1635.060167,
+      "input_response_ms": 41.04425,
+      "exit_code": 0,
+      "process_total_ms": 2100.726
+    }
+  ],
+  "installation_identities": {
+    "node_version": "v24.7.0",
+    "bun_version": "1.4.2",
+    "sha256": {
+      "context/agent-startup-pi-kimi-omp-2026-10-08/pi-install/package-lock.json": "337c6317ac81b7f8e8f40999f80af317615ad22ac900a6d793f9e43f0f6a09ef",
+      "context/agent-startup-pi-kimi-omp-2026-10-08/bun.lock": "dda21ac91b3f29ac87e9121cfbddc21bc94386fd0ff088518a3491bcc55b3c1f",
+      "context/agent-startup-pi-kimi-omp-2026-10-08/package.json": "f01c6f81db1addf998187b0471f5b1d24dccca7270add454efa059a0adcf705d",
+      "/Users/patrickbeam/.bun/bin/bun": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+      "/opt/homebrew/bin/node": "fe1c0128a4c0163b034ec06b8b290494830ccb49922b5ce9ca4edf497a083e5f"
+    }
+  },
+  "endpoint_pilots": [
+    {
+      "metadata": {
+        "count_per_tool": 1,
+        "order": "round robin, serial",
+        "terminal": "110x35 PTY; Ghostty identity; consumer drains bytes and answers terminal queries",
+        "cache": "ordinary macOS caches; private APFS-cloned state per process; cloning excluded",
+        "measurement": "parent monotonic clock before spawn to input frame, then unsubmitted marker rendered",
+        "inference_prompts_submitted": 0,
+        "driver_sha256": "4d3225532bae81ebe2d0cf6723d96d4e8d7905c65e80c975107cb1e5f8e0b090",
+        "source_commit": "7b876e0a2ceacf1922b3c270f23c02d46ea0e55f",
+        "started_utc": "2026-10-08T13:38:44Z",
+        "host_load_before": [
+          10.79541015625,
+          10.3310546875,
+          6.9912109375
+        ],
+        "tools": {
+          "pi": {
+            "command": [
+              "/Users/patrickbeam/projects/blackbird/context/agent-startup-pi-kimi-omp-2026-10-08/pi-install/node_modules/.bin/pi",
+              "--provider",
+              "openrouter",
+              "--model",
+              "anthropic/claude-sonnet-4.6",
+              "--no-extensions",
+              "--no-skills",
+              "--no-mcp",
+              "--no-prompt-templates",
+              "--no-themes",
+              "--no-context-files"
+            ],
+            "ready_text": [
+              "v1.1.0",
+              "anthropic/claude-sonnet-4.6",
+              "ctrl+c/ctrl+d clear/exit"
+            ],
+            "frame_end": "\\x1b[?2026l",
+            "notes": "Pi 1.1.0, isolated npm --ignore-scripts install; Node 24.7.0; bare defaults with extensions/MCP/skills/templates/themes/context discovery disabled; standard fullscreen TUI; OpenRouter claude-sonnet-4.6; no offline flag.",
+            "executable_sha256": "e79626f2dd6f94aa45d30f3fa63cd84319a6eefcd150b353cfaf274366926774"
+          },
+          "kimi": {
+            "command": [
+              "/Users/patrickbeam/.kimi-code/bin/kimi",
+              "--skills-dir",
+              "{run}/session"
+            ],
+            "ready_text": [
+              "Welcome to Kimi Code!",
+              "Version:",
+              "2.1.1",
+              "context: 0%",
+              "anthropic/claude-sonnet-4.6"
+            ],
+            "frame_end": "\\x1b[?2026l",
+            "notes": "Kimi Code 2.1.1 installed arm64 compiled executable; isolated config/trust/banner caches; no OAuth copied; OpenRouter claude-sonnet-4.6; updates and telemetry disabled; empty explicit skills directory.",
+            "executable_sha256": "4bab6f96c2c289368b7f05a04f66737c53a59ce740f932d8f149240584758efb"
+          }
+        },
+        "finished_utc": "2026-10-08T13:38:48Z",
+        "host_load_after": [
+          14.8154296875,
+          11.171875,
+          7.3076171875
+        ]
+      },
+      "summary": {
+        "pi": {
+          "attempted": 1,
+          "successful": 1,
+          "failed": 0,
+          "forced_shutdowns": 0,
+          "nonzero_exits": 0,
+          "input_frame_ms": {
+            "p30": 377.787416,
+            "p50": 377.787416,
+            "p70": 377.787416,
+            "p90": 377.787416,
+            "max": 377.787416
+          },
+          "input_echo_ms": {
+            "p30": 452.349958,
+            "p50": 452.349958,
+            "p70": 452.349958,
+            "p90": 452.349958,
+            "max": 452.349958
+          },
+          "input_response_ms": {
+            "p30": 74.135292,
+            "p50": 74.135292,
+            "p70": 74.135292,
+            "p90": 74.135292,
+            "max": 74.135292
+          }
+        },
+        "kimi": {
+          "attempted": 1,
+          "successful": 1,
+          "failed": 0,
+          "forced_shutdowns": 0,
+          "nonzero_exits": 0,
+          "input_frame_ms": {
+            "p30": 2641.734666,
+            "p50": 2641.734666,
+            "p70": 2641.734666,
+            "p90": 2641.734666,
+            "max": 2641.734666
+          },
+          "input_echo_ms": {
+            "p30": 2693.686083,
+            "p50": 2693.686083,
+            "p70": 2693.686083,
+            "p90": 2693.686083,
+            "max": 2693.686083
+          },
+          "input_response_ms": {
+            "p30": 49.781333,
+            "p50": 49.781333,
+            "p70": 49.781333,
+            "p90": 49.781333,
+            "max": 49.781333
+          }
+        }
+      },
+      "samples": [
+        {
+          "tool": "pi",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 377.787416,
+          "input_echo_ms": 452.349958,
+          "input_response_ms": 74.135292,
+          "exit_code": 0,
+          "process_total_ms": 844.773375
+        },
+        {
+          "tool": "kimi",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 2641.734666,
+          "input_echo_ms": 2693.686083,
+          "input_response_ms": 49.781333,
+          "exit_code": 0,
+          "process_total_ms": 3171.324875
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "count_per_tool": 1,
+        "order": "round robin, serial",
+        "terminal": "110x35 PTY; Ghostty identity; consumer drains bytes and answers terminal queries",
+        "cache": "ordinary macOS caches; private APFS-cloned state per process; cloning excluded",
+        "measurement": "parent monotonic clock before spawn to input frame, then unsubmitted marker rendered",
+        "inference_prompts_submitted": 0,
+        "driver_sha256": "4d3225532bae81ebe2d0cf6723d96d4e8d7905c65e80c975107cb1e5f8e0b090",
+        "source_commit": "7b876e0a2ceacf1922b3c270f23c02d46ea0e55f",
+        "started_utc": "2026-10-08T13:39:35Z",
+        "host_load_before": [
+          8.62353515625,
+          10.0302734375,
+          7.08349609375
+        ],
+        "tools": {
+          "omp": {
+            "command": [
+              "/Users/patrickbeam/projects/blackbird/context/agent-startup-pi-kimi-omp-2026-10-08/node_modules/.bin/omp",
+              "--model",
+              "openrouter/anthropic/claude-sonnet-4.6",
+              "--no-extensions",
+              "--no-skills"
+            ],
+            "ready_text": [
+              "v18.8.4",
+              "Sonnet 4.6",
+              "\u2570\u2500",
+              "thinking effort"
+            ],
+            "frame_end": "\\x1b[?2026l",
+            "notes": "Oh My Pi 18.8.4 isolated Bun package install; Bun 1.4.2; extensions/skills disabled; setup completed before timing; OpenRouter claude-sonnet-4.6; fresh database initialization included. Startup update checks disabled; normal welcome animation retained (composer appears with it).",
+            "executable_sha256": "8622c84bd2560675fe671b2a45da2c1566547334046ef277d1bf3e8d47e2db78"
+          }
+        },
+        "finished_utc": "2026-10-08T13:39:39Z",
+        "host_load_after": [
+          9.4541015625,
+          10.1787109375,
+          7.15283203125
+        ]
+      },
+      "summary": {
+        "omp": {
+          "attempted": 1,
+          "successful": 1,
+          "failed": 0,
+          "forced_shutdowns": 0,
+          "nonzero_exits": 0,
+          "input_frame_ms": {
+            "p30": 3332.828083,
+            "p50": 3332.828083,
+            "p70": 3332.828083,
+            "p90": 3332.828083,
+            "max": 3332.828083
+          },
+          "input_echo_ms": {
+            "p30": 3378.258625,
+            "p50": 3378.258625,
+            "p70": 3378.258625,
+            "p90": 3378.258625,
+            "max": 3378.258625
+          },
+          "input_response_ms": {
+            "p30": 45.162125,
+            "p50": 45.162125,
+            "p70": 45.162125,
+            "p90": 45.162125,
+            "max": 45.162125
+          }
+        }
+      },
+      "samples": [
+        {
+          "tool": "omp",
+          "trial": 1,
+          "status": "ok",
+          "input_frame_ms": 3332.828083,
+          "input_echo_ms": 3378.258625,
+          "input_response_ms": 45.162125,
+          "exit_code": 0,
+          "process_total_ms": 3894.107666
+        }
+      ]
+    }
+  ],
+  "preparation_probes": {
+    "directory": "context/agent-startup-pi-kimi-omp-2026-10-08",
+    "files": [
+      "pi-probe.bin",
+      "kimi-probe.bin",
+      "omp-probe.bin"
+    ],
+    "scope": "Untimed configuration/terminal probes; trust and setup excluded from selected trials."
+  }
+}

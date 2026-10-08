@@ -5067,3 +5067,24 @@ retain all trials/outliers and preliminary observations separately. Numeric resu
 configuration identities and chart will distinguish prior five-tool and added
 three-tool batches; do not imply eight-way simultaneous rotation. No source changes,
 extra hardening or speed certification. Delete temporary credential copies afterward.
+
+## 2026-10-08 — three added startup populations and combined chart complete
+
+Recorded 100 fresh starts each of bare Pi1.1.0, Kimi Code2.1.1 and Oh My Pi18.8.4.
+All 300 reached the configured synchronized input frame and displayed the same
+unsubmitted marker. Frame p50/p90 ms: Pi531.217/1055.236;
+Kimi908.239/1850.711; Oh My Pi1802.545/3352.869. Typing-to-marker median ms:
+Pi79.484, Kimi12.410, Oh My Pi54.080. Pi/Kimi all exited normally;
+6 Oh My Pi processes required forced cleanup after successful endpoint checks.
+Selected records/outliers, installation identities, setup/endpoint pilots and
+raw private terminal transcripts retained; no retries replaced selected records.
+Temporary credential-bearing seeds and probe profiles removed after completion;
+no matching benchmark children observed afterward. Existing account files untouched.
+Combined800record numeric artifact preserves A/B source identity and each sample's
+batch. Eight-tool SVG includes p30/p50/p70/p90 and their values on a logarithmic
+axis; owned generator sorts by p50. Native Quick Look export cropped the figure;
+isolated headless Chrome wrote the PNG but exceeded its exit deadline. No matching
+browser children remained. Exported the complete SVG with installed rsvg-convert.
+Direct numerical count/driver identity and visual chart checks; no production
+performance edits or additional test/hardening campaign. Beads backup, checkpoint
+and push results/chart/report under standing operator authorization.

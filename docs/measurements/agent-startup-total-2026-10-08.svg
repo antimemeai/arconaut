@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="840" viewBox="0 0 1440 840">
+<title>Agent startup: p30, p50, p70 and p90</title>
+<desc>Time from spawn to the configured input screen, in milliseconds. Each tool has 100 fresh launches. The plot uses a logarithmic time axis; the adjacent table gives the exact rounded percentile values. A and B identify separate serial rotation batches.</desc>
+<rect width="100%" height="100%" fill="#fff"/>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#17212b} .small{font-size:15px;fill:#536170}.num{font-size:18px;font-variant-numeric:tabular-nums}</style>
+<text x="32" y="42" font-size="30" font-weight="700">Fresh agent startup</text>
+<text x="32" y="73" font-size="18" >Spawn → configured input screen · milliseconds · 100 launches per tool</text>
+<circle cx="36" cy="103" r="5" fill="#2563eb"/>
+<text x="49" y="109" font-size="17" >p30</text>
+<circle cx="156" cy="103" r="5" fill="#07866a"/>
+<text x="169" y="109" font-size="17" >p50</text>
+<circle cx="276" cy="103" r="5" fill="#b86200"/>
+<text x="289" y="109" font-size="17" >p70</text>
+<circle cx="396" cy="103" r="5" fill="#9438a2"/>
+<text x="409" y="109" font-size="17" >p90</text>
+<text x="550" y="109" font-size="16" class="small">Logarithmic time axis; lower is faster</text>
+<text x="1040" y="145" font-size="16" text-anchor="end" font-weight="700">p30 (ms)</text>
+<text x="1160" y="145" font-size="16" text-anchor="end" font-weight="700">p50 (ms)</text>
+<text x="1280" y="145" font-size="16" text-anchor="end" font-weight="700">p70 (ms)</text>
+<text x="1400" y="145" font-size="16" text-anchor="end" font-weight="700">p90 (ms)</text>
+<line x1="240.00" y1="153" x2="240.00" y2="728" stroke="#e2e7ec"/>
+<text x="240.0" y="755" font-size="14" text-anchor="middle" class="small">50</text>
+<line x1="328.96" y1="153" x2="328.96" y2="728" stroke="#e2e7ec"/>
+<text x="328.96" y="755" font-size="14" text-anchor="middle" class="small">100</text>
+<line x1="417.92" y1="153" x2="417.92" y2="728" stroke="#e2e7ec"/>
+<text x="417.92" y="755" font-size="14" text-anchor="middle" class="small">200</text>
+<line x1="535.52" y1="153" x2="535.52" y2="728" stroke="#e2e7ec"/>
+<text x="535.52" y="755" font-size="14" text-anchor="middle" class="small">500</text>
+<line x1="624.48" y1="153" x2="624.48" y2="728" stroke="#e2e7ec"/>
+<text x="624.48" y="755" font-size="14" text-anchor="middle" class="small">1,000</text>
+<line x1="713.44" y1="153" x2="713.44" y2="728" stroke="#e2e7ec"/>
+<text x="713.44" y="755" font-size="14" text-anchor="middle" class="small">2,000</text>
+<line x1="831.04" y1="153" x2="831.04" y2="728" stroke="#e2e7ec"/>
+<text x="831.04" y="755" font-size="14" text-anchor="middle" class="small">5,000</text>
+<line x1="920.00" y1="153" x2="920.00" y2="728" stroke="#e2e7ec"/>
+<text x="920.0" y="755" font-size="14" text-anchor="middle" class="small">10,000</text>
+<rect x="24" y="150" width="1392" height="62" fill="#f6f8fa" fill-opacity="0.6"/>
+<text x="32" y="179" font-size="20" >Blackbird</text>
+<text x="32" y="200" font-size="13" class="small">batch A · n=100</text>
+<circle cx="327.581" cy="160" r="5" fill="#2563eb"><title>Blackbird p30: 98.931 ms</title></circle>
+<text x="1040" y="182" font-size="18" text-anchor="end" class="num">98.9</text>
+<circle cx="331.792" cy="170" r="5" fill="#07866a"><title>Blackbird p50: 102.231 ms</title></circle>
+<text x="1160" y="182" font-size="18" text-anchor="end" class="num">102.2</text>
+<circle cx="336.161" cy="180" r="5" fill="#b86200"><title>Blackbird p70: 105.771 ms</title></circle>
+<text x="1280" y="182" font-size="18" text-anchor="end" class="num">105.8</text>
+<circle cx="347.375" cy="190" r="5" fill="#9438a2"><title>Blackbird p90: 115.428 ms</title></circle>
+<text x="1400" y="182" font-size="18" text-anchor="end" class="num">115.4</text>
+<text x="32" y="254" font-size="20" >Claude Code</text>
+<text x="32" y="275" font-size="13" class="small">batch A · n=100</text>
+<circle cx="473.239" cy="235" r="5" fill="#2563eb"><title>Claude Code p30: 307.764 ms</title></circle>
+<text x="1040" y="257" font-size="18" text-anchor="end" class="num">307.8</text>
+<circle cx="488.580" cy="245" r="5" fill="#07866a"><title>Claude Code p50: 346.842 ms</title></circle>
+<text x="1160" y="257" font-size="18" text-anchor="end" class="num">346.8</text>
+<circle cx="504.522" cy="255" r="5" fill="#b86200"><title>Claude Code p70: 392.716 ms</title></circle>
+<text x="1280" y="257" font-size="18" text-anchor="end" class="num">392.7</text>
+<circle cx="549.832" cy="265" r="5" fill="#9438a2"><title>Claude Code p90: 558.986 ms</title></circle>
+<text x="1400" y="257" font-size="18" text-anchor="end" class="num">559.0</text>
+<rect x="24" y="300" width="1392" height="62" fill="#f6f8fa" fill-opacity="0.6"/>
+<text x="32" y="329" font-size="20" >Bare Pi</text>
+<text x="32" y="350" font-size="13" class="small">batch B · n=100</text>
+<circle cx="532.110" cy="310" r="5" fill="#2563eb"><title>Bare Pi p30: 486.891 ms</title></circle>
+<text x="1040" y="332" font-size="18" text-anchor="end" class="num">486.9</text>
+<circle cx="543.293" cy="320" r="5" fill="#07866a"><title>Bare Pi p50: 531.217 ms</title></circle>
+<text x="1160" y="332" font-size="18" text-anchor="end" class="num">531.2</text>
+<circle cx="562.354" cy="330" r="5" fill="#b86200"><title>Bare Pi p70: 616.275 ms</title></circle>
+<text x="1280" y="332" font-size="18" text-anchor="end" class="num">616.3</text>
+<circle cx="631.380" cy="340" r="5" fill="#9438a2"><title>Bare Pi p90: 1055.236 ms</title></circle>
+<text x="1400" y="332" font-size="18" text-anchor="end" class="num">1,055.2</text>
+<text x="32" y="404" font-size="20" >Kimi Code</text>
+<text x="32" y="425" font-size="13" class="small">batch B · n=100</text>
+<circle cx="598.982" cy="385" r="5" fill="#2563eb"><title>Kimi Code p30: 819.818 ms</title></circle>
+<text x="1040" y="407" font-size="18" text-anchor="end" class="num">819.8</text>
+<circle cx="612.127" cy="395" r="5" fill="#07866a"><title>Kimi Code p50: 908.239 ms</title></circle>
+<text x="1160" y="407" font-size="18" text-anchor="end" class="num">908.2</text>
+<circle cx="639.165" cy="405" r="5" fill="#b86200"><title>Kimi Code p70: 1121.223 ms</title></circle>
+<text x="1280" y="407" font-size="18" text-anchor="end" class="num">1,121.2</text>
+<circle cx="703.484" cy="415" r="5" fill="#9438a2"><title>Kimi Code p90: 1850.711 ms</title></circle>
+<text x="1400" y="407" font-size="18" text-anchor="end" class="num">1,850.7</text>
+<rect x="24" y="450" width="1392" height="62" fill="#f6f8fa" fill-opacity="0.6"/>
+<text x="32" y="479" font-size="20" >Codex</text>
+<text x="32" y="500" font-size="13" class="small">batch A · n=100</text>
+<circle cx="654.690" cy="460" r="5" fill="#2563eb"><title>Codex p30: 1265.395 ms</title></circle>
+<text x="1040" y="482" font-size="18" text-anchor="end" class="num">1,265.4</text>
+<circle cx="664.835" cy="470" r="5" fill="#07866a"><title>Codex p50: 1369.478 ms</title></circle>
+<text x="1160" y="482" font-size="18" text-anchor="end" class="num">1,369.5</text>
+<circle cx="686.126" cy="480" r="5" fill="#b86200"><title>Codex p70: 1616.598 ms</title></circle>
+<text x="1280" y="482" font-size="18" text-anchor="end" class="num">1,616.6</text>
+<circle cx="819.275" cy="490" r="5" fill="#9438a2"><title>Codex p90: 4562.046 ms</title></circle>
+<text x="1400" y="482" font-size="18" text-anchor="end" class="num">4,562.0</text>
+<text x="32" y="554" font-size="20" >Oh My Pi</text>
+<text x="32" y="575" font-size="13" class="small">batch B · n=100</text>
+<circle cx="689.220" cy="535" r="5" fill="#2563eb"><title>Oh My Pi p30: 1656.041 ms</title></circle>
+<text x="1040" y="557" font-size="18" text-anchor="end" class="num">1,656.0</text>
+<circle cx="700.100" cy="545" r="5" fill="#07866a"><title>Oh My Pi p50: 1802.545 ms</title></circle>
+<text x="1160" y="557" font-size="18" text-anchor="end" class="num">1,802.5</text>
+<circle cx="720.668" cy="555" r="5" fill="#b86200"><title>Oh My Pi p70: 2115.854 ms</title></circle>
+<text x="1280" y="557" font-size="18" text-anchor="end" class="num">2,115.9</text>
+<circle cx="779.751" cy="565" r="5" fill="#9438a2"><title>Oh My Pi p90: 3352.869 ms</title></circle>
+<text x="1400" y="557" font-size="18" text-anchor="end" class="num">3,352.9</text>
+<rect x="24" y="600" width="1392" height="62" fill="#f6f8fa" fill-opacity="0.6"/>
+<text x="32" y="629" font-size="20" >OpenCode</text>
+<text x="32" y="650" font-size="13" class="small">batch A · n=100</text>
+<circle cx="781.534" cy="610" r="5" fill="#2563eb"><title>OpenCode p30: 3399.774 ms</title></circle>
+<text x="1040" y="632" font-size="18" text-anchor="end" class="num">3,399.8</text>
+<circle cx="795.632" cy="620" r="5" fill="#07866a"><title>OpenCode p50: 3794.499 ms</title></circle>
+<text x="1160" y="632" font-size="18" text-anchor="end" class="num">3,794.5</text>
+<circle cx="809.416" cy="630" r="5" fill="#b86200"><title>OpenCode p70: 4224.717 ms</title></circle>
+<text x="1280" y="632" font-size="18" text-anchor="end" class="num">4,224.7</text>
+<circle cx="820.568" cy="640" r="5" fill="#9438a2"><title>OpenCode p90: 4608.243 ms</title></circle>
+<text x="1400" y="632" font-size="18" text-anchor="end" class="num">4,608.2</text>
+<text x="32" y="704" font-size="20" >Hermes classic</text>
+<text x="32" y="725" font-size="13" class="small">batch A · n=100</text>
+<circle cx="829.845" cy="685" r="5" fill="#2563eb"><title>Hermes classic p30: 4953.665 ms</title></circle>
+<text x="1040" y="707" font-size="18" text-anchor="end" class="num">4,953.7</text>
+<circle cx="836.745" cy="695" r="5" fill="#07866a"><title>Hermes classic p50: 5227.299 ms</title></circle>
+<text x="1160" y="707" font-size="18" text-anchor="end" class="num">5,227.3</text>
+<circle cx="857.509" cy="705" r="5" fill="#b86200"><title>Hermes classic p70: 6145.219 ms</title></circle>
+<text x="1280" y="707" font-size="18" text-anchor="end" class="num">6,145.2</text>
+<circle cx="885.881" cy="715" r="5" fill="#9438a2"><title>Hermes classic p90: 7665.620 ms</title></circle>
+<text x="1400" y="707" font-size="18" text-anchor="end" class="num">7,665.6</text>
+<text x="32" y="788" font-size="15" class="small">A: earlier five-tool rotation · B: added Pi/Kimi/Oh My Pi rotation · same host and PTY method</text>
+<text x="32" y="813" font-size="15" class="small">No inference prompts. Codex includes a fresh local server; Hermes uses its classic CLI. Ordinary, unflushed OS caches.</text>
+</svg>

@@ -37,3 +37,7 @@ Published-generation observations: [300-start rerun](../papers/2026-10-08-startu
 and [fresh startup comparison with Codex, Claude, Hermes and OpenCode](../papers/2026-10-08-agent-startup-comparison.md).
 The latter uses 100 fresh launches per tool and an unsubmitted input marker, rather
 than the Blackbird-only audited workflow query.
+
+[Eight-tool comparison and combined percentile chart](../papers/2026-10-08-agent-startup-total.md)
+adds 100 fresh starts each of bare Pi, Kimi Code and Oh My Pi using the same driver.
+The chart identifies the earlier five-tool and added three-tool rotations separately.
