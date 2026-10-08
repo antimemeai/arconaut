@@ -1,6 +1,7 @@
-#include "blackbird/local_timing.hpp"
 #include "blackbird/terminal.hpp"
+#include "blackbird/local_timing.hpp"
 #include "blackbird/sprite.hpp"
+#include "blackbird/task_view.hpp"
 #include "blackbird/tools.hpp"
 #include "blackbird/workflows.hpp"
 #include <algorithm>
@@ -65,6 +66,11 @@ const std::array builtin_commands{
     ChatCommand{"/checkpoint", "", "Save session state and retry maintenance",
                 "Session"},
     ChatCommand{"/stats", "", "Context bytes and observed provider usage", "Session"},
+    ChatCommand{"/tasks",
+                "[add TITLE | sub ID TITLE | done ID | block ID REASON | rename ID "
+                "TITLE | read JSON | apply JSON]",
+                "Shared tasks; up/down, fold ID, expand/show/hide control pane",
+                "Tasks"},
     ChatCommand{"/context", "", "Inspect editable model context", "Context"},
     ChatCommand{"/originals", "", "Retained context originals", "Context"},
     ChatCommand{"/compact", "JSON", "Managed context transformation", "Context"},
@@ -834,7 +840,8 @@ InputResult Composer::feed(char byte) {
     if (c == 13) {
       const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
+        const auto &command =
+            commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         palette_open_ = false;
         return {InputAction::choose_command,
                 std::string{command.name} + (command.arguments.empty() ? "" : " ")};
@@ -877,7 +884,8 @@ InputResult Composer::feed(char byte) {
     if (slash_open_) {
       const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
+        const auto &command =
+            commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         draft(std::string{command.name} + (command.arguments.empty() ? "" : " "));
       }
       return {};
@@ -899,7 +907,8 @@ InputResult Composer::feed(char byte) {
     if (slash_open_) {
       const auto matches = palette_matches(palette_query_, commands);
       if (!matches.empty()) {
-        const auto &command = commands[matches[std::min(palette_selected_, matches.size() - 1)]];
+        const auto &command =
+            commands[matches[std::min(palette_selected_, matches.size() - 1)]];
         const bool arguments = !command.arguments.empty();
         draft(std::string{command.name} + (arguments ? " " : ""));
         if (arguments)
@@ -1079,6 +1088,48 @@ void TerminalUI::operation_completed(std::string_view value, Ink outcome) {
 }
 void TerminalUI::failed() { post(Kind::failure, {}); }
 void TerminalUI::title(std::string_view value) { post(Kind::title, value); }
+void TerminalUI::tasks(const Json &publication) {
+  const std::lock_guard lock{mutex_};
+  if (string_field(publication, "label") == "task-state-v1")
+    task_state_.restore(publication);
+  else
+    task_state_.replay(publication);
+  if (publication.find("order"))
+    if (const auto position = task_state_.position(task_anchor_))
+      task_offset_ = *position;
+  if (const auto *removed = publication.find("removed"))
+    for (const auto &id : removed->array()) {
+      task_activity_.erase(id.string());
+      task_runs_.erase(id.string());
+      task_folded_.erase(id.string());
+    }
+  // One mutable derived view, not a queued snapshot per update.
+  tasks_dirty_ = true;
+  if (notification_ >= 0) {
+    const char byte = 1;
+    (void)::write(notification_, &byte, 1);
+  }
+}
+void TerminalUI::task_activity(const Json &event) {
+  const std::lock_guard lock{mutex_};
+  const auto &id = string_field(event, "task_id");
+  if (!task_state_.item(id))
+    return;
+  auto &runs = task_runs_[id];
+  const auto &attempt = string_field(event, "attempt");
+  if (string_field(event, "phase") == "running")
+    runs.insert_or_assign(attempt, event);
+  else
+    runs.erase(attempt);
+  task_activity_.insert_or_assign(id, runs.empty() ? event : runs.begin()->second);
+  if (runs.empty())
+    task_runs_.erase(id);
+  tasks_dirty_ = true;
+  if (notification_ >= 0) {
+    const char byte = 1;
+    (void)::write(notification_, &byte, 1);
+  }
+}
 void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                      std::atomic_bool &cancelled,
                      const std::function<bool()> &exit_requested, std::string initial,
@@ -1163,6 +1214,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   ChatGrid grid;
   ChatPainter painter;
   std::string activity = "Ready", observed_usage, small_frame;
+  Json task_page;
+  std::map<std::string, Json> task_activity;
+  std::vector<ChatRow> task_rows;
+  bool task_rows_dirty = true, tasks_hidden = false, tasks_expanded = false;
+  std::size_t task_render_width = 0;
   bool live_provider = false;
   std::vector<bool> operations;
   bool busy = false, quitting = false, redraw = true, tool_active = false,
@@ -1280,6 +1336,24 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     {
       const std::lock_guard lock{mutex_};
       incoming.swap(messages_);
+      if (tasks_dirty_) {
+        Json::Array folded;
+        for (const auto &id : task_folded_)
+          folded.push_back(Json{id});
+        const auto count = task_state_.size();
+        task_offset_ = std::min(task_offset_, count ? count - 1 : 0);
+        task_page = task_state_.read(
+            Json::object({{"offset", Json{JsonNumber{std::to_string(task_offset_)}}},
+                          {"limit", Json{JsonNumber{"64"}}},
+                          {"collapsed", Json{std::move(folded)}}}));
+        const auto &visible_tasks = field(task_page, "items").array();
+        task_anchor_ =
+            visible_tasks.empty() ? "" : string_field(visible_tasks.front(), "id");
+        task_activity = task_activity_;
+        tasks_dirty_ = false;
+        task_rows_dirty = true;
+        redraw = true;
+      }
     }
     for (const auto &message : incoming) {
       if (message.kind == Kind::text || message.kind == Kind::process ||
@@ -1403,7 +1477,12 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         render.outcome("small-frame");
         continue;
       }
-      const auto inner_width = width - 4;
+      const bool show_task_pane =
+          !welcoming && !tasks_hidden && width >= 90 && rows >= 18;
+      const auto pane_width =
+          show_task_pane ? std::clamp(width / 3, std::size_t{28}, std::size_t{36}) : 0;
+      const auto main_width = show_task_pane ? width - pane_width - 2 : width;
+      const auto inner_width = main_width - 4;
       const auto composed =
           terminal_powerword_lines("> " + composer.text(), inner_width);
       const auto prefix = terminal_lines(
@@ -1415,10 +1494,12 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       const auto height =
           static_cast<std::size_t>(rows - 5) - draft_height - palette.size();
       const bool show_sprite = !welcoming && mascot_enabled &&
+                               (!tasks_expanded || show_task_pane) &&
                                width >= (graphics_enabled ? 70U : 90U) &&
                                height + 2 >= blackbird_sprite_height;
-      const auto header_width =
-          show_sprite ? width - blackbird_sprite_width - 2 : width;
+      const auto header_width = show_task_pane ? main_width
+                                : show_sprite  ? width - blackbird_sprite_width - 2
+                                               : width;
       // The square occupies a right gutter, including beside the first chat rows.
       // Wrap into the remaining columns so a sprite can never overwrite content.
       const auto &lines = transcript.rows(header_width);
@@ -1520,17 +1601,41 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           grid.line(welcome_lines.size() + 3,
                     {{"  Enter continues · / commands · Workflow reloads each turn.",
                       Ink::muted}});
-      } else
+      } else if (!tasks_expanded || show_task_pane)
         for (std::size_t row = 0; row < height; ++row)
           if (begin + row < end)
             grid.line(row + 2, lines[begin + row]);
       if (graphics_enabled && show_sprite)
         placement = {0, width - blackbird_sprite_width, blackbird_sprite_width,
                      blackbird_sprite_height};
+      const auto task_width = show_task_pane ? pane_width : main_width;
+      if (task_rows_dirty || task_render_width != task_width) {
+        task_rows = task_pane_rows(task_page, task_width, task_activity);
+        task_render_width = task_width;
+        task_rows_dirty = false;
+      }
+      if (show_task_pane) {
+        for (std::size_t row = 0; row < rows; ++row)
+          grid.line(row, {{"│", Ink::border}}, main_width);
+        const auto task_start = show_sprite ? blackbird_sprite_height + 1 : 2;
+        for (std::size_t row = 0; row < task_rows.size() && row + task_start + 1 < rows;
+             ++row)
+          grid.line(row + task_start, task_rows[row], main_width + 2);
+        grid.line(rows - 1, {{"/tasks up/down · fold ID", Ink::muted}}, main_width + 2);
+      } else if (tasks_expanded && !welcoming) {
+        for (std::size_t row = 0; row < height && row < task_rows.size(); ++row)
+          grid.line(row + 2, task_rows[row]);
+      } else if (!welcoming && !busy && !tasks_hidden &&
+                 !field(task_page, "items").array().empty()) {
+        grid.line(1, {{terminal_lines("Tasks: " + task_summary(task_page) +
+                                          " · /tasks expand",
+                                      header_width)[0],
+                       Ink::muted}});
+      }
       std::size_t menu_row = height + 2;
       for (const auto &line : palette)
         grid.line(menu_row++,
-                  {{terminal_lines(line, width)[0],
+                  {{terminal_lines(line, main_width)[0],
                     line.starts_with("> ") ? Ink::selected : Ink::assistant}});
       auto hint = composer.palette_open() ? " command palette "
                   : composer.slash_open() ? " commands "
@@ -1539,9 +1644,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       auto border = [&](std::pair<std::string_view, std::string_view> corners,
                         std::string_view label) {
         std::string out{corners.first};
-        const auto clipped = terminal_lines(label, width - 2)[0];
+        const auto clipped = terminal_lines(label, main_width - 2)[0];
         out += clipped;
-        for (auto n = display_width(clipped); n < width - 2; ++n)
+        for (auto n = display_width(clipped); n < main_width - 2; ++n)
           out += "─";
         return out + std::string{corners.second};
       };
@@ -1585,8 +1690,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
           composer.palette_open()
               ? display_width(palette.front().substr(0, palette.front().size() - 1)) + 1
               : cells + 3;
-      const auto &packet = painter.prepare(grid, display_cursor_line - 1,
-                                           std::min(display_cursor_cells, width) - 1);
+      const auto &packet =
+          painter.prepare(grid, display_cursor_line - 1,
+                          std::min(display_cursor_cells, main_width) - 1);
       if (!packet.empty()) {
         pending_grid = true;
         if (graphics_enabled && placement != image_placement) {
@@ -1703,7 +1809,36 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         cancelled.store(true);
       }
       if (result.action == InputAction::submit && !result.text.empty() && !quitting) {
-        if (result.text == "/commands") {
+        if (result.text == "/tasks up" || result.text == "/tasks down" ||
+            result.text == "/tasks expand" || result.text == "/tasks show" ||
+            result.text == "/tasks hide" || result.text.starts_with("/tasks fold ")) {
+          const std::lock_guard lock{mutex_};
+          task_anchor_.clear();
+          if (result.text == "/tasks up")
+            task_offset_ -= std::min(task_offset_, std::size_t{2});
+          else if (result.text == "/tasks down")
+            task_offset_ += 2;
+          else if (result.text == "/tasks hide") {
+            tasks_hidden = true;
+            tasks_expanded = false;
+          } else if (result.text == "/tasks show") {
+            tasks_hidden = false;
+            tasks_expanded = false;
+          } else if (result.text == "/tasks expand") {
+            tasks_hidden = false;
+            tasks_expanded = !tasks_expanded;
+          } else {
+            const auto id = result.text.substr(12);
+            if (const auto *row = task_state_.item(id);
+                row && string_field(*row, "parent").empty()) {
+              if (!task_folded_.erase(id))
+                task_folded_.insert(id);
+              task_offset_ = *task_state_.position(id);
+            } else
+              transcript += "\nFold requires a top-level task ID.\n";
+          }
+          tasks_dirty_ = true;
+        } else if (result.text == "/commands") {
           (void)composer.feed(0);
         } else if (result.text == "/edit") {
           if (edit())
@@ -1773,7 +1908,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     }
     // A final-byte submission already saved this exact state before dispatch.
     // Do not serialize/rename/fsync it again; trailing input still gets saved.
-    if (!saved_last_input) persist();
+    if (!saved_last_input)
+      persist();
   }
   persist();
 }

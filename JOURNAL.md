@@ -5145,3 +5145,54 @@ the same depth rule for creation, reparenting, import and restore. Remove the
 earlier nested-group recommendation. Parent subtask rollups and explicit parent
 completion remain proposed semantics; sharing remains open. No product edits.
 Whitespace check, Beads backup, checkpoint and push under standing authorization.
+
+## 2026-10-08 — build task state, model tools and right pane
+
+Operator authorizes implementation after source/literature study and selects
+far-right placement below the sprite and tasks/subtasks with no deeper nesting.
+Written unit docs/TASK_LIST_IMPLEMENTATION.md; bead arconaut-70z. Implement owned
+native TaskState/TaskStore, retained delta packets and saved-current-state folding
+through current_programs (no new authoritative todo file). Stable IDs, atomic
+version-checked batches, row-level conflict guards, structural list guards,
+bounded16edit retry window, parent counts/child rollups and explicit closure.
+Bound2048resident items,64ops/pages,65536request bytes and field sizes; reject
+oversized edits rather than truncating work. Native staged maps transfer changed
+nodes after publication; regular row edits do not copy the task map/order vector.
+
+Expose tasks_read/tasks_edit and Lua blackbird.tasks.read/edit; native provider
+instructions reread compact open tasks at each request, including explicit empty
+state after use. Operator /tasks supports edits, blockers, naming, bead links and
+archive; busy writes use the existing command queue. Pane navigation works during
+turns, with independent offset/folding, stable anchoring, right-gutter layout and
+narrow expansion. Reuse native wake pipe, cached rows, semantic grid and complete
+frame/backpressure handling. UI owns one bounded current projection, no queued
+task snapshots. Explicit exec task_id publishes observed run/outcome badges and
+retains native operation binding; no automatic task completion or running badges
+restored from history. Diagnostics30dTTL remains separate and unchanged.
+
+Direct tests cover retries (including reordered JSON keys), stale/disjoint edits,
+invalid third-level creation/move/restore, rollback, counts,512item paging,
+bounded one-row edits, expired retries, Lua/provider tools, context compaction,
+compact reopen and failed publication. PTY oracle checks actual below-sprite pane
+cells, blockers/folding, failed bound commands,60edit bursts, input cursor and
+narrow expansion. Affected coding, Lua, saved-state and terminal cases pass on
+macOS debug and Neuroses debug/release/ASan+UBSan; task cases also pass macOS
+release/ASan+UBSan. Focused recheck fixes optional access, conflict-result bounds,
+runtime-detail priority, persistent navigation hint and nonstructural anchor work.
+Changed-source clang-tidy passes; whole-unit invocation's pre-existing unrelated
+findings remain outside this unit. Debug cache's stale SDK corrected to the actual
+Xcode SDK; native process code untouched. Linux check driver adds pane source,
+declared debug instrumentation and scoped targets/profiles. No extra review or
+performance certification campaign. Preserve raw working checks under ignored
+context; document usage and remaining transport/history/fork scope explicitly.
+
+Optimized feature checks pass; atomically publish the tested release executable
+as build/release/blackbird-ui for ordinary launcher starts, preserving prior UI
+binary under ignored context for rollback. Real scripts/blackbird PTY task-pane
+oracle passes. Existing running instances were not interrupted. Close delivered
+bead, back up Beads, checkpoint source/docs/tests and push under standing authority.
+The first launcher oracle reached all pane states but its non-draining exit wait
+timed out. Correct the PTY driver's shutdown wait to drain while polling the child,
+and limit cleanup to the fixture's child if group signaling is refused. Repeat
+that same launcher check: normal exit and all selected pane checks pass; no matching
+temporary task-pane/launcher children remain. No additional campaign.

@@ -1,7 +1,7 @@
 #include "blackbird/coding.hpp"
-#include "stream_capture.hpp"
 #include "blackbird/local_timing.hpp"
 #include "blackbird/process_lifetime.hpp"
+#include "stream_capture.hpp"
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>
@@ -297,6 +297,10 @@ struct CodingEngine::Runtime {
     constexpr const char *tool_api =
         "function blackbird.decide(args) return blackbird.call('decision_model',args) "
         "end "
+        "blackbird.tasks={} "
+        "function blackbird.tasks.read(q) return blackbird.call('tasks_read',{query=q "
+        "or {}}) end "
+        "function blackbird.tasks.edit(q) return blackbird.call('tasks_edit',q) end "
         "function blackbird.define_tool(d) return blackbird.call('tool_define',"
         "{definition=d}) end "
         "do local cache,loading={},{}; function blackbird.module(name) "
@@ -796,8 +800,9 @@ Json CodingEngine::context_budget(const Json &arguments) {
 CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
                            CodingProvider &provider, std::string model,
                            DecisionModelConfig decisions)
-    : log_(log), context_(context), provider_(provider), model_(std::move(model)),
-      decision_models_(std::move(decisions)), identity_(session_identity(log)),
+    : log_(log), context_(context), tasks_(log), provider_(provider),
+      model_(std::move(model)), decision_models_(std::move(decisions)),
+      identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
   program_config_.object().emplace_back("workflows", default_workflows());
   program_config_.object().emplace_back("workflow_prefix", Json{""});
@@ -866,16 +871,17 @@ void recover_coding_session(RetainedState &root) {
         if (const auto *binding = metadata.value().find("input_binding")) {
           const auto *invocation_id = metadata.value().find("invocation");
           const auto parsed_input = parse_json(admitted_input);
-          input_bound = parsed_input.has_value() &&
-                        std::holds_alternative<Json::Object>(parsed_input.value().value()) &&
-                        !input && *binding == Json{"invocation-v1"} &&
-                        invocation_id &&
-                        *invocation_id == Json{hex_identity(invocation.invocation.bytes())} &&
-                        decision->planned_invocations.size() == 1 &&
-                        decision->planned_invocations.front() == invocation.invocation;
+          input_bound =
+              parsed_input.has_value() &&
+              std::holds_alternative<Json::Object>(parsed_input.value().value()) &&
+              !input && *binding == Json{"invocation-v1"} && invocation_id &&
+              *invocation_id == Json{hex_identity(invocation.invocation.bytes())} &&
+              decision->planned_invocations.size() == 1 &&
+              decision->planned_invocations.front() == invocation.invocation;
         } else if (input) {
           const auto encoded_input = dump_json(*input);
-          input_bound = encoded_input.has_value() && encoded_input.value() == admitted_input;
+          input_bound =
+              encoded_input.has_value() && encoded_input.value() == admitted_input;
         }
         if (!linked || !input_bound || !generation || !revision ||
             !std::holds_alternative<std::string>(generation->value()) ||
@@ -932,6 +938,12 @@ void CodingEngine::protect_workflow(const Json::Array &entries, const Json &prop
 }
 Json CodingEngine::operation(std::string_view name, const Json &input,
                              const std::function<Json(OperationAttemptId)> &body) {
+  std::string task_id;
+  if (const auto *binding = input.find("task_id"); name == "exec" && binding) {
+    task_id = binding->string();
+    if (!tasks_.state().item(task_id))
+      throw Error{ErrorCode::invalid_range};
+  }
   if (cancelled && cancelled())
     throw Error{ErrorCode::interrupted};
   if (effect_policy)
@@ -999,6 +1011,27 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   admission.linkage(context_.head(), hex_identity(attempt.bytes()));
   admission.outcome("admitted");
   admission.finish();
+  struct TaskRun {
+    std::function<void(const Json &)> &observer;
+    std::string id, attempt, operation;
+    bool ended = false;
+    void emit(std::string_view phase) noexcept {
+      if (id.empty() || !observer)
+        return;
+      try {
+        observer(Json::object({{"task_id", Json{id}},
+                               {"attempt", Json{attempt}},
+                               {"operation", Json{operation}},
+                               {"phase", Json{std::string{phase}}}}));
+      } catch (...) {
+      } // Derived presentation cannot undo a retained operation.
+    }
+    ~TaskRun() {
+      if (!ended)
+        emit("outcome unknown");
+    }
+  } task_run{task_activity, task_id, hex_identity(attempt.bytes()), std::string{name}};
+  task_run.emit("running");
   struct Boundary final : EffectBoundary {
     const std::function<Json(OperationAttemptId)> &fn;
     Json result;
@@ -1054,6 +1087,17 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                                               {"start", Json{JsonNumber{"1"}}},
                                               {"end", Json{JsonNumber{"20"}}}})}}));
   }
+  if ((name == "tasks_read" || name == "tasks_edit") && boundary.error)
+    result.object().emplace_back(
+        "message",
+        Json{"Require an object query or edit {op_id,ops}. add/move/archive/list need "
+             "current list base; set/move/archive need the read item version. Exactly "
+             "tasks and one level of subtasks. States "
+             "queued/active/blocked/done/dropped. "
+             "Read tasks_read for current IDs and versions. Batch limit64, page "
+             "limit64; "
+             "titles512 bytes, notes2048 bytes. No changes accepted for an invalid "
+             "batch."});
 
   const bool timed_out = boundary.error && boundary.error->code == ErrorCode::io &&
                          boundary.error->detail == ETIMEDOUT;
@@ -1137,6 +1181,15 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                                  {bounded_raw.begin(), bounded_raw.end()}}});
   }
   (void)unwrap(std::move(recorded));
+  std::string task_phase = disposition == AttemptDisposition::unknown
+                               ? "outcome unknown"
+                           : disposition == AttemptDisposition::failure ? "failed"
+                                                                        : "finished";
+  if (name == "exec" && !boundary.error)
+    if (const auto *exit = result.find("exit_code"); exit && exit->number().text != "0")
+      task_phase = "failed (exit " + exit->number().text + ")";
+  task_run.ended = true;
+  task_run.emit(task_phase);
   if (operation_completed || operation_outcome) {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::steady_clock::now() - began)
@@ -1310,6 +1363,25 @@ Json CodingEngine::request(Json options) {
       found->second = std::move(value);
   }
   const auto *store = std::get_if<bool>(&field(request, "store").value());
+  if (!tasks_.state().empty() || tasks_.state().revision() != 0) {
+    auto &instructions =
+        std::find_if(request.object().begin(), request.object().end(),
+                     [](const auto &f) { return f.first == "instructions"; })
+            ->second;
+    instructions = Json{
+        instructions.string() + "\nCURRENT_TASKS " +
+        unwrap(dump_json(tasks_.read(Json::object({{"status", Json{"open"}},
+                                                   {"limit", Json{JsonNumber{"16"}}},
+                                                   {"compact", Json{true}}})))) +
+        "\nTasks are durable session working state. Read more with tasks_read; use "
+        "tasks_edit for small atomic batches at real work transitions. Keep stable "
+        "IDs through renames. Exactly tasks and subtasks, no deeper nesting. Multiple "
+        "active tasks are fine. Completion is explicit, including parents. Use item "
+        "versions for set, and current list base for structural edits. Preserve op_id "
+        "and arguments for retries; resolve conflicts by reading before a new edit. "
+        "Use exec task_id for observed activity; a running command does not itself "
+        "complete a task. Unfinished tasks remain across turns and compaction."};
+  }
   const auto *stream = std::get_if<bool>(&field(request, "stream").value());
   if (store == nullptr || *store || stream == nullptr || !*stream)
     throw Error{ErrorCode::unsupported};
@@ -1380,14 +1452,18 @@ Json CodingEngine::request(Json options) {
     previewed_.clear();
     try {
       response = operation("provider", request, [&](OperationAttemptId attempt) {
-        log_.record(ApplicationChannel::log,
-            Json::object({{"label", Json{"provider.request"}},
-              {"metadata", Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                           {"revision", Json{origin}},
-                           {"generation", Json{hex_identity(generation_.bytes())}},
-                           {"input_binding", Json{"attempt-invocation-v1"}},
-                           {"retry_group", Json{retry_group}},
-                           {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})}}));
+        log_.record(
+            ApplicationChannel::log,
+            Json::object(
+                {{"label", Json{"provider.request"}},
+                 {"metadata",
+                  Json::object(
+                      {{"attempt", Json{hex_identity(attempt.bytes())}},
+                       {"revision", Json{origin}},
+                       {"generation", Json{hex_identity(generation_.bytes())}},
+                       {"input_binding", Json{"attempt-invocation-v1"}},
+                       {"retry_group", Json{retry_group}},
+                       {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})}}));
         LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond",
                             false};
         if (transport.enabled())
@@ -1731,6 +1807,11 @@ Json CodingEngine::call(std::string name, Json arguments) {
     }
     if (name == "audit_inspect")
       return log_.inspect(field(arguments, "query"));
+    if (name == "tasks_read")
+      return tasks_.read(arguments.find("query") ? field(arguments, "query")
+                                                 : Json::object({}));
+    if (name == "tasks_edit")
+      return tasks_.edit(arguments);
     if (name == "context_inspect")
       return context_.inspect(field(arguments, "query"));
     if (name == "context_stats")

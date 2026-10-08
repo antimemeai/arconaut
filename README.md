@@ -178,6 +178,11 @@ That failure drove concrete work: physical byte/record headroom is now exposed, 
 
 The TUI keeps a conversation, activity display, and multiline composer on screen. Assistant text streams during inference. Tools show commands or paths, output, timing, and observed results. Scrolling can remain anchored while new output arrives. The Blackbird in the corner gently bobs and his plume shimmers while a turn is underway.
 
+The [task pane](docs/TASKS.md) sits at the far right below the sprite. It shows
+durable tasks and one level of subtasks, blockers, owners and explicitly bound
+command activity. Models and Lua read and edit the same state through
+`tasks_read`/`tasks_edit`; `/tasks help` lists operator controls.
+
 The basic controls are intentionally ordinary:
 
 | Control | Action |

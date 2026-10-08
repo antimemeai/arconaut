@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""Direct task-pane PTY check; isolated session, no provider/account requests."""
+import errno
+import fcntl
+import importlib.util
+import os
+from pathlib import Path
+import pty
+import select
+import signal
+import struct
+import subprocess
+import sys
+import tempfile
+import termios
+import time
+
+spec = importlib.util.spec_from_file_location("screen", Path(__file__).with_name("terminal-screen-oracle.py"))
+oracle = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(oracle)
+
+with tempfile.TemporaryDirectory(prefix="blackbird-task-pane-") as work:
+    master, slave = pty.openpty()
+    env = dict(os.environ, BLACKBIRD_GRAPHICS="off")
+    screen = oracle.Screen()
+    size = [32, 120]
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", *size, 0, 0))
+    child = subprocess.Popen([sys.argv[1], "--session", work], stdin=slave,
+                             stdout=slave, stderr=slave, env=env, start_new_session=True)
+
+    def drain(seconds=0.1):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if select.select([master], [], [], min(0.03, max(0, deadline-time.monotonic())))[0]:
+                try:
+                    data = os.read(master, 65536)
+                    screen.feed(data)
+                except OSError as e:
+                    if e.errno == errno.EIO:
+                        break
+                    raise
+
+    def pane():
+        # Current frame cells; conversation output cannot satisfy pane assertions.
+        return "\n".join("".join(screen.cells.get((r, c), " ") for c in range(83, 120))
+                         for r in range(7, 32))
+
+    def wait(predicate, label, seconds=8):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            drain(0.04)
+            if predicate():
+                return
+        raise AssertionError(f"{label}\n{screen.text()}")
+
+    def send(text):
+        os.write(master, text.encode())
+
+    def command(text):
+        send(text + "\r")
+
+    try:
+        wait(lambda: "Workflow reloads" in screen.text(), "initial terminal")
+        command("/tasks add Parent work")
+        wait(lambda: "t1 Parent work" in pane(), "task is below sprite at far right")
+        assert screen.cells.get((7, 83)) == "T", "task pane origin moved"
+        command("/tasks sub t1 Child work")
+        wait(lambda: "t2 Child work" in pane(), "subtask missing")
+        command("/tasks add Independent work")
+        wait(lambda: "t3 Independent work" in pane(), "second task missing")
+        command("/tasks done t2")
+        wait(lambda: "1/1" in pane(), "subtask rollup missing")
+        assert "0 done" in pane(), "child completion counted as parent completion"
+        command("/tasks fold t1")
+        wait(lambda: "t2 Child work" not in pane() and "t1 Parent work" in pane(), "fold failed")
+        command("/tasks fold t1")
+        wait(lambda: "t2 Child work" in pane(), "unfold failed")
+        command("/tasks block t3 Need operator input")
+        wait(lambda: "Need operator input" in pane(), "blocker missing")
+
+        # Updates produced while a Lua workflow is running must be visible before
+        # turn completion, and a failed bound command must not complete the task.
+        command("/lua blackbird.call('exec',{task_id='t1',argv={'/bin/sh','-c','sleep 0.7; exit 7'}})")
+        wait(lambda: "running" in pane(), "bound runtime activity not visible", 3)
+        wait(lambda: "failed (exit 7)" in pane(), "bound runtime outcome missing", 4)
+        assert "0 done" in pane(), "command completed the task"
+
+        code = ("local q=blackbird.tasks.read({id='t1'}); local v=q.items[1].version; "
+                "for i=1,60 do local r=blackbird.tasks.edit({op_id='burst-'..i,"
+                "ops={{op='set',id='t1',version=v,title=i==60 and 'Burst final' or 'Burst '..i}}});"
+                " assert(r.accepted); v=r.changed[1].version end")
+        command("/lua " + code)
+        wait(lambda: "t1 Burst final" in pane(), "latest burst revision not displayed", 15)
+        send("UNSUBMITTED_DRAFT")
+        wait(lambda: "UNSUBMITTED_DRAFT" in screen.text(), "input lost after task burst")
+        assert screen.col < 82 and screen.row >= 27, "input cursor escaped left composer"
+
+        # Narrow fallback preserves the draft and exposes the expanded task view.
+        send("\x15")
+        size[:] = [24, 60]
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", *size, 0, 0))
+        os.kill(child.pid, signal.SIGWINCH)
+        wait(lambda: "Tasks:" in screen.text(), "narrow summary missing")
+        command("/tasks expand")
+        wait(lambda: "TASKS" in screen.text() and "t1 Burst final" in screen.text(), "narrow expanded view missing")
+        command("/quit")
+        # A launcher retains its own stdout descriptor while waiting for the
+        # native child. Keep consuming final output during shutdown.
+        wait(lambda: child.poll() is not None, "terminal did not exit", 8)
+        assert child.returncode == 0, "terminal failed on exit"
+        assert not screen.pending, "incomplete terminal control sequence"
+        print("Task pane: right/below sprite, subtasks/folding/blockers, bound activity, burst freshness, input cursor and narrow fallback passed")
+    finally:
+        if child.poll() is None:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except (PermissionError, ProcessLookupError):
+                child.kill()
+            child.wait(timeout=5)
+        os.close(master)
+        os.close(slave)

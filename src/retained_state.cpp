@@ -4,6 +4,7 @@
 #include "blackbird/local_timing.hpp"
 #include "blackbird/retained_proposal.hpp"
 #include "blackbird/saved_state.hpp"
+#include "blackbird/tasks.hpp"
 #include <charconv>
 #include <map>
 #include <set>
@@ -1939,6 +1940,8 @@ Result<IdentityBytes> RetainedState::reserve_identity() {
 // record may omit unchanged program_config; fold that field rather than losing it.
 Json::Array RetainedState::current_programs() const {
   std::map<std::string, Json> latest;
+  TaskState tasks;
+  bool have_tasks = false;
   Json config;
   Json budget;
   std::uint64_t boundary = 0;
@@ -1947,6 +1950,10 @@ Json::Array RetainedState::current_programs() const {
     for (const auto &packet : saved_->programs.array()) {
       const auto &label = string_field(packet, "label");
       latest[label] = packet;
+      if (label == "task-state-v1") {
+        tasks.restore(packet);
+        have_tasks = true;
+      }
       if (label == "workflow-config-effective-v1")
         if (const auto *value = packet.find("program_config"))
           config = *value;
@@ -1965,7 +1972,10 @@ Json::Array RetainedState::current_programs() const {
     if (!label || !std::holds_alternative<std::string>(label->value()))
       continue;
     const auto &name = label->string();
-    if (name == "session.identity") {
+    if (name == "task-delta-v1") {
+      tasks.replay(packet);
+      have_tasks = true;
+    } else if (name == "session.identity") {
       if (!latest.contains(name))
         latest[name] = packet;
     } else if (name == "session.settings" || name == "session.restart" ||
@@ -1990,9 +2000,11 @@ Json::Array RetainedState::current_programs() const {
   }
   Json::Array packets;
   for (const auto &[name, packet] : latest) {
-    if (name != "context-budget-effective-v1")
+    if (name != "context-budget-effective-v1" && name != "task-state-v1")
       packets.push_back(packet);
   }
+  if (have_tasks)
+    packets.push_back(tasks.snapshot());
   // Policy chronology is independent of the workflow/tool generation.
   if (budget != Json{})
     packets.push_back(std::move(budget));

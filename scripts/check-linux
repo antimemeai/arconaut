@@ -17,10 +17,13 @@ SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "neuroses"]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test-regex", help="Run the matching CTest cases in each declared profile")
+    parser.add_argument("--targets", nargs="+", help="Build only the owning targets for a scoped native check")
+    parser.add_argument("--profiles", nargs="+", choices=("debug", "release", "asan"),
+                        help="Select declared profiles for a changed-path recheck (default: all three)")
     args = parser.parse_args()
     # Explicit current native unit source scope, excluding history, credentials and captures.
     paths = ["CMakeLists.txt", "include", "src", "tests", "programs", "tooling/probes",
-             "assets", "scripts/check-foundation-api", "scripts/check-terminal-pty", "scripts/check-rrc", "scripts/arco", "scripts/blackbird", "scripts/terminal-screen-oracle.py"]
+             "assets", "scripts/check-foundation-api", "scripts/check-terminal-pty", "scripts/check-tasks-pty", "scripts/check-rrc", "scripts/arco", "scripts/blackbird", "scripts/terminal-screen-oracle.py"]
     lua_archive = ROOT.parent / "quarantine_proj/archives/lua-5.4.8.tar.gz"
     if hashlib.sha256(lua_archive.read_bytes()).hexdigest() != "4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae":
         raise RuntimeError("Lua 5.4.8 source archive checksum mismatch")
@@ -58,21 +61,27 @@ lua = root / 'tooling/dependencies/lua-5.4.8/src'
 subprocess.run(['make', '-C', str(lua), 'liblua.a', 'CC=/usr/bin/clang-18', 'MYCFLAGS=-DLUA_USE_LINUX -fPIC'], check=True)
 
 for name, mode, instrumentation in [('debug', 'Debug', 'none'), ('release', 'Release', 'none'), ('asan', 'Debug', 'address')]:
+    if selected_profiles and name not in selected_profiles:
+        continue
     build = root / 'build' / name
-    subprocess.run(['/usr/bin/cmake', '-S', str(root), '-B', str(build), '-G', 'Ninja', '-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18', '-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja', '-DBLACKBIRD_COMPILER_PROFILE=linux-clang18', '-DCMAKE_BUILD_TYPE='+mode, '-DBLACKBIRD_INSTRUMENTATION='+instrumentation, '-DLUA_INCLUDE_DIR='+str(lua), '-DLUA_LIBRARY='+str(lua / 'liblua.a')], check=True)
-    subprocess.run(['/usr/bin/cmake', '--build', str(build), '--parallel', '4'], check=True)
+    subprocess.run(['/usr/bin/cmake', '-S', str(root), '-B', str(build), '-G', 'Ninja', '-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18', '-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja', '-DBLACKBIRD_COMPILER_PROFILE=linux-clang18', '-DCMAKE_BUILD_TYPE='+mode, '-DBLACKBIRD_DEBUG='+('OFF' if mode == 'Release' else 'ON'), '-DBLACKBIRD_INSTRUMENTATION='+instrumentation, '-DLUA_INCLUDE_DIR='+str(lua), '-DLUA_LIBRARY='+str(lua / 'liblua.a')], check=True)
+    build_command = ['/usr/bin/cmake', '--build', str(build), '--parallel', '4']
+    if build_targets:
+        build_command += ['--target', *build_targets]
+    subprocess.run(build_command, check=True)
     tests = ['/usr/bin/ctest', '--test-dir', str(build), '--output-on-failure', '--no-tests=error']
     if test_regex is not None:
         tests += ['-R', test_regex]
     subprocess.run(tests, check=True)
 '''
-        commands = "test_regex = " + repr(args.test_regex) + "\n" + commands
+        commands = "test_regex = " + repr(args.test_regex) + "\nbuild_targets = " + repr(args.targets) + "\nselected_profiles = " + repr(args.profiles) + "\n" + commands
         with (capture / "checks.log").open("wb") as output:
             result = subprocess.run([*SSH, "cd " + shlex.quote(remote) + " && timeout --kill-after=5 600 python3 -"], input=commands.encode(), stdout=output, stderr=subprocess.STDOUT, timeout=620)
         if result.returncode:
             raise RuntimeError(f"Linux checks failed ({result.returncode}); inspect {capture / 'checks.log'}")
         selection = f" (CTest filter: {args.test_regex})" if args.test_regex is not None else ""
-        print("Linux debug/release/ASan+UBSan native checks passed" + selection + ".")
+        checked_profiles = "/".join(args.profiles or ("debug", "release", "asan"))
+        print("Linux " + checked_profiles + " native checks passed" + selection + ".")
     finally:
         try:
             subprocess.run([*SSH, "rm -rf -- " + shlex.quote(remote)], check=True, timeout=15)

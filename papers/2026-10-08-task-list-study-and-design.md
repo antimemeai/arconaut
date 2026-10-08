@@ -1,8 +1,13 @@
 # Task lists: presentation, model use, and freshness
 
-2026-10-08. Research and a design candidate for operator discussion. No product
-implementation or dependency adoption. Source observations below describe retained
+2026-10-08. Original research and design candidate for operator discussion;
+subsequent implementation is linked below. No dependency adoption. Source observations describe retained
 snapshots, not a comparison of the installed versions in the startup benchmark.
+
+Subsequent operator authorization built the session-scoped core described in
+[TASKS](../docs/TASKS.md) and [the implementation note](../docs/TASK_LIST_IMPLEMENTATION.md).
+Those documents describe delivered behavior; remaining proposals below stay
+research input, including remote sharing and branch/fork policies.
 
 ## Recommendation
 

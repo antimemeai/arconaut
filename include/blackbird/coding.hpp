@@ -1,10 +1,11 @@
 #pragma once
+#include "blackbird/beads.hpp"
+#include "blackbird/decision_models.hpp"
 #include "blackbird/openai.hpp"
 #include "blackbird/session.hpp"
 #include "blackbird/tools.hpp"
-#include "blackbird/beads.hpp"
-#include "blackbird/decision_models.hpp"
 
+#include "blackbird/tasks.hpp"
 #include "blackbird/workflows.hpp"
 #include <map>
 #include <memory>
@@ -50,12 +51,14 @@ public:
   Error claim_backstop();
   const Json &workflow_result() const noexcept { return workflow_result_; }
   ContextStore &context() noexcept { return context_; }
+  TaskStore &tasks() noexcept { return tasks_; }
   void model(std::string name) { model_ = std::move(name); }
   std::function<void(std::string_view)> display;
   std::function<void(std::string_view)> diagnostic;
   std::function<void(std::string_view)> notice;
   std::function<void(const Json &)> observed_usage;
   std::function<void(std::string_view)> operation_started;
+  std::function<void(const Json &)> task_activity;
   std::function<void(std::string_view)> status;
   std::function<void(std::string_view)> operation_completed;
   std::function<void(std::string_view, AttemptDisposition)> operation_outcome;
@@ -85,6 +88,7 @@ private:
   void protect_workflow(const Json::Array &entries, const Json &proposal);
   AuditLog &log_;
   ContextStore &context_;
+  TaskStore tasks_;
   CodingProvider &provider_;
   std::string model_;
   std::string effort_ = "medium";

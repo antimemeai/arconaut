@@ -402,6 +402,16 @@ int main(int argc, char **argv) {
     };
     refresh_info();
     engine.display = emit;
+    if (tui)
+      ui.tasks(engine.tasks().snapshot());
+    engine.tasks().changed = [&](const Json &packet) {
+      if (tui)
+        ui.tasks(packet);
+    };
+    engine.task_activity = [&](const Json &event) {
+      if (tui)
+        ui.task_activity(event);
+    };
     engine.process_output = [&](std::string_view text) {
       if (tui)
         ui.process_output(text);
@@ -461,6 +471,29 @@ int main(int argc, char **argv) {
         } else if (prompt == "continue" && resume_turn) {
           resume_turn = false;
           engine.turn({"", read_file(workflow)});
+        } else if (prompt == "/tasks" || prompt.starts_with("/tasks ")) {
+          const auto command =
+              prompt == "/tasks" ? std::string_view{} : prompt.substr(7);
+          const auto result = engine.tasks().operator_command(command);
+          if (const auto *help = result.find("help"))
+            emit(help->string() + "\n");
+          else if (command.starts_with("read ") || command.starts_with("apply ") ||
+                   result.find("conflict"))
+            emit(unwrap(dump_json(result)) + "\n");
+          else {
+            const auto *items = result.find("items");
+            const auto &rows =
+                items ? items->array() : field(result, "changed").array();
+            for (const auto &row : rows)
+              emit(std::string{string_field(row, "parent").empty() ? "" : "  "} +
+                   string_field(row, "id") + " [" + string_field(row, "status") + "] " +
+                   string_field(row, "title") + "\n");
+            if (const auto *removed = result.find("removed"))
+              for (const auto &id : removed->array())
+                emit("Archived " + id.string() + "\n");
+            if (rows.empty())
+              emit(items ? "No tasks.\n" : "Task list updated.\n");
+          }
         } else if (prompt == "/session") {
           const auto identity = session_identity(log);
           emit(unwrap(dump_json(Json::object(
