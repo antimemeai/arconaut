@@ -5,6 +5,7 @@ namespace blackbird {
 std::filesystem::path default_session_directory(const std::filesystem::path &home);
 struct SessionSettings {
   std::string model = "gpt-6.1-sol", effort = "medium", workflow;
+  std::string name{};
   bool operator==(const SessionSettings &) const = default;
 };
 struct SessionIdentity {

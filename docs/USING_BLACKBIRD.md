@@ -526,3 +526,15 @@ resident-tail budget, including reserved settlement room. Already-admitted work 
 settle. Fix storage and retry `/checkpoint`; a failed derived publication does not
 undo accepted context. The full journal's existing512MiB/200000-record capacity
 remains independent. See [session reopen](SESSION_REOPEN.md) for fallback behavior.
+
+### Choosing saved sessions
+
+`/name NAME` retains a short session name (128 UTF-8 bytes); `/name` clears it.
+`/sessions` opens a searchable picker in the TUI, or lists discovery metadata in
+plain mode. Arrows choose, Enter loads `/resume DIRECTORY`, then Enter switches.
+A draft displaced by selection is kept in `/drafts`. You can type `/resume
+DIRECTORY` directly, including paths with spaces. It waits for current work to
+conclude and does not send a model request. Destination model/effort/workflow,
+context, tasks and drafts are restored independently. A failed open returns once
+to the old session; uncertain operations are never silently retried. `/new` still
+creates a fresh session and inherits only model, effort and workflow.

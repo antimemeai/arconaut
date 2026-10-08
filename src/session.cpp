@@ -35,9 +35,12 @@ template <class T> T identity(std::string_view text) {
   return unwrap(T::from_bytes(bytes));
 }
 void validate(const SessionSettings &value) {
-  if (value.model.size() > 1024 || value.workflow.size() > 65536 ||
-      value.model.empty() || value.model.find('\0') != std::string::npos ||
-      value.workflow.empty() || value.workflow.find('\0') != std::string::npos ||
+  if (value.name.size() > 128 ||
+      value.name.find_first_of("\r\n") != std::string::npos ||
+      value.name.find('\0') != std::string::npos || value.model.size() > 1024 ||
+      value.workflow.size() > 65536 || value.model.empty() ||
+      value.model.find('\0') != std::string::npos || value.workflow.empty() ||
+      value.workflow.find('\0') != std::string::npos ||
       (value.effort != "low" && value.effort != "medium" && value.effort != "high" &&
        value.effort != "xhigh"))
     throw Error{ErrorCode::invalid_range};
@@ -48,6 +51,7 @@ void save_session_info(const std::filesystem::path &directory,
   validate(settings);
   const auto serialized = unwrap(dump_json(
       Json::object({{"version", Json{JsonNumber{"1"}}},
+                    {"name", Json{settings.name}},
                     {"model", Json{settings.model}},
                     {"effort", Json{settings.effort}},
                     {"workflow", Json{settings.workflow}},
@@ -105,11 +109,14 @@ Json list_sessions(const std::filesystem::path &requested) {
         SessionSettings settings{string_field(packet, "model"),
                                  string_field(packet, "effort"),
                                  string_field(packet, "workflow")};
+        if (const auto *name = packet.find("name"))
+          settings.name = name->string();
         validate(settings);
         (void)identity<ParticipantId>(string_field(packet, "actor"));
         (void)identity<ConversationId>(string_field(packet, "conversation"));
         (void)identity<WorkflowId>(string_field(packet, "workflow_id"));
-        config = Json::object({{"model", Json{settings.model}},
+        config = Json::object({{"name", Json{settings.name}},
+                               {"model", Json{settings.model}},
                                {"effort", Json{settings.effort}},
                                {"workflow", Json{settings.workflow}}});
         status = "snapshot";
@@ -176,6 +183,8 @@ SessionStore::SessionStore(AuditLog &log) : log_(log) {
     if (labelled(value, "session.settings")) {
       settings_ = {string_field(value, "model"), string_field(value, "effort"),
                    string_field(value, "workflow")};
+      if (const auto *name = value.find("name"))
+        settings_.name = name->string();
       validate(settings_);
     } else if (labelled(value, "session.restart"))
       restart_ = value;
@@ -187,6 +196,7 @@ void SessionStore::save(SessionSettings value) {
     return;
   log_.record(ApplicationChannel::program,
               Json::object({{"label", Json{"session.settings"}},
+                            {"name", Json{value.name}},
                             {"model", Json{value.model}},
                             {"effort", Json{value.effort}},
                             {"workflow", Json{value.workflow}}}));

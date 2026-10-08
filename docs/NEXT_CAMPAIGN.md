@@ -1,7 +1,8 @@
 # Proposed next Blackbird campaign
 
-Status: discussion proposal after the 2026-10-08 consolidation. Tracked as `arconaut-3sm` (four proposed orders). The previous Giga
-campaign remains paused. This plan does not start autonomous implementation.
+Status: operator authorized implementation on 2026-10-08 ("let’s ride").
+Tracked as `arconaut-3sm`, delivered serially on master. The previous Giga remains
+paused. Each unit has 90 minutes including at most 25 minutes hardening, two layers.
 
 Make local collaboration an ordinary Blackbird working mode: the operator and
 model choose a colleague, give it selected context and a task, watch what is
@@ -94,3 +95,20 @@ and useful optional connectors over the same run/control surface. Treat standalo
 login/distribution, linked-history continuation and live worker refit as explicit
 owning units. The further stream-capture measurement excluded by the operator
 stays excluded. Local diagnostics keep their 30-day TTL.
+
+## Order 1 implementation note
+
+Use retained session settings for an optional 128-byte name, backward-compatible
+with existing snapshots. Reuse the command palette for named session selection;
+Enter loads a resume command while saving the previous draft, then explicit Enter
+switches. /resume DIRECTORY works in plain mode too. Switching checkpoints the
+old context, tears down its UI/worker/journal, and opens the destination without
+sending a provider request. Destination settings, task state and UI drafts belong
+to that destination. Failed destination opening returns to the old saved session
+once, preserving the error and avoiding a retry loop. Discovery reads metadata
+only, with audit still authoritative. No new library.
+
+Direct checks: retained name round trip/invalid input, palette search/arrows, two
+saved sessions with independent identities/context/tasks/drafts, busy queue
+boundary, failed/busy destination, and restart routing after selection. Existing
+new-session PTY is extended rather than adding a second receipt mechanism.

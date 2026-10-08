@@ -39,7 +39,7 @@ int main() {
       AuditLog log{*root};
       ContextStore context{log};
       SessionStore store{log};
-      store.save({"chosen", "high", "/absolute/turn.lua"});
+      store.save({"chosen", "high", "/absolute/turn.lua", "My session"});
       const auto count = root->committed_facts().size();
       bool refused = false;
       try {
@@ -69,11 +69,20 @@ int main() {
       const auto unchanged_time = std::filesystem::last_write_time(metadata_path);
       save_session_info(path, store.settings(), identity);
       check(std::filesystem::last_write_time(metadata_path) == unchanged_time);
+      refused = false;
+      try {
+        store.save({"chosen", "high", "/absolute/turn.lua", std::string(129, 'x')});
+      } catch (const Error &e) {
+        refused = e.code == ErrorCode::invalid_range;
+      }
+      check(refused && store.settings().name == "My session");
       const auto audit_before = read_file(std::filesystem::path{path} / "audit");
       auto listed = list_sessions(path);
       check(field(listed, "sessions").array().size() == 1 &&
             string_field(field(listed, "sessions").array()[0], "metadata_status") ==
                 "snapshot");
+      check(string_field(field(field(listed, "sessions").array()[0], "configuration"),
+                         "name") == "My session");
       write_file(std::filesystem::path{path} / "session-info.json",
                  std::string(1024 * 1024 + 1, 'x'));
       listed = list_sessions(path);
@@ -104,7 +113,7 @@ int main() {
       ContextStore context{log};
       SessionStore store{log};
       check(store.settings() ==
-            SessionSettings{"chosen", "high", "/absolute/turn.lua"});
+            SessionSettings{"chosen", "high", "/absolute/turn.lua", "My session"});
       const auto identity = session_identity(log);
       check(actor == hex_identity(identity.actor.bytes()) &&
             conversation == hex_identity(identity.conversation.bytes()) &&

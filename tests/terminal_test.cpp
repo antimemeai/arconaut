@@ -24,6 +24,17 @@ InputResult feed(Composer &c, std::string_view bytes) {
 }
 int main() {
   {
+    Composer picker;
+    picker.draft("unsent draft");
+    picker.choices({{"/resume /tmp/a", "", "/tmp/a", "Session", "Alpha"},
+                    {"/resume /tmp/b", "", "/tmp/b", "Session", "Beta"}},
+                   "Sessions");
+    check(picker.palette_lines(8)[0].starts_with("Sessions"));
+    check(feed(picker, "\x1b[B\r").text == "/resume /tmp/b");
+    check(picker.text() == "unsent draft");
+    picker.choices({{"/resume /tmp/a", "", "/tmp/a", "Session", "Alpha"}}, "Sessions");
+    feed(picker, "\x1b");
+    check(picker.flush_escape() && picker.text() == "unsent draft");
     Composer slash;
     feed(slash, "/");
     check(!slash.palette_lines(8).empty());

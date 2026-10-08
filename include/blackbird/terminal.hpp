@@ -41,12 +41,17 @@ std::string terminal_key_help();
 std::string terminal_command_hint(std::string_view draft);
 TerminalState load_terminal_state(const std::filesystem::path &path);
 void save_terminal_state(const std::filesystem::path &path, const TerminalState &state);
+struct ComposerChoice {
+  std::string name, arguments, description, group;
+  std::string label{};
+};
 class Composer {
 public:
   InputResult feed(char byte);
   void restore(const TerminalState &state);
   TerminalState state() const;
   void draft(std::string text);
+  void choices(std::vector<ComposerChoice> entries, std::string heading);
   bool palette_open() const noexcept { return palette_open_; }
   bool slash_open() const noexcept { return slash_open_; }
   bool escape_pending() const noexcept { return !escape_.empty(); }
@@ -56,6 +61,8 @@ public:
   std::size_t cursor() const noexcept { return cursor_; }
 
 private:
+  std::shared_ptr<const std::vector<ComposerChoice>> choices_;
+  std::string choices_heading_;
   std::string text_, escape_;
   std::size_t cursor_ = 0, history_index_ = 0;
   std::vector<std::string> history_;
@@ -93,6 +100,7 @@ public:
   void operation_completed(std::string_view text, Ink outcome = Ink::muted);
   void failed();
   void title(std::string_view text);
+  void sessions(const Json &listing);
   void tasks(const Json &publication);
   void task_activity(const Json &event);
   void run(const std::function<void(std::string_view)> &perform,
@@ -112,6 +120,7 @@ private:
     tool_start,
     status,
     title,
+    sessions,
     complete,
     operation_complete,
     failure

@@ -62,6 +62,8 @@ with tempfile.TemporaryDirectory(prefix="blackbird-new-") as work:
 
     try:
         wait(lambda: "Workflow reloads" in screen.text(), "initial UI")
+        command("/name Origin workspace")
+        wait(lambda: saved(original).get("name") == "Origin workspace", "retained name")
         initial = saved(original)
         command("/tasks add OLD_TASK")
         wait(lambda: "t1 OLD_TASK" in screen.text(), "original task")
@@ -95,7 +97,45 @@ with tempfile.TemporaryDirectory(prefix="blackbird-new-") as work:
             command("/restart local switch check")
             wait(lambda: "LOCAL_WORKFLOW_ONLY" in screen.text(), "restart local continuation")
             command("/session")
-            wait(lambda: info['conversation'] in screen.text(), "restart routed to fresh session")
+            wait(lambda: info['conversation'] in ''.join(line[:82].replace('│', '').replace(' ', '') for line in screen.text().splitlines()), "restart routed to fresh session")
+        # A picker selection loads a command; explicit Enter opens the destination.
+        command("/sessions")
+        wait(lambda: "Sessions /" in screen.text(), "saved-session picker")
+        os.write(master, b"Origin workspace\r")
+        wait(lambda: "> /resume " in screen.text(), "picker loads return command")
+        os.write(master, b"\r")
+        wait(lambda: "t1 OLD_TASK" in screen.text() and "NEW_TASK" not in screen.text(), "original task projection restored")
+        assert saved(original)['conversation'] == initial['conversation']
+        # Drafts belong to each session, and are restored without submitting.
+        command("/resume " + str(fresh))
+        wait(lambda: "t1 NEW_TASK" in screen.text(), "fresh task projection restored")
+        os.write(master, b"UNSENT_FRESH_DRAFT")
+        wait(lambda: bytes.fromhex(json.loads((fresh / 'ui-state.json').read_text())['draft']).decode() == 'UNSENT_FRESH_DRAFT', "fresh draft saved")
+        os.write(master, b"\x14")
+        os.write(master, b"sessions\r\r")
+        wait(lambda: "Sessions /" in screen.text(), "picker over unsent draft")
+        os.write(master, b"Origin workspace\r\r")
+        wait(lambda: "t1 OLD_TASK" in screen.text(), "draft switch original")
+        command("/resume " + str(fresh))
+        wait(lambda: "t1 NEW_TASK" in screen.text(), "draft switch back")
+        command("/draft 1")
+        wait(lambda: "> UNSENT_FRESH_DRAFT" in screen.text(), "preserved recovered draft")
+        os.write(master, b"\x15")
+        # Busy and corrupt destinations fail once and return to this session.
+        with (original / 'audit').open('rb') as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            command("/clear")
+            wait(lambda: "Workflow reloads" not in screen.text(), "clear before busy destination")
+            command("/resume " + str(original))
+            wait(lambda: "t1 NEW_TASK" in screen.text() and "Workflow reloads" in screen.text(), "busy destination returns")
+            assert child.poll() is None
+        corrupt = root / 'broken'
+        corrupt.mkdir()
+        (corrupt / 'audit').write_bytes(b'broken')
+        command("/clear")
+        wait(lambda: "Workflow reloads" not in screen.text(), "clear before failed destination")
+        command("/resume " + str(corrupt))
+        wait(lambda: "t1 NEW_TASK" in screen.text() and "Workflow reloads" in screen.text(), "failed destination returns")
         command("/new")
         wait(lambda: len(list(root.glob('session-*/session-info.json'))) == 2 and
              "Workflow reloads" in screen.text() and "NEW_TASK" not in screen.text(), "second fresh UI")

@@ -53,7 +53,8 @@ std::string safe(std::string_view text) {
   return out;
 }
 } // namespace
-int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
+int run_session(int argc, char **argv, std::vector<std::string> &next_session,
+                std::vector<std::string> &fallback_session) {
   interrupted.store(false, std::memory_order_relaxed);
 #if BLACKBIRD_DEBUG
   blackbird::LocalTimingSession local_timing;
@@ -505,7 +506,8 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
         } else if (prompt == "/session") {
           const auto identity = session_identity(log);
           emit(unwrap(dump_json(Json::object(
-                   {{"actor", Json{hex_identity(identity.actor.bytes())}},
+                   {{"name", Json{session_store.settings().name}},
+                    {"actor", Json{hex_identity(identity.actor.bytes())}},
                     {"directory", Json{session.string()}},
                     {"conversation", Json{hex_identity(identity.conversation.bytes())}},
                     {"workflow_id", Json{hex_identity(identity.workflow.bytes())}},
@@ -513,6 +515,32 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
                     {"effort", Json{effort}},
                     {"workflow", Json{workflow.string()}}}))) +
                "\n");
+        } else if (prompt == "/name" || prompt.starts_with("/name ")) {
+          auto candidate = session_store.settings();
+          candidate.name = prompt == "/name" ? "" : std::string{prompt.substr(6)};
+          session_store.save(std::move(candidate));
+          emit("Session name saved.\n");
+        } else if (prompt.starts_with("/resume ")) {
+          if (one || !station_path.empty())
+            throw Error{ErrorCode::unsupported};
+          const auto destination = std::filesystem::weakly_canonical(
+              std::filesystem::absolute(std::string{prompt.substr(8)}));
+          if (!std::filesystem::is_regular_file(destination / "audit"))
+            throw Error{ErrorCode::invalid_range};
+          if (destination == std::filesystem::weakly_canonical(session)) {
+            emit("Already in this session.\n");
+          } else {
+            unwrap(context.checkpoint());
+            next_session = {argv[0], "--session", destination.string(),
+                            "--new-session-instance"};
+            fallback_session = {argv[0], "--session", session.string(),
+                                "--new-session-instance"};
+            if (plain) {
+              next_session.emplace_back("--plain");
+              fallback_session.emplace_back("--plain");
+            }
+            new_pending.store(true);
+          }
         } else if (prompt == "/new") {
           if (one || !station_path.empty())
             throw Error{ErrorCode::unsupported};
@@ -543,9 +571,13 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
           workflow = candidate.workflow;
         } else if (prompt == "/context")
           emit(unwrap(dump_json(context.view())) + "\n");
-        else if (prompt == "/sessions")
-          emit(unwrap(dump_json(list_sessions(session.parent_path()))) + "\n");
-        else if (prompt == "/checkpoint") {
+        else if (prompt == "/sessions") {
+          const auto listing = list_sessions(session.parent_path());
+          if (tui)
+            ui.sessions(listing);
+          else
+            emit(unwrap(dump_json(listing)) + "\n");
+        } else if (prompt == "/checkpoint") {
           unwrap(context.checkpoint());
           emit("Session checkpoint saved.\n");
         } else if (prompt == "/stats")
@@ -637,7 +669,11 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
           restart_pending.store(true);
         }
         if (tui)
-          ui.title("Blackbird · " + model + " · " + effort + " · " + session.string());
+          ui.title("Blackbird · " +
+                   (session_store.settings().name.empty()
+                        ? ""
+                        : session_store.settings().name + " · ") +
+                   model + " · " + effort + " · " + session.string());
       } catch (const Error &e) {
         if (tui)
           ui.failed();
@@ -844,13 +880,18 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
 }
 
 int main(int argc, char **argv) {
-  std::vector<std::string> current_arguments;
+  std::vector<std::string> current_arguments, return_session;
   std::vector<char *> arguments;
   for (;;) {
-    std::vector<std::string> next_session;
-    const auto status = run_session(argc, argv, next_session);
-    if (status != 0 && status != 75)
-      return status;
+    std::vector<std::string> next_session, fallback_session;
+    const auto status = run_session(argc, argv, next_session, fallback_session);
+    if (status != 0 && status != 75) {
+      if (return_session.empty())
+        return status;
+      std::cerr << "Session could not open; returning to the previous session.\n";
+      next_session = std::exchange(return_session, {});
+    } else
+      return_session = std::move(fallback_session);
     if (next_session.empty())
       return status;
     current_arguments = std::move(next_session);

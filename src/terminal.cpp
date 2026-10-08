@@ -37,9 +37,7 @@ void resize_signal(int) {
   }
   errno = saved;
 }
-struct ChatCommand {
-  std::string name, arguments, description, group;
-};
+using ChatCommand = ComposerChoice;
 const std::array builtin_commands{
     ChatCommand{"/help", "", "Command guide (immediate in TUI)", "Chat"},
     ChatCommand{"/keys", "", "Keyboard guide (TUI only)", "Chat"},
@@ -64,7 +62,11 @@ const std::array builtin_commands{
     ChatCommand{"/session", "", "Current session and settings", "Session"},
     ChatCommand{"/new", "", "Start a fresh saved session; keep current settings",
                 "Session"},
-    ChatCommand{"/sessions", "", "List neighbouring sessions", "Session"},
+    ChatCommand{"/sessions", "",
+                "Pick a neighbouring saved session (list in plain mode)", "Session"},
+    ChatCommand{"/resume", "DIRECTORY",
+                "Return to a saved session without sending a turn", "Session"},
+    ChatCommand{"/name", "NAME", "Name this session; empty clears its name", "Session"},
     ChatCommand{"/checkpoint", "", "Save session state and retry maintenance",
                 "Session"},
     ChatCommand{"/stats", "", "Context bytes and observed provider usage", "Session"},
@@ -121,7 +123,7 @@ std::vector<std::size_t> palette_matches(std::string_view query,
     const auto &command = commands[n];
     const auto haystack =
         search_text(std::string{command.name} + " " + std::string{command.description} +
-                    " " + std::string{command.group});
+                    " " + std::string{command.group} + " " + command.label);
     if (haystack.find(needle) != std::string::npos)
       matches.push_back(n);
   }
@@ -620,8 +622,16 @@ void Composer::draft(std::string text) {
   draft_cursor_ = 0;
   goal_column_.reset();
 }
+void Composer::choices(std::vector<ComposerChoice> entries, std::string heading) {
+  choices_ = std::make_shared<const std::vector<ComposerChoice>>(std::move(entries));
+  choices_heading_ = std::move(heading);
+  palette_open_ = true;
+  slash_open_ = false;
+  palette_query_.clear();
+  palette_selected_ = 0;
+}
 void Composer::palette_move(bool up) {
-  const auto catalog = command_catalog();
+  const auto catalog = choices_ && palette_open_ ? choices_ : command_catalog();
   const auto &commands = *catalog;
   const auto matches = palette_matches(palette_query_, commands);
   if (matches.empty()) {
@@ -644,13 +654,15 @@ bool Composer::flush_escape() {
   return false;
 }
 std::vector<std::string> Composer::palette_lines(std::size_t rows) const {
-  const auto catalog = command_catalog();
+  const auto catalog = choices_ && palette_open_ ? choices_ : command_catalog();
   const auto &commands = *catalog;
   if ((!palette_open_ && !slash_open_) || rows == 0)
     return {};
   const auto matches = palette_matches(palette_query_, commands);
-  std::vector<std::string> out{slash_open_ ? "Commands"
-                                           : "Commands / " + palette_query_ + "_"};
+  std::vector<std::string> out{slash_open_
+                                   ? "Commands"
+                                   : (choices_ ? choices_heading_ : "Commands") +
+                                         " / " + palette_query_ + "_"};
   if (rows == 1)
     return out;
   const auto count = rows > 2 ? rows - 2 : 1;
@@ -662,7 +674,8 @@ std::vector<std::string> Composer::palette_lines(std::size_t rows) const {
     for (std::size_t n = first; n < matches.size() && n - first < count; ++n) {
       const auto &command = commands[matches[n]];
       out.push_back(
-          (n == selected ? "> " : "  ") + std::string{command.name} +
+          (n == selected ? "> " : "  ") +
+          (command.label.empty() ? command.name : command.label) +
           (command.arguments.empty() ? "" : " " + std::string{command.arguments}) +
           " — " + std::string{command.description});
     }
@@ -728,7 +741,7 @@ void Composer::kill(std::size_t begin, std::size_t end) {
   goal_column_.reset();
 }
 InputResult Composer::feed(char byte) {
-  const auto catalog = command_catalog();
+  const auto catalog = choices_ && palette_open_ ? choices_ : command_catalog();
   const auto &commands = *catalog;
   const auto c = static_cast<unsigned char>(byte);
   if (!escape_.empty()) {
@@ -829,6 +842,7 @@ InputResult Composer::feed(char byte) {
   }
   if (c == 0 || c == 20) {
     slash_open_ = false;
+    choices_.reset();
     palette_open_ = !palette_open_;
     palette_query_.clear();
     palette_selected_ = 0;
@@ -1068,6 +1082,9 @@ void TerminalUI::post(Kind kind, std::string_view text) {
     const char byte = 1;
     (void)::write(notification_, &byte, 1);
   }
+}
+void TerminalUI::sessions(const Json &listing) {
+  post(Kind::sessions, unwrap(dump_json(listing)));
 }
 void TerminalUI::text(std::string_view value) { post(Kind::text, value); }
 void TerminalUI::notice(std::string_view value) { post(Kind::notice, value); }
@@ -1343,6 +1360,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         for (const auto &id : task_folded_)
           folded.push_back(Json{id});
         const auto count = task_state_.size();
+        if (count)
+          welcoming = false;
         task_offset_ = std::min(task_offset_, count ? count - 1 : 0);
         task_page = task_state_.read(
             Json::object({{"offset", Json{JsonNumber{std::to_string(task_offset_)}}},
@@ -1358,8 +1377,25 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       }
     }
     for (const auto &message : incoming) {
+      if (message.kind == Kind::sessions) {
+        std::vector<ComposerChoice> entries;
+        const auto listing = unwrap(parse_json(message.text));
+        for (const auto &entry : field(listing, "sessions").array()) {
+          const auto &path = string_field(entry, "path");
+          if (path.find_first_of("\r\n") != std::string::npos)
+            continue;
+          const auto &config = field(entry, "configuration");
+          const auto *name = config.find("name");
+          entries.push_back({"/resume " + path, "", path, "Session",
+                             name && !name->string().empty()
+                                 ? name->string()
+                                 : std::filesystem::path{path}.filename().string()});
+        }
+        composer.choices(std::move(entries), "Sessions");
+      }
       if (message.kind == Kind::text || message.kind == Kind::process ||
-          message.kind == Kind::failure)
+          message.kind == Kind::failure || message.kind == Kind::user ||
+          message.kind == Kind::assistant)
         welcoming = false;
       if (message.kind == Kind::text)
         transcript.append(turn_failed ? ChatKind::error : ChatKind::assistant,

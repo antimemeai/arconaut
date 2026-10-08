@@ -5300,3 +5300,25 @@ clean with their ignored directories intact. Product source matches44defd7
 exactly; no build/runtime redeployment is necessary for this documentation/ref
 unit. Repository report links and whitespace checks pass. Publish assessment,
 current-state corrections, campaign proposal and issue backup on master.
+
+## 2026-10-08 — Start integrated collaboration: session continuity
+
+Operator accepted the consolidation assessment and authorized the campaign
+("let's ride"). Updated the existing proposal rather than opening another campaign.
+Order 1 uses current discovery/retained settings and the existing command palette:
+optional bounded names, named picker, explicit resume without an automatic request,
+independent context/task/settings/drafts and one fallback to the previous session
+if the destination cannot open. Allowance 90 minutes, at most 25 minutes hardening,
+two layers. Direct session/terminal cases and the existing real PTY switch driver.
+
+The first PTY case exposed a real old display defect: the welcome screen hid
+restored task rows and restored conversation messages until a new command emitted
+text. Reopened working state now dismisses the welcome view immediately. No new
+storage or dependency, no startup benchmark or broad certification.
+
+Order 1 Mac debug/release session_store, terminal and extended new_session_pty
+pass, including busy/corrupt destination return and draft restoration. Linux's
+first run exposed the driver's contiguous-string assumption: adding a name made
+/session JSON wrap an identity across main-pane rows. The driver now reconstructs
+those rows when checking the identity; product state was correct. One scoped Linux
+recheck is running. This is within the declared two-layer hardening allowance.
