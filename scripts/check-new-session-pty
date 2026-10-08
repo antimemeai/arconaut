@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""Fresh-session switches and restart routing; isolated files, no provider calls."""
+import errno
+import fcntl
+import importlib.util
+import json
+import os
+from pathlib import Path
+import pty
+import select
+import signal
+import struct
+import subprocess
+import sys
+import tempfile
+import termios
+import time
+
+spec = importlib.util.spec_from_file_location("screen", Path(__file__).with_name("terminal-screen-oracle.py"))
+oracle = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(oracle)
+executable = str(Path(sys.argv[1]).resolve())
+
+with tempfile.TemporaryDirectory(prefix="blackbird-new-") as work:
+    root = Path(work)
+    original = root / "original"
+    workflow = root / "local.lua"
+    workflow.write_text("print('LOCAL_WORKFLOW_ONLY')\n")
+    master, slave = pty.openpty()
+    before = termios.tcgetattr(slave)
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 32, 120, 0, 0))
+    screen = oracle.Screen()
+    child = subprocess.Popen([executable, "--session", str(original), "--workflow", str(workflow),
+                              "--model", "local-test-model", "--effort", "high"],
+                             stdin=slave, stdout=slave, stderr=slave, start_new_session=True,
+                             env=dict(os.environ, BLACKBIRD_GRAPHICS="off"))
+
+    def wait(predicate, label, seconds=8):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if select.select([master], [], [], 0.03)[0]:
+                try:
+                    screen.feed(os.read(master, 65536))
+                except OSError as error:
+                    if error.errno != errno.EIO:
+                        raise
+            if predicate():
+                return
+        raise AssertionError(f"{label}\n{screen.text()}")
+
+    def command(text):
+        os.write(master, (text + "\r").encode())
+
+    def saved(directory):
+        return json.loads((directory / "session-info.json").read_text())
+
+    def context(directory):
+        return subprocess.check_output([executable, "--session", str(directory), "--once", "/context"], text=True)
+
+    def tasks(directory):
+        return subprocess.check_output([executable, "--session", str(directory), "--once", '/tasks read {}'], text=True)
+
+    try:
+        wait(lambda: "Workflow reloads" in screen.text(), "initial UI")
+        initial = saved(original)
+        command("/tasks add OLD_TASK")
+        wait(lambda: "t1 OLD_TASK" in screen.text(), "original task")
+        command("/lua blackbird.append({{role='user',content='OLD_CONTEXT'}}); print('OLD_SAVED')")
+        wait(lambda: "OLD_SAVED" in screen.text(), "original context")
+        # Switching waits behind active work and preserves later queued prompts
+        # as drafts in the old session instead of running them in the new one.
+        command("/lua blackbird.call('exec',{argv={'/bin/sh','-c','echo BUSY_START; sleep 0.6; echo BUSY_DONE'}})")
+        wait(lambda: "BUSY_START" in screen.text(), "busy operation")
+        command("/new")
+        command("/lua print('SHOULD_REMAIN_QUEUED')")
+        wait(lambda: len(list(root.glob('session-*/session-info.json'))) == 1 and
+             "Workflow reloads" in screen.text() and "OLD_TASK" not in screen.text(), "fresh UI")
+        fresh = next(root.glob('session-*'))
+        info = saved(fresh)
+        assert info['conversation'] != initial['conversation']
+        for key in ('model', 'effort', 'workflow'):
+            assert info[key] == initial[key], (key, info)
+        assert fresh.stat().st_mode & 0o777 == 0o700
+        assert 'OLD_CONTEXT' in context(original)
+        assert 'OLD_TASK' in tasks(original)
+        old_ui = json.loads((original / 'ui-state.json').read_text())
+        assert any('SHOULD_REMAIN_QUEUED' in bytes.fromhex(value).decode()
+                   for value in old_ui['queued'])
+        command("/tasks add NEW_TASK")
+        wait(lambda: "t1 NEW_TASK" in screen.text(), "new task ID starts fresh")
+        # Repeated restarts must stay in this session, including after re-exec.
+        for _ in range(2):
+            command("/clear")
+            wait(lambda: "LOCAL_WORKFLOW_ONLY" not in screen.text(), "clear before restart")
+            command("/restart local switch check")
+            wait(lambda: "LOCAL_WORKFLOW_ONLY" in screen.text(), "restart local continuation")
+            command("/session")
+            wait(lambda: info['conversation'] in screen.text(), "restart routed to fresh session")
+        command("/new")
+        wait(lambda: len(list(root.glob('session-*/session-info.json'))) == 2 and
+             "Workflow reloads" in screen.text() and "NEW_TASK" not in screen.text(), "second fresh UI")
+        command("/quit")
+        wait(lambda: child.poll() is not None, "normal exit")
+        assert child.returncode == 0
+        after = termios.tcgetattr(slave)
+        # macOS sets PENDIN while processing the restored canonical input queue.
+        pending = getattr(termios, 'PENDIN', 0)
+        before[3] &= ~pending
+        after[3] &= ~pending
+        assert after == before, ("terminal mode not restored", before, after)
+        assert 'OLD_CONTEXT' not in context(fresh)
+        assert 'OLD_TASK' not in tasks(fresh)
+        assert 'NEW_TASK' in tasks(fresh)
+        second = next(path for path in root.glob('session-*') if path != fresh)
+        assert 'OLD_CONTEXT' not in context(second)
+        assert 'NEW_TASK' not in tasks(second)
+        print("Fresh-session PTY: settings, identity/context/task isolation, busy queue preservation, repeated switches/restarts and terminal restoration pass")
+    finally:
+        if child.poll() is None:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except (PermissionError, ProcessLookupError):
+                child.kill()
+            child.wait(timeout=5)
+        os.close(master)
+        os.close(slave)

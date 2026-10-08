@@ -30,6 +30,9 @@ int main() {
     feed(slash, "stats");
     check(slash.palette_lines(8)[1].find("/stats") != std::string::npos);
     check(feed(slash, "\r").text == "/stats");
+    feed(slash, "/ne\t");
+    check(slash.text() == "/new");
+    check(feed(slash, "\r").text == "/new");
     feed(slash, "/mod\t");
     check(slash.text() == "/model ");
     check(slash.palette_lines(8).empty());

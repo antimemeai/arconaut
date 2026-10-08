@@ -62,6 +62,8 @@ const std::array builtin_commands{
                 "Session"},
     ChatCommand{"/effort", "LEVEL", "Set low, medium, high or xhigh", "Session"},
     ChatCommand{"/session", "", "Current session and settings", "Session"},
+    ChatCommand{"/new", "", "Start a fresh saved session; keep current settings",
+                "Session"},
     ChatCommand{"/sessions", "", "List neighbouring sessions", "Session"},
     ChatCommand{"/checkpoint", "", "Save session state and retry maintenance",
                 "Session"},

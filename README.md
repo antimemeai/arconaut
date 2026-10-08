@@ -195,6 +195,7 @@ The basic controls are intentionally ordinary:
 | Ctrl-Q | Exit with drafts and queued work preserved as recoverable drafts. |
 | `/exit` or `/quit` | Exit, stopping active work first. |
 | `/session`, `/stats`, `/context` | Inspect settings, sizes, or current context. |
+| `/new` | Create and enter a fresh saved session beside the current one, keeping model, effort and workflow settings. Waits behind active work; old context, tasks and drafts remain saved. |
 | `/workflow FILE` | Select the turn program. |
 | `/restart NOTE` | Arrange restart/resume/continue. |
 

@@ -5217,3 +5217,35 @@ passes. Strict builds catch and resolve a shadowed local before the recheck.
 Atomically publish the tested release executable as build/release/blackbird-ui.
 Existing sessions remain running; next starts or normal restart load the change.
 Close bead, back up issues, checkpoint and push under standing authorization.
+
+## 2026-10-08 — /new fresh saved session
+
+Operator requests the missing /new command; bead arconaut-sz3. Ground the unit in
+current session initialization, UI queue/exit/persistence, restart and launcher
+source. Create a private sibling session directory, inherit only model/effort/
+workflow, checkpoint the old session, unwind its UI/workers/journal and initialize
+a fresh session in the same process. No copied context, tasks, drafts or pending
+prompts; old state stays reopenable. Busy /new follows the existing command queue.
+Expose the command in completion/help and include directory in /session output.
+After a fresh-session switch, interactive restart re-execs the published binary
+with the actual current session; the shell still knows the original directory.
+Earlier interactive/station/once restart exits retain their existing behavior.
+
+Bound implementation and one recheck to strict native builds, completion/terminal
+checks and a direct PTY case covering settings, empty context/tasks, saved old state,
+busy queues, repeated switches/restarts, and terminal mode restoration. Run scoped
+Linux debug checks for native session lifecycle; no dependencies or benchmarks.
+
+Completion and existing terminal PTY checks pass in macOS debug/release; fresh-
+session PTY passes in both and Linux debug. Plain-mode repeated switches and
+noninteractive /new refusal pass. Changed-source clang-tidy passes (two unrelated
+existing warnings filtered outside changed lines). Recheck preserves the existing
+exit75 restart behavior before /new; subsequent switches carry their restart
+routing across exec. Correct direct fixture inspection to reopen only inactive
+sessions, decode saved queue hex, and ignore Darwin's kernel PENDIN bit as the
+existing terminal fixture does.
+
+Atomically install the tested release UI, preserving the prior binary under
+ignored context. Real launcher fresh-session PTY also passes, including two
+restarts. Existing operator sessions are not interrupted. Close bead, back up,
+checkpoint and push.

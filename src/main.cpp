@@ -7,6 +7,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -14,6 +15,7 @@
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 using namespace blackbird;
 namespace {
 std::atomic_bool interrupted{false};
@@ -51,7 +53,8 @@ std::string safe(std::string_view text) {
   return out;
 }
 } // namespace
-int main(int argc, char **argv) {
+int run_session(int argc, char **argv, std::vector<std::string> &next_session) {
+  interrupted.store(false, std::memory_order_relaxed);
 #if BLACKBIRD_DEBUG
   blackbird::LocalTimingSession local_timing;
 #endif
@@ -68,10 +71,14 @@ int main(int argc, char **argv) {
          expire_diagnostics = false;
     std::string effort = "medium";
     bool model_option = false, effort_option = false, workflow_option = false;
-    bool resume_requested = false, discovery = false;
+    bool resume_requested = false, discovery = false, switched_session = false;
     auto discovery_root = session.parent_path();
     for (int i = 1; i < argc; ++i) {
       const std::string_view arg = argv[i];
+      if (arg == "--new-session-instance") {
+        switched_session = true;
+        continue;
+      }
       if (arg == "--help") {
         std::cout << "blackbird [--session DIRECTORY] [--model NAME] [--workflow FILE] "
                      "[--once "
@@ -82,7 +89,7 @@ int main(int argc, char **argv) {
                      "[--expire-diagnostics]\nInteractive: /context, "
                      "/originals, /restore "
                      "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
-                     "/session, "
+                     "/session, /new, "
                      "/restart NOTE, /paste (until /send), /quit or /exit\n";
         return 0;
       }
@@ -356,6 +363,7 @@ int main(int argc, char **argv) {
     if (resume_requested && !resume_turn && one)
       return 0;
     std::atomic_bool restart_pending{false};
+    std::atomic_bool new_pending{false};
     OpenAiCodingProvider provider;
     CodingEngine engine{log, context, provider, model};
     // Convert an old derived state once, after the effective identity exists.
@@ -498,12 +506,29 @@ int main(int argc, char **argv) {
           const auto identity = session_identity(log);
           emit(unwrap(dump_json(Json::object(
                    {{"actor", Json{hex_identity(identity.actor.bytes())}},
+                    {"directory", Json{session.string()}},
                     {"conversation", Json{hex_identity(identity.conversation.bytes())}},
                     {"workflow_id", Json{hex_identity(identity.workflow.bytes())}},
                     {"model", Json{model}},
                     {"effort", Json{effort}},
                     {"workflow", Json{workflow.string()}}}))) +
                "\n");
+        } else if (prompt == "/new") {
+          if (one || !station_path.empty())
+            throw Error{ErrorCode::unsupported};
+          unwrap(context.checkpoint());
+          auto directory_template = (session.parent_path() / "session-XXXXXX").string();
+          if (::mkdtemp(directory_template.data()) == nullptr)
+            throw Error{ErrorCode::io, errno};
+          const std::filesystem::path directory{directory_template};
+          std::vector<std::string> arguments{
+              argv[0],    "--session", directory.string(), "--model",        model,
+              "--effort", effort,      "--workflow",       workflow.string()};
+          if (plain)
+            arguments.emplace_back("--plain");
+          arguments.emplace_back("--new-session-instance");
+          next_session = std::move(arguments);
+          new_pending.store(true);
         } else if (prompt.starts_with("/restart ")) {
           engine.validate_restart();
           session_store.restart(prompt.substr(9));
@@ -643,6 +668,17 @@ int main(int argc, char **argv) {
     };
     startup.outcome("ready");
     startup.finish();
+    auto finish_interactive = [&] {
+      if (!restart_pending.load())
+        return 0;
+      if (!switched_session)
+        return 75;
+      next_session = {argv[0], "--session", session.string(), "--resume-continue",
+                      "--new-session-instance"};
+      if (plain)
+        next_session.emplace_back("--plain");
+      return 75;
+    };
     if (!station_path.empty()) {
       // An explicitly selected local file adapter, not a feed service governor.
       const auto adapter = std::filesystem::absolute(station_path).lexically_normal();
@@ -763,9 +799,10 @@ int main(int argc, char **argv) {
             role->string() == "user" ? ChatKind::user : ChatKind::assistant, text);
       }
       ui.run(
-          perform, cancelled, [&] { return restart_pending.load(); },
+          perform, cancelled,
+          [&] { return restart_pending.load() || new_pending.load(); },
           resume_turn ? "continue" : "", session / "ui-state.json");
-      return restart_pending.load() ? 75 : 0;
+      return finish_interactive();
     }
     if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))
       for (const auto &line : blackbird_startup(80, 24, false))
@@ -774,8 +811,8 @@ int main(int argc, char **argv) {
               << "\n/help lists commands; /quit or /exit exits.\n";
     if (resume_turn)
       perform("continue");
-    if (restart_pending.load())
-      return 75;
+    if (restart_pending.load() || new_pending.load())
+      return finish_interactive();
     std::string line;
     while (std::cout << "\nblackbird> " && std::getline(std::cin, line)) {
       if (line == "/quit" || line == "/exit")
@@ -790,10 +827,10 @@ int main(int argc, char **argv) {
       }
       cancelled.store(false);
       perform(line);
-      if (restart_pending.load())
+      if (restart_pending.load() || new_pending.load())
         break;
     }
-    return restart_pending.load() ? 75 : 0;
+    return finish_interactive();
 
   } catch (const Error &e) {
     std::cerr << "blackbird: " << error_name(e.code) << " (" << e.detail
@@ -803,5 +840,32 @@ int main(int argc, char **argv) {
   } catch (const std::exception &e) {
     std::cerr << "blackbird: " << safe(e.what()) << '\n';
     return 1;
+  }
+}
+
+int main(int argc, char **argv) {
+  std::vector<std::string> current_arguments;
+  std::vector<char *> arguments;
+  for (;;) {
+    std::vector<std::string> next_session;
+    const auto status = run_session(argc, argv, next_session);
+    if (status != 0 && status != 75)
+      return status;
+    if (next_session.empty())
+      return status;
+    current_arguments = std::move(next_session);
+    arguments.clear();
+    for (auto &argument : current_arguments)
+      arguments.push_back(argument.data());
+    arguments.push_back(nullptr);
+    if (status == 75) {
+      // Use the current directory even after /new, and load the published binary.
+      ::execvp(arguments[0], arguments.data());
+      std::cerr << "blackbird: cannot restart current session (" << errno << ")\n";
+      return 1;
+    }
+    // Old UI, workers and journal are destroyed before opening the fresh session.
+    argc = static_cast<int>(current_arguments.size());
+    argv = arguments.data();
   }
 }
