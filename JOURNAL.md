@@ -4988,3 +4988,22 @@ Back up Beads and checkpoint/push measurement results.
 2026-10-08: Added requested single chart of startup rerun p30/p50/p70/p90,
 using retained numeric results for all three scenarios and both spawn endpoints.
 Owned SVG generation; no dependency added or measurements rerun.
+
+## 2026-10-08 — cross-agent startup comparison prepared
+
+Operator asks to launch Codex, Claude, Hermes and OpenCode for commensurate startup
+measurements. Installed Codex0.161.0/Claude2.1.163/OpenCode1.15.13 inspected.
+Hermes absent; APFS-copied pinned a3ed4a1 source into ignored context and installed
+frozen core uv.lock dependencies there with Python3.14.3. References unchanged;
+no production dependency adoption. Private auth copies retained only in ignored
+benchmark seeds. Empty external workspace, prior trust/onboarding, isolated state
+per process; no inference prompts submitted. Use300fresh starts per tool, including
+Blackbird in the serial rotation, since tool history formats differ.
+Owned development-only PTY driver detects each input frame, types common marker
+without Enter and detects its completed input render. First probe confirms all
+five endpoints. Status commands excluded after pilots showed different semantics.
+Codex --no-daemon avoids sharing the operator's existing server; its bounded
+shutdown can need TERM despite successful startup/input. Track exit and forced
+shutdown separately from endpoint success; retain every sample/outlier.
+No source performance edits or broad tests. Run one requested measurement batch;
+private pilot transcripts/logs under context/agent-startup-comparison-2026-10-08.
