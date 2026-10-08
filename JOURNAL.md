@@ -4969,3 +4969,18 @@ on read and are physically reclaimed by bounded use/explicit maintenance; legacy
 embedded streams stay within existing finite audits. Capture cost study excluded.
 Close completed bounded implementation issues, retain excluded capture measurements,
 back up Beads and checkpoint/push source and relevant raw observations.
+
+## 2026-10-08 — requested 300 startup rerun after wrap-up
+
+Ran unchanged scripts/benchmark-startup against the published b9d2631
+Release/OFF generation, with ordinary launcher and exact prior converted seeds.
+100 fresh/heavy/weird each, serial round robin, private APFS copies, no provider
+calls or overrides. All300 reached both endpoints and exited0; no retries or
+removed outliers. First-frame p50:98.661/82.269/82.493ms; p90:
+111.610/93.355/90.645ms. Audited-command-from-spawn p50:
+132.075/114.894/117.778ms. Input response p50:33.336/33.850/34.798ms.
+Slowest frame fresh61:310.207ms retained. Startup distributions slower than prior
+run, local response medians faster; different host load means no causal attribution.
+Full public samples/report and private transcripts retained under new names,
+prior seeds/results unchanged. No source edits or additional test campaign.
+Back up Beads and checkpoint/push measurement results.
