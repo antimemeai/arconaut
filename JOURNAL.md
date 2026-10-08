@@ -5103,3 +5103,26 @@ cursor-aware marker observation accurately; no real-terminal pixel-paint timing
 claim. Keep all existing percentile/maximum/typing/shutdown tables and chart links.
 No measurement rerun or production edits; documentation whitespace check, Beads
 backup, checkpoint commit and push under standing authorization.
+
+## 2026-10-08 — task-list source study and discussion candidate
+
+Operator requests reference/literature grounding and a design sketch for granular
+task presentation, model reading/writing, and crisp current updates. Inspected
+retained Codex, OpenCode, Gemini, Pi example extension, Oh My Pi, historical Python
+Kimi, Hermes and Qwen implementations; distinguish snapshots from startup-tested
+versions. Read primary HCI/mixed-initiative/progress literature and current primary
+tool/context guidance. Retain two PDFs and source identities; Microsoft PDF direct
+archival downloads returned403 although their text was readable through browsing.
+Read relocated Rhizome rigor shelf; no new C++ findings beyond existing October1
+material. No reference execution, production dependencies or product edits.
+
+Save papers/2026-10-08-task-list-study-and-design.md as a discussion candidate:
+stable task identity, shared version-aware native edits, bounded model readback,
+compaction/resume projection, explicit runtime bindings, dock/tree presentation,
+commit-driven wake/diff updates and bounded queues/history views. Keep intended
+work, observed activity and feed freshness separate; task retention is distinct
+from diagnostics30dTTL. Existing retained-state and terminal machinery supply
+integration points; task projection and typed UI support still need implementation.
+Placement, grouping and sharing defaults remain for operator discussion. No task
+implementation authorized or started by this research. Documentation whitespace
+and source-path checks; Beads backup, checkpoint and push under standing authority.

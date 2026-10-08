@@ -1,0 +1,26 @@
+[
+  {
+    "file": "amershi-2019-human-ai.pdf",
+    "url": "https://www.microsoft.com/en-us/research/wp-content/uploads/2019/01/Guidelines-for-Human-AI-Interaction-camera-ready.pdf",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "file": "shneiderman-1996-eyes.pdf",
+    "url": "https://www.cs.umd.edu/users/ben/papers/Shneiderman1996eyes.pdf",
+    "bytes": 893228,
+    "sha256": "1a1b3b88ccfb8aabc0796c080127c486fcf05bcab7fa1cb63bdce66993b62e04",
+    "acquired": "2026-10-08"
+  },
+  {
+    "file": "horvitz-1999-mixed-initiative.pdf",
+    "url": "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/chi99horvitz.pdf",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "file": "harrison-2007-progress.pdf",
+    "url": "https://chrisharrison.net/projects/progressbars/ProgBarHarrison.pdf",
+    "bytes": 727662,
+    "sha256": "2967eba85a8306b73b403a2ddd96ade16518285ddb6fcd7f3e57a8985bcb30e6",
+    "acquired": "2026-10-08"
+  }
+]
