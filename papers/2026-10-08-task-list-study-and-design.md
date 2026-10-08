@@ -8,8 +8,9 @@ snapshots, not a comparison of the installed versions in the startup benchmark.
 
 Make the task list durable, shared working state at session/workstream scope,
 with optional links to Beads. A bead can contain many granular tasks; a task can
-also be useful without a bead. Keep a compact task viewport near the composer,
-with an expandable tree for inspection and editing. Models, Lua programs, and
+also be useful without a bead. The operator selected a task pane at the far
+right, below the sprite, with an expandable tree for inspection and editing.
+Models, Lua programs, and
 the operator use the same native state and mutation path.
 
 Separate three things: intended work, actual runtime activity, and whether the
@@ -126,10 +127,41 @@ remain useful to the model, not become compulsory status-reporting busywork.
 
 ## Candidate operator view
 
-Default: a bounded dock above the composer, expandable to a task tree. On a
-short terminal it collapses to a summary line; width determines title wrapping
-and optional detail columns. Existing chat remains readable and input stays put.
-Example, with ten actionable tasks total:
+Operator2026-10-08: prefer a side pane at the far right, below the sprite.
+Use one right column with the sprite at the top and the task viewport below it;
+conversation and composer occupy the left region. The pane has its own scroll
+position, and task updates do not scroll the conversation or move input focus.
+Reserve a stable width during normal updates; titles wrap inside it rather than
+changing the conversation width as tasks arrive or finish. A starting width of
+roughly 28–36 columns is a candidate to try, not an established optimum.
+
+The current sprite is 12 columns by 6 rows and already occupies a right gutter.
+Widen that layout region for the task pane without requiring a larger sprite.
+Below-sprite space determines visible task rows; the full list remains expandable.
+Narrow/short terminal fallback remains a proposal: collapse to a task summary
+with an explicit expanded view, preserving composer space and access to blockers.
+Use a consistent layout threshold rather than toggling on individual edits.
+
+Illustrative arrangement; exact dimensions and bindings remain to be tried:
+
+```text
+Conversation and tool output        │            [sprite]
+                                   │
+                                   │ TASKS  Task-list feature
+                                   │ 3 done · 2 active
+                                   │ 1 blocked · 4 queued
+                                   │ ▶ t17 Design update protocol
+                                   │       main · responding
+                                   │ ▶ t18 Probe narrow terminal
+                                   │       peer · running 00:12
+                                   │ ! t19 Choose grouping
+                                   │       waiting for Patrick
+                                   │ ○ t20 Exercise resume path
+                                   │   +6 more
+> Operator input                   │ /tasks expand
+```
+
+An expanded task view can show the same ten-task example in more detail:
 
 ```text
 TASKS  Task-list feature     3 done · 2 active · 1 blocked · 4 queued
@@ -216,13 +248,14 @@ No new tool or library follows from this watch.
 
 ## Questions to settle in discussion
 
-1. Default placement: compact dock above input, or a persistent side pane on
-   wide terminals? Recommend the dock initially, with expansion on demand.
-2. Granularity: nested organizational groups with actionable steps, or tasks
+Placement is settled: far-right pane below the sprite. Responsive fallback,
+width and exact navigation are still candidate details.
+
+1. Granularity: nested organizational groups with actionable steps, or tasks
    that can themselves contain actionable subtasks? Recommend groups plus steps
    initially to avoid ambiguous completion and double-counting; revisit if real
    workflows need mixed nodes.
-3. Sharing: session/workstream lists with explicit peer access, or project-wide
+2. Sharing: session/workstream lists with explicit peer access, or project-wide
    live lists by default? Recommend scoped lists and optional bead links; do not
    turn every exploratory step into project-wide state by default.
 

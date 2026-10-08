@@ -5126,3 +5126,13 @@ integration points; task projection and typed UI support still need implementati
 Placement, grouping and sharing defaults remain for operator discussion. No task
 implementation authorized or started by this research. Documentation whitespace
 and source-path checks; Beads backup, checkpoint and push under standing authority.
+
+## 2026-10-08 — task pane placement selected
+
+Operator prefers the task side pane at the far right below the sprite. Revise
+the discussion sketch: one right column, sprite above a separately scrolling
+task tree; conversation/composer at left, stable pane width and anchored focus.
+Inspect current12x6sprite/right-gutter layout to ground the integration note.
+Responsive summary fallback and initial28–36column width remain proposals, as
+do grouping and sharing semantics. No product implementation. Whitespace check,
+Beads backup, checkpoint and push under standing authorization.
