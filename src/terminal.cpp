@@ -1633,10 +1633,21 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                        Ink::muted}});
       }
       std::size_t menu_row = height + 2;
-      for (const auto &line : palette)
-        grid.line(menu_row++,
-                  {{terminal_lines(line, main_width)[0],
-                    line.starts_with("> ") ? Ink::selected : Ink::assistant}});
+      for (const auto &line : palette) {
+        const auto text = terminal_lines(line, main_width)[0];
+        const bool selected = text.starts_with("> ");
+        if (selected || text.starts_with("  /")) {
+          const auto name_end = text.find(' ', 2);
+          const auto command_end =
+              name_end == std::string::npos ? text.size() : name_end;
+          grid.line(menu_row++, {{text.substr(0, command_end),
+                                  selected ? Ink::selected : Ink::normal},
+                                 {text.substr(command_end), Ink::muted}});
+        } else {
+          grid.line(menu_row++,
+                    {{text, line.starts_with("Commands") ? Ink::heading : Ink::muted}});
+        }
+      }
       auto hint = composer.palette_open() ? " command palette "
                   : composer.slash_open() ? " commands "
                   : busy                  ? " Enter queue · Ctrl-C stop "

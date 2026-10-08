@@ -54,12 +54,35 @@ with tempfile.TemporaryDirectory(prefix="arco-terminal-") as work:
         observed.clear()
         os.write(master, data)
 
+    def check_palette_selection(command):
+        screen = observed.screen
+        rows = screen.text().splitlines()
+        selected_rows = [r for r, text in enumerate(rows) if text.startswith("> /")]
+        assert len(selected_rows) == 1, selected_rows
+        selected = selected_rows[0]
+        assert rows[selected].startswith("> " + command + " ")
+        for row, text in enumerate(rows):
+            if not (text.startswith("> /") or text.startswith("  /")):
+                continue
+            end = text.find(' ', 2)
+            for col in range(len(text)):
+                style = screen.styles[row, col]
+                expected = ('0;1;38;2;114;215;211' if row == selected else '0') if col < end else '0;38;2;160;173;188'
+                assert style == expected, (row, col, style, expected)
+
     try:
         wait_for(b"Workflow reloads")
         wait_for("╭".encode())
         send(b"/")
         wait_for(b"Enter run/fill")
-        wait_for(b"\x1b[1;30;46m> /help")
+        check_palette_selection('/help')
+        for _ in range(4):
+            send(b"\x1b[B")
+            wait_for(b"> /keys")
+            check_palette_selection('/keys')
+            send(b"\x1b[A")
+            wait_for(b"> /help")
+            check_palette_selection('/help')
         send(b"\x1b[B\t")
         wait_for(b"> /keys")
         send(b"\r")

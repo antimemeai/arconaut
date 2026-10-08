@@ -5196,3 +5196,24 @@ timed out. Correct the PTY driver's shutdown wait to drain while polling the chi
 and limit cleanup to the fixture's child if group signaling is refused. Repeat
 that same launcher check: normal exit and all selected pane checks pass; no matching
 temporary task-pane/launcher children remain. No additional campaign.
+
+## 2026-10-08 — slash-menu selection styling
+
+Operator reports ugly highlighting while arrowing through slash commands; bead
+arconaut-956. Source inspection finds bold black-on-cyan selection across each
+variable-length row. Subsequent assistant-colored rows lack an SGR reset, allowing
+that background to carry forward. Replace selected ink with reset/bold turquoise
+foreground; accent only the marker and command name, use ordinary text for other
+command names, and mute arguments/descriptions. Header uses existing heading ink.
+No navigation or completion changes, dependencies, or performance campaign.
+
+Bound this small visual unit to source remediation and one direct recheck: strict
+warning builds, composer/painter checks, byte-fragmented render oracle, and the
+actual PTY screen. Extend the existing PTY check with four down/up cycles verifying
+exact command-row styles, a single selection, and previous-row restoration.
+
+All four scoped macOS debug cases pass; optimized actual-terminal check also
+passes. Strict builds catch and resolve a shadowed local before the recheck.
+Atomically publish the tested release executable as build/release/blackbird-ui.
+Existing sessions remain running; next starts or normal restart load the change.
+Close bead, back up issues, checkpoint and push under standing authorization.
