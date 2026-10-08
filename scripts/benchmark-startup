@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Development-only PTY measurements of the unmodified native launcher."""
+import argparse
+import ctypes
+import errno
+import fcntl
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import select
+import shutil
+import signal
+import struct
+import subprocess
+import termios
+import time
+import pty
+
+ROOT = Path(__file__).resolve().parent.parent
+FRAME_END = b'\x1b[?2026l'
+MARKER = b'BB_BENCH_AUDITED'
+COMMAND = (b'\x15/lua local r=blackbird.call("workflow_registry",{}); '
+           b'assert(r.definitions[1].name=="ultracode"); '
+           b'print("BB_BENCH_".."AUDITED")\r')
+
+def clone_session(seed, destination):
+    destination.mkdir(mode=0o700)
+    if seed is None:
+        return
+    libc = ctypes.CDLL(None, use_errno=True)
+    clone = libc.clonefile
+    clone.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+    clone.restype = ctypes.c_int
+    for source in seed.iterdir():
+        if not source.is_file() or source.is_symlink():
+            raise RuntimeError('fixture contains unexpected entry')
+        if clone(os.fsencode(source), os.fsencode(destination/source.name), 0):
+            raise OSError(ctypes.get_errno(), 'clonefile failed')
+
+def sample(scenario, trial, seed, run_root, logs):
+    session = run_root/f'{scenario}-{trial:03d}'
+    clone_session(seed, session)  # excluded from the timing; same immutable prefix
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH',35,110,0,0))
+    env = dict(os.environ, TERM='xterm-256color', TERM_PROGRAM='ghostty',
+               LANG='en_US.UTF-8')
+    result = {'scenario':scenario,'trial':trial}
+    transcript = bytearray()
+    child = None
+    started = time.monotonic_ns()
+    deadline = time.monotonic()+30
+    try:
+        child = subprocess.Popen([str(ROOT/'scripts/blackbird'),'--session',str(session)],
+                                 cwd=ROOT,env=env,stdin=slave,stdout=slave,stderr=slave,
+                                 start_new_session=True)
+        os.close(slave); slave = -1
+        def read_until(predicate):
+            while time.monotonic()<deadline:
+                if select.select([master],[],[],0.1)[0]:
+                    try:
+                        block=os.read(master,65536)
+                    except OSError as error:
+                        if error.errno==errno.EIO:
+                            break
+                        raise
+                    if not block:
+                        break
+                    transcript.extend(block)
+                    if predicate(transcript):
+                        return time.monotonic_ns()
+                    if len(transcript)>16*1024*1024:
+                        raise RuntimeError('excessive terminal output')
+                elif child.poll() is not None:
+                    break
+            raise RuntimeError('endpoint not reached before exit/deadline')
+        frame=read_until(lambda b: b'Enter send' in b and FRAME_END in b)
+        result['tui_frame_ms']=(frame-started)/1e6
+        before=len(transcript)
+        sent=time.monotonic_ns()
+        os.write(master,COMMAND)
+        audited=read_until(lambda b: MARKER in b[before:])
+        result['audited_command_ms']=(audited-started)/1e6
+        result['command_response_ms']=(audited-sent)/1e6
+        os.write(master,b'\x11')
+        # Drain while it exits; terminal output must never block shutdown.
+        while child.poll() is None and time.monotonic()<deadline:
+            if select.select([master],[],[],0.05)[0]:
+                try:
+                    block=os.read(master,65536)
+                    if block: transcript.extend(block)
+                except OSError as error:
+                    if error.errno!=errno.EIO: raise
+        result['exit_code']=child.wait(timeout=2)
+        result['status']='ok' if result['exit_code']==0 else 'failed'
+    except Exception as error:
+        result['status']='failed';result['error']=str(error)
+    finally:
+        if child is not None and child.poll() is None:
+            os.killpg(child.pid,signal.SIGTERM)
+            try:child.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                os.killpg(child.pid,signal.SIGKILL);child.wait()
+        os.close(master)
+        if slave!=-1:os.close(slave)
+        result['process_total_ms']=(time.monotonic_ns()-started)/1e6
+        (logs/f'{scenario}-{trial:03d}.bin').write_bytes(transcript)
+        shutil.rmtree(session)  # only this newly created synthetic copy
+    return result
+
+def quantiles(values):
+    values=sorted(values)
+    return {label:values[max(0,math.ceil(fraction*len(values))-1)]
+            for label,fraction in [('p50',.5),('p90',.9),('p95',.95),('p99',.99),('max',1)]}
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('output',type=Path)
+    parser.add_argument('--count',type=int,default=100)
+    args=parser.parse_args()
+    out=args.output.resolve()
+    if not 1<=args.count<=10000:parser.error('count must be 1..10000')
+    runs=out/'runs';logs=out/'terminal-output'
+    runs.mkdir(mode=0o700);logs.mkdir(mode=0o700)
+    scenarios=[('fresh',None),('heavy',out/'heavy-seed'),('weird',out/'weird-seed')]
+    binary=ROOT/'build/release/blackbird-ui'
+    metadata={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+              'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
+              'count_per_scenario':args.count,'order':'round robin, serial',
+              'terminal':'110x35 PTY; Ghostty image path; consumer drains bytes',
+              'cache':'ordinary macOS cache; no cache flush; fresh process and private session each run',
+              'measurement':'parent monotonic clock before launcher spawn to first completed TUI frame and successful audited Lua workflow_registry result; excludes fixture cloning',
+              'provider_calls':0,'profiling':False}
+    (out/'metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
+    records=[]
+    with (out/'samples.jsonl').open('x') as stream:
+        for trial in range(1,args.count+1):
+            for scenario,seed in scenarios:
+                result=sample(scenario,trial,seed,runs,logs)
+                records.append(result);stream.write(json.dumps(result)+'\n');stream.flush()
+                if result['status']!='ok':print(json.dumps(result),flush=True)
+            if trial%10==0 or trial==args.count:
+                print(f'{trial}/{args.count} starts per scenario recorded',flush=True)
+    summary={}
+    for scenario,_ in scenarios:
+        selected=[r for r in records if r['scenario']==scenario]
+        good=[r for r in selected if r['status']=='ok']
+        summary[scenario]={'attempted':len(selected),'successful':len(good),'failed':len(selected)-len(good)}
+        if good:
+            for key in ('tui_frame_ms','audited_command_ms','command_response_ms','process_total_ms'):
+                summary[scenario][key]=quantiles([r[key] for r in good])
+    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    print(json.dumps(summary,indent=2),flush=True)
+    if any(s['failed'] for s in summary.values()):raise SystemExit(1)
+
+if __name__=='__main__':main()

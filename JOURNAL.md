@@ -4756,3 +4756,35 @@ fresh script/native Lua registry smoke passed exit0. Existing operator processes
 not restarted. All12 remote candidate tips verified ancestors of master after
 fetch/prune. No branch deletions or force push. Source integration is complete;
 current-state/suffix-recovery functionality remains incomplete as documented.
+
+## 2026-10-07 — requested100-start distributions across three startup cases
+
+Operator asks p90 from100 starts each: fresh, heavy context and weird scenario.
+Measure unmodified published119b2f5 native Release/OFF through actual launcher/PTY,
+110x35 Ghostty graphics path. Parent monotonic clock starts before script spawn;
+endpoints are first complete emitted TUI frame and completion of a native audited
+Lua workflow_registry call. No provider/network calls. PTY consumer drains output;
+this is frame emission, not Ghostty GPU presentation/input-to-photon timing.
+
+Owned EXCLUDE_FROM_ALL fixture target generates only private synthetic archives;
+initial directory permissions corrected to owner-only before measurements. Heavy:
+336327448archive bytes/642facts,64entries with262144live content bytes. Weird:
+655924archive bytes/2053facts,131072Unicode/code live bytes, pendingRRC intent,
+128prompt-history entries, saved draft and queued draft; ordinary reopen, not
+resume/effect replay. Fresh has no prior audit. Pilot1each succeeded; excluded.
+
+100each run serial round-robin, fresh process plus private APFS-cloned immutable
+fixture every time; clone excluded from timing and copy removed after exit. Ordinary
+macOS cache, no flush or artificially cold claim. Persist raw per-start timings,
+terminal bytes, native binary/source identity, host/cache/workload metadata and
+nearest-rank distributions in context/startup-300-2026-10-07. No optimization or
+new review/assurance campaign; actual measurements, including failures, retained.
+
+Final300/300 startup attempts exit0. First-frame p90: fresh140.132709ms,
+heavy1468.382625ms, weird173.013916ms. Median65.623334/797.634459/90.475125ms.
+First audited native command p90193.395583/1584.477708/238.436250ms. Heavy max
+10032.584708ms; retained, not filtered. Host1min load11.33→50.01 midrun on16CPUs;
+explicitly a loaded-machine observation, no idle baseline or per-delay causal claim.
+No phase instrumentation or provider-request readiness measurement. Full300 numeric
+samples/summary/build/workload/cache/host data committed with paper and reusable
+owned fixture/PTY utility. Private terminal captures retained. Under100ms not met.

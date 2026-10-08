@@ -285,6 +285,8 @@ set_tests_properties(issuer_ranges PROPERTIES TIMEOUT 30)
 # Scoped native startup oracle; not installed or part of the default build.
 add_executable(startup_loading_probe EXCLUDE_FROM_ALL tooling/probes/startup_loading.cpp)
 target_link_libraries(startup_loading_probe PRIVATE blackbird_coding)
+add_executable(startup_scenarios EXCLUDE_FROM_ALL tooling/probes/startup_scenarios.cpp)
+target_link_libraries(startup_scenarios PRIVATE blackbird_coding)
 add_executable(decision_models_test tests/decision_models_test.cpp)
 target_link_libraries(decision_models_test PRIVATE blackbird_coding)
 add_test(NAME decision_models COMMAND decision_models_test)
