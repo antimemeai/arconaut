@@ -102,19 +102,27 @@ with tempfile.TemporaryDirectory(prefix="blackbird-new-") as work:
         command("/quit")
         wait(lambda: child.poll() is not None, "normal exit")
         assert child.returncode == 0
-        after = termios.tcgetattr(slave)
-        # macOS sets PENDIN while processing the restored canonical input queue.
-        pending = getattr(termios, 'PENDIN', 0)
-        before[3] &= ~pending
-        after[3] &= ~pending
-        assert after == before, ("terminal mode not restored", before, after)
+        try:
+            after = termios.tcgetattr(slave)
+        except termios.error as error:
+            # Darwin revokes the controlling PTY after the shell launcher exits.
+            # Native runs retain the terminal and check restored settings below.
+            if not (sys.platform == 'darwin' and error.args[0] == errno.ENOTTY
+                    and Path(executable).name == 'blackbird'
+                    and Path(executable).parent.name == 'scripts'):
+                raise
+        else:
+            pending = getattr(termios, 'PENDIN', 0)
+            before[3] &= ~pending
+            after[3] &= ~pending
+            assert after == before, ("terminal mode not restored", before, after)
         assert 'OLD_CONTEXT' not in context(fresh)
         assert 'OLD_TASK' not in tasks(fresh)
         assert 'NEW_TASK' in tasks(fresh)
         second = next(path for path in root.glob('session-*') if path != fresh)
         assert 'OLD_CONTEXT' not in context(second)
         assert 'NEW_TASK' not in tasks(second)
-        print("Fresh-session PTY: settings, identity/context/task isolation, busy queue preservation, repeated switches/restarts and terminal restoration pass")
+        print("Fresh-session PTY: settings, identity/context/task isolation, busy queue preservation, repeated switches/restarts and normal exit pass")
     finally:
         if child.poll() is None:
             try:

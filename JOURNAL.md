@@ -5246,6 +5246,10 @@ sessions, decode saved queue hex, and ignore Darwin's kernel PENDIN bit as the
 existing terminal fixture does.
 
 Atomically install the tested release UI, preserving the prior binary under
-ignored context. Real launcher fresh-session PTY also passes, including two
-restarts. Existing operator sessions are not interrupted. Close bead, back up,
+ignored context. The first real launcher check reaches both restarts and normal exit but the
+final termios read fails: Darwin revokes the PTY when its shell leader exits.
+The prior statement that the complete launcher check passed was premature.
+Restrict that fixture exception to Darwin ENOTTY from scripts/blackbird; native
+runs still compare restored terminal settings. Rerun launcher: all session,
+restart, saved-state and exit checks pass. Existing operator sessions are not interrupted. Close bead, back up,
 checkpoint and push.
