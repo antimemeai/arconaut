@@ -3,25 +3,30 @@
   "owner": "slot-0",
   "checkout": "/Users/patrickbeam/projects/blackbird/context/performance-armada/pool/slot-0",
   "branch": "candidate/saved-state-delivery-2026-10-08",
-  "code_checkpoint": "1e34d31",
-  "deadline_epoch": 1791429733,
-  "unsafe_path_inactive": "RetainedState never supplies JournalResume; physical/semantic full replay remains authoritative",
+  "code_checkpoint": "8d377dacab8f5c74ba0ec56ee96a1d9e4c5b79f9",
+  "deadline_epoch": 1791431497.25,
   "completion_marker_created": false,
-  "actual_heavy_final": {"prompt_ms":339.268,"admitted_ms":397.796,"read_bytes":673841790,"request_input_bytes":302241,"known_success_settlement":true,"zero_rejected_body_reads":false},
-  "build": {"directory":"build/release","scope":"private candidate checkout only","target":"blackbird","jobs":2,"debug":"OFF","restart_requested":false},
-  "checks": {"saved_state":"passed","archive_catalog":"passed","journal_resume":"passed","context":"passed","cold_history":"recheck finding fixed; failed check alone rerun passed","independent_review":"Root pending"},
-  "next_edit": {
-    "files":["src/retained_state.cpp","include/blackbird/retained_state.hpp","src/saved_state.cpp","src/journal_writer.cpp"],
-    "action":"Move saved root+paired ArchiveCatalog selection under the FramedJournal writer lease before scan/rebuild. Add callback/open-header selection seam, validating root/cursor/anchor/catalog as one decision. Restore compact Snapshot issuer/unresolved closure and pass JournalResume only after complete coverage. Do not simply populate Snapshot::facts from the root or bypass semantic replay without disk predicates."
-  },
-  "remaining_in_dependency_order": [
-    "Replace lookup's resident lower_bound fact/evidence resolver with a checked archive payload reader and explicit bounded ownership/cache. Archived physical locator reads must validate selected frame/identity/CRC without requiring historical descriptor vectors. Preserve exact duplicate, source and transition predicates.",
-    "Redesign Snapshot as archive semantic/source counts + bounded tail overlay + unresolved current closure. Reduce unresolved observations to latest; preserve original invocation decision for retry closure and unknown effects. No historic dispatch permission or resurrected issuer allocation cursor.",
-    "Add original ID/capture ordinal/context history locators, and migrate ContextStore accepted tail validation and explicit history queries to paged reads. Remove first-history-access whole materialization, preserve canonical duplicates/transitions/exact originals.",
-    "Migrate committed_facts startup consumers, attempt/reconcile, RRC injection origin and StationStore state. Explicit forensic traversal must be fallible/paged rather than noexcept borrowed whole-history spans. RetainedEnvironment continues safe full replay until selected predecessor chain state is covered.",
-    "Activate the same selected projection+tail path through actual main RetainedState open only after those predicates are complete. Add full replay versus saved+tail tests for settled histories, retries, sources, corrupt/stale catalog pairing and unresolved effects.",
-    "Implement bounded records/bytes maintenance with stalled-publication backpressure preserving settlement credit; reclaim failed derived temporaries and document/cap derived storage growth.",
-    "Repeat private-clone audited request probes to demonstrate ZERO archived rejected body reads and report actual latency. Root handles integration, broader measurements, independent review, installed binary and board."
+  "restart_requested": false,
+  "compact_path": "coded but INACTIVE: selector requires context.semantic_coverage=settled-no-station-v1; no generated root emits this marker",
+  "actual_oracle": {"private_clone":"/tmp/astra-continuation-1791431378","migration_read_bytes":1087247736,"migration_write_bytes":1469740,"migration_syncs":10,"open_forbid_exit":1,"open_forbid_error":"audit_unavailable","forbidden_attempts":1,"request_admitted":false},
+  "checks": {"configuration":"Release BLACKBIRD_DEBUG=OFF -j2","blackbird":"built","startup_loading_probe":"built; b238ef8 delta only","single_scoped_recheck":"archive_catalog, journal_resume, saved_state, context, cold_history, session_store, session_recovery all passed"},
+  "implemented_this_continuation": [
+    "Catalog v2 stores uint32 ordinal inside CRC coverage, bounds count, validates selected address; intact relocated-entry test passes",
+    "Typed semantic lookup returns owned optional facts via checked selected-frame disk read; no resident lower_bound resolver prerequisite; source reads use checked catalog reader",
+    "Context original fallback restricted to selected journal and saved boundary; contains-first resident existence checks; accepted tail no full ContextStore reconstruction",
+    "Context original/history/index explicit traversal uses bounded fallible pages with owned immutable generation/file readers, not installed historical metadata caches",
+    "Root/catalog selection callback runs after writer lease/header/extent validation before full physical scan",
+    "Compact Snapshot base fact/physical counts and issuer highwater restore + JournalResume suffix seam coded, not activated",
+    "Unresolved reduction keeps latest observation and original invocation decision closure; exact attempt/decision/invocation queries are disk-capable",
+    "Reconcile, session restart prerequisite, provider recovery linkage and complaint active-set consumers use unresolved closure or exact lookups; context/station/RRC suffix consumers use explicit tail_facts"
   ],
-  "details":"papers/saved-state-delivery-2026-10-08/PROGRESS.md"
+  "remaining_for_coherent_activation": [
+    "NO semantic-envelope subsystem is needed. Follow Root correction: typed selected reads serve exact predicates; explicit historical queries may read old bodies on demand",
+    "Migrate remaining full-span consumers by intent, especially probe initial resident/cold diagnostic (must not force historical reconstruction), legacy session identity fallback, main inspect, coding read_process_output, backstop. committed_facts now explicitly throws unsupported on compact state, never silently incomplete",
+    "Complete safe supported-root coverage emission: certify settled/no-station base and identity; unsupported unresolved/station/pending-origin populations may use independent full replay. Current conservative selector requires empty unresolved closure, explicit session.identity and no pending restart; marker absent keeps all roots on full replay",
+    "Complete compact checkpoint maintenance: save_current_state currently returns unsupported for compact state. Implement bounded suffix/backpressure with protected settlement credit and metadata publication preserving old catalog without reading archived rejected bodies; do not activate before this is coherent",
+    "Validate compact path exact counts/evidence/source predicates, unsupported-root fallback, duplicates/transitions and issuer burns, then actual APFS clone save-current migration and open-forbid admitted 302241-byte request with known-success settlement",
+    "Only then emit coverage marker and unit-complete.json; current oracle FAILS and generated recovery remains full replay"
+  ],
+  "artifacts": ["papers/saved-state-delivery-2026-10-08/continuation-migration.txt","papers/saved-state-delivery-2026-10-08/continuation-forbidden.txt"]
 }

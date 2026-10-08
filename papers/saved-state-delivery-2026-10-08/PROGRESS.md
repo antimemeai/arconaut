@@ -93,3 +93,38 @@ Unresolved closure currently includes old nonterminal observations for each stil
 unresolved attempt, not just the latest transition: reduce this before enabling
 compact semantic restore. StationStore/RRC origin lookup and historical consumers
 still have full walks. These are incomplete criteria, not certification caveats.
+
+## Authorized continuation, deadline 1791431497.25 — still NOT complete
+
+Pushed code checkpoints `944f5fc`, `8d377da`. Catalog ordinal relocation finding
+is fixed in format v2 with bounded CRC-covered uint32 ordinals and direct intact
+entry relocation coverage. Root's context tail/forward-reference and resident
+copy findings are fixed. Typed semantic/source readers own checked selected bytes;
+context original/history/index explicit queries use fallible bounded pages and
+owned generation readers. Latest-only unresolved observations and original retry
+invocation decision closure are retained. Reconcile, restart prerequisites,
+provider recovery linkage and complaint active sets now use closure/exact queries.
+
+Root/catalog selection is under the actual writer lease before physical scan.
+Compact Snapshot counts/highwater and selected JournalResume suffix restoration
+are coded, but **no generated root emits its coverage marker**. Therefore the
+unsafe/incomplete candidate remains inactive. `committed_facts` is explicitly
+unsupported on compact state, not silently truncated; ordinary reducers have an
+explicit `tail_facts` API. Further intent migration and compact maintenance remain.
+Root correctly clarified that a new semantic-envelope subsystem is NOT required:
+exact typed queries use selected checked frames, explicit forensic traversal is
+allowed to read old bodies on demand. This correction is the continuation design.
+
+Early native target and final native/dev probe built Release DEBUGOFF -j2.
+One scoped recheck: archive_catalog, journal_resume, saved_state, context,
+cold_history, session_store, session_recovery all passed. Direct new lease-selector
+and latest-unresolved-observation checks passed. No unrelated full-suite or third
+assurance layer. No restart, installed binary, primary source, board or Beads edits.
+
+Actual private APFS clone `/tmp/astra-continuation-1791431378`: migration published
+1,469,740 bytes, read 1,087,247,736 bytes, 10 syncs. Routine **open-forbid FAILED**,
+exit1, `audit_unavailable`, **forbidden_attempts=1**; no admitted request or known
+success settlement. This is not the required zero-read delivery. Raw outputs are
+`continuation-migration.txt` and `continuation-forbidden.txt`. Seed was never opened
+writable. No unit-complete marker. `continuation.json` records exact remaining
+activation/maintenance/consumer work; do not integrate this as completed Astra.
