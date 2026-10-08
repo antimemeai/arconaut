@@ -9,9 +9,10 @@ snapshots, not a comparison of the installed versions in the startup benchmark.
 Make the task list durable, shared working state at session/workstream scope,
 with optional links to Beads. A bead can contain many granular tasks; a task can
 also be useful without a bead. The operator selected a task pane at the far
-right, below the sprite, with an expandable tree for inspection and editing.
-Models, Lua programs, and
-the operator use the same native state and mutation path.
+right, below the sprite, with an expandable task/subtask view for inspection
+and editing. The operator selected exactly two levels: tasks and subtasks;
+subtasks cannot contain children. Models, Lua programs, and the operator use
+the same native state and mutation path.
 
 Separate three things: intended work, actual runtime activity, and whether the
 viewer has received current state. Their indicators answer different questions.
@@ -70,9 +71,18 @@ URLs, acquired identities, and those acquisition failures are in
 ## Candidate data and model interface
 
 Each work list has an ID, title, revision, optional bead reference, and ordered
-groups/tasks. Groups organize work and have derived rollups; actionable tasks
-have explicit states: queued, active, blocked, done, dropped. Count actionable
-tasks once, excluding organizational groups. A task retains a compact stable ID
+tasks with optional ordered subtasks. Operator2026-10-08 selected exactly two
+levels: a subtask must belong to a top-level task and cannot itself have children.
+Apply that rule to creation, reparenting, import and restore. Reject invalid
+depth explicitly rather than silently flattening or dropping work.
+
+Tasks and subtasks have explicit states: queued, active, blocked, done, dropped.
+Candidate counting: the pane summary counts top-level tasks; a parent separately
+shows its subtask rollup, such as `2/4 done`. Do not mix both levels into one
+completion denominator. Candidate completion: finishing all children does not
+silently mark the parent done; its owner explicitly closes the overall task.
+These counting/completion details remain proposals, distinct from the selected
+depth limit. A task or subtask retains a compact stable ID
 such as `t17` through rename, reordering and reopening. IDs are qualified by list
 when crossing scopes. Multiple active tasks are ordinary.
 
@@ -85,7 +95,7 @@ as an attempt result, distinct from the task's state. Reopening remains possible
 
 Candidate APIs, not existing Blackbird tool names:
 
-- `tasks.read`: compact actionable projection plus ancestor groups by default;
+- `tasks.read`: compact actionable projection plus parent tasks by default;
   read particular IDs, filtered pages, details, or changes since a revision.
 - `tasks.edit`: atomic batch of add, edit, move, state assignment, and archive
   operations. Available as model tools and Lua through one native implementation.
@@ -114,7 +124,7 @@ with a fresh bounded projection when older deltas are no longer available.
 Distinguish an intentional empty list from no task-list state.
 
 At turn start, continuation, and compaction, provide a small current projection
-with IDs, versions, active/blocked work and relevant ancestors. Further work is
+with IDs, versions, active/blocked work and relevant parents. Further work is
 read on demand. A provider request already in flight remains an immutable request;
 task updates do not pretend to change what it has seen. The next decision boundary
 gets current state or a delta, and guarded writes detect intervening changes.
@@ -179,7 +189,7 @@ marker. A recently completed row briefly stays visible so the transition can
 be understood; closed work remains available in history. Completion can collapse
 to a summary, but unfinished lists persist across turns and steering messages.
 
-Expansion provides groups, search/filter, owner and blocker views, task detail,
+Expansion provides tasks/subtasks, search/filter, owner and blocker views, task detail,
 recent changes, run results, bead links and direct editing. Selection anchors to
 task identity; incoming updates do not reorder the row under the operator's cursor.
 Offscreen activity gets a count/badge. Operator edits use the same version-aware
@@ -229,7 +239,7 @@ commit the painter only when its output packet is fully written. This uses the
 existing backpressure discipline and avoids mixing revisions on screen.
 
 Maintain lookup/order indexes and counts. Aim for work proportional to changed
-items, affected groups and visible rows; expensive reorder/page operations have
+items, affected parents and visible rows; expensive reorder/page operations have
 their own explicit costs. Do not scan every task on an 80 ms animation tick or
 send the entire task tree in each model result. Bound notes, mutation batches,
 response pages, delta buffers and resident views. Reject oversized edits clearly
@@ -248,16 +258,13 @@ No new tool or library follows from this watch.
 
 ## Questions to settle in discussion
 
-Placement is settled: far-right pane below the sprite. Responsive fallback,
-width and exact navigation are still candidate details.
+Placement and depth are settled: far-right pane below the sprite; tasks with
+one level of subtasks, no further nesting. Responsive fallback, width, exact
+navigation and parent counting/completion behavior are still candidate details.
 
-1. Granularity: nested organizational groups with actionable steps, or tasks
-   that can themselves contain actionable subtasks? Recommend groups plus steps
-   initially to avoid ambiguous completion and double-counting; revisit if real
-   workflows need mixed nodes.
-2. Sharing: session/workstream lists with explicit peer access, or project-wide
-   live lists by default? Recommend scoped lists and optional bead links; do not
-   turn every exploratory step into project-wide state by default.
+Sharing remains open: session/workstream lists with explicit peer access, or
+project-wide live lists by default? Recommend scoped lists and optional bead
+links; do not turn every exploratory step into project-wide state by default.
 
 After choosing the interaction shape, direct implementation checks should cover
 rename identity, retry without duplicate adds, conflicting edits, failed

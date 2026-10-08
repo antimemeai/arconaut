@@ -5136,3 +5136,12 @@ Inspect current12x6sprite/right-gutter layout to ground the integration note.
 Responsive summary fallback and initial28–36column width remain proposals, as
 do grouping and sharing semantics. No product implementation. Whitespace check,
 Beads backup, checkpoint and push under standing authorization.
+
+## 2026-10-08 — task nesting depth selected
+
+Operator accepts tasks and subtasks, explicitly excludes subsubtasks. Revise
+the design candidate to exactly two levels, with stable IDs at both levels and
+the same depth rule for creation, reparenting, import and restore. Remove the
+earlier nested-group recommendation. Parent subtask rollups and explicit parent
+completion remain proposed semantics; sharing remains open. No product edits.
+Whitespace check, Beads backup, checkpoint and push under standing authorization.
