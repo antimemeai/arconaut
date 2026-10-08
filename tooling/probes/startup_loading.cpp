@@ -144,6 +144,11 @@ int main(int argc, char **argv) {
       std::cout << "created_bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->committed_facts().size() << '\n';
       return 0;
     }
+    if (mode=="save-current") {
+      unwrap(context.checkpoint());
+      std::cout << "saved_current_bytes=" << io.write_bytes << " read_bytes=" << io.read_bytes << " syncs=" << io.sync_calls << '\n';
+      return 0;
+    }
     if (mode=="checkpoint") {
       unwrap(root->publish_scan_checkpoint());
       std::cout << "checkpoint_bytes=" << io.write_bytes << " read_bytes=" << io.read_bytes << " syncs=" << io.sync_calls << '\n';
@@ -230,6 +235,7 @@ int main(int argc, char **argv) {
     std::cout << "initial_bytes=" << initial_bytes << " initial_facts=" << initial_facts << " bytes=" << std::filesystem::file_size(path/"audit") << " facts=" << root->committed_facts().size()
               << " live_bytes=" << serialized.size() << " request_input_bytes=" << provider.input_bytes << " replay_ms=" << ms(replay)
               << " restored_ms=" << ms(restored) << " prompt_ms=" << ms(ready) << " admitted_ms=" << ms(admitted)
+              << " saved_current=" << (root->saved_state() != nullptr)
               << " indexed=" << root->used_scan_checkpoint()
               << " replay_read_bytes=" << replay_io.read_bytes << " replay_cpu_ms=" << replay_cpu_ms
               << " prompt_read_bytes=" << prompt_io.read_bytes << " readiness_read_bytes=" << provider.readiness_io.read_bytes

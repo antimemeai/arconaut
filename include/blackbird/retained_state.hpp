@@ -3,8 +3,10 @@
 #include "blackbird/journal_writer.hpp"
 #include "blackbird/retained_events.hpp"
 #include "blackbird/recovery_index.hpp"
+#include "blackbird/json.hpp"
 
 namespace blackbird {
+struct SavedState;
 struct RecordReference {
   AuditStreamId journal;
   std::uint64_t sequence;
@@ -68,6 +70,12 @@ public:
     return journal_->publish_scan_checkpoint();
   }
   bool used_scan_checkpoint() const noexcept { return journal_->used_scan_checkpoint(); }
+  ~RetainedState();
+  // Current projection only. Full ledger replay remains the safe fallback until
+  // archive-locator migration covers all semantic predicates.
+  const SavedState *saved_state() const noexcept { return saved_.get(); }
+  Result<void> save_current_state(const Json &context);
+  Json::Array current_programs() const;
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
   // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.
@@ -214,6 +222,8 @@ private:
   static bool has_identity(const RetainedEvent &event);
   const Snapshot &visible() const noexcept;
   Result<IdentityBytes> reserve_identity();
+  std::string journal_name_;
+  std::unique_ptr<SavedState> saved_;
   std::unique_ptr<JournalDirectory> directory_;
   std::vector<std::unique_ptr<FramedJournal>> historical_;
   std::unique_ptr<FramedJournal> journal_;

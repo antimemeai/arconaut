@@ -140,19 +140,15 @@ Json list_sessions(const std::filesystem::path &requested) {
 }
 SessionIdentity session_identity(AuditLog &log) {
   std::optional<SessionIdentity> result;
-  for (const auto &fact : log.root().committed_facts()) {
-    if (const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-        record && record->channel == ApplicationChannel::program) {
-      const auto value = packet(*record);
-      if (labelled(value, "session.identity"))
-        return {identity<ParticipantId>(string_field(value, "actor")),
-                identity<ConversationId>(string_field(value, "conversation")),
-                identity<WorkflowId>(string_field(value, "workflow"))};
-    }
+  for (const auto &value : log.root().current_programs())
+    if (labelled(value, "session.identity"))
+      return {identity<ParticipantId>(string_field(value, "actor")),
+              identity<ConversationId>(string_field(value, "conversation")),
+              identity<WorkflowId>(string_field(value, "workflow"))};
+  // Legacy sessions may not have an explicit identity packet.
+  for (const auto &fact : log.root().committed_facts())
     if (const auto *decision = std::get_if<DecisionEvent>(&fact.event.body))
-      result =
-          SessionIdentity{decision->actor, decision->conversation, decision->workflow};
-  }
+      result = SessionIdentity{decision->actor, decision->conversation, decision->workflow};
   if (!result)
     result = SessionIdentity{unwrap(log.root().issue<ParticipantId>()),
                              unwrap(log.root().issue<ConversationId>()),
@@ -166,11 +162,7 @@ SessionIdentity session_identity(AuditLog &log) {
   return *result;
 }
 SessionStore::SessionStore(AuditLog &log) : log_(log) {
-  for (const auto &fact : log.root().committed_facts()) {
-    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-    if (!record || record->channel != ApplicationChannel::program)
-      continue;
-    const auto value = packet(*record);
+  for (const auto &value : log.root().current_programs()) {
     if (labelled(value, "session.settings")) {
       settings_ = {string_field(value, "model"), string_field(value, "effort"),
                    string_field(value, "workflow")};

@@ -1,6 +1,10 @@
 #include "blackbird/local_timing.hpp"
 #include "blackbird/retained_state.hpp"
 #include "blackbird/retained_proposal.hpp"
+#include "blackbird/saved_state.hpp"
+#include "blackbird/context.hpp"
+#include <map>
+#include <set>
 
 #include <algorithm>
 #include <type_traits>
@@ -150,6 +154,7 @@ void RetainedState::Snapshot::swap(Snapshot &other) noexcept {
   std::swap(issuer_namespace, other.issuer_namespace);
   std::swap(counter, other.counter);
 }
+RetainedState::~RetainedState() = default;
 RetainedState::RetainedState(std::unique_ptr<JournalDirectory> directory,
                              JournalCapacity capacity)
     : directory_(std::move(directory)), capacity_(capacity),
@@ -192,6 +197,7 @@ RetainedState::create(std::unique_ptr<JournalDirectory> directory,
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
   owner->journal_ = std::move(journal).value();
+  owner->journal_name_ = name;
   owner->committed_.issuer_namespace = header.issuer_namespace;
   owner->pending_namespace_ = header.issuer_namespace;
   return Result<std::unique_ptr<RetainedState>>::success(std::move(owner));
@@ -214,12 +220,17 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
     return Result<std::unique_ptr<RetainedState>>::failure(journal.error());
   }
   owner->journal_ = std::move(journal).value();
+  owner->journal_name_ = name;
   owner->pending_namespace_ = header.issuer_namespace;
   owner->reconciled_ = false;
   const auto rebuilt = owner->rebuild();
   if (!rebuilt.has_value()) {
     return Result<std::unique_ptr<RetainedState>>::failure(rebuilt.error());
   }
+  auto saved = load_saved_state(*owner->directory_, name, *owner->journal_, capacity);
+  if (!saved.has_value())
+    return Result<std::unique_ptr<RetainedState>>::failure(saved.error());
+  if (saved.value()) owner->saved_ = std::make_unique<SavedState>(std::move(*saved.value()));
   return Result<std::unique_ptr<RetainedState>>::success(std::move(owner));
 }
 void RetainedState::index_fact(Snapshot &snapshot, std::size_t ordinal) {
@@ -1386,5 +1397,98 @@ Result<IdentityBytes> RetainedState::reserve_identity() {
     value >>= 8;
   }
   return Result<IdentityBytes>::success(bytes);
+}
+// Reduce native effective program packets, not staged proposals. The workflow
+// record may omit unchanged program_config; fold that field rather than losing it.
+Json::Array RetainedState::current_programs() const {
+  std::map<std::string, Json> latest;
+  Json config;
+  Json budget;
+  std::uint64_t boundary = 0;
+  if (saved_ && std::holds_alternative<Json::Array>(saved_->programs.value())) {
+    boundary = saved_->boundary.sequence;
+    for (const auto &packet : saved_->programs.array()) {
+      const auto &label = string_field(packet, "label");
+      latest[label] = packet;
+      if (label == "workflow-config-effective-v1")
+        if (const auto *value = packet.find("program_config")) config = *value;
+      if (label == "context-budget-effective-v1") budget = packet;
+    }
+  }
+  for (const auto &fact : committed_.facts) {
+    if (fact.record.journal == cursor().journal && fact.record.sequence <= boundary) continue;
+    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+    if (!record || record->channel != ApplicationChannel::program) continue;
+    auto packet = unwrap(parse_json(read_text(record->payload)));
+    const auto *label = packet.find("label");
+    if (!label || !std::holds_alternative<std::string>(label->value())) continue;
+    const auto &name = label->string();
+    if (name == "session.identity") {
+      if (!latest.contains(name)) latest[name] = packet;
+    } else if (name == "session.settings" || name == "session.restart" ||
+               name == "station.profile") latest[name] = packet;
+    else if (name == "workflow-config-effective-v1") {
+      if (const auto *value = packet.find("program_config")) config = *value;
+      if (config != Json{} && !packet.find("program_config")) {
+        packet.object().emplace_back("program_config", config);
+        const auto prior = latest.find(name);
+        if (prior != latest.end()) packet.object().emplace_back(
+            "program_revision", field(prior->second, "program_revision"));
+      }
+      latest[name] = packet;
+      budget = Json::object({{"label", Json{"context-budget-effective-v1"}},
+                            {"policy", field(packet, "policy")},
+                            {"revision", field(packet, "revision")}});
+    } else if (name == "context-budget-effective-v1") budget = packet;
+  }
+  Json::Array packets;
+  for (const auto &[name, packet] : latest) {
+    if (name != "context-budget-effective-v1") packets.push_back(packet);
+  }
+  // Policy chronology is independent of the workflow/tool generation.
+  if (budget != Json{}) packets.push_back(std::move(budget));
+  return packets;
+}
+Result<void> RetainedState::save_current_state(const Json &context) {
+  if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
+      !reconciled_ || !historical_.empty())
+    return Result<void>::failure({ErrorCode::audit_unavailable});
+  try {
+    SavedState next{cursor(), committed_.facts.size(), issuer_counter(), context,
+                    Json{current_programs()}, {}, saved_ ? saved_->slot ^ 1U : 0U};
+    std::set<IdentityBytes> attempts, decisions, invocations;
+    for (const auto &fact : committed_.facts) {
+      const auto *admission = std::get_if<AttemptAdmissionEvent>(&fact.event.body);
+      if (!admission) continue;
+      auto checked = attempt(admission->attempt);
+      if (!checked.has_value()) return Result<void>::failure(checked.error());
+      // Live unresolved operations matter too: reconciled_ isn't terminality.
+      if (!checked.value().observation ||
+          checked.value().observation->phase != AttemptPhase::terminal) {
+        attempts.insert(admission->attempt.bytes());
+        decisions.insert(admission->decision.bytes());
+        invocations.insert(admission->invocation.bytes());
+      }
+    }
+    for (const auto &fact : committed_.facts) {
+      const bool keep = std::visit([&](const auto &body) {
+        using T = std::decay_t<decltype(body)>;
+        if constexpr (std::is_same_v<T, AttemptAdmissionEvent> ||
+                      std::is_same_v<T, AttemptOpenEvent> ||
+                      std::is_same_v<T, AttemptObservationEvent> ||
+                      std::is_same_v<T, AdapterReceiptEvent> ||
+                      std::is_same_v<T, RetryEvent>) return attempts.contains(body.attempt.bytes());
+        else if constexpr (std::is_same_v<T, DecisionEvent>) return decisions.contains(body.decision.bytes());
+        else if constexpr (std::is_same_v<T, InvocationEvent>) return invocations.contains(body.invocation.bytes());
+        else return false;
+      }, fact.event.body);
+      if (keep) next.unresolved.push_back(fact);
+    }
+    auto published = publish_saved_state(*directory_, journal_name_, *journal_, next, next.slot);
+    if (!published.has_value()) return published;
+    saved_ = std::make_unique<SavedState>(std::move(next));
+    return Result<void>::success();
+  } catch (const Error &error) { return Result<void>::failure(error); }
+  catch (const std::bad_alloc &) { return Result<void>::failure({ErrorCode::allocation}); }
 }
 } // namespace blackbird

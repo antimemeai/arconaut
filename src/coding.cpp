@@ -800,12 +800,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
   program_config_.object().emplace_back("workflow_prefix", Json{""});
   program_revision_ = "builtin-ultracode-v1";
   budget_ = default_context_budget();
-  for (const auto &fact : log_.root().committed_facts()) {
-    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-    if (!record || record->channel != ApplicationChannel::program)
-      continue;
-    auto packet = unwrap(parse_json(
-        read_text(record->payload)));
+  for (const auto &packet : log_.root().current_programs()) {
     const auto *label = packet.find("label");
     if (label && label->string() == "workflow-config-effective-v1") {
       if (const auto *config = packet.find("program_config")) {

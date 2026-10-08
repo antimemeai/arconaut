@@ -244,11 +244,7 @@ int main(int argc, char **argv) {
     // Restore station scheduling only for an explicit native RRC resume. Ordinary
     // campaign/once invocations never acquire feed admissions by implication.
     if (resume_requested && station_path.empty())
-      for (const auto &fact : root->committed_facts()) {
-        const auto *r = std::get_if<ApplicationRecordEvent>(&fact.event.body);
-        if (!r || r->channel != ApplicationChannel::program)
-          continue;
-        const auto p = unwrap(parse_json(read_text(r->payload)));
+      for (const auto &p : root->current_programs()) {
         const auto *label = p.find("label");
         if (label && std::holds_alternative<std::string>(label->value()) &&
             label->string() == "station.profile")
