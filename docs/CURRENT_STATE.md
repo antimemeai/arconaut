@@ -13,7 +13,7 @@ edited it; physical PTY checks, compaction/original repair and actual launcher
 restart preserved the task/result/context. The current Release/OFF launcher is
 updated; the running operator process is left alone. [Campaign results](../papers/2026-10-08-collaboration-campaign.md).
 The initial Claude request timed out at90seconds. An operator-authorized new
-attempt completed in337.331s with a360-second limit; findings await source triage.
+attempt completed in337.331s with a360-second limit; its source triage and confirmed fixes are on the command-jobs candidate.
 The separate Giga stays paused.
 
 ## Command jobs candidate
@@ -35,6 +35,24 @@ passes from historical failures. This candidate has not been merged into master
 or activated in the running operator executable. Steering and additional
 trajectory implementation remain deferred. [Design](COMMAND_JOBS.md) and
 [operator controls](USING_BLACKBIRD.md) describe the current limits.
+
+## AFK bug candidate and held instrumentation
+
+On `command-jobs`, Claude reported errors without a success-only result field
+remain known failures; allocation after effect-capable dispatch stays UNKNOWN.
+Explicit `--recover-unknown-effects` validates supported native file/command and
+Lua/workflow attempts as a whole and records UNKNOWN without replay/PID adoption.
+Durable old command custody remains visible and fences restart/backstop across
+compact reopen. Historical bootstrap payloads remain unsupported and the exact
+original operator session/error is unidentified;05n stays open for that residual.
+
+Instrumentation implementation and direct/profile tests are preserved as an
+unapplied [draft overlay](../papers/2026-10-09-operational-instrumentation-draft.patch).
+The hardening bound ended with one new-test lint finding; nls.2 remains open.
+The ordinary guarded checkpoint includes the independent bug fixes, not that
+held implementation. No evaluator was selected or run. Main/runtime activation,
+multiplayer, steering and further trajectory views remain separate.
+[Disposition and evidence](NLS_AFK_SUBPLAN.md).
 
 ## What is on master
 
@@ -58,7 +76,7 @@ trajectory implementation remain deferred. [Design](COMMAND_JOBS.md) and
 ## Remaining design and delivery
 
 Common colleague and participant machinery is delivered, including a live Claude
-source review. Its findings need source triage. The earlier timed-out request
+source review. Its confirmed findings are repaired on command-jobs. The earlier timed-out request
 remains unknown; the later answer does not resolve that earlier effect.
 Owned direct Kimi/MiMo/Grok colleagues are implemented; remote tool-using
 colleagues remain work.

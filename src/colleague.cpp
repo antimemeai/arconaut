@@ -60,6 +60,7 @@ Value base_reply(const Value &r) {
                         {"provider", safe("provider")},
                         {"requested_model", safe("model")},
                         {"actual_model", Value{}},
+                        {"model_metadata_status", Value{"unavailable"}},
                         {"usage", Value{}},
                         {"profile", safe("profile")}});
 }
@@ -70,6 +71,48 @@ void set(Value &v, std::string_view key, Value replacement) {
       return;
     }
   v.object().emplace_back(key, std::move(replacement));
+}
+bool model_name(std::string_view name) {
+  return !name.empty() && name.find('\0') == std::string_view::npos && valid_utf8(name);
+}
+void response_metadata(Value &reply, const Value &upstream, bool cli) {
+  if (const auto *usage = upstream.find("usage"))
+    set(reply, "usage", *usage);
+  if (!cli) {
+    if (const auto *model = upstream.find("model")) {
+      if (std::holds_alternative<std::string>(model->value()) &&
+          model_name(model->string())) {
+        set(reply, "actual_model", *model);
+        set(reply, "model_metadata_status", Value{"observed"});
+      } else if (*model != Value{}) {
+        set(reply, "model_metadata_status", Value{"malformed"});
+      }
+    }
+    return;
+  }
+  const auto *models = upstream.find("modelUsage");
+  if (!models)
+    return;
+  // Exact reported metadata shares storage with the decoded result. Its audit
+  // projection is separately bounded; it never supplies a requested-model alias.
+  set(reply, "model_usage", *models);
+  if (!std::holds_alternative<Value::Object>(models->value())) {
+    set(reply, "model_metadata_status", Value{"malformed"});
+    return;
+  }
+  for (const auto &[name, unused] : models->object()) {
+    (void)unused;
+    if (!model_name(name)) {
+      set(reply, "model_metadata_status", Value{"malformed"});
+      return;
+    }
+  }
+  if (models->object().size() == 1) {
+    set(reply, "actual_model", Value{models->object().front().first});
+    set(reply, "model_metadata_status", Value{"observed"});
+  } else if (!models->object().empty()) {
+    set(reply, "model_metadata_status", Value{"ambiguous"});
+  }
 }
 std::string openai_text(const Value &response) {
   std::string out;
@@ -243,6 +286,7 @@ Value call_colleague(const Value &request, const ColleagueCapture &capture,
     std::string output;
     const auto &provider = text(request, "provider");
     if (provider == "openai" || prepared.find("native")) {
+      response_metadata(reply, result, false);
       if (text(result, "status") != "completed")
         throw Error{ErrorCode::incomplete};
       output = openai_text(result);
@@ -251,10 +295,6 @@ Value call_colleague(const Value &request, const ColleagueCapture &capture,
         set(reply, "remote_disposition", Value{"completed"});
         set(reply, "error", Value{"upstream_refusal"});
       }
-      if (const auto *usage = result.find("usage"))
-        set(reply, "usage", *usage);
-      if (const auto *model = result.find("model"))
-        set(reply, "actual_model", *model);
     } else {
       // Combined stdout/stderr: only accept a complete JSON result object. Never
       // infer a successful answer from partial text or an exit status alone.
@@ -265,8 +305,7 @@ Value call_colleague(const Value &request, const ColleagueCapture &capture,
             *parsed.value().find("is_error") == Value{true}) {
           capture("decoded_result", encoded(parsed.value()));
           set(reply, "reported_error", parsed.value());
-          if (const auto *usage = parsed.value().find("usage"))
-            set(reply, "usage", *usage);
+          response_metadata(reply, parsed.value(), true);
         }
         set(reply, "status", Value{"failed"});
         set(reply, "remote_disposition", Value{"unknown"});
@@ -274,26 +313,22 @@ Value call_colleague(const Value &request, const ColleagueCapture &capture,
       } else {
         auto upstream = unwrap(parse_json(required_field(result, "output").string()));
         capture("decoded_result", encoded(upstream));
-        if (const auto *usage = upstream.find("usage"))
-          set(reply, "usage", *usage);
+        response_metadata(reply, upstream, true);
         if (text(upstream, "type") != "result")
           throw Error{ErrorCode::corrupt};
-        if (required_field(upstream, "is_error") != Value{false}) {
+        const auto &is_error = required_field(upstream, "is_error");
+        if (!std::holds_alternative<bool>(is_error.value()))
+          throw Error{ErrorCode::corrupt};
+        if (std::get<bool>(is_error.value())) {
           set(reply, "status", Value{"failed"});
           set(reply, "remote_disposition", Value{"reported_failure"});
-          set(reply, "error", required_field(upstream, "result"));
+          set(reply, "reported_error", upstream);
+          const auto *diagnostic = upstream.find("result");
+          set(reply, "error", diagnostic ? *diagnostic : Value{"cli_reported_failure"});
         } else {
           if (text(upstream, "subtype") != "success")
             throw Error{ErrorCode::incomplete};
           output = required_field(upstream, "result").string();
-          if (const auto *usage = upstream.find("usage"))
-            set(reply, "usage", *usage);
-          // Retain the provider map; never equate a requested alias with actual model.
-          if (const auto *models = upstream.find("modelUsage")) {
-            set(reply, "model_usage", *models);
-            if (models->object().size() == 1)
-              set(reply, "actual_model", Value{models->object().front().first});
-          }
         }
       }
     }
@@ -303,8 +338,6 @@ Value call_colleague(const Value &request, const ColleagueCapture &capture,
       set(reply, "status", Value{"completed"});
       set(reply, "remote_disposition", Value{"completed"});
       set(reply, "text", Value{output});
-      if (const auto *usage = result.find("usage"))
-        set(reply, "usage", *usage);
     }
   } catch (const Error &e) {
     if (e.code == ErrorCode::provider_auth ||

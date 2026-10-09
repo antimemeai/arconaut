@@ -20,6 +20,12 @@ workflow identities also survive restart. Lua request options can override model
 request defaults for a particular call. `/session` shows configuration and identities;
 `/workflow FILE` validates and saves a different turn program.
 
+Explicit `--recover-unknown-effects` can acknowledge abandoned supported native
+file/command/Lua/workflow attempts after validating their linkage. It records
+UNKNOWN without replay or old PID adoption. Opened commands keep a durable
+custody warning and fence restart/backstop; a fresh independent session remains
+available. See [reopen behavior](SESSION_REOPEN.md) for unsupported cases.
+
 ## Find and resume sessions
 
 `./scripts/blackbird --list-sessions [ROOT]` lists direct child session directories

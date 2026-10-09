@@ -5960,3 +5960,29 @@ success, preserving historical failures. Push command-jobs to configured origin;
 main and inhabited operator executable remain unchanged. This documentation/issue
 closure checkpoint invokes the same mandatory every-commit hook without expanding
 source hardening or its allowance. Reopened total scope remains60minutes.
+
+2026-10-09 AFK nls/c54/05n source work starts22:31:23UTC,90minute units through
+00:01:23UTC. Instrumentation and the bugs authorized; evaluations wait. Grounding,
+finite capture matrix and direct native oracles precede product changes. Initial
+instrumentation red/green and colleague missing-result red/green are captured in
+context/nls-afk-*. Native recovery real effect and engine wrapper crashes preserve
+unknown outcomes, no replay and durable custody; compact marker projection bug
+is fixed. Historical bootstrap JSON continuations remain unsupported; exact old
+operator session/error unidentified.
+
+Hardening22:46:20–23:11:20UTC, one recheck/fixes. All Mac release/ASAN/TSAN and
+Neuroses debug/release/ASAN affected cases pass. Full debug85/85 passes78.83s.
+First hook catches two recovery-fixture unchecked optionals; explicit presence
+guards repair them within the allowance. Final hook completes native analysis but
+rejects the added participant metadata callback's adjacent same-type parameters.
+No new suppression or hook bypass. No repair after the bound. Instrumentation
+stays inactive/open; preserve full stash/snapshot and reviewable papers overlay.
+
+Independently package already checked c54 colleague/error-allocation and05n native
+recovery code, excluding the held instrumentation delta. Root compares extracted
+source against the preserved integrated state; no new implementation, review or
+host/profile campaign. Required ordinary full debug/C++/Lua gate enforces this
+bug-only checkpoint. The source remains a command-jobs candidate, unmerged and
+inactive. Beads c54 closed, nls.2 reopened,05n open for historical residual; backup
+records actual dispositions. Evals, multiplayer, steering and further trajectory
+views remain deferred. docs/NLS_AFK_SUBPLAN.md records held scope and source limits.

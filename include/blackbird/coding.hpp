@@ -34,8 +34,10 @@ public:
 private:
   OpenAiConfig config_;
 };
-// Settle abandoned provider requests as unknown; never redispatch old effects.
-void recover_coding_session(RetainedState &root);
+enum class RecoveryMode { provider_only, acknowledge_local_unknowns };
+// Explicit local recovery records uncertainty; never redispatches old effects.
+void recover_coding_session(RetainedState &root,
+                            RecoveryMode mode = RecoveryMode::provider_only);
 struct TurnInput {
   std::string_view prompt;
   std::string_view program;
@@ -81,6 +83,9 @@ public:
   std::function<void(std::string_view, const Value &)> effect_policy;
   void effort(std::string value);
   Value stats() const;
+  bool uncontained_command_custody() const noexcept {
+    return uncontained_exec_recovery_;
+  }
   void validate_session_switch() const;
   void validate_restart() const;
   std::optional<std::string> take_restart_note() {
@@ -101,6 +106,7 @@ private:
   std::map<std::string, std::string> command_tasks_;
   std::optional<Error> command_failure_;
   bool pumping_commands_ = false;
+  bool uncontained_exec_recovery_ = false;
   bool capacity_stopped_ = false;
   std::size_t operation_depth_ = 0;
   std::size_t unretained_bytes_ = 0;

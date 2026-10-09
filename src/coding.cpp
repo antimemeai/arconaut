@@ -947,6 +947,10 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
   program_revision_ = "builtin-ultracode-v1";
   budget_ = default_context_budget();
   for (const auto &packet : log_.root().current_programs()) {
+    if (packet.find("label") && string_field(packet, "label") == "session.recovery")
+      if (const auto *metadata = packet.find("metadata"))
+        if (const auto *uncontained = metadata->find("uncontained_exec"))
+          uncontained_exec_recovery_ = *uncontained == Value{true};
     const auto *label = packet.find("label");
     if (label && label->string() == "workflow-config-effective-v1") {
       if (const auto *config = packet.find("program_config")) {
@@ -1123,11 +1127,19 @@ void CodingEngine::poll_commands() {
 }
 void CodingEngine::poll_participants() { participants_->drain(); }
 void CodingEngine::shutdown_participants() { participants_->shutdown(); }
-void recover_coding_session(RetainedState &root) {
-  struct ProviderCustody final : CustodyVerifier {
+void recover_coding_session(RetainedState &root, RecoveryMode mode) {
+  struct CodingRecovery final : CustodyVerifier {
+    struct Abandoned {
+      OperationAttemptId attempt;
+      std::string operation;
+      bool local;
+      bool uncontained;
+    };
     RetainedState &root;
-    std::vector<OperationAttemptId> abandoned;
-    explicit ProviderCustody(RetainedState &value) : root(value) {}
+    RecoveryMode mode;
+    std::vector<Abandoned> abandoned;
+    CodingRecovery(RetainedState &value, RecoveryMode selected)
+        : root(value), mode(selected) {}
     Result<void> verify(std::span<const AttemptState> attempts) override {
       for (const auto &attempt : attempts) {
         const auto recovered_decision = root.decision(attempt.admission.decision);
@@ -1138,16 +1150,20 @@ void recover_coding_session(RetainedState &root) {
         if (!metadata.has_value())
           return Result<void>::failure({ErrorCode::external_unknown});
         const auto *operation = metadata.value().find("operation");
-        if (!operation || !std::holds_alternative<std::string>(operation->value()) ||
-            (operation->string() != "provider" && operation->string() != "colleague" &&
-             operation->string() != "participant_start" &&
-             operation->string() != "participant_send" &&
-             operation->string() != "participant_read" &&
-             operation->string() != "participant_cancel" &&
-             operation->string() != "participant_await" &&
-             operation->string() != "participant_join" &&
-             operation->string() != "participant_archive" &&
-             operation->string() != "participant_configure"))
+        if (!operation || !std::holds_alternative<std::string>(operation->value()))
+          return Result<void>::failure({ErrorCode::external_unknown});
+        const auto &name = operation->string();
+        const bool provider =
+            name == "provider" || name == "colleague" || name == "participant_start" ||
+            name == "participant_send" || name == "participant_read" ||
+            name == "participant_cancel" || name == "participant_await" ||
+            name == "participant_join" || name == "participant_archive" ||
+            name == "participant_configure";
+        const bool local = name == "exec" || name == "process" || name == "read_file" ||
+                           name == "write_file" || name == "edit_file" ||
+                           name == "lua" || name == "workflow_execute" ||
+                           name == "workflow_invoke";
+        if (!provider && (!local || mode != RecoveryMode::acknowledge_local_unknowns))
           return Result<void>::failure({ErrorCode::external_unknown});
         const auto *input = metadata.value().find("input");
         const auto *generation = metadata.value().find("generation");
@@ -1159,9 +1175,12 @@ void recover_coding_session(RetainedState &root) {
         if (!recovered_invocation.has_value())
           return Result<void>::failure(recovered_invocation.error());
         const auto &invocation = recovered_invocation.value();
-        const bool linked = invocation.decision == decision->decision &&
-                            invocation.definition == decision->definition &&
-                            invocation.input == attempt.admission.input;
+        const bool linked =
+            invocation.decision == decision->decision &&
+            invocation.definition == decision->definition &&
+            invocation.input == attempt.admission.input &&
+            decision->planned_invocations.size() == 1 &&
+            decision->planned_invocations.front() == invocation.invocation;
         // New decisions bind the already-retained invocation rather than embedding
         // another full input. Older decisions keep their explicit input check.
         bool input_bound = false;
@@ -1172,13 +1191,12 @@ void recover_coding_session(RetainedState &root) {
               parsed_input.has_value() &&
               std::holds_alternative<Value::Object>(parsed_input.value().value()) &&
               !input && *binding == Value{"invocation-v1"} && invocation_id &&
-              *invocation_id == Value{hex_identity(invocation.invocation.bytes())} &&
-              decision->planned_invocations.size() == 1 &&
-              decision->planned_invocations.front() == invocation.invocation;
+              *invocation_id == Value{hex_identity(invocation.invocation.bytes())};
         } else if (input) {
           const auto encoded_input = encode_packet_string(*input);
-          input_bound =
-              encoded_input.has_value() && encoded_input.value() == admitted_input;
+          input_bound = std::holds_alternative<Value::Object>(input->value()) &&
+                        encoded_input.has_value() &&
+                        encoded_input.value() == admitted_input;
         }
         if (!linked || !input_bound || !generation || !revision ||
             !std::holds_alternative<std::string>(generation->value()) ||
@@ -1186,24 +1204,58 @@ void recover_coding_session(RetainedState &root) {
             generation->string() != hex_identity(decision->definition.bytes()) ||
             revision->string() != hex_identity(decision->context.bytes()))
           return Result<void>::failure({ErrorCode::external_unknown});
-        abandoned.push_back(attempt.admission.attempt);
+        abandoned.push_back({attempt.admission.attempt, name, local,
+                             attempt.opened && (name == "exec" || name == "process")});
       }
       return Result<void>::success();
     }
-  } custody{root};
+  } custody{root, mode};
   unwrap(root.reconcile(custody));
   try {
     std::vector<RetainedEvent> observations;
-    for (const auto attempt : custody.abandoned) {
+    Value::Array uncontained_attempts;
+    for (const auto &abandoned : custody.abandoned) {
+      if (abandoned.local) {
+        const auto observation = unwrap(encode_packet(Value::object(
+            {{"recovery", Value{"acknowledge-local-unknowns"}},
+             {"attempt", Value{hex_identity(abandoned.attempt.bytes())}},
+             {"operation", Value{abandoned.operation}},
+             {"outcome", Value{"unknown"}},
+             {"uncontained_exec", Value{abandoned.uncontained}},
+             {"message", Value{"Prior process operation abandoned; outcome unknown. "
+                               "No effect replayed, PID adopted or process exit "
+                               "or containment established."}}})));
+        observations.push_back(
+            {{},
+             AttemptObservationEvent{abandoned.attempt, AttemptPhase::terminal,
+                                     AttemptDisposition::unknown, observation}});
+        if (abandoned.uncontained)
+          uncontained_attempts.emplace_back(hex_identity(abandoned.attempt.bytes()));
+        continue;
+      }
       const std::string message = "Provider or participant operation abandoned during "
                                   "prior process; outcome unknown. "
                                   "No response accepted and no request replayed.";
       const auto bytes = std::as_bytes(std::span{message.data(), message.size()});
       observations.push_back({{},
-                              AttemptObservationEvent{attempt,
+                              AttemptObservationEvent{abandoned.attempt,
                                                       AttemptPhase::terminal,
                                                       AttemptDisposition::unknown,
                                                       {bytes.begin(), bytes.end()}}});
+    }
+    if (!uncontained_attempts.empty()) {
+      const auto marker = unwrap(encode_packet(Value::object(
+          {{"label", Value{"session.recovery"}},
+           {"metadata",
+            Value::object({{"mode", Value{"acknowledge-local-unknowns"}},
+                           {"uncontained_exec", Value{true}},
+                           {"attempts", Value{std::move(uncontained_attempts)}}})},
+           {"message", Value{"Prior process custody unavailable; outcome unknown. "
+                             "No PID adopted or effect replayed."}}})));
+      observations.push_back(
+          {{},
+           ApplicationRecordEvent{unwrap(root.issue<ApplicationRecordId>()),
+                                  ApplicationChannel::program, marker}});
     }
     if (!observations.empty())
       (void)unwrap(root.append(root.cursor(), {}, observations));
@@ -1478,6 +1530,7 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
        boundary.error->code == ErrorCode::interrupted ||
        boundary.error->code == ErrorCode::io ||
        boundary.error->code == ErrorCode::incomplete ||
+       boundary.error->code == ErrorCode::allocation ||
        boundary.error->code == ErrorCode::external_unknown ||
        boundary.error->code == ErrorCode::provider_transport))
     disposition = AttemptDisposition::unknown;
@@ -2379,6 +2432,8 @@ Value CodingEngine::stats() const {
                   unwrap(encode_packet_string(Value{context_.items()})).size()));
   result.object().emplace_back("last_request_bytes", last_request_bytes_);
   result.object().emplace_back("usage", usage_);
+  result.object().emplace_back("uncontained_exec_recovery",
+                               Value{uncontained_exec_recovery_});
   result.object().emplace_back(
       "request_scope", Value{"last request in this process; null if unavailable"});
   return result;
@@ -2388,6 +2443,8 @@ void CodingEngine::validate_session_switch() const {
     throw Error{ErrorCode::busy};
 }
 void CodingEngine::validate_restart() const {
+  if (uncontained_exec_recovery_)
+    throw Error{ErrorCode::external_unknown};
   validate_session_switch();
   validate_protocol(context_.items());
 }
@@ -2421,7 +2478,8 @@ void CodingEngine::present(const Value &item) {
 Error CodingEngine::claim_backstop() {
   if (turn_running_ || operation_depth_ != 0 || !failed_turn_ || backstop_claimed_ ||
       failed_turn_->code == ErrorCode::interrupted || (cancelled && cancelled()) ||
-      !detail::locally_quiescent() || log_.root().state() != JournalWriterState::live)
+      uncontained_exec_recovery_ || !detail::locally_quiescent() ||
+      log_.root().state() != JournalWriterState::live)
     throw Error{ErrorCode::conflict};
   backstop_claimed_ = true;
   return *failed_turn_;

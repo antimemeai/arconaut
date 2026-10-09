@@ -1,0 +1,1009 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7f26bce..d774b62 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -71,7 +71,7 @@ endif()
+ target_include_directories(blackbird_foundation PUBLIC include)
+ target_link_libraries(blackbird_foundation PUBLIC blackbird_build)
+ target_sources(blackbird_foundation PRIVATE src/value.cpp src/presentation.cpp src/json.cpp src/packet.cpp src/openai.cpp src/provider_auth.cpp src/provider_oauth.cpp)
+-target_sources(blackbird_foundation PRIVATE src/context.cpp src/audit.cpp src/observations.cpp)
++target_sources(blackbird_foundation PRIVATE src/context.cpp src/audit.cpp src/observations.cpp src/operation_metadata.cpp)
+ target_sources(blackbird_foundation PRIVATE src/tools.cpp src/beads.cpp src/decision_models.cpp src/tasks.cpp)
+ add_executable(blackbird-job-runner src/command_job_runner.cpp)
+ target_link_libraries(blackbird-job-runner PRIVATE blackbird_build)
+@@ -243,6 +243,9 @@ add_test(NAME trajectory COMMAND trajectory_test)
+ add_test(NAME trajectory_cli COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/check-trajectory $<TARGET_FILE:blackbird>)
+ set_tests_properties(trajectory_cli PROPERTIES TIMEOUT 30)
+ add_executable(observations_test tests/observations_test.cpp)
++add_executable(operational_metadata_test tests/operational_metadata_test.cpp)
++target_link_libraries(operational_metadata_test PRIVATE blackbird_coding)
++add_test(NAME operational_metadata COMMAND operational_metadata_test)
+ target_link_libraries(observations_test PRIVATE blackbird_coding)
+ add_test(NAME observations COMMAND observations_test)
+ add_test(NAME observations_cli COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/check-observations $<TARGET_FILE:blackbird>)
+diff --git a/include/blackbird/coding.hpp b/include/blackbird/coding.hpp
+index fa91a15..941b128 100644
+--- a/include/blackbird/coding.hpp
++++ b/include/blackbird/coding.hpp
+@@ -107,6 +107,11 @@ private:
+   std::optional<Error> command_failure_;
+   bool pumping_commands_ = false;
+   bool uncontained_exec_recovery_ = false;
++  struct ActiveOperation {
++    OperationAttemptId attempt;
++    Value reported;
++  };
++  std::vector<ActiveOperation> active_operations_;
+   bool capacity_stopped_ = false;
+   std::size_t operation_depth_ = 0;
+   std::size_t unretained_bytes_ = 0;
+diff --git a/include/blackbird/context.hpp b/include/blackbird/context.hpp
+index 17fbb9c..a0cfed0 100644
+--- a/include/blackbird/context.hpp
++++ b/include/blackbird/context.hpp
+@@ -38,7 +38,8 @@ public:
+   void record_boundary(ApplicationRecordId identity, const Value &context_packet,
+                        const Value &program_packet);
+   std::string original(OriginalCapture capture);
+-  void retain_program(std::string_view source, DefinitionGenerationId generation);
++  void retain_program(std::string_view source, DefinitionGenerationId generation,
++                      const Value &time = Value{});
+   Value inspect(const Value &query);
+   Value trajectory(const Value &query);
+   RetainedState &root() noexcept { return root_; }
+diff --git a/include/blackbird/operation_metadata.hpp b/include/blackbird/operation_metadata.hpp
+new file mode 100644
+index 0000000..9c0c62b
+--- /dev/null
++++ b/include/blackbird/operation_metadata.hpp
+@@ -0,0 +1,8 @@
++#pragma once
++#include "blackbird/value.hpp"
++namespace blackbird {
++// Concise observed fields only. Exact result originals remain the authority.
++Value reported_operation_metadata(const Value &response,
++                                  std::string_view model_key = "model");
++void append_operation_metadata(Value &destination, const Value &fields);
++} // namespace blackbird
+diff --git a/include/blackbird/participants.hpp b/include/blackbird/participants.hpp
+index 09d6e9c..c7e97a3 100644
+--- a/include/blackbird/participants.hpp
++++ b/include/blackbird/participants.hpp
+@@ -12,7 +12,8 @@ public:
+   using Retain = std::function<void(std::string_view, std::string_view, const Value &)>;
+   using Save = std::function<void(const Value &)>;
+   using Publish = std::function<void(const Value &)>;
+-  Participants(const Value &saved, Retain retain, Save save, Publish publish = {});
++  Participants(const Value &saved, Retain retain, Save save, Publish publish = {},
++               Value clock_domain = Value{});
+   ~Participants();
+   Participants(const Participants &) = delete;
+   Participants &operator=(const Participants &) = delete;
+diff --git a/src/audit.cpp b/src/audit.cpp
+index 3c645f6..0fc5792 100644
+--- a/src/audit.cpp
++++ b/src/audit.cpp
+@@ -72,14 +72,44 @@ Value summary(const RetainedFact &fact, std::size_t i) {
+                 add(key, *v);
+             if (const auto *m = p.find("metadata")) {
+               Value::Object kept;
+-              for (const auto key :
+-                   {"attempt", "revision", "generation", "operation", "complaint"})
++              for (const auto key : {"attempt",
++                                     "revision",
++                                     "generation",
++                                     "operation",
++                                     "complaint",
++                                     "parent_attempt",
++                                     "provider",
++                                     "requested_model",
++                                     "actual_model",
++                                     "model_metadata_status",
++                                     "usage_status",
++                                     "capture_status",
++                                     "run_id",
++                                     "request_id",
++                                     "task_id",
++                                     "job_id",
++                                     "retry_group",
++                                     "status",
++                                     "remote_disposition",
++                                     "request_id_status",
++                                     "requested_model_status"})
+                 if (const auto *v = m->find(key);
+                     v && std::holds_alternative<std::string>(v->value()) &&
+                     v->string().size() <= 256)
+                   kept.emplace_back(key, *v);
++              for (const auto key : {"actual_model", "requested_model", "request_id",
++                                     "reported_usage", "reported_models", "ordinal",
++                                     "unretained_bytes", "unretained_events"})
++                if (const auto *v = m->find(key);
++                    v && encode_packet(*v, {4096, 128, 4}).has_value() &&
++                    !std::any_of(kept.begin(), kept.end(),
++                                 [&](const auto &entry) { return entry.first == key; }))
++                  kept.emplace_back(key, *v);
+               if (const auto *t = m->find("time"))
+                 add("time", *t);
++              if (const auto *started = m->find("started_time");
++                  started && encode_packet(*started, {4096, 128, 4}).has_value())
++                add("started_time", *started);
+               if (const auto *duration = m->find("duration_ns"))
+                 add("duration_ns", *duration);
+               if (const auto *operation = m->find("operation"))
+@@ -105,6 +135,13 @@ Value summary(const RetainedFact &fact, std::size_t i) {
+                   name && std::holds_alternative<std::string>(name->value()) &&
+                   name->string().size() <= 256)
+                 add("operation", *name);
++            if (packet.has_value())
++              for (const auto key : {"parent_attempt", "provider", "requested_model",
++                                     "run_id", "request_id", "task_id", "job_id"})
++                if (const auto *v = packet.value().find(key);
++                    v && std::holds_alternative<std::string>(v->value()) &&
++                    v->string().size() <= 256)
++                  add(key, *v);
+           }
+         } else if constexpr (std::is_same_v<T, InvocationEvent>) {
+           identity("invocation", e.invocation);
+@@ -127,7 +164,12 @@ Value summary(const RetainedFact &fact, std::size_t i) {
+           if (e.observation.size() <= 4096) {
+             const auto packet = read_packet(e.observation);
+             if (packet.has_value())
+-              for (const auto key : {"result_id", "result_record"})
++              for (const auto key :
++                   {"result_id", "result_record", "capture_status", "unretained_bytes",
++                    "unretained_events", "job_id", "output_ref", "termination",
++                    "signal", "output_bytes", "retained_bytes", "capture_complete",
++                    "timed_out", "stop_requested", "effect_outcome", "exit_code",
++                    "error", "error_detail"})
+                 if (const auto *v = packet.value().find(key))
+                   add(key, *v);
+           }
+@@ -236,6 +278,7 @@ Value AuditLog::trajectory(const Value &q) {
+       };
+       const auto *metadata = row.find("metadata");
+       const auto *capture_attempt = metadata ? metadata->find("attempt") : nullptr;
++      const auto *capture_run = metadata ? metadata->find("run_id") : nullptr;
+       const auto *source = row.find("source");
+       const auto *sample_attempt = source ? source->find("attempt") : nullptr;
+       if (!matches("attempt", attempt) &&
+@@ -243,6 +286,8 @@ Value AuditLog::trajectory(const Value &q) {
+           !(row.find("attempt") == nullptr && row.find("invocation") == nullptr &&
+             matches("decision", decision)) &&
+           !(capture_attempt && capture_attempt->string() == attempt) &&
++          !(capture_run && std::holds_alternative<std::string>(capture_run->value()) &&
++            capture_run->string() == attempt) &&
+           !(sample_attempt && sample_attempt->string() == attempt))
+         continue;
+     }
+diff --git a/src/coding.cpp b/src/coding.cpp
+index 61b168e..81edd3e 100644
+--- a/src/coding.cpp
++++ b/src/coding.cpp
+@@ -1,6 +1,7 @@
+ #include "blackbird/coding.hpp"
+ #include "blackbird/json.hpp"
+ #include "blackbird/local_timing.hpp"
++#include "blackbird/operation_metadata.hpp"
+ #include "blackbird/packet.hpp"
+ #include "blackbird/process_lifetime.hpp"
+ #include "blackbird/provider_auth.hpp"
+@@ -942,6 +943,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
+       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
+   command_jobs_ = std::make_shared<CommandJobs>();
+   observations_ = std::make_unique<Observations>(log_);
++  active_operations_.reserve(16);
+   program_config_.object().emplace_back("workflows", default_workflows());
+   program_config_.object().emplace_back("workflow_prefix", Value{""});
+   program_revision_ = "builtin-ultracode-v1";
+@@ -984,7 +986,8 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
+       [&](const Value &activity) {
+         if (task_activity)
+           task_activity(activity);
+-      });
++      },
++      observations_->time());
+   workflows_ = std::make_shared<WorkflowRegistry>(program_config_, program_revision_);
+   if (context_.head().empty())
+     context_.append({}, "initial");
+@@ -1335,14 +1338,36 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
+   const auto raw = std::as_bytes(std::span{serialized.data(), serialized.size()});
+   const ImmutableBytes bytes{raw.begin(), raw.end()};
+   const auto context = parse_id<ContextRevisionId>(context_.head());
+-  const auto meta =
+-      Value::object({{"operation", Value{std::string{name}}},
+-                     {"input_binding", Value{"invocation-v1"}},
+-                     {"input_encoding", Value{"bbm2"}},
+-                     {"invocation", Value{hex_identity(invocation.bytes())}},
+-                     {"revision", Value{context_.head()}},
+-                     {"time", began_time},
+-                     {"generation", Value{hex_identity(generation_.bytes())}}});
++  auto meta = Value::object({{"operation", Value{std::string{name}}},
++                             {"input_binding", Value{"invocation-v1"}},
++                             {"input_encoding", Value{"bbm2"}},
++                             {"invocation", Value{hex_identity(invocation.bytes())}},
++                             {"revision", Value{context_.head()}},
++                             {"time", began_time},
++                             {"generation", Value{hex_identity(generation_.bytes())}}});
++  if (!active_operations_.empty())
++    meta.object().emplace_back(
++        "parent_attempt",
++        Value{hex_identity(active_operations_.back().attempt.bytes())});
++  if (name == "provider" || name == "colleague") {
++    const auto *model = input.find("model");
++    if (model && std::holds_alternative<std::string>(model->value()) &&
++        model->string().size() <= 256)
++      meta.object().emplace_back("requested_model", *model);
++    const auto *provider = input.find("provider");
++    meta.object().emplace_back(
++        "provider",
++        name == "provider"
++            ? Value{std::string{provider_.provider_identity().substr(0, 256)}}
++        : provider && std::holds_alternative<std::string>(provider->value())
++            ? Value{provider->string().substr(0, 256)}
++            : Value{});
++  }
++  for (const auto key : {"task_id", "run_id", "request_id", "job_id"})
++    if (const auto *value = input.find(key);
++        value && std::holds_alternative<std::string>(value->value()) &&
++        value->string().size() <= 128)
++      meta.object().emplace_back(key, *value);
+   const auto continuation_bytes = unwrap(encode_packet(meta));
+   // Fresh identities: one ordered batch, no authoritative partial admission.
+   const std::array<RetainedEvent, 3> admitted{
+@@ -1360,6 +1385,11 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
+       RetainedEvent{{},
+                     AttemptAdmissionEvent{attempt, invocation, decision, bytes, true}}};
+   (void)unwrap(root.append(root.cursor(), {}, admitted));
++  active_operations_.push_back({attempt, Value{}});
++  struct ActiveRelease {
++    std::vector<ActiveOperation> &stack;
++    ~ActiveRelease() { stack.pop_back(); }
++  } active_release{active_operations_};
+   admission.linkage(context_.head(), hex_identity(attempt.bytes()));
+   admission.outcome("admitted");
+   admission.finish();
+@@ -1475,14 +1505,22 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
+                                .count();
+   std::string result_id;
+   std::size_t result_record = 0;
+-  try {
+-    result_id =
+-        log_.original({"operation.result", output,
+-                       Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
++  auto result_metadata = meta;
++  append_operation_metadata(
++      result_metadata, Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
+                                       {"time", observed_time},
+                                       {"source_encoding", Value{"bbm2"}},
+                                       {"duration_ns", Value{Number{duration_ns}}},
+-                                      {"operation", Value{std::string{name}}}})});
++                                      {"capture_status", Value{"retained"}}}));
++  if (name == "provider" || name == "colleague")
++    append_operation_metadata(
++        result_metadata,
++        active_operations_.back().reported != Value{}
++            ? active_operations_.back().reported
++            : reported_operation_metadata(result, name == "colleague" ? "actual_model"
++                                                                      : "model"));
++  try {
++    result_id = log_.original({"operation.result", output, result_metadata});
+     result_record = root.fact_count() - 1;
+   } catch (const Error &e) {
+     if (e.code != ErrorCode::capacity)
+@@ -1500,6 +1538,8 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
+       command_jobs_->shutdown();
+     }
+     result = error_value(e);
++    result.object().emplace_back("capture_status", Value{"not_retained"});
++    result.object().emplace_back("unretained_bytes", Value{Number{unretained_bytes_}});
+     output = unwrap(encode_packet_string(result));
+   }
+   if (boundary.error && boundary.error->code == ErrorCode::capacity &&
+@@ -1924,6 +1964,7 @@ Value CodingEngine::request(Value options) {
+         }
+         capture.flush();
+         transport.outcome("returned");
++        active_operations_.back().reported = reported_operation_metadata(result);
+         return import_provider_response(std::move(result));
+       });
+       break;
+@@ -2581,7 +2622,7 @@ void CodingEngine::turn(TurnInput input) {
+   context_.begin_workflow();
+   try {
+     generation_ = unwrap(log_.root().issue<DefinitionGenerationId>());
+-    log_.retain_program(workflow, generation_);
++    log_.retain_program(workflow, generation_, observations_->time());
+     if (!prompt.empty())
+       context_.append({Value::object({{"role", Value{"user"}},
+                                       {"content", Value{std::string{prompt}}}})},
+diff --git a/src/context.cpp b/src/context.cpp
+index 96bb66b..bc39de9 100644
+--- a/src/context.cpp
++++ b/src/context.cpp
+@@ -85,16 +85,16 @@ void AuditLog::record_boundary(ApplicationRecordId identity,
+   (void)unwrap(root_.append(root_.cursor(), {}, events));
+ }
+ void AuditLog::retain_program(std::string_view source,
+-                              DefinitionGenerationId generation) {
++                              DefinitionGenerationId generation, const Value &time) {
+   const auto original = issue();
+   const auto activation = issue();
+   const auto cursor = root_.cursor();
+   if (cursor.sequence == UINT64_MAX)
+     throw Error{ErrorCode::overflow};
+   const auto identity = hex_identity(generation.bytes());
+-  const auto capture =
+-      Value::object({{"label", Value{"program.source"}},
+-                     {"metadata", Value::object({{"generation", Value{identity}}})}});
++  const auto capture = Value::object(
++      {{"label", Value{"program.source"}},
++       {"metadata", Value::object({{"generation", Value{identity}}, {"time", time}})}});
+   const auto effective = Value::object(
+       {{"generation", Value{identity}}, {"activation", Value{"turn-boundary"}}});
+   const auto raw = std::as_bytes(std::span{source.data(), source.size()});
+diff --git a/src/operation_metadata.cpp b/src/operation_metadata.cpp
+new file mode 100644
+index 0000000..0b6cc7d
+--- /dev/null
++++ b/src/operation_metadata.cpp
+@@ -0,0 +1,116 @@
++#include "blackbird/operation_metadata.hpp"
++#include "blackbird/packet.hpp"
++#include <algorithm>
++#include <set>
++namespace blackbird {
++namespace {
++bool model_text(const Value &value) {
++  const auto *text = std::get_if<std::string>(&value.value());
++  return text && !text->empty() && text->size() <= 256 &&
++         text->find('\0') == std::string::npos && valid_utf8(*text);
++}
++bool numeric_usage(const Value &value) {
++  if (const auto *number = std::get_if<Number>(&value.value())) {
++    return std::visit(
++        [](const auto &n) {
++          using T = std::decay_t<decltype(n)>;
++          if constexpr (std::is_same_v<T, Decimal>)
++            return !n.negative || n.limbs.empty();
++          else
++            return n >= 0;
++        },
++        number->storage());
++  }
++  const auto *object = std::get_if<Value::Object>(&value.value());
++  if (!object)
++    return false;
++  std::set<std::string_view> names;
++  return std::all_of(object->begin(), object->end(), [&](const auto &entry) {
++    return !entry.first.empty() && entry.first.size() <= 64 &&
++           entry.first.find('\0') == std::string::npos &&
++           names.insert(entry.first).second && numeric_usage(entry.second);
++  });
++}
++} // namespace
++void append_operation_metadata(Value &destination, const Value &fields) {
++  for (const auto &[key, value] : fields.object()) {
++    bool replaced = false;
++    for (auto &[name, existing] : destination.object())
++      if (name == key) {
++        existing = value;
++        replaced = true;
++        break;
++      }
++    if (!replaced)
++      destination.object().emplace_back(key, value);
++  }
++}
++Value reported_operation_metadata(const Value &response, std::string_view model_key) {
++  Value actual;
++  std::string status = "unavailable";
++  if (const auto *model = response.find(model_key); model && *model != Value{}) {
++    if (model_text(*model)) {
++      actual = *model;
++      status = "observed";
++    } else {
++      const auto *text = std::get_if<std::string>(&model->value());
++      status = text && text->size() > 256 && valid_utf8(*text) &&
++                       text->find('\0') == std::string::npos
++                   ? "bounded"
++                   : "malformed";
++    }
++  }
++  if (const auto *reported = response.find("model_metadata_status");
++      reported && std::holds_alternative<std::string>(reported->value()) &&
++      (reported->string() == "ambiguous" || reported->string() == "malformed")) {
++    actual = Value{};
++    status = reported->string();
++  }
++  Value models;
++  if (const auto *map = response.find("model_usage");
++      map && std::holds_alternative<Value::Object>(map->value())) {
++    Value::Array names;
++    if (map->object().size() <= 16) {
++      for (const auto &[name, unused] : map->object()) {
++        (void)unused;
++        if (!model_text(Value{name})) {
++          names.clear();
++          status = "malformed";
++          actual = Value{};
++          break;
++        }
++        names.emplace_back(name);
++      }
++      models = Value{std::move(names)};
++      if (!encode_packet(models, {4096, 128, 4}).has_value()) {
++        models = Value{};
++        actual = Value{};
++        status = "bounded";
++      }
++    } else {
++      actual = Value{};
++      status = "bounded";
++    }
++  }
++  Value usage;
++  std::string usage_status = "unavailable";
++  if (const auto *reported = response.find("usage"); reported && *reported != Value{}) {
++    if (!std::holds_alternative<Value::Object>(reported->value()))
++      usage_status = "malformed";
++    else if (const auto encoded = encode_packet(*reported, {2048, 128, 4});
++             !encoded.has_value())
++      usage_status = "bounded";
++    else if (!numeric_usage(*reported))
++      usage_status = "malformed";
++    else {
++      usage = *reported;
++      usage_status = "reported";
++    }
++  }
++  return Value::object({{"actual_model", actual},
++                        {"model_metadata_status", Value{status}},
++                        {"reported_models", models},
++                        {"reported_usage", usage},
++                        {"usage_status", Value{usage_status}}});
++}
++} // namespace blackbird
+diff --git a/src/participants.cpp b/src/participants.cpp
+index de109f1..3fd7f3a 100644
+--- a/src/participants.cpp
++++ b/src/participants.cpp
+@@ -1,4 +1,6 @@
+ #include "blackbird/participants.hpp"
++#include "blackbird/observations.hpp"
++#include "blackbird/operation_metadata.hpp"
+ #include "blackbird/packet.hpp"
+ #include "blackbird/tools.hpp"
+ #include <algorithm>
+@@ -28,6 +30,16 @@ void bounded(std::string_view text, std::size_t limit) {
+   if (text.empty() || text.size() > limit || text.find('\0') != std::string_view::npos)
+     throw Error{ErrorCode::invalid_range};
+ }
++void metadata_text(Value &metadata, std::string_view name, const Value &value,
++                   std::size_t limit) {
++  const auto *text = std::get_if<std::string>(&value.value());
++  const bool fits = text && text->size() <= limit && valid_utf8(*text) &&
++                    text->find('\0') == std::string::npos;
++  set(metadata, name, fits ? value : Value{});
++  if (!fits)
++    set(metadata, std::string{name} + "_status",
++        Value{text && text->size() > limit ? "bounded" : "malformed"});
++}
+ unsigned integer(const Value &value) {
+   const auto &text = value.number().text();
+   unsigned out = 0;
+@@ -61,6 +73,7 @@ struct Participants::Impl {
+   struct Capture {
+     std::string label, raw;
+     Value metadata;
++    std::size_t bytes;
+   };
+   mutable std::mutex mutex;
+   std::condition_variable changed;
+@@ -69,11 +82,47 @@ struct Participants::Impl {
+   std::size_t capture_bytes = 0;
+   unsigned concurrency = 2;
+   bool dirty = false;
++  Value clock_domain;
+   Retain retain;
+   Save save;
+   Publish publish;
+-  Impl(Retain r, Save s, Publish p)
+-      : retain(std::move(r)), save(std::move(s)), publish(std::move(p)) {}
++  Impl(Retain r, Save s, Publish p, Value clock)
++      : clock_domain(std::move(clock)), retain(std::move(r)), save(std::move(s)),
++        publish(std::move(p)) {}
++  Value time() const {
++    const auto now = observation_time();
++    return Value::object(
++        {{"clock_id",
++          clock_domain.find("clock_id") ? field(clock_domain, "clock_id") : Value{}},
++         {"utc_ns", Value{Number{now.utc_ns}}},
++         {"monotonic_ns", Value{Number{now.monotonic_ns}}},
++         {"sampling_span_ns", Value{Number{now.sampling_span_ns}}},
++         {"synchronization", Value{"unknown"}}});
++  }
++  void queue(Run &run, std::string_view label, std::string_view raw,
++             const Value &metadata) {
++    const auto encoded = encode_packet(metadata, {8192, 256, 8});
++    const auto bytes = encoded.has_value() ? encoded.value().size() : 0;
++    std::lock_guard lock{mutex};
++    const auto remaining = max_capture_bytes - capture_bytes;
++    if (!encoded.has_value() || captures.size() >= max_events ||
++        raw.size() > remaining || bytes > remaining - raw.size()) {
++      const auto *prior_bytes = run.row.find("unretained_bytes");
++      const auto *prior_events = run.row.find("unretained_events");
++      const auto lost_bytes =
++          prior_bytes ? std::stoull(prior_bytes->number().text()) : 0;
++      const auto lost_events =
++          prior_events ? std::stoull(prior_events->number().text()) : 0;
++      set(run.row, "unretained_bytes", Value{Number{lost_bytes + raw.size()}});
++      set(run.row, "unretained_events", Value{Number{lost_events + 1}});
++      set(run.row, "capture_status", Value{"incomplete"});
++      dirty = true;
++      throw Error{ErrorCode::capacity};
++    }
++    captures.push_back(
++        {std::string{label}, std::string{raw}, metadata, bytes + raw.size()});
++    capture_bytes += bytes + raw.size();
++  }
+   Run &find(const Value &args) {
+     const auto found = runs.find(string_field(args, "run_id"));
+     if (found == runs.end())
+@@ -111,18 +160,15 @@ struct Participants::Impl {
+       for (;;) {
+         Value result;
+         const auto request_id = string_field(request, "request_id");
++        const auto began = std::chrono::steady_clock::now();
++        const auto began_time = time();
+         const auto capture = [&](std::string_view label, std::string_view raw) {
+           // Exact admission was synchronously retained by start/send before enqueue.
+           if (label == "admission")
+             return;
+-          std::lock_guard lock{mutex};
+-          if (captures.size() >= max_events ||
+-              raw.size() > max_capture_bytes - capture_bytes)
+-            throw Error{ErrorCode::capacity};
+-          captures.push_back({"participant." + std::string{label}, std::string{raw},
+-                              Value::object({{"run_id", Value{run_id}},
+-                                             {"request_id", Value{request_id}}})});
+-          capture_bytes += raw.size();
++          auto meta = Value::object({{"run_id", Value{run_id}}, {"time", time()}});
++          metadata_text(meta, "request_id", Value{request_id}, 128);
++          queue(run, "participant." + std::string{label}, raw, meta);
+         };
+         if (run.stop.load()) {
+           result = Value::object({{"status", Value{"cancelled"}},
+@@ -137,6 +183,23 @@ struct Participants::Impl {
+                                  [&] { return run.stop.load(); });
+               });
+         }
++        auto observed = Value::object(
++            {{"run_id", Value{run_id}},
++             {"attempt", Value{run_id}},
++             {"provider", field(request, "provider")},
++             {"time", time()},
++             {"started_time", began_time},
++             {"duration_ns",
++              Value{Number{std::chrono::duration_cast<std::chrono::nanoseconds>(
++                               std::chrono::steady_clock::now() - began)
++                               .count()}}},
++             {"status", field(result, "status")},
++             {"remote_disposition", field(result, "remote_disposition")}});
++        metadata_text(observed, "request_id", Value{request_id}, 128);
++        metadata_text(observed, "requested_model", field(request, "model"), 256);
++        append_operation_metadata(observed,
++                                  reported_operation_metadata(result, "actual_model"));
++        queue(run, "participant.observation", "", observed);
+         Value publication;
+         {
+           std::unique_lock lock{mutex};
+@@ -221,9 +284,9 @@ struct Participants::Impl {
+   }
+ };
+ Participants::Participants(const Value &saved, Retain retain, Save save,
+-                           Publish publish)
++                           Publish publish, Value clock_domain)
+     : impl_(std::make_unique<Impl>(std::move(retain), std::move(save),
+-                                   std::move(publish))) {
++                                   std::move(publish), std::move(clock_domain))) {
+   if (saved == Value{})
+     return;
+   impl_->concurrency = integer(field(saved, "concurrency"));
+@@ -287,7 +350,7 @@ void Participants::drain() {
+     }
+     {
+       std::lock_guard lock{impl_->mutex};
+-      impl_->capture_bytes -= impl_->captures.front().raw.size();
++      impl_->capture_bytes -= impl_->captures.front().bytes;
+       impl_->captures.pop_front();
+     }
+   }
+diff --git a/tests/command_jobs_engine_test.cpp b/tests/command_jobs_engine_test.cpp
+index b4a4212..f24353c 100644
+--- a/tests/command_jobs_engine_test.cpp
++++ b/tests/command_jobs_engine_test.cpp
+@@ -276,6 +276,29 @@ void same_command(Harness &h, const std::filesystem::path &directory,
+   check(terminal_count(h, job) == 1 &&
+             terminal_disposition(h, job) == AttemptDisposition::failure,
+         "wrong or duplicate command terminal disposition");
++  bool projected = false;
++  Value cursor{Number{0}};
++  for (;;) {
++    const auto page = h.log.trajectory(Value::object({{"cursor", cursor},
++                                                      {"attempt", Value{job}},
++                                                      {"count", Value{Number{64}}},
++                                                      {"scan", Value{Number{256}}}}));
++    for (const auto &row : field(page, "events").array())
++      if (row.find("capture_complete")) {
++        check(field(row, "output_bytes") ==
++                      Value{Number{prefix.size() + suffix.size()}} &&
++                  field(row, "retained_bytes") == field(row, "output_bytes") &&
++                  field(row, "capture_complete") == Value{true} &&
++                  field(row, "exit_code") == Value{Number{7}} &&
++                  string_field(row, "outcome") == "failure",
++              "command terminal projection lost exact capture/exit evidence");
++        projected = true;
++      }
++    if (field(page, "caught_up") == Value{true})
++      break;
++    cursor = field(page, "next");
++  }
++  check(projected, "command final capture counters require cold output originals");
+   check(h.engine.tasks().snapshot() == task_snapshot,
+         "command completion modified model-authored task state");
+   check(!h.root->protected_settlement().has_value(), "quiescent reserve leaked");
+diff --git a/tests/operational_metadata_test.cpp b/tests/operational_metadata_test.cpp
+new file mode 100644
+index 0000000..43ed0d9
+--- /dev/null
++++ b/tests/operational_metadata_test.cpp
+@@ -0,0 +1,240 @@
++#include "blackbird/coding.hpp"
++#include "blackbird/json.hpp"
++#include <filesystem>
++#include <iostream>
++#include <unistd.h>
++using namespace blackbird;
++namespace {
++void check(bool good, const char *message) {
++  if (!good)
++    throw std::runtime_error(message);
++}
++template <class T> T id(unsigned char n) {
++  IdentityBytes bytes{};
++  bytes[0] = std::byte{n};
++  return unwrap(T::from_bytes(bytes));
++}
++class Provider final : public CodingProvider {
++public:
++  Value reply = unwrap(parse_json(
++      R"({"model":"observed-model","usage":{"input_tokens":17,"output_tokens":3,"input_tokens_details":{"cached_tokens":5}},"output":[]})"));
++  unsigned calls = 0, failures = 0;
++  std::string_view provider_identity() const noexcept override {
++    return "test-provider";
++  }
++  Value respond(const Value &, const std::function<void(std::string_view)> &) override {
++    ++calls;
++    if (failures) {
++      --failures;
++      throw Error{ErrorCode::provider_transport, 92};
++    }
++    return reply;
++  }
++};
++Value metadata(AuditLog &log, std::string_view label) {
++  for (std::size_t i = log.root().fact_count(); i != 0; --i) {
++    const auto fact = unwrap(log.root().fact(i - 1));
++    const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
++    if (!record || record->channel != ApplicationChannel::log)
++      continue;
++    const auto packet = unwrap(read_packet(record->payload));
++    if (packet.find("label") && string_field(packet, "label") == label)
++      return field(packet, "metadata");
++  }
++  throw std::runtime_error("metadata record missing");
++}
++} // namespace
++int main() {
++  char name[] = "/tmp/blackbird-operational-XXXXXX";
++  const auto *directory = mkdtemp(name);
++  if (!directory)
++    return 2;
++  try {
++    const JournalHeader header{id<EnvironmentId>(1),
++                               id<AuditStreamId>(2),
++                               3,
++                               {1024 * 1024, 4 * 1024 * 1024},
++                               std::nullopt};
++    auto root =
++        unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(unwrap(
++                                         NativeJournalDirectory::open(directory))),
++                                     "audit", header, {32 * 1024 * 1024, 20000}));
++    Value pinned, query, participant_pinned, participant_query;
++    {
++      AuditLog log{*root};
++      ContextStore context{log};
++      Provider provider;
++      CodingEngine engine{log, context, provider, "requested-model"};
++      engine.turn({"", "return blackbird.request()"});
++      const auto observed = metadata(log, "operation.result");
++      check(string_field(observed, "requested_model") == "requested-model" &&
++                string_field(observed, "actual_model") == "observed-model" &&
++                string_field(observed, "provider") == "test-provider",
++            "requested and observed model/provider are absent or conflated");
++      check(field(observed, "reported_usage") == field(provider.reply, "usage") &&
++                string_field(observed, "usage_status") == "reported",
++            "reported usage differs from actual response");
++      check(string_field(observed, "model_metadata_status") == "observed" &&
++                observed.find("duration_ns") && observed.find("time"),
++            "observed timing/model availability missing");
++      provider.reply = unwrap(parse_json(R"({"output":[]})"));
++      engine.turn({"", "return blackbird.request()"});
++      const auto absent = metadata(log, "operation.result");
++      check(field(absent, "actual_model") == Value{} &&
++                field(absent, "reported_usage") == Value{} &&
++                string_field(absent, "usage_status") == "unavailable" &&
++                string_field(absent, "model_metadata_status") == "unavailable",
++            "missing usage/model invented rather than explicit unavailable");
++      provider.reply =
++          unwrap(parse_json(R"({"model":7,"usage":{"input_tokens":-1},"output":[]})"));
++      engine.turn({"", "return blackbird.request()"});
++      const auto malformed = metadata(log, "operation.result");
++      check(string_field(malformed, "model_metadata_status") == "malformed" &&
++                string_field(malformed, "usage_status") == "malformed" &&
++                field(malformed, "reported_usage") == Value{},
++            "malformed observations accepted as measured usage/model");
++      provider.failures = 1;
++      provider.reply = unwrap(parse_json(
++          R"({"model":"retry-model","usage":{"output_tokens":2},"output":[]})"));
++      engine.turn(
++          {"",
++           "return "
++           "blackbird.request({retry_policy={max_attempts=2,base_ms=0,cap_ms=0}})"});
++      unsigned requests = 0;
++      Value group;
++      for (const auto &fact : root->committed_facts()) {
++        const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
++        if (!record || record->channel != ApplicationChannel::log)
++          continue;
++        const auto packet = unwrap(read_packet(record->payload));
++        if (!packet.find("label") ||
++            string_field(packet, "label") != "provider.request")
++          continue;
++        const auto &meta = field(packet, "metadata");
++        if (field(meta, "ordinal") == Value{Number{2}}) {
++          ++requests;
++          check(field(meta, "retry_group") == group,
++                "retry group lost across attempts");
++        } else
++          group = field(meta, "retry_group");
++      }
++      check(requests == 1 && provider.calls == 5, "retry or dispatch count differs");
++      provider.reply = Value::object(
++          {{"model", Value{std::string(257, 'm')}},
++           {"usage", Value::object({{"huge", Value::object({{std::string(2050, 'x'),
++                                                             Value{Number{1}}}})}})},
++           {"output", Value{Value::Array{}}}});
++      engine.turn({"", "return blackbird.request()"});
++      const auto bounded = metadata(log, "operation.result");
++      check(string_field(bounded, "model_metadata_status") == "bounded" &&
++                string_field(bounded, "usage_status") == "bounded" &&
++                field(bounded, "actual_model") == Value{} &&
++                field(bounded, "reported_usage") == Value{},
++            "over-limit response metadata lacks bounded availability");
++      engine.turn({"", "return blackbird.call('lua',{code=\"return "
++                       "blackbird.call('read_file',{path='/dev/null'})\"})"});
++      Value parent, child;
++      for (const auto &fact : root->committed_facts()) {
++        const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
++        if (!record || record->channel != ApplicationChannel::log)
++          continue;
++        const auto packet = unwrap(read_packet(record->payload));
++        if (!packet.find("label") ||
++            string_field(packet, "label") != "operation.result")
++          continue;
++        const auto &meta = field(packet, "metadata");
++        if (field(meta, "operation") == Value{"lua"})
++          parent = field(meta, "attempt");
++        if (field(meta, "operation") == Value{"read_file"})
++          child = meta;
++      }
++      check(parent != Value{} && field(child, "parent_attempt") == parent &&
++                field(child, "attempt") != parent,
++            "nested child parent was inferred incorrectly or lost");
++      const auto participant_begin = root->fact_count();
++      auto participant_request = unwrap(parse_json(
++          R"({"request_id":"delivery","from":"main","to":"worker","provider":"openai","model":"fake","task":"metadata check","context":[],"profile":{"name":"context-only","provenance":"test","timeout_seconds":3,"tools":"none","requests":1}})"));
++      for (auto &[field_name, value] : participant_request.object())
++        if (field_name == "model" || field_name == "request_id")
++          value = Value{std::string(9000, field_name == "model" ? 'm' : 'r')};
++      unsigned participant_calls = 0;
++      engine.participant_transport = [&](const Value &prepared,
++                                         const ColleagueCapture &capture,
++                                         const std::function<bool()> &) {
++        ++participant_calls;
++        check(field(field(prepared, "request"), "request_id").string().size() == 9000,
++              "instrumentation changed exact delivery identity");
++        capture("raw", "received worker response");
++        return unwrap(parse_json(
++            R"({"status":"completed","model":"worker-model","usage":{"output_tokens":4},"output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]})"));
++      };
++      const auto participant = engine.operator_call(
++          "participant_start", Value::object({{"request", participant_request}}));
++      const auto run_id = field(participant, "run_id");
++      const auto joined = engine.operator_call(
++          "participant_join",
++          Value::object({{"run_ids", Value{Value::Array{run_id}}}}));
++      check(participant_calls == 1 &&
++                string_field(field(joined, "runs").array()[0], "state") == "completed",
++            "bounded observation metadata changed actual completion");
++      participant_query = Value::object({{"cursor", Value{Number{participant_begin}}},
++                                         {"end", Value{Number{root->fact_count()}}},
++                                         {"attempt", run_id},
++                                         {"count", Value{Number{64}}},
++                                         {"scan", Value{Number{256}}}});
++      participant_pinned = log.trajectory(participant_query);
++      bool participant_visible = false;
++      for (const auto &row : field(participant_pinned, "events").array())
++        if (row.find("label") &&
++            field(row, "label") == Value{"participant.observation"}) {
++          const auto &meta = field(row, "metadata");
++          check(field(meta, "request_id") == Value{} &&
++                    field(meta, "requested_model") == Value{} &&
++                    field(meta, "request_id_status") == Value{"bounded"} &&
++                    field(meta, "requested_model_status") == Value{"bounded"} &&
++                    field(meta, "reported_usage") ==
++                        Value::object({{"output_tokens", Value{Number{4}}}}) &&
++                    field(field(row, "time"), "clock_id") ==
++                        field(field(observed, "time"), "clock_id") &&
++                    row.find("started_time") && row.find("duration_ns"),
++                "bounded participant availability/clock/usage lost in metadata query");
++          participant_visible = true;
++        }
++      check(participant_visible,
++            "actual participant observation missing from run-filtered query");
++      query = Value::object({{"cursor", Value{Number{0}}},
++                             {"count", Value{Number{64}}},
++                             {"scan", Value{Number{256}}},
++                             {"end", Value{Number{root->fact_count()}}}});
++      const auto page = log.trajectory(query);
++      bool visible = false;
++      for (const auto &row : field(page, "events").array())
++        if (const auto *meta = row.find("metadata"))
++          visible |= meta->find("actual_model") != nullptr;
++      check(visible, "metadata requires reading original provider payload");
++      pinned = page;
++      engine.turn({"", "return 7"});
++      check(log.trajectory(query) == pinned,
++            "later work changed pinned operational metadata");
++      unwrap(context.checkpoint());
++    }
++    root.reset();
++    root = unwrap(RetainedState::open(std::make_unique<NativeJournalDirectory>(unwrap(
++                                          NativeJournalDirectory::open(directory))),
++                                      "audit", header, {32 * 1024 * 1024, 20000}));
++    unwrap(root->confirm_recovery());
++    AuditLog reopened{*root};
++    check(root->compact_recovery() && reopened.trajectory(query) == pinned &&
++              reopened.trajectory(participant_query) == participant_pinned,
++          "operational metadata changed or lost in compact reopen");
++    std::filesystem::remove_all(directory);
++  } catch (const std::exception &error) {
++    std::cerr << error.what() << '\n';
++    std::filesystem::remove_all(directory);
++    return 1;
++  } catch (const Error &error) {
++    std::cerr << error_name(error.code) << '\n';
++    std::filesystem::remove_all(directory);
++    return 1;
++  }
++}
+diff --git a/tests/participants_test.cpp b/tests/participants_test.cpp
+index 15df662..9c06faa 100644
+--- a/tests/participants_test.cpp
++++ b/tests/participants_test.cpp
+@@ -35,18 +35,37 @@ int main() {
+     std::mutex gate;
+     std::condition_variable cv;
+     int first_calls = 0, total_calls = 0;
++    unsigned observations = 0;
+     bool alpha_release = false, beta_release = false;
+-    Participants pool{Value{},
+-                      [&](std::string_view label, std::string_view raw, const Value &) {
+-                        check(std::this_thread::get_id() == owner && !label.empty() &&
+-                              !raw.empty());
+-                        if (label == "participant.admission")
+-                          admissions.emplace_back(raw);
+-                      },
+-                      [&](const Value &packet) {
+-                        check(std::this_thread::get_id() == owner);
+-                        saved = packet;
+-                      }};
++    Participants pool{
++        Value{},
++        [&](std::string_view label, std::string_view raw, const Value &meta) {
++          check(std::this_thread::get_id() == owner && !label.empty());
++          if (label == "participant.observation") {
++            check(raw.empty() && meta.find("time") && meta.find("started_time") &&
++                  meta.find("duration_ns") &&
++                  field(field(meta, "time"), "clock_id") == Value{"fixture-clock"} &&
++                  field(field(meta, "started_time"), "clock_id") ==
++                      Value{"fixture-clock"} &&
++                  string_field(meta, "requested_model") == "fake" &&
++                  string_field(meta, "usage_status") == "unavailable" &&
++                  string_field(meta, "request_id") != "");
++            if (string_field(meta, "status") == "completed")
++              check(string_field(meta, "actual_model") == "actual");
++            else
++              check(field(meta, "actual_model") == Value{});
++            ++observations;
++          } else
++            check(!raw.empty());
++          if (label == "participant.admission")
++            admissions.emplace_back(raw);
++        },
++        [&](const Value &packet) {
++          check(std::this_thread::get_id() == owner);
++          saved = packet;
++        },
++        {},
++        Value::object({{"clock_id", Value{"fixture-clock"}}})};
+     const ParticipantTransport transport = [&](const Value &prepared,
+                                                const ColleagueCapture &capture,
+                                                const std::function<bool()> &cancelled) {
+@@ -139,7 +158,8 @@ int main() {
+           string_field(rows[1], "state") == "completed");
+     check(string_field(field(rows[1], "result"), "text") == "answer:initial:d1" &&
+           !pool.active());
+-    check(total_calls == 3); // Accepted beta directions were cancelled before dispatch.
++    check(total_calls == 3 &&
++          observations == 3); // Queued beta directions never dispatch.
+     Participants reopened{crash_snapshot,
+                           [](std::string_view, std::string_view, const Value &) {},
+                           [](const Value &) {}};
+@@ -162,7 +182,44 @@ int main() {
+         });
+     const auto large = bounded_capture.join(
+         Value::object({{"run_ids", Value{Value::Array{Value{"large"}}}}}));
+-    check(string_field(field(large, "runs").array()[0], "state") == "unknown");
++    const auto &lost = field(large, "runs").array()[0];
++    check(string_field(lost, "state") == "unknown" &&
++          field(lost, "unretained_bytes") == Value{Number{9 * 1024 * 1024}} &&
++          field(lost, "unretained_events") == Value{Number{1}} &&
++          string_field(lost, "capture_status") == "incomplete");
++    unsigned long_dispatches = 0, long_observations = 0;
++    auto long_request = request("long");
++    for (auto &[name, item] : long_request.object())
++      if (name == "model" || name == "request_id")
++        item = Value{std::string(9000, name == "model" ? 'm' : 'r')};
++    Participants long_metadata{
++        Value{},
++        [&](std::string_view label, std::string_view raw, const Value &meta) {
++          if (label == "participant.observation") {
++            check(raw.empty() && field(meta, "requested_model") == Value{} &&
++                  field(meta, "request_id") == Value{} &&
++                  string_field(meta, "requested_model_status") == "bounded" &&
++                  string_field(meta, "request_id_status") == "bounded" &&
++                  string_field(meta, "status") == "completed");
++            ++long_observations;
++          }
++        },
++        [](const Value &) {}};
++    long_metadata.start(
++        "long", Value::object({{"request", long_request}}),
++        [&](const Value &prepared, const ColleagueCapture &capture,
++            const std::function<bool()> &) {
++          ++long_dispatches;
++          check(field(field(prepared, "request"), "model").string().size() == 9000);
++          capture("raw", "actually received");
++          return unwrap(parse_json(
++              R"({"status":"completed","model":"actual","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]})"));
++        });
++    const auto long_rows = long_metadata.join(
++        Value::object({{"run_ids", Value{Value::Array{Value{"long"}}}}}));
++    check(long_dispatches == 1 && long_observations == 1 &&
++          string_field(field(long_rows, "runs").array()[0], "state") == "completed" &&
++          !field(long_rows, "runs").array()[0].find("unretained_events"));
+     Participants failed_snapshot{
+         Value{}, [](std::string_view, std::string_view, const Value &) {},
+         [](const Value &) { throw Error{ErrorCode::io}; }};

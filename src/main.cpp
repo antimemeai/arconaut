@@ -73,7 +73,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
     std::string model = "gpt-6.1-sol", once, seed_path, backstop_path, station_path;
     Value backstop_mission;
     bool one = false, inspect = false, plain = false, rebuild_session = false,
-         expire_diagnostics = false;
+         expire_diagnostics = false, recover_unknown_effects = false;
     std::string effort = "medium";
     bool model_option = false, effort_option = false, workflow_option = false;
     bool resume_requested = false, discovery = false, switched_session = false;
@@ -91,7 +91,8 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
                      "[--plain] [--list-sessions [ROOT]] [--seed-session JSON] "
                      "[--backstop MISSION_JSON (requires --once)] "
                      "[--resume-continue|--resume-once] [--rebuild-session] "
-                     "[--expire-diagnostics]\nInteractive: /context, "
+                     "[--expire-diagnostics] [--recover-unknown-effects]\nInteractive: "
+                     "/context, "
                      "/originals, /restore "
                      "ENTRY, /lua CODE, /model NAME, /effort LEVEL, /workflow FILE, "
                      "/session, /new, "
@@ -116,6 +117,10 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       }
       if (arg == "--rebuild-session") {
         rebuild_session = true;
+        continue;
+      }
+      if (arg == "--recover-unknown-effects") {
+        recover_unknown_effects = true;
         continue;
       }
       if (arg == "--plain") {
@@ -252,14 +257,22 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       unwrap(root->confirm_recovery());
       if (!inspect) {
         try {
-          recover_coding_session(*root);
+          recover_coding_session(*root, recover_unknown_effects
+                                            ? RecoveryMode::acknowledge_local_unknowns
+                                            : RecoveryMode::provider_only);
+          if (recover_unknown_effects)
+            std::cerr << "Explicit recovery: abandoned local effects stay unknown. "
+                         "No command replay or old PID adoption; prior process "
+                         "containment is not established.\n";
         } catch (const Error &e) {
           if (e.code != ErrorCode::external_unknown)
             throw;
           std::cerr << "Session has an operation with uncertain custody; reopen cannot "
                        "grant permission to retry it. Inspect with --audit-last "
                        "(--rebuild-session for a large audit), resolve the effect "
-                       "outside this session, or select a new --session directory.\n";
+                       "outside this session, explicitly acknowledge structurally "
+                       "linked local unknowns with --recover-unknown-effects, or "
+                       "select a new --session directory.\n";
           return 1;
         }
       }
@@ -369,6 +382,9 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
     std::atomic_bool new_pending{false};
     OpenAiCodingProvider provider;
     CodingEngine engine{log, context, provider, model};
+    if (engine.uncontained_command_custody())
+      std::cerr << "Prior command custody remains unknown; restart and automatic "
+                   "backstop stay fenced. No old PID adopted or effect replayed.\n";
     // Convert an old derived state once, after the effective identity exists.
     // Unsupported station/restart states remain on independent full recovery.
     if (!root->compact_recovery()) {

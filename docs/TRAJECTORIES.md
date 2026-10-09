@@ -1,5 +1,11 @@
 # Instrumentation, evaluations and trajectories
 
+Operator AFK scope2026-10-09 authorizes instrumentation plus c54/05n bugs.
+Evaluation selection and execution wait for operator discussion. nls.2 is held
+with one lint finding at its declared hardening bound; bug fixes are independently
+checkpointed. [Actual disposition](NLS_AFK_SUBPLAN.md). Earlier evaluator proposals
+below are not selected; steering and further trajectory views stay deferred.
+
 Operator authorized this campaign after provider-auth integration on2026-10-09.
 Own the implementation. No telemetry SDK, evaluation framework or Entire runtime
 is adopted. Start from the causal audit we already retain.

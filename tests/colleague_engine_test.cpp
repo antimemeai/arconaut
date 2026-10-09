@@ -141,6 +141,21 @@ int main() {
       }
     }
     check(saw_unknown && saw_raw);
+    engine.colleague_transport = [&](const Value &,
+                                     const ColleagueCapture &capture) -> Value {
+      ++dispatches;
+      capture("raw", "ACTUAL_DISPATCH_THEN_ALLOCATION");
+      throw std::bad_alloc{};
+    };
+    const auto allocation = engine.operator_call("colleague", request);
+    check(string_field(allocation, "error") == "allocation" && dispatches == 6);
+    std::optional<AttemptObservationEvent> last_terminal;
+    for (const auto &fact : root->committed_facts())
+      if (const auto *observed = std::get_if<AttemptObservationEvent>(&fact.event.body);
+          observed && observed->phase == AttemptPhase::terminal)
+        last_terminal = *observed;
+    check(last_terminal && last_terminal->disposition == AttemptDisposition::unknown &&
+          unwrap(root->unresolved_attempts()).empty() && dispatches == 6);
     std::filesystem::remove_all(directory);
   } catch (const Error &error) {
     std::cerr << error_name(error.code) << '\n';

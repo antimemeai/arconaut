@@ -2003,7 +2003,8 @@ Value::Array RetainedState::current_programs() const {
       if (!latest.contains(name))
         latest[name] = packet;
     } else if (name == "session.settings" || name == "session.restart" ||
-               name.starts_with("station.") || name == "participants-state-v1")
+               name == "session.recovery" || name.starts_with("station.") ||
+               name == "participants-state-v1")
       latest[name] = packet;
     else if (name == "workflow-config-effective-v1") {
       if (const auto *value = packet.find("program_config"))
