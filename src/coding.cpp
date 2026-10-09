@@ -812,6 +812,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
       model_(std::move(model)), decision_models_(std::move(decisions)),
       identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
+  observations_ = std::make_unique<Observations>(log_);
   program_config_.object().emplace_back("workflows", default_workflows());
   program_config_.object().emplace_back("workflow_prefix", Json{""});
   program_revision_ = "builtin-ultracode-v1";
@@ -993,6 +994,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     protect_workflow(field(context_.view(), "entries").array(),
                      context_.pending_proposal());
   const auto began = std::chrono::steady_clock::now();
+  const auto began_time = observations_->time();
   if (operation_started)
     operation_started(name);
   if (status) {
@@ -1020,6 +1022,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                     {"input_binding", Json{"invocation-v1"}},
                     {"invocation", Json{hex_identity(invocation.bytes())}},
                     {"revision", Json{context_.head()}},
+                    {"time", began_time},
                     {"generation", Json{hex_identity(generation_.bytes())}}});
   const auto continuation = unwrap(dump_json(meta));
   const auto continuation_bytes =
@@ -1142,10 +1145,17 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     }
   }
   auto output = unwrap(dump_json(result));
+  const auto observed_time = observations_->time();
+  const auto duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               std::chrono::steady_clock::now() - began)
+                               .count();
   try {
-    log_.original({"operation.result", output,
-                   Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                                 {"operation", Json{std::string{name}}}})});
+    log_.original(
+        {"operation.result", output,
+         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
+                       {"time", observed_time},
+                       {"duration_ns", Json{JsonNumber{std::to_string(duration_ns)}}},
+                       {"operation", Json{std::string{name}}}})});
   } catch (const Error &e) {
     if (e.code != ErrorCode::capacity)
       throw;
@@ -1493,6 +1503,11 @@ Json CodingEngine::request(Json options) {
     previewed_.clear();
     try {
       response = operation("provider", request, [&](OperationAttemptId attempt) {
+        const auto admission = unwrap(log_.root().attempt(attempt));
+        const auto *instructions = request.find("instructions");
+        if (instructions && std::holds_alternative<std::string>(instructions->value()))
+          observations_->doctrine(instructions->string(),
+                                  admission.admission.invocation, attempt);
         log_.record(
             ApplicationChannel::log,
             Json::object(
@@ -1709,11 +1724,13 @@ Json CodingEngine::call(std::string name, Json arguments) {
         if (!record || record->channel != ApplicationChannel::log)
           continue;
         const auto packet = unwrap(parse_json(read_text(record->payload)));
+        const auto &label = string_field(packet, "label");
+        if (label != "operation.result" && label != "process.output")
+          continue;
         const auto &metadata = field(packet, "metadata");
         const auto *old_attempt = metadata.find("attempt");
         if (!old_attempt || old_attempt->string() != reference)
           continue;
-        const auto &label = string_field(packet, "label");
         if (label == "operation.result") {
           const auto *op = metadata.find("operation");
           if (op && op->string() == "exec")
@@ -1850,6 +1867,15 @@ Json CodingEngine::call(std::string name, Json arguments) {
       return log_.inspect(field(arguments, "query"));
     if (name == "trajectory_read")
       return log_.trajectory(field(arguments, "query"));
+    if (name == "variables_read") {
+      auto query = field(arguments, "query");
+      if (query.find("variables"))
+        throw Error{ErrorCode::invalid_range};
+      query.object().emplace_back("variables", Json{true});
+      return log_.trajectory(query);
+    }
+    if (name == "git_observe")
+      return observations_->git(arguments, cancelled);
     if (name == "participant_configure")
       return participants_->configure(arguments);
     if (name == "participant_read")

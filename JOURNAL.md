@@ -5570,3 +5570,44 @@ revision cadence or activation. Git author/committer timestamps, observed HEAD
 changes and actual loaded code are distinct variables; observations do not invent
 causality or complete effective intervals. No tests needed for this design-only
 correction; checked the document diff and saved issue backup.
+
+
+## 2026-10-09 — Timed trajectories and central-variable observations
+
+Implemented the operator-authorized timed unit on trajectories after network
+interruptions. Retained clock-domain provenance and UTC/monotonic acquisition
+pairs; existing operation admission/result metadata now carries start/result time
+and elapsed duration. Generic bounded samples live in the same audit and expose
+source locators. Effective final request instructions are the first doctrine proxy,
+with identity reuse for consecutive equal bytes within one observer. No registry,
+authoring, activation or routine revision cadence selected. No instruction change
+or duplicate instruction payload in chart samples.
+
+Explicit read-only Git acquisition records HEAD and history rooted at that SHA,
+keeping author/committer times separate from acquisition time. Removed parent
+Git environment overrides; bounded Child execution, history and outputs. Shared
+operator/model/Lua tools variables_read/git_observe and /variables, /git-observe,
+/correlate expose paged samples and point lanes. Clock synchronization unknown;
+no interpolated intervals, claimed loaded-code identity or causal interpretation.
+Existing journal bounds apply; diagnostics TTL30d untouched. No library adoption,
+provider traffic, startup benchmark or intervention in the running operator UI.
+Git format/time grounding and written90min/25min allowance in TRAJECTORIES.
+
+Direct Mac debug and release7-case scopes passed; Linux debug same7 passed,
+capture context/linux/run-s674dyxm. Native fixture covers wall-clock reversal,
+clock domains, third-variable extensibility, publication bounds, frozen-prefix
+append/reopen, exact doctrine input/source linkage and malformed/absent clocks.
+Actual CLI/Git fixture checks known commit/date values, unchanged repository file
+bytes, point lane display, unavailable lookup and rejected history bounds.
+Source remediation: retry fixture incorrectly assumed every application log had
+request metadata; production read_process_output made the same assumption for
+process metadata. Select relevant record labels first; existing retained-output
+and retry oracles pass. Variable summary only selects sample packets. Recheck
+remained scoped; no third assurance layer. Small bare-command usage path verified
+on release after rebuild.
+
+Updated current stock, README and usage/limits. Doctrine observation unit complete;
+broader clock alignment, commit metadata-time history lane, interval/outcome
+comparisons, reported usage/model/parent capture and integrated evaluations remain
+tracked. Save Beads backup and push the candidate branch, without implied main
+integration. Operator art files remain untracked and untouched.

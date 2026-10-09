@@ -566,6 +566,24 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
         } else if (prompt.starts_with("/auth ")) {
           emit("Use ./scripts/blackbird auth outside chat for sign-in/key/use/logout. "
                "Secret entry is excluded from session history.\n");
+        } else if (prompt == "/variables" || prompt.starts_with("/variables ") ||
+                   prompt == "/correlate" || prompt.starts_with("/correlate ")) {
+          const bool variables = prompt.starts_with("/variables");
+          const auto space = prompt.find(' ');
+          const auto query = space == std::string_view::npos
+                                 ? Json::object({})
+                                 : unwrap(parse_json(prompt.substr(space + 1)));
+          const auto result =
+              engine.operator_call(variables ? "variables_read" : "trajectory_read",
+                                   Json::object({{"query", query}}));
+          emit(result.find("events") ? correlation_plot(result)
+                                     : safe(unwrap(dump_json(result))) + "\n");
+        } else if (prompt == "/git-observe") {
+          emit("/git-observe {\"path\":\"/absolute/repository\",\"history\":8}\n");
+        } else if (prompt.starts_with("/git-observe ")) {
+          emit(safe(unwrap(dump_json(engine.operator_call(
+                   "git_observe", unwrap(parse_json(prompt.substr(13))))))) +
+               "\n");
         } else if (prompt == "/trace" || prompt.starts_with("/trace ")) {
           const auto query = prompt == "/trace" ? Json::object({})
                                                 : unwrap(parse_json(prompt.substr(7)));

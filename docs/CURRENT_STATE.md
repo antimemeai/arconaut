@@ -106,7 +106,12 @@ Candidate branch `trajectories` adds a shared committed metadata timeline with
 readable `/trace`, model `trajectory_read` and Lua calls. It bounds both examined
 facts and returned rows, pins historical prefixes and follows causal IDs to
 existing originals. Mac debug/release and Linux debug direct checks passed.
-Operational timing/usage metadata review, integrated evaluation runs, time-aligned
-central variable series (starting with commit history and effective doctrine)
-and richer inspect UI are subsequent units; none is implied
-implemented by this first reader. See [design](TRAJECTORIES.md).
+The next candidate unit adds UTC/monotonic operation timing and bounded central
+variable observations: effective request instructions and explicit read-only Git
+HEAD/history. `/variables` queries samples; `/correlate` plots work and sample
+points; `/git-observe` acquires Git samples. Operator, model and Lua use shared
+dispatch. Clock synchronization is unknown; samples leave gaps between them.
+The instruction representation is an observation proxy, with no doctrine registry
+or editing/activation API. Reported usage/model/parent-link audit review, integrated
+evaluation runs, measured clock alignment and richer inspect UI remain open.
+See [design and usage](TRAJECTORIES.md).

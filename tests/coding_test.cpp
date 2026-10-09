@@ -665,8 +665,8 @@ void retry_tests(const std::string &path) {
                            record->payload.size()}));
       if (!original.find("label"))
         continue;
-      const auto &metadata = field(original, "metadata");
       if (string_field(original, "label") == "provider.request") {
+        const auto &metadata = field(original, "metadata");
         ++requests;
         attempts.insert(string_field(metadata, "attempt"));
         const auto current = string_field(metadata, "retry_group");

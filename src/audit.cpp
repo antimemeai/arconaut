@@ -50,6 +50,19 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           if (e.payload.size() <= 65536 && (e.channel == ApplicationChannel::log ||
                                             e.channel == ApplicationChannel::program)) {
             const auto p = unwrap(parse_json(read_text(e.payload)));
+            if (const auto *t = p.find("time"))
+              add("time", *t);
+            if (const auto *variable = p.find("variable");
+                variable && std::holds_alternative<std::string>(variable->value()) &&
+                p.find("label") &&
+                std::holds_alternative<std::string>(p.find("label")->value()) &&
+                p.find("label")->string() == "variable.sample") {
+              add("variable", *variable);
+              for (const auto key :
+                   {"sample_id", "value", "source", "observation_status"})
+                if (const auto *v = p.find(key))
+                  add(key, *v);
+            }
             for (const auto key : {"label", "generation", "activation"})
               if (const auto *v = p.find(key);
                   v && std::holds_alternative<std::string>(v->value()) &&
@@ -63,6 +76,12 @@ Json summary(const RetainedFact &fact, std::size_t i) {
                     v && std::holds_alternative<std::string>(v->value()) &&
                     v->string().size() <= 256)
                   kept.emplace_back(key, *v);
+              if (const auto *t = m->find("time"))
+                add("time", *t);
+              if (const auto *duration = m->find("duration_ns"))
+                add("duration_ns", *duration);
+              if (const auto *operation = m->find("operation"))
+                add("operation", *operation);
               add("metadata", Json::object(std::move(kept)));
             }
           }
@@ -76,6 +95,9 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           add("payload_bytes", number(e.continuation.size()));
           if (e.continuation.size() <= 4096) {
             const auto packet = parse_json(read_text(e.continuation));
+            if (packet.has_value())
+              if (const auto *t = packet.value().find("time"))
+                add("time", *t);
             if (packet.has_value())
               if (const auto *name = packet.value().find("operation");
                   name && std::holds_alternative<std::string>(name->value()) &&
@@ -139,7 +161,7 @@ Json AuditLog::trajectory(const Json &q) {
   for (const auto &[key, value] : q.object()) {
     (void)value;
     if (key != "cursor" && key != "end" && key != "count" && key != "scan" &&
-        key != "attempt")
+        key != "attempt" && key != "variables" && key != "variable")
       throw Error{ErrorCode::invalid_range};
   }
   const auto end = index(q, "end", root_.fact_count());
@@ -147,6 +169,21 @@ Json AuditLog::trajectory(const Json &q) {
   if (end > root_.fact_count() || count == 0 || count > 64 || scan == 0 || scan > 256)
     throw Error{ErrorCode::invalid_range};
   std::string attempt, invocation, decision;
+  bool variables = false;
+  std::string variable;
+  if (const auto *v = q.find("variables")) {
+    const auto *b = std::get_if<bool>(&v->value());
+    if (!b)
+      throw Error{ErrorCode::invalid_range};
+    variables = *b;
+  }
+  if (const auto *v = q.find("variable")) {
+    const auto *s = std::get_if<std::string>(&v->value());
+    if (!s || s->empty() || s->size() > 64)
+      throw Error{ErrorCode::invalid_range};
+    variable = *s;
+    variables = true;
+  }
   if (const auto *selector = q.find("attempt")) {
     const auto *text = std::get_if<std::string>(&selector->value());
     if (!text || text->size() != 32)
@@ -168,8 +205,8 @@ Json AuditLog::trajectory(const Json &q) {
     invocation = hex_identity(state.admission.invocation.bytes());
     decision = hex_identity(state.admission.decision.bytes());
   }
-  const auto cursor =
-      index(q, "cursor", attempt.empty() ? (end > 128 ? end - 128 : 0) : 0);
+  const auto cursor = index(
+      q, "cursor", attempt.empty() && !variables ? (end > 128 ? end - 128 : 0) : 0);
   if (cursor > end)
     throw Error{ErrorCode::invalid_range};
   const auto stop = cursor + std::min(scan, end - cursor);
@@ -178,6 +215,11 @@ Json AuditLog::trajectory(const Json &q) {
   while (next < stop && rows.size() < count) {
     auto row = summary(unwrap(root_.fact(next)), next);
     ++next;
+    if (variables) {
+      const auto *v = row.find("variable");
+      if (!v || (!variable.empty() && v->string() != variable))
+        continue;
+    }
     if (!attempt.empty()) {
       auto matches = [&](std::string_view key, const std::string &value) {
         const auto *v = row.find(key);
@@ -185,11 +227,14 @@ Json AuditLog::trajectory(const Json &q) {
       };
       const auto *metadata = row.find("metadata");
       const auto *capture_attempt = metadata ? metadata->find("attempt") : nullptr;
+      const auto *source = row.find("source");
+      const auto *sample_attempt = source ? source->find("attempt") : nullptr;
       if (!matches("attempt", attempt) &&
           !(row.find("attempt") == nullptr && matches("invocation", invocation)) &&
           !(row.find("attempt") == nullptr && row.find("invocation") == nullptr &&
             matches("decision", decision)) &&
-          !(capture_attempt && capture_attempt->string() == attempt))
+          !(capture_attempt && capture_attempt->string() == attempt) &&
+          !(sample_attempt && sample_attempt->string() == attempt))
         continue;
     }
     const auto kind =

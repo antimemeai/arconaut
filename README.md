@@ -24,6 +24,8 @@ Startup carries a solid block BLACKBIRD wordmark and the operator-supplied SR-71
 in Ghostty/Kitty. First input moves the same image into a square status avatar,
 with an indicator: muted idle, cyan active, amber tool work, red failure.
 For native CPU/allocation investigation, see [Profiling](docs/PROFILING.md).
+The `trajectories` candidate adds `/trace`, `/variables`, `/correlate` and
+read-only `/git-observe`; see [trajectory usage and limits](docs/TRAJECTORIES.md).
 
 ## Come aboard
 

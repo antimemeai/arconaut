@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""Real Git/CLI variable and point-plot oracles in private fixtures; no provider."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+binary = str(Path(sys.argv[1]).resolve())
+with tempfile.TemporaryDirectory(prefix="blackbird-variables-") as tmp:
+    root = Path(tmp)
+    repo = root / "repo"
+    repo.mkdir()
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+    def git(*args, **kw):
+        return subprocess.check_output(["/usr/bin/git", "-C", str(repo), *args], env=env, **kw).decode().strip()
+    git("init", "-q")
+    git("config", "user.name", "Fixture")
+    git("config", "user.email", "fixture@example.invalid")
+    git("config", "commit.gpgsign", "false")
+    git("config", "core.hooksPath", str(root / "no-hooks"))
+    commit_env = dict(env, GIT_AUTHOR_DATE="2001-01-01T00:00:00+0000",
+                      GIT_COMMITTER_DATE="2002-01-01T00:00:00+0000")
+    subprocess.run(["/usr/bin/git", "-C", str(repo), "commit", "--allow-empty", "-qm", "first"], env=commit_env, check=True)
+    first = git("rev-parse", "HEAD")
+    commit_env.update(GIT_AUTHOR_DATE="2003-01-01T00:00:00+0000",
+                      GIT_COMMITTER_DATE="2004-01-01T00:00:00+0000")
+    subprocess.run(["/usr/bin/git", "-C", str(repo), "commit", "--allow-empty", "-qm", "second"], env=commit_env, check=True)
+    head = git("rev-parse", "HEAD")
+    before = {str(p.relative_to(repo)): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    # Parent overrides deliberately point outside the requested repo.
+    call_env = dict(env, GIT_DIR=str(root / "not-a-repository"), GIT_WORK_TREE=str(root))
+    def run(prompt):
+        return subprocess.check_output([binary, "--session", str(root / "session"), "--once", prompt],
+                                       stderr=subprocess.STDOUT, env=call_env, timeout=12).decode()
+    output = run('/git-observe ' + json.dumps({"path": str(repo), "history": 2}))
+    packets = [json.loads(line) for line in output.splitlines() if line.startswith('{')]
+    samples = packets[-1]["samples"]
+    assert samples[0]["variable"] == "git.head" and samples[0]["value"] == head
+    assert [p["value"]["commit"] for p in samples[1:]] == [head, first]
+    assert samples[1]["value"]["author_unix_seconds"] == 1041379200
+    assert samples[1]["value"]["committer_unix_seconds"] == 1072915200
+    assert samples[1]["time"]["utc_ns"] > 1700000000000000000, "metadata date became observation date"
+    assert all(p["time"]["synchronization"] == "unknown" for p in samples)
+    after = {str(p.relative_to(repo)): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    assert before == after, "observation changed Git files"
+    plot = run('/correlate {"cursor":0,"scan":256,"count":64}')
+    assert "git.head |" in plot and "git.commit |" in plot and "work.git_observe |" in plot
+    assert "synchronization unknown" in plot and "no intervals inferred" in plot
+    variables = run('/variables {"variable":"git.head"}')
+    assert "git.head |" in variables and head in variables
+    missing = run('/git-observe ' + json.dumps({"path": str(root), "history": 0}))
+    assert '"observation_status":"unavailable"' in missing
+    bad = run('/git-observe ' + json.dumps({"path": str(repo), "history": 65}))
+    assert "invalid_range" in bad
+print("Observation Git/CLI checks passed")

@@ -2,6 +2,7 @@
 #include "blackbird/beads.hpp"
 #include "blackbird/colleague.hpp"
 #include "blackbird/decision_models.hpp"
+#include "blackbird/observations.hpp"
 #include "blackbird/openai.hpp"
 #include "blackbird/participants.hpp"
 #include "blackbird/session.hpp"
@@ -140,6 +141,7 @@ private:
   SessionIdentity identity_;
   std::optional<std::string> restart_note_;
   DefinitionGenerationId generation_;
+  std::unique_ptr<Observations> observations_;
   std::unique_ptr<Runtime> runtime_;
   Json request(Json options = Json::object({}));
   Json call(std::string name, Json arguments);

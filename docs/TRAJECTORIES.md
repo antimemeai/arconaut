@@ -162,3 +162,97 @@ the sibling its own invocation), and compared JSON objects without relying on
 Lua/native object member order. A source review kept attempt filtering from
 including sibling attempts merely because they share a decision. Scoped audit
 and terminal checks remain green. No additional assurance layer.
+
+## Timed observations implementation unit
+
+Operator sent the corrected direction on2026-10-09. Allowance90min total,
+including at most25min two-layer hardening. Implement clock-stamped operation
+metadata and generic retained point observations; observe effective instruction
+bytes by reference without a doctrine authoring/activation API. Read-only explicit
+Git HEAD/history observations keep metadata times separate from observation time.
+Provide bounded variable queries and local operator point plots over the same
+trajectory page. No clock service control, automatic polling or universal variables
+inventory. Cross-host synchronization is unverified and shown unknown.
+
+Direct oracles: injected wall-clock adjustments with monotonic progression;
+clock domains/precision retained; third variable through the generic native API;
+invalid sample rejected before publication; prefix/page bounds and reopen; stable
+content observation for unchanged doctrine and source links; actual operator/Lua
+query and temporary-repo HEAD/history/author/committer values without Git writes;
+point plots never manufacture active intervals. Existing affected coding/trajectory/
+audit/terminal cases answer integration faults. Reuse native bounded Child and
+retained metadata; no dependency adoption. Git formatting grounded in
+[upstream documentation](https://git-scm.com/docs/pretty-formats); trace time
+representation informed by [OpenTelemetry time](https://opentelemetry.io/docs/specs/otel/trace/api/#time).
+
+## Timed observation usage and limits
+
+The `trajectories` candidate retains operation-start UTC/monotonic pairs and
+result observation time/duration in the existing audit. Each observer has a clock
+identity with host/process provenance. `sampling_span_ns` is the acquisition span
+of the local clock pair; it is not a measured UTC accuracy or cross-host offset.
+Synchronization remains unknown. Old, absent or malformed time metadata stays
+undated. Wall-clock adjustments are retained; monotonic durations remain local.
+
+```text
+/git-observe {"path":"/absolute/repository","history":8}
+/variables {"variable":"git.head","cursor":0,"count":64,"scan":256}
+/correlate {"cursor":0,"count":64,"scan":256}
+/trace {"attempt":"32-lowercase-hex-characters"}
+```
+
+The plot uses one UTC axis and separate named lanes. `o` marks a sampled point;
+`+` means several points occupy one column at the current width. Details give
+record locators, values and clock IDs. It draws no effective intervals. Multiple
+clock domains remain explicitly unaligned. The page reports `next` and `end`;
+continue with those as `cursor` and `end` to read the same finite prefix. A page
+can be empty while `next` advances. At most256 facts are examined and64 rows
+returned per call; a long history needs explicit paging.
+
+Models use `variables_read({query=...})`, `trajectory_read({query=...})` and
+`git_observe({path=...,history=...})`; Lua calls the same tools through
+`blackbird.call`. The owned native `Observations::sample(name,value,source,status)`
+accepts other named variables without choosing a universal inventory. Values and
+source objects are limited to4096 serialized bytes each; invalid samples are
+rejected before publication. Existing bounded journal capacity governs retention.
+There is no polling loop or separate authoritative timeline.
+
+`doctrine.effective` observes the final native request `instructions` field,
+including any composed guidance. Its source names the invocation, attempt and
+field, so existing `audit_inspect` can retrieve the original request input.
+Consecutive identical instruction bytes reuse a content-observation identity;
+a changed representation gets a new one. Restarting the observer also starts a
+new identity scope, which alone establishes no doctrine change. This is an
+**effective request representation**, not an established central-doctrine registry.
+It adds no editor, activation mechanism or routine revision cadence.
+
+Git observations explicitly invoke bounded read-only native Git commands.
+`git.head` records the HEAD found at acquisition time (or unavailable).
+`git.commit` preserves author/committer Unix seconds and parents from history
+rooted at that observed commit. Their sample UTC time records acquisition;
+it does not replace the original commit metadata times. Repository lookup and
+HEAD/history reads are separate calls, not an atomic snapshot. No transition time,
+worktree byte identity or loaded-executable identity is inferred. Git environment
+overrides are removed so they cannot silently redirect the requested repository.
+The first plot shows acquisition points; plotting commit metadata times as a
+separate historical axis and measuring cross-host alignment remain subsequent
+work in the campaign.
+
+## Timed unit verification
+
+Seven scoped cases passed on Mac debug/release (Clang23.1.2, Lua5.4.8)
+and Linux debug (Clang18.1.3, libstdc++13, Lua5.4.8): observations,
+observations_cli, trajectory, trajectory_cli, audit, terminal and coding.
+Linux capture: context/linux/run-s674dyxm. Local release build:
+context/observations-release-build.log. Private native fixtures exercise retained
+samples/reopen, clock reversal/domains, malformed clocks, unchanged instruction
+bytes and source links. Real CLI/Git fixtures compare known HEAD/history and
+separate authored/committed dates, verify Git file bytes remain unchanged,
+reject oversized history, and expose unavailable repositories. No provider call.
+
+Remediation scoped both the retry fixture and production process-output reader
+to their relevant audit record kinds before requiring request/process metadata.
+This preserves output retrieval with clock/sample records present. Generic sample
+selection ignores non-sample packets; malformed time metadata remains undated.
+The bare `/git-observe` usage path was checked locally after its small follow-up.
+No startup benchmark, certification or further assurance layer.
