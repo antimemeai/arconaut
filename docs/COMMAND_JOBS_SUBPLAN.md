@@ -57,3 +57,12 @@ Reopened final hardening starts12:27:21UTC through12:52:21UTC maximum. Direct
 Linux ASAN native and TSAN PTY remediation oracles pass; independent causal
 records distinguish fixture/runtime failures from product byte loss. One final
 changed-case host/profile recheck and required full commit gate remain.
+
+
+Reopened scope delivered: Linux descriptor fixture, PTY signal-safe reader and
+CAN/SUB screen oracle repairs pass all five cases on Mac release/ASAN/TSAN and
+Linux debug/release/ASAN. Source checkpoint6fa7c38 passed full debug84/84 plus all
+owned C++/Lua lint through the installed hook. Hardening concluded12:46:51UTC
+(19m30s of25min); no additional code or assurance layer follows. Record actual
+results and close/backup the issue. Documentation checkpoint also uses the required
+per-commit hook. Candidate activation/main integration remain separate.

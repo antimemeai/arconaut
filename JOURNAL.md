@@ -5944,3 +5944,19 @@ stable-snapshot Linux recheck continue. All final fixture/parser source and caus
 notes are ready. Updated README/current stock to distinguish candidate behavior
 from master and the inhabited operator executable. Checkpoint the implementation
 through the mandatory full clean-staged-tree hook; no activation implied.
+
+
+2026-10-09 12:46:51UTC reopened source unit complete: full clean-staged-tree hook
+passes84/84 debug (95.97s), all117 owned C++ units/headers and complete Lua lint
+(format/syntax/language server). Source checkpoint6fa7c38 contains the integrated
+command ownership unit and causal oracle fixes. Final five-case Mac release,
+ASAN and TSAN pass26.29s/38.91s/54.94s; Neuroses Linux debug/release/ASAN pass
+9.17s/8.64s/11.37s. No new suppression or dependency. Source hardening concludes
+19m30s after12:27:21 start, within25minutes; no third review or later code repair.
+
+Close arconaut-st9 with actual results and run supported Beads backup. Update
+qualification/current stock/subplan to replace pending claims with observed gate
+success, preserving historical failures. Push command-jobs to configured origin;
+main and inhabited operator executable remain unchanged. This documentation/issue
+closure checkpoint invokes the same mandatory every-commit hook without expanding
+source hardening or its allowance. Reopened total scope remains60minutes.

@@ -27,9 +27,10 @@ text interface with escaped output, not a full-screen terminal emulator. Active 
 unsettled commands block restart/session switching; shutdown joins owned jobs and
 crash recovery never adopts an old PID or replays an old command.
 
-The two reopened failing oracles have causal fixes. The single final profile
-recheck and mandatory full debug/C++/Lua checkpoint gate determine qualification;
-[results](../papers/2026-10-09-command-jobs/qualification.md) distinguish actual
+The two reopened failing oracles have causal fixes. Final changed-case rechecks
+pass on Mac release/ASAN/TSAN and Linux debug/release/ASAN, and source checkpoint
+`6fa7c38` passes full debug84/84 and all owned C++/Lua lint.
+[Results](../papers/2026-10-09-command-jobs/qualification.md) distinguish actual
 passes from historical failures. This candidate has not been merged into master
 or activated in the running operator executable. Steering and additional
 trajectory implementation remain deferred. [Design](COMMAND_JOBS.md) and

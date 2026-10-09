@@ -1,18 +1,49 @@
 # Command jobs qualification status
 
-Operator explicitly reopened2026-10-09 at12:16:37UTC to fix the retained bugs.
-Both causal repairs and direct Linux ASAN/TSAN PTY oracles are complete. The
-single final affected profile recheck and complete staged-tree debug plus all
-owned C++/Lua lint gate are underway. Candidate remains inactive pending explicit
-main integration/activation. See bug-fixes.md and tsan-pty-remediation.md for actual
-causes; the Linux failure was the resource child, mislabeled closed-stdio by the
-old shared assertion. Earlier failures below remain historical evidence.
+The reopened bugs are fixed. Candidate implementation checkpoint `6fa7c38`
+passed the complete installed clean-staged-tree hook:84/84 debug tests, all117
+owned C++ translation units/headers, Lua formatting/syntax and Lua language-server
+analysis. This qualifies the candidate's described command behavior and tested
+fault classes; main integration and operator activation remain separate.
 
-Mac release and ASAN final five-case rechecks pass (command native/engine/PTY/
-station and chat_render_oracle). Final TSAN and Linux debug/release/ASAN results
-will be recorded after completion. Required full hook is still outstanding;
-focused passes do not substitute for it. Final hardening starts12:27:21UTC and
-remains bounded through12:52:21UTC, with no extra review layer.
+| Final changed-case recheck | Actual result | Capture |
+| --- | --- | --- |
+| Mac release |5/5 pass,26.29s | context/command-jobs/release-reopened-tests.log |
+| Mac ASAN/UBSan |5/5 pass,38.91s | context/command-jobs/asan-reopened-tests.log |
+| Mac TSAN |5/5 pass,54.94s | context/command-jobs/tsan-reopened-tests.log |
+| Linux debug |5/5 pass,9.17s | context/linux/run-8itb2wba/checks.log |
+| Linux release |5/5 pass,8.64s | same capture |
+| Linux ASAN/UBSan |5/5 pass,11.37s | same capture |
+| Full debug plus all owned C++/Lua lint |84/84 pass,95.97s tests; full lint pass; hook exit0 | context/command-jobs/checkpoint-reopened.log |
+
+The five changed cases are command_jobs, command_jobs_engine, command_jobs_pty,
+command_jobs_station and chat_render_oracle. Existing unrelated debug cases ran
+because the operator requires the complete hook before every commit. No new
+suppression, dependency, provider call or additional review was introduced.
+
+The Linux diagnostic originated in the resource fixture before process dispatch:
+RLIMIT_NOFILE3 starved LLVM18's temporary pipe used to inspect a valid vptr. A
+valid-object reproducer, primary runtime source, symbolized original frame and
+CTest's inherited log descriptor discriminate this from a demonstrated Value
+lifetime defect. The corrected fixture leaves two checked sanitizer slots, still
+forces real EMFILE, joins before observations, and requires no launch effect,
+no fabricated exit, no custody debt and exactly one terminal.
+
+The resize case retained complete admitted input and private tty echo while the
+shell fixture recorded a truncated command. Its replacement preserves terminal
+semantics and records every actual reader byte before parsing. The screen oracle
+now handles CAN/SUB cancellation of a partial control before terminal restoration,
+while continuing to reject uncancelled malformed/truncated streams. See
+[causal fixes](bug-fixes.md) and [PTY evidence](tsan-pty-remediation.md).
+
+Source hardening concluded12:46:51UTC,19m30s after its declared12:27:21UTC start,
+within the existing25minute allowance. The evidence/issue-closure documentation
+checkpoint follows the same mandatory per-commit hook; it introduces no product
+change or new qualification campaign. The operator's explicitly reopened60minute
+total scope remains unchanged. Running operator executable and supplied art are
+untouched; no master merge, activation, steering or additional trajectory work.
+
+Earlier stopped-unit results below remain historical failures, not final status.
 
 # First bounded unit results
 
