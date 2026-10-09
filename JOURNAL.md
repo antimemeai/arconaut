@@ -5443,3 +5443,17 @@ Read official OpenAI app-owned token guidance and Claude authentication docs;
 recorded owning lifecycle design in NEXT_CAMPAIGN and existing arconaut-uaa.5.
 No auth expiry diagnosis, credential output/change, extra probe or production
 implementation in this follow-through.
+
+## 2026-10-08 — How OpenCode authenticates Claude
+
+Operator asked for actual OpenCode mechanics behind the supported-path wording.
+Read current upstream plugin registry, merged PR18186 dated2026-03-19, current
+griffinmartin/opencode-claude-auth credentials/request code and README, and the
+published former builtin opencode-anthropic-auth0.0.13 tarball in memory. No
+reference code executed/installed, credentials read, or provider calls made.
+Historical plugin owned PKCE browser login/exchange/storage/refresh and sent
+Claude CLI identification; upstream removed it per legal requests. Current
+community plugin examined borrows Claude Code credentials, owns some refresh
+and direct inference, falls back to CLI. Recorded the distinction in NEXT_CAMPAIGN
+so the design does not mistake credential borrowing for independent login or
+technical feasibility for an approved application client. No auth implementation.

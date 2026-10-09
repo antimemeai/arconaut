@@ -205,3 +205,18 @@ Claude's [authentication documentation](https://code.claude.com/docs/en/authenti
 is the starting point for its own supported options; a working CLI credential
 is not evidence of a third-party app login entitlement. Existing arconaut-uaa.5
 is the owning design task. No credential files were printed or changed.
+
+OpenCode source follow-through: the formerly bundled
+`opencode-anthropic-auth@0.0.13` performed browser PKCE authorization, code exchange,
+local token storage and direct refresh with the Claude OAuth client ID; inference
+used bearer tokens plus Claude CLI identification headers. Inspected the published
+NPM package in memory, without executing or installing it. OpenCode
+[removed that builtin on2026-03-19](https://github.com/anomalyco/opencode/pull/18186)
+per Anthropic legal requests. This establishes historical mechanics, not present
+first-party support. The current community
+[opencode-claude-auth source](https://github.com/griffinmartin/opencode-claude-auth)
+reads Claude Code Keychain/credential files, refreshes directly with CLI fallback,
+and sends direct API requests with Claude Code identity headers/prompt transforms.
+That implementation still starts from another harness's credentials. Study these
+mechanisms without conflating technically independent OAuth with provider-approved
+application access, or borrowed credential refresh with independent registration.
