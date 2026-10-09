@@ -35,41 +35,55 @@ The first useful interface should evaluate selected retained trajectories with a
 explicit bounded Lua evaluator, then compare two named runs. No automatic scoring,
 promotion, self-replay or model-judge ceremony.
 
-## Checkpoints are an interface
+## Trajectories correlated with central variables
 
-Operator clarification: generalize Entire's checkpoint idea. Git is one target;
-central doctrine is another prospective target. The checkpoint interface must
-allow further targets without enumerating every variable or selecting their
-storage/restore mechanisms now.
+Operator correction supersedes the prior Entire-derived abstraction. The product
+is trajectories plotted against time-indexed central variables. There is no
+capture/restore object organizing this campaign. Start with commit history and
+active central doctrine; keep the variable interface extensible without defining
+all variables up front.
 
-A checkpoint identifies selected state at a trajectory boundary: target identity,
-observed version, retained material or references, and capture outcome. Each target
-declares what it can capture, inspect, compare and, where supported, restore.
-Capture does not require a commit, publication, activation or restoration. A target
-may support inspection/comparison without restoration. A checkpoint containing
-several targets reports each one's result and consistency boundary; it does not
-pretend independently observed state was captured atomically.
+A trajectory describes observed work and its causal links. A variable supplies
+observations or changes with source identity, value/version, time information and
+availability. Join these for aligned plots, comparisons and bounded queries.
+Variables may be categorical (commit, doctrine identity) or numeric (duration,
+reported usage, evaluation result). Preserve source locators so a plotted value
+can be inspected. Do not duplicate original payloads into chart data.
 
-Git checkpoints join a trajectory prefix to repo/worktree identity, HEAD, index
-and observed file deltas. Exact mediated file writes can be causally attributed;
-an arbitrary exec or concurrent external edit cannot. Keep observed changes and
-claimed authorship separate. Link review/research runs even when no files change.
-Initial checkpoints are local and explicit. Export is a derived, selected bundle
-with payload availability and exclusions listed; it never automatically pushes
-private audit/transcripts. Later restore must distinguish code restoration,
-conversation continuation and external-effect reconciliation.
+Use a shared time axis with explicit clock domains. Pair local monotonic readings
+with UTC wall-time observations and process/host identity; retain alignment
+information, measured offsets/uncertainty when available, and clock adjustments.
+Monotonic clocks order/duration work within their domain; they are not directly
+comparable across processes/hosts. Show uncertainty or missing alignment rather
+than drawing falsely precise overlaps. Use existing causal links where available;
+clock proximity supplies correlation, not causation. Clock synchronization and
+its observability are an owning implementation question, not assumed established.
 
-Introduce **central doctrine** as the product concept in place of "system prompt."
-Its content, revisions and effective use belong in retained work. Provider request
-roles/serialization remain adapter details. A doctrine checkpoint should identify
-the doctrine revision and connect it to its effective request representation;
-editing, activating and checkpointing doctrine are distinct acts. How doctrine is
-authored, scoped, composed and shared remains design work, rather than assumptions
-embedded in this checkpoint interface.
+Commit history is one variable series: retain original author/committer times,
+repository/worktree identity, and separately the observed time a commit became
+HEAD in the working environment. Commit timestamps alone do not say when that
+code governed a run. Loaded executable/program identity is another possible
+series, distinct from checkout HEAD. Uncommitted changes and external writers
+remain explicit limits on any code attribution.
 
-Keep a shared checkpoint identity/trajectory link and target-specific capabilities.
-Git's commit/branch vocabulary must stay in its implementation. This is a design
-interface; no checkpoint target or central-doctrine runtime is implemented yet.
+**Central doctrine** replaces "system prompt" as the product concept. Observe
+which doctrine content/version was effective for work and link that observation
+to the retained request representation. An observation of effective doctrine
+introduces no authoring tool, routine revision cadence or turn-boundary activation
+rule. Doctrine can remain unchanged over many trajectories. Scope, composition,
+sharing and change authority remain open design questions.
+
+The variable interface is about observing and aligning values, not owning their
+lifecycles. For state-valued series, record effective intervals only when their
+boundaries are observed; point samples leave uncertainty between samples. Do not
+silently fill gaps or infer a change happened at the time it was discovered.
+
+The integrated view should let the operator align trajectory events with these
+variable lanes, select an interval or value, compare associated runs and outcomes,
+and drill into source material. This gives correlative muscle: discover patterns,
+form hypotheses and choose explicit evaluations. An association does not establish
+that changing the variable caused an improvement. File restoration, Git commits,
+doctrine editing and publication are independent operations, outside this surface.
 
 ## Grounding and design review
 
@@ -107,7 +121,7 @@ metadata views must not read enormous originals; query operations must not creat
 an automatic self-observation loop; expired diagnostics must remain visibly
 unavailable; a Git attribution heuristic must not masquerade as observed causation.
 First slice resolves the first four through a stateless paged metadata reader and
-explicit source drill-down. Later units own diagnostic/export and Git semantics.
+explicit source drill-down. Later units own diagnostic/export and time-aligned variable semantics.
 
 ## Implementation sequence
 
@@ -118,9 +132,9 @@ explicit source drill-down. Later units own diagnostic/export and Git semantics.
    observations. Define a finite capture matrix before changing persistence.
 3. Retained evaluation definitions/runs, case results, comparison and annotation
    interfaces over explicit selected inputs. Exercise with useful real failures.
-4. General checkpoint interface and explanation links, with Git as one target
-   and central doctrine as another design case. Explicit local bundles; supported
-   restoration exposes concurrency and unknown effects per target.
+4. Time-indexed variable interface and aligned trajectory plots, starting with
+   commit history and observed effective doctrine. Preserve clock alignment,
+   uncertainty, provenance and the distinction between association and causation.
 5. Integrated inspect/evaluate UI and optional interoperable trace export.
 
 First slice allowance45min including at most15min hardening/two layers. Direct

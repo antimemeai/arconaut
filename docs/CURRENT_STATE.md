@@ -106,7 +106,7 @@ Candidate branch `trajectories` adds a shared committed metadata timeline with
 readable `/trace`, model `trajectory_read` and Lua calls. It bounds both examined
 facts and returned rows, pins historical prefixes and follows causal IDs to
 existing originals. Mac debug/release and Linux debug direct checks passed.
-Operational timing/usage metadata review, integrated evaluation runs, a general
-checkpoint interface (including Git and prospective central doctrine) and richer
-inspect UI are subsequent units; none is implied
+Operational timing/usage metadata review, integrated evaluation runs, time-aligned
+central variable series (starting with commit history and effective doctrine)
+and richer inspect UI are subsequent units; none is implied
 implemented by this first reader. See [design](TRAJECTORIES.md).

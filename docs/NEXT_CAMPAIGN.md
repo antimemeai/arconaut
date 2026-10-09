@@ -261,8 +261,10 @@ and upgrades, tracing/trajectories and owned Entire-like machinery.
 Auth integration is complete; live sign-in and remote revocation stay separate
 follow-through. [Trajectory design](TRAJECTORIES.md) sequences the next major
 effort. First candidate slice implements shared bounded metadata reading and
-`/trace`; following units add operational capture metadata, evaluations, a general
-checkpoint/explanation interface and integrated UI/export. Git is one checkpoint
-target, not the interface's organizing model. Central doctrine replaces "system
-prompt" as the product concept and supplies another checkpoint design case.
-Target capabilities, storage and restoration remain open. No new dependency selected.
+`/trace`; following units add operational capture metadata, evaluations, and
+trajectories plotted against time-indexed central variables. Begin with commit
+history and observed active central doctrine, using aligned clocks with explicit
+uncertainty and source linkage. The variable interface stays extensible. Central
+doctrine replaces "system prompt" as the product concept; observation introduces
+no routine editing or per-turn activation mechanism. Integrated UI/export follows.
+No new dependency selected. See TRAJECTORIES for the operator's latest correction.

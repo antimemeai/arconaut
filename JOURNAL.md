@@ -5551,3 +5551,22 @@ multi-target capture does not imply atomicity. Doctrine scope/composition/sharin
 and concrete target storage remain open. No runtime or capture format changed.
 Reopened the campaign epic, which Beads had auto-closed when its first child was
 closed before the remaining children were created; remaining work is still open.
+
+## 2026-10-09 — Trajectories and correlative variables replace the inherited framing
+
+Operator rejects the Entire-derived checkpoint concept entirely for this campaign.
+Actual aim: trajectories plotted against central variables, such as commit-history
+time series with synchronized clocks and the doctrine effective during work.
+Replaced the active design/interface and backlog scope with extensible observation
+series, clock alignment/uncertainty, source linkage and correlated views. Historical
+reference filenames and earlier journal entries remain historical; the existing
+/checkpoint storage-maintenance command is unrelated to the rejected product idea.
+
+The interrupted implementation turn had changed only Beads: marked nls.4 active
+and created nls.6 for doctrine editing/activation. No runtime code or product plan
+implementation was written. That doctrine-editing scope was an unwarranted jump;
+repurposed nls.6 to observe effective doctrine without specifying authoring,
+revision cadence or activation. Git author/committer timestamps, observed HEAD
+changes and actual loaded code are distinct variables; observations do not invent
+causality or complete effective intervals. No tests needed for this design-only
+correction; checked the document diff and saved issue backup.
