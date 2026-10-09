@@ -5787,3 +5787,36 @@ our subscription endpoint capability. No provider call, imported execution,
 production change, dependency selection or design adoption. Research is complete;
 runtime work awaits the requested discussion. Beads backed up. Commit/push this
 research through the installed clean-slate hook; operator art remains untouched.
+
+## 2026-10-09 — Returning colleague orientation
+
+Operator requests orientation and proposed next steps before further work. Read
+workspace/repo doctrine, foundation/core/implementation documents, current stock,
+trajectory and steering notes, recent journal and commits, live Beads state and
+direct terminal/turn/request/participant source. No runtime implementation,
+provider call, account inspection or candidate activation.
+
+Checkout starts at pushed trajectories c499a2b, eight commits ahead of master
+59539d3, with only supplied art untracked. Steering investigation is complete;
+its design remains for discussion. Source confirms busy input queues another
+whole workflow, provider requests have fixed input, and cancellation unwinds Lua.
+Participant directions apply after a request. Proposed next unit preserves active
+work while accepting ordered directions and gating subsequent tool dispatch;
+provider-native steering needs a bounded subscription-endpoint capability trial,
+with inference-only restart considered separately from workflow cancellation.
+These are proposals, not an adopted design or resumed implementation campaign.
+
+Trajectories already provide bounded causal metadata queries, timed observations,
+explicit Git acquisition and sampled correlation lanes. Audit capture gaps,
+retained evaluator runs/comparisons, measured clock alignment and integrated UI
+remain open. Use steering continuity/correction cases as a concrete first
+evaluation workload. Claude source finding triage is separately actionable;
+historical Giga remains paused. Older current-stock/backlog text and some issue
+descriptions lag delivered auth/lint work and need narrow reconciliation.
+
+Latest prior commit capture records 80/80 debug tests and clean lint. Candidate
+native formats intentionally have no old-format reader. Interactive launcher
+prefers blackbird-ui dated October8, while blackbird is dated October9; loaded
+generation and candidate activation must be explicit before claiming field
+behavior. Do not overwrite a running operator session or imply master integration.
+Record/backup this orientation and checkpoint through the installed hook.
