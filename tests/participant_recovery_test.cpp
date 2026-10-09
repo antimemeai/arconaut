@@ -1,4 +1,6 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -14,7 +16,7 @@ template <class T> T id(unsigned char value) {
 class Provider final : public CodingProvider {
 public:
   int calls = 0;
-  Json respond(const Json &, const std::function<void(std::string_view)> &) override {
+  Value respond(const Value &, const std::function<void(std::string_view)> &) override {
     ++calls;
     throw Error{ErrorCode::corrupt};
   }
@@ -54,14 +56,15 @@ void scenario(const std::filesystem::path &path, std::string_view operation,
       revision_bytes[i] = static_cast<std::byte>(
           std::stoul(context.head().substr(2 * i, 2), nullptr, 16));
     const auto revision = unwrap(ContextRevisionId::from_bytes(revision_bytes));
-    const auto input = unwrap(dump_json(Json::object({{"request", Json::object({})}})));
+    const auto input =
+        unwrap(encode_packet_string(Value::object({{"request", Value::object({})}})));
     const auto bytes = std::as_bytes(std::span{input.data(), input.size()});
-    const auto metadata = unwrap(
-        dump_json(Json::object({{"operation", Json{std::string{operation}}},
-                                {"input_binding", Json{"invocation-v1"}},
-                                {"invocation", Json{hex_identity(invocation.bytes())}},
-                                {"generation", Json{hex_identity(generation.bytes())}},
-                                {"revision", Json{context.head()}}})));
+    const auto metadata = unwrap(encode_packet_string(
+        Value::object({{"operation", Value{std::string{operation}}},
+                       {"input_binding", Value{"invocation-v1"}},
+                       {"invocation", Value{hex_identity(invocation.bytes())}},
+                       {"generation", Value{hex_identity(generation.bytes())}},
+                       {"revision", Value{context.head()}}})));
     const auto continuation =
         std::as_bytes(std::span{metadata.data(), metadata.size()});
     const std::array<RetainedEvent, 3> admission{
@@ -85,18 +88,18 @@ void scenario(const std::filesystem::path &path, std::string_view operation,
     unwrap(root->append(root->cursor(), {}, admission));
     if (allowed)
       log.record(ApplicationChannel::program,
-                 Json::object({{"label", Json{"participants-state-v1"}},
-                               {"concurrency", Json{JsonNumber{"2"}}},
-                               {"runs", Json{Json::Array{Json::object(
-                                            {{"run_id", Json{run_id}},
-                                             {"state", Json{"running"}},
-                                             {"cancel_requested", Json{false}},
-                                             {"task_id", Json{""}},
-                                             {"provider", Json{"openai"}},
-                                             {"model", Json{"fake"}},
-                                             {"from", Json{"main"}},
-                                             {"to", Json{"peer"}},
-                                             {"result", Json{}}})}}}}));
+                 Value::object({{"label", Value{"participants-state-v1"}},
+                                {"concurrency", Value{Number{"2"}}},
+                                {"runs", Value{Value::Array{Value::object(
+                                             {{"run_id", Value{run_id}},
+                                              {"state", Value{"running"}},
+                                              {"cancel_requested", Value{false}},
+                                              {"task_id", Value{""}},
+                                              {"provider", Value{"openai"}},
+                                              {"model", Value{"fake"}},
+                                              {"from", Value{"main"}},
+                                              {"to", Value{"peer"}},
+                                              {"result", Value{}}})}}}}));
     Boundary boundary;
     const auto report = unwrap(root->dispatch(attempt, boundary));
     unwrap(report.recording);
@@ -123,10 +126,10 @@ void scenario(const std::filesystem::path &path, std::string_view operation,
     ContextStore context{log};
     Provider provider;
     CodingEngine engine{log, context, provider, "fake"};
-    const auto result = engine.operator_call("participant_read",
-                                             Json::object({{"run_id", Json{run_id}}}));
+    const auto result = engine.operator_call(
+        "participant_read", Value::object({{"run_id", Value{run_id}}}));
     check(string_field(result, "state") == "unknown" &&
-          field(result, "reopened") == Json{true} && provider.calls == 0);
+          field(result, "reopened") == Value{true} && provider.calls == 0);
   }
 }
 int main() {

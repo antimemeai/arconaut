@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/participants.hpp"
 #include "blackbird/tools.hpp"
 #include <algorithm>
@@ -11,41 +12,41 @@ void check(bool good) {
   if (!good)
     throw Error{ErrorCode::corrupt};
 }
-Json request(std::string who) {
+Value request(std::string who) {
   auto value = unwrap(parse_json(
       R"({"request_id":"initial","from":"main","to":"alpha","provider":"openai","model":"fake","task":"source review","context":[{"id":"s1","text":"selected"}],"profile":{"name":"context-only","provenance":"test","timeout_seconds":3,"tools":"none","requests":1}})"));
   for (auto &[name, item] : value.object())
     if (name == "to")
-      item = Json{who};
+      item = Value{who};
   return value;
 }
-Json args(std::string id) { return Json::object({{"run_id", Json{id}}}); }
-Json send(std::string run, std::string message, std::string text = "direction") {
-  return Json::object({{"run_id", Json{run}},
-                       {"message_id", Json{message}},
-                       {"from", Json{"operator"}},
-                       {"text", Json{text}}});
+Value args(std::string id) { return Value::object({{"run_id", Value{id}}}); }
+Value send(std::string run, std::string message, std::string text = "direction") {
+  return Value::object({{"run_id", Value{run}},
+                        {"message_id", Value{message}},
+                        {"from", Value{"operator"}},
+                        {"text", Value{text}}});
 }
 int main() {
   try {
     const auto owner = std::this_thread::get_id();
-    Json saved;
+    Value saved;
     std::vector<std::string> admissions;
     std::mutex gate;
     std::condition_variable cv;
     int first_calls = 0, total_calls = 0;
     bool alpha_release = false, beta_release = false;
-    Participants pool{Json{},
-                      [&](std::string_view label, std::string_view raw, const Json &) {
+    Participants pool{Value{},
+                      [&](std::string_view label, std::string_view raw, const Value &) {
                         check(std::this_thread::get_id() == owner && !raw.empty());
                         if (label == "participant.admission")
                           admissions.emplace_back(raw);
                       },
-                      [&](const Json &packet) {
+                      [&](const Value &packet) {
                         check(std::this_thread::get_id() == owner);
                         saved = packet;
                       }};
-    const ParticipantTransport transport = [&](const Json &prepared,
+    const ParticipantTransport transport = [&](const Value &prepared,
                                                const ColleagueCapture &capture,
                                                const std::function<bool()> &cancelled) {
       const auto &r = field(prepared, "request");
@@ -69,17 +70,17 @@ int main() {
       if (delivery != "initial")
         check(string_field(r, "task").find("direction") != std::string::npos);
       capture("raw", "captured provider bytes");
-      const auto text = Json::object(
-          {{"type", Json{"output_text"}}, {"text", Json{"answer:" + delivery}}});
-      const auto message = Json::object({{"type", Json{"message"}},
-                                         {"role", Json{"assistant"}},
-                                         {"content", Json{Json::Array{text}}}});
-      return Json::object({{"status", Json{"completed"}},
-                           {"model", Json{"actual"}},
-                           {"output", Json{Json::Array{message}}}});
+      const auto text = Value::object(
+          {{"type", Value{"output_text"}}, {"text", Value{"answer:" + delivery}}});
+      const auto message = Value::object({{"type", Value{"message"}},
+                                          {"role", Value{"assistant"}},
+                                          {"content", Value{Value::Array{text}}}});
+      return Value::object({{"status", Value{"completed"}},
+                            {"model", Value{"actual"}},
+                            {"output", Value{Value::Array{message}}}});
     };
-    pool.start("r1", Json::object({{"request", request("alpha")}}), transport);
-    pool.start("r2", Json::object({{"request", request("beta")}}), transport);
+    pool.start("r1", Value::object({{"request", request("alpha")}}), transport);
+    pool.start("r2", Value::object({{"request", request("beta")}}), transport);
     {
       std::unique_lock lock{gate};
       check(
@@ -88,20 +89,20 @@ int main() {
     check(admissions.size() == 2 && pool.active());
     bool cap = false;
     try {
-      pool.start("r3", Json::object({{"request", request("third")}}), transport);
+      pool.start("r3", Value::object({{"request", request("third")}}), transport);
     } catch (const Error &e) {
       cap = e.code == ErrorCode::capacity;
     }
     check(cap && admissions.size() == 2);
     auto timed_args = args("r2");
-    timed_args.object().emplace_back("timeout_ms", Json{JsonNumber{"1"}});
-    check(field(pool.await(timed_args), "await_timed_out") == Json{true});
+    timed_args.object().emplace_back("timeout_ms", Value{Number{"1"}});
+    check(field(pool.await(timed_args), "await_timed_out") == Value{true});
     const auto crash_snapshot = saved;
-    check(field(pool.send(send("r1", "d1")), "accepted") == Json{true});
-    check(field(pool.send(send("r1", "d1")), "duplicate") == Json{true});
+    check(field(pool.send(send("r1", "d1")), "accepted") == Value{true});
+    check(field(pool.send(send("r1", "d1")), "duplicate") == Value{true});
     auto reordered = send("r1", "d1");
     std::reverse(reordered.object().begin(), reordered.object().end());
-    check(field(pool.send(reordered), "duplicate") == Json{true});
+    check(field(pool.send(reordered), "duplicate") == Value{true});
     bool conflict = false;
     try {
       pool.send(send("r1", "d1", "different"));
@@ -120,7 +121,7 @@ int main() {
     check(cap);
     pool.cancel(args("r2"));
     const auto requested = pool.read(args("r2"));
-    check(field(requested, "cancel_requested") == Json{true} &&
+    check(field(requested, "cancel_requested") == Value{true} &&
           string_field(requested, "state") == "running");
     {
       std::lock_guard lock{gate};
@@ -129,7 +130,7 @@ int main() {
     }
     cv.notify_all();
     const auto joined = pool.join(
-        Json::object({{"run_ids", Json{Json::Array{Json{"r2"}, Json{"r1"}}}}}));
+        Value::object({{"run_ids", Value{Value::Array{Value{"r2"}, Value{"r1"}}}}}));
     const auto &rows = field(joined, "runs").array();
     check(string_field(rows[0], "run_id") == "r2" &&
           string_field(rows[0], "state") == "unknown");
@@ -139,57 +140,57 @@ int main() {
           !pool.active());
     check(total_calls == 3); // Accepted beta directions were cancelled before dispatch.
     Participants reopened{crash_snapshot,
-                          [](std::string_view, std::string_view, const Json &) {},
-                          [](const Json &) {}};
+                          [](std::string_view, std::string_view, const Value &) {},
+                          [](const Value &) {}};
     check(!reopened.active() &&
           string_field(reopened.read(args("r1")), "state") == "unknown");
     check(string_field(reopened.read(args("r2")), "state") == "unknown" &&
           total_calls == 3);
     pool.archive(args("r1"));
-    pool.configure(Json::object({{"concurrency", Json{JsonNumber{"3"}}}}));
+    pool.configure(Value::object({{"concurrency", Value{Number{"3"}}}}));
     check(field(pool.read(), "runs").array().size() == 1);
     Participants bounded_capture{
-        Json{}, [](std::string_view, std::string_view, const Json &) {},
-        [](const Json &) {}};
+        Value{}, [](std::string_view, std::string_view, const Value &) {},
+        [](const Value &) {}};
     bounded_capture.start(
-        "large", Json::object({{"request", request("large")}}),
-        [](const Json &, const ColleagueCapture &capture,
-           const std::function<bool()> &) -> Json {
+        "large", Value::object({{"request", request("large")}}),
+        [](const Value &, const ColleagueCapture &capture,
+           const std::function<bool()> &) -> Value {
           capture("raw", std::string(9 * 1024 * 1024, 'x'));
           throw Error{ErrorCode::corrupt}; // oversized capture must reject first
         });
     const auto large = bounded_capture.join(
-        Json::object({{"run_ids", Json{Json::Array{Json{"large"}}}}}));
+        Value::object({{"run_ids", Value{Value::Array{Value{"large"}}}}}));
     check(string_field(field(large, "runs").array()[0], "state") == "unknown");
     Participants failed_snapshot{
-        Json{}, [](std::string_view, std::string_view, const Json &) {},
-        [](const Json &) { throw Error{ErrorCode::io}; }};
+        Value{}, [](std::string_view, std::string_view, const Value &) {},
+        [](const Value &) { throw Error{ErrorCode::io}; }};
     bool failed_before_launch = false;
     int launches = 0;
     try {
       failed_snapshot.start(
-          "no-save", Json::object({{"request", request("no-save")}}),
-          [&](const Json &, const ColleagueCapture &, const std::function<bool()> &) {
+          "no-save", Value::object({{"request", request("no-save")}}),
+          [&](const Value &, const ColleagueCapture &, const std::function<bool()> &) {
             ++launches;
-            return Json{};
+            return Value{};
           });
     } catch (const Error &error) {
       failed_before_launch = error.code == ErrorCode::io;
     }
     check(failed_before_launch && !failed_snapshot.active() && launches == 0);
     int blocked_dispatches = 0;
-    Participants failed{Json{},
-                        [](std::string_view, std::string_view, const Json &) {
+    Participants failed{Value{},
+                        [](std::string_view, std::string_view, const Value &) {
                           throw Error{ErrorCode::io};
                         },
-                        [](const Json &) {}};
+                        [](const Value &) {}};
     bool refused = false;
     try {
       failed.start(
-          "blocked", Json::object({{"request", request("blocked")}}),
-          [&](const Json &, const ColleagueCapture &, const std::function<bool()> &) {
+          "blocked", Value::object({{"request", request("blocked")}}),
+          [&](const Value &, const ColleagueCapture &, const std::function<bool()> &) {
             ++blocked_dispatches;
-            return Json{};
+            return Value{};
           });
     } catch (const Error &e) {
       refused = e.code == ErrorCode::io;

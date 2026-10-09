@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/task_view.hpp"
 #include "blackbird/terminal.hpp"
 #include <clocale>
@@ -13,7 +14,7 @@ void check(bool yes, const char *message) {
   if (!yes)
     throw std::runtime_error(message);
 }
-Json json(std::string_view text) { return unwrap(parse_json(text)); }
+Value json(std::string_view text) { return unwrap(parse_json(text)); }
 template <class T> T id(unsigned char n) {
   IdentityBytes bytes{};
   bytes[0] = std::byte{n};
@@ -21,9 +22,9 @@ template <class T> T id(unsigned char n) {
 }
 class Provider final : public CodingProvider {
 public:
-  Json request;
-  Json respond(const Json &input,
-               const std::function<void(std::string_view)> &capture) override {
+  Value request;
+  Value respond(const Value &input,
+                const std::function<void(std::string_view)> &capture) override {
     request = input;
     auto result = json(R"({"output":[]})");
     capture(unwrap(dump_json(result)));
@@ -44,7 +45,7 @@ int main() {
                              std::nullopt};
   const JournalCapacity capacity{64 * 1024 * 1024, 20000};
   try {
-    Json saved;
+    Value saved;
     {
       auto root =
           unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
@@ -58,7 +59,7 @@ int main() {
       check(field(tasks.read(), "items").array().empty(), "empty task state");
       unsigned publications = 0;
       TaskState viewer;
-      tasks.changed = [&](const Json &packet) {
+      tasks.changed = [&](const Value &packet) {
         viewer.replay(packet);
         ++publications;
       };
@@ -100,7 +101,7 @@ int main() {
           R"({"op_id":"rename","ops":[{"op":"set","id":"t1","version":1,"title":"Renamed panel","status":"active"}]})"));
       tasks.edit(json(
           R"({"op_id":"disjoint","ops":[{"op":"set","id":"t2","version":1,"status":"active"}]})"));
-      check(field(field(tasks.read(), "counts"), "active").number().text == "2",
+      check(field(field(tasks.read(), "counts"), "active").number().text() == "2",
             "parallel active tasks");
       const auto conflict = tasks.edit(json(
           R"({"op_id":"stale-row","ops":[{"op":"set","id":"t1","version":1,"title":"overwritten"}]})"));
@@ -108,26 +109,26 @@ int main() {
                 string_field(field(conflict, "current").array()[0], "title") ==
                     "Renamed panel",
             "stale row overwritten");
-      Json::Array oversized_ops;
+      Value::Array oversized_ops;
       for (unsigned i = 0; i < 100; ++i)
         oversized_ops.push_back(json(R"({"id":"t1"})"));
-      const auto oversized_conflict = tasks.edit(Json::object(
-          {{"op_id", Json{"seed"}}, {"ops", Json{std::move(oversized_ops)}}}));
+      const auto oversized_conflict = tasks.edit(Value::object(
+          {{"op_id", Value{"seed"}}, {"ops", Value{std::move(oversized_ops)}}}));
       check(field(oversized_conflict, "current").array().size() <= TaskState::max_batch,
             "conflict reply exceeded response bound");
       tasks.operator_command("done t3");
       auto page = tasks.read();
-      check(field(page, "items").array()[0].find("subtasks_done")->number().text ==
+      check(field(page, "items").array()[0].find("subtasks_done")->number().text() ==
                     "1" &&
                 string_field(field(page, "items").array()[0], "status") == "active",
             "child auto-completed parent");
-      check(field(field(page, "counts"), "done").number().text == "0",
+      check(field(field(page, "counts"), "done").number().text() == "0",
             "children double counted");
       const auto folded = tasks.read(json(R"({"collapsed":["t1"]})"));
       check(field(folded, "items").array().size() == 2, "folded child visible");
       const auto first = tasks.read(json(R"({"limit":1})"));
       check(field(first, "items").array().size() == 1 &&
-                field(first, "next").number().text == "1",
+                field(first, "next").number().text() == "1",
             "bounded paging");
       check(std::get<bool>(
                 field(tasks.read(json(R"({"revision":0})")), "conflict").value()),
@@ -168,7 +169,7 @@ int main() {
       auto compacted = context.view();
       for (auto &[key, value] : compacted.object())
         if (key == "entries")
-          value = Json{Json::Array{}};
+          value = Value{Value::Array{}};
       check(std::get<bool>(field(context.edit(compacted), "accepted").value()),
             "fixture compaction rejected");
       engine.turn({"after compaction", "blackbird.request()"});
@@ -192,7 +193,7 @@ int main() {
             if (string_field(row, "id") == "t3")
               for (auto &[key, value] : row.object())
                 if (key == "parent")
-                  value = Json{"t3"};
+                  value = Value{"t3"};
       bool invalid_restore = false;
       try {
         restored.restore(malformed);
@@ -204,21 +205,21 @@ int main() {
       const auto before_move = tasks.snapshot();
       bool invalid_move = false;
       try {
-        tasks.edit(Json::object(
-            {{"op_id", Json{"invalid-move"}},
+        tasks.edit(Value::object(
+            {{"op_id", Value{"invalid-move"}},
              {"base", field(tasks.read(), "revision")},
-             {"ops", Json{Json::Array{Json::object(
-                         {{"op", Json{"move"}},
-                          {"id", Json{"t1"}},
+             {"ops", Value{Value::Array{Value::object(
+                         {{"op", Value{"move"}},
+                          {"id", Value{"t1"}},
                           {"version", field(*tasks.state().item("t1"), "version")},
-                          {"parent", Json{"t2"}}})}}}}));
+                          {"parent", Value{"t2"}}})}}}}));
       } catch (const Error &) {
         invalid_move = true;
       }
       check(invalid_move && tasks.snapshot() == before_move,
             "move created third hierarchy level");
       tasks.operator_command("archive t1");
-      check(field(tasks.read(), "total").number().text == "1",
+      check(field(tasks.read(), "total").number().text() == "1",
             "archive failed to include children");
       saved = tasks.snapshot();
       unwrap(context.checkpoint());
@@ -254,28 +255,28 @@ int main() {
     {
       TaskState large;
       for (unsigned batch = 0; batch < 8; ++batch) {
-        Json::Array ops;
+        Value::Array ops;
         for (unsigned i = 0; i < 64; ++i)
           ops.push_back(json(R"({"op":"add","title":"Granular work"})"));
         large.commit(large.prepare(
-            Json::object({{"op_id", Json{"large-" + std::to_string(batch)}},
-                          {"base", Json{JsonNumber{std::to_string(large.revision())}}},
-                          {"ops", Json{std::move(ops)}}})));
+            Value::object({{"op_id", Value{"large-" + std::to_string(batch)}},
+                           {"base", Value{Number{std::to_string(large.revision())}}},
+                           {"ops", Value{std::move(ops)}}})));
       }
       const auto page = large.read(json(R"({"limit":8})"));
       check(field(page, "items").array().size() == 8 &&
-                field(page, "next").number().text == "8" &&
-                field(field(page, "counts"), "queued").number().text == "512",
+                field(page, "next").number().text() == "8" &&
+                field(field(page, "counts"), "queued").number().text() == "512",
             "large list paging/counts");
-      Json first_edit;
+      Value first_edit;
       for (unsigned i = 0; i < 20; ++i) {
-        auto edit =
-            Json::object({{"op_id", Json{"small-" + std::to_string(i)}},
-                          {"ops", Json{Json::Array{Json::object(
-                                      {{"op", Json{"set"}},
-                                       {"id", Json{"t1"}},
-                                       {"version", field(*large.item("t1"), "version")},
-                                       {"status", Json{"active"}}})}}}});
+        auto edit = Value::object(
+            {{"op_id", Value{"small-" + std::to_string(i)}},
+             {"ops", Value{Value::Array{Value::object(
+                         {{"op", Value{"set"}},
+                          {"id", Value{"t1"}},
+                          {"version", field(*large.item("t1"), "version")},
+                          {"status", Value{"active"}}})}}}});
         if (i == 0)
           first_edit = edit;
         auto prepared = large.prepare(edit);

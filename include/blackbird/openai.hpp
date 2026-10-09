@@ -1,5 +1,5 @@
 #pragma once
-#include "blackbird/json.hpp"
+#include "blackbird/value.hpp"
 #include <filesystem>
 #include <functional>
 
@@ -28,13 +28,13 @@ private:
   bool owned_auth_ = false;
   friend Result<OpenAiLogin> codex_login(const OpenAiConfig &, bool);
   friend Result<std::string> openai_http(const OpenAiConfig &, const OpenAiLogin &,
-                                         std::string_view, const Json *);
+                                         std::string_view, const Value *);
 };
 // Codex performs token renewal; Arco never rotates or writes shared auth.json.
 Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh = false);
 // Fixed subscription endpoint. A caller cannot redirect credentials to another host.
 Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &login,
-                                std::string_view route, const Json *request = nullptr);
+                                std::string_view route, const Value *request = nullptr);
 struct TextPreview {
   std::string item_id;
   std::string text;
@@ -48,5 +48,6 @@ private:
   std::string pending_, data_;
   std::size_t bytes_ = 0;
 };
-Result<Json> completed_response(std::string_view event_stream, JsonLimits limits = {});
+Result<Value> completed_response(std::string_view event_stream,
+                                 ValueLimits limits = {});
 } // namespace blackbird

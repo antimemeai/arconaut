@@ -1,42 +1,44 @@
 #include "blackbird/context.hpp"
+#include "blackbird/packet.hpp"
 #include <algorithm>
 #include <charconv>
 #include <chrono>
 namespace blackbird {
 namespace {
-Json number(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-std::size_t index(const Json &q, std::string_view key, std::size_t fallback) {
+Value number(std::size_t n) { return Value{Number{n}}; }
+std::size_t index(const Value &q, std::string_view key, std::size_t fallback) {
   const auto *v = q.find(key);
   if (!v)
     return fallback;
-  const auto *n = std::get_if<JsonNumber>(&v->value());
-  if (!n || n->text.empty())
+  const auto *n = std::get_if<Number>(&v->value());
+  if (!n || n->text().empty())
     throw Error{ErrorCode::invalid_range};
   std::size_t out = 0;
-  const auto &s = n->text;
+  const auto &s = n->text();
   const auto r = std::from_chars(s.data(), s.data() + s.size(), out);
   if (r.ec != std::errc{} || r.ptr != s.data() + s.size())
     throw Error{ErrorCode::invalid_range};
   return out;
 }
-Json summary(const RetainedFact &fact, std::size_t i) {
-  Json row = Json::object(
+Value summary(const RetainedFact &fact, std::size_t i) {
+  Value row = Value::object(
       {{"record", number(i)},
-       {"journal", Json{hex_identity(fact.record.journal.bytes())}},
+       {"journal", Value{hex_identity(fact.record.journal.bytes())}},
        {"sequence", number(fact.record.sequence)},
        {"kind", number(static_cast<std::size_t>(retained_kind(fact.event.body)))}});
-  auto add = [&](std::string key, Json v) {
+  auto add = [&](std::string key, Value v) {
     row.object().emplace_back(std::move(key), std::move(v));
   };
   auto identity = [&](std::string key, const auto &id) {
-    add(std::move(key), Json{hex_identity(id.bytes())});
+    add(std::move(key), Value{hex_identity(id.bytes())});
   };
-  Json::Array sources;
+  Value::Array sources;
   for (const auto &s : std::span{fact.event.dependencies}.first(
            std::min<std::size_t>(64, fact.event.dependencies.size())))
-    sources.push_back(Json::object({{"journal", Json{hex_identity(s.journal.bytes())}},
-                                    {"sequence", number(s.sequence)}}));
-  add("sources", Json{std::move(sources)});
+    sources.push_back(
+        Value::object({{"journal", Value{hex_identity(s.journal.bytes())}},
+                       {"sequence", number(s.sequence)}}));
+  add("sources", Value{std::move(sources)});
   add("source_count", number(fact.event.dependencies.size()));
   std::visit(
       [&](const auto &e) {
@@ -69,7 +71,7 @@ Json summary(const RetainedFact &fact, std::size_t i) {
                   v->string().size() <= 256)
                 add(key, *v);
             if (const auto *m = p.find("metadata")) {
-              Json::Object kept;
+              Value::Object kept;
               for (const auto key :
                    {"attempt", "revision", "generation", "operation", "complaint"})
                 if (const auto *v = m->find(key);
@@ -82,7 +84,7 @@ Json summary(const RetainedFact &fact, std::size_t i) {
                 add("duration_ns", *duration);
               if (const auto *operation = m->find("operation"))
                 add("operation", *operation);
-              add("metadata", Json::object(std::move(kept)));
+              add("metadata", Value::object(std::move(kept)));
             }
           }
         } else if constexpr (std::is_same_v<T, DecisionEvent>) {
@@ -114,19 +116,20 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           identity("invocation", e.invocation);
           identity("decision", e.decision);
           add("payload_bytes", number(e.input.size()));
-          add("outcome", Json{"not established by admission"});
+          add("outcome", Value{"not established by admission"});
         } else if constexpr (std::is_same_v<T, AttemptObservationEvent>) {
           identity("attempt", e.attempt);
           add("phase", number(static_cast<std::size_t>(e.phase)));
           constexpr const char *outcomes[] = {"none", "success", "failure",
                                               "cancellation", "unknown"};
-          add("outcome", Json{outcomes[static_cast<std::size_t>(e.disposition)]});
+          add("outcome", Value{outcomes[static_cast<std::size_t>(e.disposition)]});
           add("payload_bytes", number(e.observation.size()));
           if (e.observation.size() <= 4096) {
             const auto packet = read_packet(e.observation);
             if (packet.has_value())
               for (const auto key : {"result_id", "result_record"})
-                if (const auto *v = packet.value().find(key)) add(key, *v);
+                if (const auto *v = packet.value().find(key))
+                  add(key, *v);
           }
         } else if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
                              std::is_same_v<T, AdapterReceiptEvent>) {
@@ -161,8 +164,8 @@ std::vector<std::byte> payload(const RetainedBody &body) {
       body);
 }
 } // namespace
-Json AuditLog::trajectory(const Json &q) {
-  if (!std::holds_alternative<Json::Object>(q.value()))
+Value AuditLog::trajectory(const Value &q) {
+  if (!std::holds_alternative<Value::Object>(q.value()))
     throw Error{ErrorCode::invalid_range};
   for (const auto &[key, value] : q.object()) {
     (void)value;
@@ -217,7 +220,7 @@ Json AuditLog::trajectory(const Json &q) {
     throw Error{ErrorCode::invalid_range};
   const auto stop = cursor + std::min(scan, end - cursor);
   auto next = cursor;
-  Json::Array rows;
+  Value::Array rows;
   while (next < stop && rows.size() < count) {
     auto row = summary(unwrap(root_.fact(next)), next);
     ++next;
@@ -244,7 +247,7 @@ Json AuditLog::trajectory(const Json &q) {
         continue;
     }
     const auto kind =
-        static_cast<std::size_t>(std::stoull(field(row, "kind").number().text));
+        static_cast<std::size_t>(std::stoull(field(row, "kind").number().text()));
     constexpr const char *names[] = {"",
                                      "identity_reserved",
                                      "decision",
@@ -262,24 +265,24 @@ Json AuditLog::trajectory(const Json &q) {
                                      "application"};
     if (kind == 0 || kind >= std::size(names))
       throw Error{ErrorCode::corrupt};
-    row.object().emplace_back("event", Json{names[kind]});
+    row.object().emplace_back("event", Value{names[kind]});
     rows.push_back(std::move(row));
   }
-  return Json::object(
-      {{"schema", Json{"blackbird.trajectory.v1"}},
-       {"journal", Json{hex_identity(root_.cursor().journal.bytes())}},
+  return Value::object(
+      {{"schema", Value{"blackbird.trajectory.v1"}},
+       {"journal", Value{hex_identity(root_.cursor().journal.bytes())}},
        {"cursor", number(cursor)},
        {"end", number(end)},
        {"next", number(next)},
        {"scanned", number(next - cursor)},
-       {"caught_up", Json{next == end}},
-       {"events", Json{std::move(rows)}},
+       {"caught_up", Value{next == end}},
+       {"events", Value{std::move(rows)}},
        {"scope",
-        Json{"committed prefix only; recorded order, not inferred causation; "
-             "missing settlement is not success; originals via audit_inspect"}}});
+        Value{"committed prefix only; recorded order, not inferred causation; "
+              "missing settlement is not success; originals via audit_inspect"}}});
 }
-Json AuditLog::inspect(const Json &q) {
-  if (!std::holds_alternative<Json::Object>(q.value()))
+Value AuditLog::inspect(const Value &q) {
+  if (!std::holds_alternative<Value::Object>(q.value()))
     throw Error{ErrorCode::invalid_range};
   const auto fact_count = root_.fact_count();
   const auto end = index(q, "end", fact_count);
@@ -294,6 +297,13 @@ Json AuditLog::inspect(const Json &q) {
     auto result = summary(fact, i);
     std::vector<std::byte> original;
     auto raw = payload(fact.event.body);
+    if (q.find("source")) {
+      const auto s = index(q, "source", 0);
+      if (s >= fact.event.dependencies.size())
+        throw Error{ErrorCode::invalid_range};
+      original = unwrap(root_.source(fact.event.dependencies[s]));
+      raw = original;
+    }
     if (const auto *requested = q.find("packet")) {
       const auto *decode = std::get_if<bool>(&requested->value());
       if (!decode)
@@ -302,29 +312,21 @@ Json AuditLog::inspect(const Json &q) {
         const auto *application = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         if ((!application && !std::holds_alternative<DecisionEvent>(fact.event.body) &&
              !std::holds_alternative<AttemptObservationEvent>(fact.event.body)) ||
-            (application && application->channel == ApplicationChannel::context) ||
-            q.find("source") || q.find("diagnostic") || q.find("offset"))
+            q.find("diagnostic") || q.find("offset"))
           throw Error{ErrorCode::invalid_range};
         if (raw.size() > limit)
           throw Error{ErrorCode::capacity};
-        JsonLimits limits;
+        ValueLimits limits;
         limits.bytes = limit;
         auto packet = unwrap(decode_packet(raw, limits));
-        const auto expanded = unwrap(dump_json(packet, limits));
+        const auto expanded = unwrap(format_value(packet, limits));
         result.object().emplace_back("end", number(end));
         result.object().emplace_back("total_bytes", number(raw.size()));
         result.object().emplace_back("decoded_bytes", number(expanded.size()));
-        result.object().emplace_back("encoding", Json{"decoded-metadata"});
+        result.object().emplace_back("encoding", Value{"decoded-metadata"});
         result.object().emplace_back("packet", std::move(packet));
         return result;
       }
-    }
-    if (q.find("source")) {
-      const auto s = index(q, "source", 0);
-      if (s >= fact.event.dependencies.size())
-        throw Error{ErrorCode::invalid_range};
-      original = unwrap(root_.source(fact.event.dependencies[s]));
-      raw = original;
     }
     if (q.find("diagnostic")) {
       const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
@@ -357,22 +359,22 @@ Json AuditLog::inspect(const Json &q) {
     result.object().emplace_back("total_bytes", number(raw.size()));
     result.object().emplace_back("offset", number(offset));
     result.object().emplace_back("next", number(offset + n));
-    result.object().emplace_back("encoding", Json{"hex-original-bytes"});
-    result.object().emplace_back("hex", Json{std::move(hex)});
+    result.object().emplace_back("encoding", Value{"hex-original-bytes"});
+    result.object().emplace_back("hex", Value{std::move(hex)});
     return result;
   }
   if (q.find("packet"))
     throw Error{ErrorCode::invalid_range};
   const auto cursor = std::min(index(q, "cursor", 0), end);
   const auto next = cursor + std::min(count, end - cursor);
-  Json::Array rows;
+  Value::Array rows;
   for (auto i = cursor; i < next; ++i)
     rows.push_back(summary(unwrap(root_.fact(i)), i));
-  return Json::object(
+  return Value::object(
       {{"end", number(end)},
        {"next", number(next)},
-       {"records", Json{std::move(rows)}},
-       {"scope", Json{"committed facts only; end pins append-only prefix; record "
-                      "indices stable within this journal lineage"}}});
+       {"records", Value{std::move(rows)}},
+       {"scope", Value{"committed facts only; end pins append-only prefix; record "
+                       "indices stable within this journal lineage"}}});
 }
 } // namespace blackbird

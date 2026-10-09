@@ -1,49 +1,50 @@
 // Bounded, local candidate checkout ownership. No provider or activation authority.
 #include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include "native_process.hpp"
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <sys/file.h>
 
-using blackbird::Json;
+using blackbird::Value;
 namespace fs = std::filesystem;
 namespace {
-Json text(const std::string &s) { return Json{s}; }
-Json num(std::size_t n) { return Json{blackbird::JsonNumber{std::to_string(n)}}; }
+Value text(const std::string &s) { return Value{s}; }
+Value num(std::size_t n) { return Value{blackbird::Number{n}}; }
 [[noreturn]] void refuse(const std::string &s) { throw std::runtime_error(s); }
-std::string dump(const Json &j) {
-  auto r = blackbird::dump_json(j);
+std::string dump(const Value &j) {
+  auto r = blackbird::encode_packet_string(j);
   if (!r.has_value())
-    refuse("JSON encoding failed");
+    refuse("binary encoding failed");
   return r.value();
 }
-Json read(const fs::path &p) {
+Value read(const fs::path &p) {
   std::ifstream f(p, std::ios::binary);
   if (!f)
     refuse("cannot read " + p.string());
   std::string s((std::istreambuf_iterator<char>(f)), {});
-  auto r = blackbird::parse_json(s);
+  auto r = blackbird::decode_packet_string(s);
   if (!r.has_value())
-    refuse("invalid JSON: " + p.string());
+    refuse("invalid native packet: " + p.string());
   return r.value();
 }
-const Json &get(const Json &j, std::string_view k) {
+const Value &get(const Value &j, std::string_view k) {
   auto v = j.find(k);
   if (!v)
     refuse("missing " + std::string(k));
   return *v;
 }
-std::string str(const Json &j, std::string_view k) { return get(j, k).string(); }
-std::size_t integer(const Json &j, std::string_view k) {
-  const auto &s = get(j, k).number().text;
+std::string str(const Value &j, std::string_view k) { return get(j, k).string(); }
+std::size_t integer(const Value &j, std::string_view k) {
+  const auto &s = get(j, k).number().text();
   std::size_t n = 0;
   auto r = std::from_chars(s.data(), s.data() + s.size(), n);
   if (r.ec != std::errc{} || r.ptr != s.data() + s.size())
     refuse("invalid integer");
   return n;
 }
-void set(Json &j, std::string k, Json v) {
+void set(Value &j, std::string k, Value v) {
   for (auto &[key, value] : j.object())
     if (key == k) {
       value = std::move(v);
@@ -51,7 +52,7 @@ void set(Json &j, std::string k, Json v) {
     }
   j.object().emplace_back(std::move(k), std::move(v));
 }
-Json &member(Json &j, const std::string &k) {
+Value &member(Value &j, const std::string &k) {
   for (auto &[key, value] : j.object())
     if (key == k)
       return value;
@@ -150,7 +151,7 @@ fs::path inside(const fs::path &base, const std::string &s) {
     refuse("file outside checkout");
   return v;
 }
-void stopped(const Json &r) {
+void stopped(const Value &r) {
   if (str(r, "stopped") != "all checkout programs/builds stopped")
     refuse("explicit stopped evidence required");
   if (str(r, "evidence").empty())
@@ -159,12 +160,12 @@ void stopped(const Json &r) {
 class Manager {
   fs::path root;
   Lock global;
-  Json state;
+  Value state;
 
 public:
   explicit Manager(fs::path p) : root(std::move(p)), global(root / "lock") {
-    if (fs::exists(root / "state.json"))
-      state = read(root / "state.json");
+    if (fs::exists(root / "state.bbm"))
+      state = read(root / "state.bbm");
   }
   fs::path repo() { return str(state, "repo"); }
   fs::path checkout(std::size_t i) {
@@ -182,20 +183,20 @@ public:
     }
     return path;
   }
-  Json &slot(std::size_t i) {
+  Value &slot(std::size_t i) {
     auto &s = member(state, "slots").array();
     if (i >= s.size())
       refuse("slot outside configured pool");
     return s[i];
   }
-  Json &candidate(const std::string &n) {
+  Value &candidate(const std::string &n) {
     for (auto &c : member(state, "candidates").array())
       if (str(c, "name") == n)
         return c;
     refuse("unknown candidate");
   }
   // Return locator. A new immutable snapshot is durable BEFORE any dispatched effect.
-  std::string save(const std::string &action, const Json &evidence) {
+  std::string save(const std::string &action, const Value &evidence) {
     fs::create_directories(root / "records");
     auto pattern = (root / "records" / "event-XXXXXX").string();
     std::vector<char> p(pattern.begin(), pattern.end());
@@ -206,13 +207,13 @@ public:
     ::close(fd);
     const std::string id = fs::path(p.data()).filename().string();
     auto old = state.find("record");
-    Json parent = old ? *old : Json{};
+    Value parent = old ? *old : Value{};
     set(state, "record", text(id));
-    write(p.data(), dump(Json::object({{"parent", parent},
-                                       {"action", text(action)},
-                                       {"evidence", evidence},
-                                       {"state", state}})));
-    write(root / "state.json", dump(state));
+    write(p.data(), dump(Value::object({{"parent", parent},
+                                        {"action", text(action)},
+                                        {"evidence", evidence},
+                                        {"state", state}})));
+    write(root / "state.bbm", dump(state));
     return id;
   }
   void clean(std::size_t i) {
@@ -223,7 +224,7 @@ public:
     if (str(slot(i), "status") != "leased")
       refuse("lease unknown/not settled; no replay");
   }
-  Json perform(const std::string &cmd, const Json &r) {
+  Value perform(const std::string &cmd, const Value &r) {
     if (cmd == "init") {
       if (!std::holds_alternative<std::nullptr_t>(state.value()))
         refuse("already initialized");
@@ -236,13 +237,13 @@ public:
       primary = git(primary, {"rev-parse", "--show-toplevel"});
       if (fs::canonical(root) == primary)
         refuse("pool cannot be primary checkout");
-      Json::Array slots;
+      Value::Array slots;
       for (std::size_t i = 0; i < cap; ++i)
         slots.push_back(
-            Json::object({{"status", text("empty")}, {"candidate", text("")}}));
-      state = Json::object({{"repo", text(primary.string())},
-                            {"slots", Json{slots}},
-                            {"candidates", Json{Json::Array{}}}});
+            Value::object({{"status", text("empty")}, {"candidate", text("")}}));
+      state = Value::object({{"repo", text(primary.string())},
+                             {"slots", Value{slots}},
+                             {"candidates", Value{Value::Array{}}}});
       save(cmd, r);
       return state;
     }
@@ -255,7 +256,7 @@ public:
         if (!r.find(k))
           refuse("question/action/outcome/references required");
       auto id = save("experiment.record", r);
-      return Json::object(
+      return Value::object(
           {{"record", text(id)}, {"path", text((root / "records" / id).string())}});
     }
     if (cmd == "enqueue") {
@@ -267,21 +268,23 @@ public:
       // Freeze exact starting source; reject branch-name ambiguity on later dispatch.
       auto base = git(repo(), {"rev-parse", "--verify", str(r, "base") + "^{commit}"});
       for (const auto &k : {"hypothesis", "discriminator", "identities", "baseline"})
-        if (!r.find(k) || dump(get(r, k)) == "null" || dump(get(r, k)) == "\"\"")
+        if (!r.find(k) || std::holds_alternative<std::nullptr_t>(get(r, k).value()) ||
+            (std::holds_alternative<std::string>(get(r, k).value()) &&
+             get(r, k).string().empty()))
           refuse("missing experiment declaration");
       auto branch = "candidate/" + n;
       if (!git(repo(), {"branch", "--list", branch}).empty())
         refuse("branch already exists; choose a new candidate identity");
       member(state, "candidates")
           .array()
-          .push_back(Json::object({{"name", text(n)},
-                                   {"branch", text(branch)},
-                                   {"base", text(base)},
-                                   {"status", text("queued")},
-                                   {"declaration", r},
-                                   {"checkpoint", Json{}},
-                                   {"artifacts", Json{Json::Array{}}},
-                                   {"activation", Json{}}}));
+          .push_back(Value::object({{"name", text(n)},
+                                    {"branch", text(branch)},
+                                    {"base", text(base)},
+                                    {"status", text("queued")},
+                                    {"declaration", r},
+                                    {"checkpoint", Value{}},
+                                    {"artifacts", Value{Value::Array{}}},
+                                    {"activation", Value{}}}));
       save(cmd, r);
       return candidate(n);
     }
@@ -291,16 +294,17 @@ public:
         if (str(slot(i), "status") == "empty")
           break;
       if (i == get(state, "slots").array().size())
-        return Json::object(
-            {{"queued", Json{true}}, {"reason", text("pool full; cap unchanged")}});
-      Json *c = nullptr;
+        return Value::object(
+            {{"queued", Value{true}}, {"reason", text("pool full; cap unchanged")}});
+      Value *c = nullptr;
       for (auto &v : member(state, "candidates").array())
         if (str(v, "status") == "queued") {
           c = &v;
           break;
         }
       if (!c)
-        return Json::object({{"queued", Json{false}}, {"reason", text("queue empty")}});
+        return Value::object(
+            {{"queued", Value{false}}, {"reason", text("queue empty")}});
       Lock held(root / ("slot-" + std::to_string(i) + ".lock"), true);
       if (fs::exists(checkout(i)))
         clean(i);
@@ -316,9 +320,9 @@ public:
       set(slot(i), "status", text("leased"));
       set(candidate(n), "status", text("leased"));
       save("dispatch.observed", r);
-      return Json::object({{"slot", num(i)},
-                           {"path", text(checkout(i).string())},
-                           {"candidate", candidate(n)}});
+      return Value::object({{"slot", num(i)},
+                            {"path", text(checkout(i).string())},
+                            {"candidate", candidate(n)}});
     }
     auto i = integer(r, "slot");
     Lock held(root / ("slot-" + std::to_string(i) + ".lock"), true);
@@ -396,7 +400,7 @@ public:
       set(candidate(n), "status", text("running"));
       auto id = save("run.intent", r);
       global.unlock();
-      Json outcome;
+      Value outcome;
       blackbird::detail::Child child;
       try {
         child.start(std::move(args), {}, true);
@@ -406,23 +410,23 @@ public:
                                      std::chrono::seconds(seconds),
                                  16 * 1024 * 1024, &code);
         write(root / "records" / (id + ".output"), out);
-        outcome = Json::object(
+        outcome = Value::object(
             {{"exit_code", num(static_cast<std::size_t>(code))},
              {"outcome",
               text("observed leader exit; descendants not certified stopped")}});
       } catch (...) {
         write(root / "records" / (id + ".output"), child.take_partial());
-        outcome = Json::object({{"outcome", text("unknown; no automatic replay")}});
+        outcome = Value::object({{"outcome", text("unknown; no automatic replay")}});
       }
       // Child destruction below releases any unfinished owned child. Slot remains
       // unknown regardless: explicit stopped evidence required before further use.
       global.lock();
-      state = read(root / "state.json");
+      state = read(root / "state.bbm");
       set(slot(i), "status", text("unknown"));
       set(slot(i), "last_run", text(id));
       set(candidate(n), "status", text("unknown"));
       save("run.observation", outcome);
-      return Json::object(
+      return Value::object(
           {{"run", text(id)},
            {"output", text((root / "records" / (id + ".output")).string())},
            {"observation", outcome}});
@@ -463,9 +467,9 @@ public:
       }
       member(c, "artifacts")
           .array()
-          .push_back(Json::object({{"file", text(file.string())},
-                                   {"content", text(hash)},
-                                   {"retained", text(destination.string())}}));
+          .push_back(Value::object({{"file", text(file.string())},
+                                    {"content", text(hash)},
+                                    {"retained", text(destination.string())}}));
       save(cmd, r);
       return c;
     }
@@ -507,11 +511,34 @@ public:
 int main(int argc, char **argv) {
   try {
     if (argc != 4)
-      refuse("usage: blackbird-candidate POOL COMMAND REQUEST.json");
+      refuse("usage: blackbird-candidate POOL COMMAND REQUEST.bbm (or explicit JSON "
+             "interchange REQUEST.json)");
     fs::path root = fs::absolute(argv[1]);
     fs::create_directories(root);
     Manager m(root);
-    std::cout << dump(m.perform(argv[2], read(argv[3]))) << '\n';
+    const fs::path request_path{argv[3]};
+    const bool json_interchange = request_path.extension() == ".json";
+    Value request;
+    if (json_interchange) {
+      std::ifstream file{request_path, std::ios::binary};
+      if (!file)
+        refuse("cannot read import");
+      std::string bytes{std::istreambuf_iterator<char>{file}, {}};
+      auto parsed = blackbird::parse_json(bytes);
+      if (!parsed.has_value())
+        throw parsed.error();
+      request = std::move(parsed).value();
+    } else
+      request = read(request_path);
+    const auto result = m.perform(argv[2], request);
+    if (json_interchange) {
+      auto encoded = blackbird::dump_json(result);
+      if (!encoded.has_value())
+        throw encoded.error();
+      std::cout << encoded.value() << '\n';
+    } else
+      std::cout << dump(result);
+
     return 0;
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';

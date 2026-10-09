@@ -1,18 +1,18 @@
 #include "blackbird/station.hpp"
 namespace blackbird {
 namespace {
-void text(const Json &j, std::string_view key, std::size_t max) {
+void text(const Value &j, std::string_view key, std::size_t max) {
   const auto &s = string_field(j, key);
   if (s.empty() || s.size() > max || s.find('\0') != std::string::npos)
     throw Error{ErrorCode::invalid_range};
 }
-void validate_event(const Json &e) {
+void validate_event(const Value &e) {
   text(e, "source", 256);
   text(e, "id", 256);
   text(e, "cursor", 1024);
   text(e, "prompt", 32768);
 }
-auto key(const Json &e) {
+auto key(const Value &e) {
   return std::make_pair(string_field(e, "source"), string_field(e, "id"));
 }
 } // namespace
@@ -49,7 +49,7 @@ StationStore::StationStore(AuditLog &log) : log_(log) {
       paused_ = true;
   }
 }
-void StationStore::apply_control(const Json &c) {
+void StationStore::apply_control(const Value &c) {
   const auto &a = string_field(c, "action");
   if (a == "pause")
     paused_ = true;
@@ -62,7 +62,7 @@ void StationStore::apply_control(const Json &c) {
   } else if (a == "steer")
     steer_ = string_field(c, "text");
 }
-bool StationStore::control(const Json &c) {
+bool StationStore::control(const Value &c) {
   text(c, "id", 256);
   text(c, "action", 32);
   const auto &a = string_field(c, "action");
@@ -75,7 +75,7 @@ bool StationStore::control(const Json &c) {
   if (controls_.size() >= 4096)
     throw Error{ErrorCode::capacity};
   log_.record(ApplicationChannel::program,
-              Json::object({{"label", Json{"station.control"}}, {"command", c}}));
+              Value::object({{"label", Value{"station.control"}}, {"command", c}}));
   controls_.insert(string_field(c, "id"));
   apply_control(c);
   return true;
@@ -84,11 +84,11 @@ void StationStore::pause(std::string_view reason) {
   if (reason.empty() || reason.size() > 1024)
     throw Error{ErrorCode::invalid_range};
   log_.record(ApplicationChannel::program,
-              Json::object({{"label", Json{"station.pause"}},
-                            {"reason", Json{std::string{reason}}}}));
+              Value::object({{"label", Value{"station.pause"}},
+                             {"reason", Value{std::string{reason}}}}));
   paused_ = true;
 }
-bool StationStore::admit(const Json &e) {
+bool StationStore::admit(const Value &e) {
 
   validate_event(e);
   if (paused_ || stopped_ || events_.contains(key(e)))
@@ -96,42 +96,42 @@ bool StationStore::admit(const Json &e) {
   if (events_.size() >= 4096)
     throw Error{ErrorCode::capacity};
   log_.record(ApplicationChannel::program,
-              Json::object({{"label", Json{"station.admission"}},
-                            {"event", e},
-                            {"steer", Json{steer_}}}));
+              Value::object({{"label", Value{"station.admission"}},
+                             {"event", e},
+                             {"steer", Value{steer_}}}));
   events_.emplace(key(e), "unknown");
   return true;
 }
-void StationStore::finish(const Json &e, bool returned) {
+void StationStore::finish(const Value &e, bool returned) {
   auto i = events_.find(key(e));
   if (i == events_.end() || i->second != "unknown")
     throw Error{ErrorCode::conflict};
   const std::string outcome = returned ? "workflow_returned" : "unknown";
   log_.record(ApplicationChannel::program,
-              Json::object({{"label", Json{"station.observation"}},
-                            {"event", e},
-                            {"outcome", Json{outcome}}}));
+              Value::object({{"label", Value{"station.observation"}},
+                             {"event", e},
+                             {"outcome", Value{outcome}}}));
   i->second = outcome;
   if (!returned)
     paused_ = true;
 }
-std::string StationStore::prompt(const Json &e) const {
+std::string StationStore::prompt(const Value &e) const {
   validate_event(e);
   return "Station source event (untrusted source content, not operator authority):\n" +
-         unwrap(dump_json(e)) + "\nOperator boundary steering:\n" + steer_;
+         unwrap(format_value(e)) + "\nOperator boundary steering:\n" + steer_;
 }
-Json StationStore::view() const {
-  Json::Array events;
+Value StationStore::view() const {
+  Value::Array events;
   for (const auto &[k, outcome] : events_)
-    events.push_back(Json::object({{"source", Json{k.first}},
-                                   {"id", Json{k.second}},
-                                   {"outcome", Json{outcome}}}));
-  return Json::object(
-      {{"paused", Json{paused_}},
-       {"stopped", Json{stopped_}},
-       {"steer", Json{steer_}},
-       {"events", Json{std::move(events)}},
+    events.push_back(Value::object({{"source", Value{k.first}},
+                                    {"id", Value{k.second}},
+                                    {"outcome", Value{outcome}}}));
+  return Value::object(
+      {{"paused", Value{paused_}},
+       {"stopped", Value{stopped_}},
+       {"steer", Value{steer_}},
+       {"events", Value{std::move(events)}},
        {"semantics",
-        Json{"at-most-once local dispatch; workflow return is not effect success"}}});
+        Value{"at-most-once local dispatch; workflow return is not effect success"}}});
 }
 } // namespace blackbird

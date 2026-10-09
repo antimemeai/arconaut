@@ -8,7 +8,7 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
-Json num(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
+Value num(std::size_t n) { return Value{Number{std::to_string(n)}}; }
 void check(bool b) {
   if (!b)
     throw Error{ErrorCode::corrupt};
@@ -34,32 +34,32 @@ int main() {
                                        "audit", h, cap));
       AuditLog log{*root};
       log.original(
-          {"provider.request", raw, Json::object({{"attempt", Json{"attempt-X"}}})});
+          {"provider.request", raw, Value::object({{"attempt", Value{"attempt-X"}}})});
       log.original(
-          {"provider.request", raw, Json::object({{"attempt", Json{"attempt-Y"}}})});
+          {"provider.request", raw, Value::object({{"attempt", Value{"attempt-Y"}}})});
       end = root->committed_facts().size();
-      auto index = log.inspect(Json::object({{"end", num(end)}, {"count", num(64)}}));
+      auto index = log.inspect(Value::object({{"end", num(end)}, {"count", num(64)}}));
       std::size_t found = 0;
       for (const auto &row : field(index, "records").array())
         if (row.find("label")) {
           check(string_field(row, "label") == "provider.request");
           if (found++ == 0)
-            original_index = std::stoull(field(row, "record").number().text);
+            original_index = std::stoull(field(row, "record").number().text());
         }
       check(found == 2);
-      auto page = log.inspect(Json::object({{"record", num(original_index)},
-                                            {"source", num(0)},
-                                            {"offset", num(1)},
-                                            {"limit", num(2)}}));
+      auto page = log.inspect(Value::object({{"record", num(original_index)},
+                                             {"source", num(0)},
+                                             {"offset", num(1)},
+                                             {"limit", num(2)}}));
       check(string_field(page, "hex") == "00ff");
-      check(field(page, "total_bytes").number().text == "4");
-      log.record(ApplicationChannel::program, Json::object({{"new", Json{true}}}));
-      check(
-          field(log.inspect(Json::object({{"end", num(end)}})), "end").number().text ==
-          std::to_string(end));
+      check(field(page, "total_bytes").number().text() == "4");
+      log.record(ApplicationChannel::program, Value::object({{"new", Value{true}}}));
+      check(field(log.inspect(Value::object({{"end", num(end)}})), "end")
+                .number()
+                .text() == std::to_string(end));
       bool invalid = false;
       try {
-        (void)log.inspect(Json::object({{"limit", num(65537)}}));
+        (void)log.inspect(Value::object({{"limit", num(65537)}}));
       } catch (const Error &e) {
         invalid = e.code == ErrorCode::invalid_range;
       }
@@ -72,7 +72,7 @@ int main() {
                                      "audit", h, cap));
       unwrap(root->confirm_recovery());
       AuditLog log{*root};
-      auto page = log.inspect(Json::object(
+      auto page = log.inspect(Value::object(
           {{"record", num(original_index)}, {"source", num(0)}, {"limit", num(4)}}));
       check(string_field(page, "hex") == "4100ff5a");
     }

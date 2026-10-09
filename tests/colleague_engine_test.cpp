@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -13,17 +14,17 @@ template <class T> T id(unsigned char n) {
 }
 class Provider final : public CodingProvider {
 public:
-  Json request;
+  Value request;
   int calls = 0;
-  Json respond(const Json &, const std::function<void(std::string_view)> &) override {
+  Value respond(const Value &, const std::function<void(std::string_view)> &) override {
     ++calls;
     if (calls == 1)
-      return Json::object(
-          {{"output", Json{Json::Array{Json::object(
-                          {{"type", Json{"function_call"}},
-                           {"call_id", Json{"model-colleague"}},
-                           {"name", Json{"colleague"}},
-                           {"arguments", Json{unwrap(dump_json(request))}}})}}}});
+      return Value::object(
+          {{"output", Value{Value::Array{Value::object(
+                          {{"type", Value{"function_call"}},
+                           {"call_id", Value{"model-colleague"}},
+                           {"name", Value{"colleague"}},
+                           {"arguments", Value{unwrap(dump_json(request))}}})}}}});
     return unwrap(parse_json(
         R"({"output":[{"type":"message","role":"assistant","id":"m1","content":[{"type":"output_text","text":"done"}]}]})"));
   }
@@ -50,12 +51,12 @@ int main() {
     engine.diagnostic = [](std::string_view text) { std::cerr << text; };
     const auto request = unwrap(parse_json(
         R"({"request_id":"one","from":"main","to":"reviewer","provider":"claude","model":"sonnet","task":"Review selected code","context":[{"id":"source","text":"SELECTED_ONLY"}],"profile":{"name":"context-only","provenance":"test","timeout_seconds":2,"tools":"none","requests":1}})"));
-    context.append({Json::object({{"role", Json{"user"}},
-                                  {"content", Json{"PRIVATE_NOT_SELECTED"}}})},
+    context.append({Value::object({{"role", Value{"user"}},
+                                   {"content", Value{"PRIVATE_NOT_SELECTED"}}})},
                    "test");
     int dispatches = 0;
     bool unknown = false;
-    engine.colleague_transport = [&](const Json &prepared,
+    engine.colleague_transport = [&](const Value &prepared,
                                      const ColleagueCapture &capture) {
       ++dispatches;
       const auto &prompt = field(prepared, "prompt").string();
@@ -83,11 +84,11 @@ int main() {
     auto invalid = request;
     for (auto &[key, value] : invalid.object())
       if (key == "provider")
-        value = Json{"missing"};
+        value = Value{"missing"};
     check(string_field(engine.operator_call("colleague", invalid), "status") ==
               "refused" &&
           dispatches == 3);
-    engine.participant_transport = [&](const Json &prepared,
+    engine.participant_transport = [&](const Value &prepared,
                                        const ColleagueCapture &capture,
                                        const std::function<bool()> &) {
       return engine.colleague_transport(prepared, capture);
@@ -96,7 +97,7 @@ int main() {
     const auto task_id = field(field(task, "changed").array()[0], "id");
     const auto start = engine.operator_call(
         "participant_start",
-        Json::object({{"request", request}, {"task_id", task_id}}));
+        Value::object({{"request", request}, {"task_id", task_id}}));
     const auto run_id = string_field(start, "run_id");
     bool busy = false;
     try {
@@ -113,7 +114,7 @@ int main() {
           "queued");
     engine.validate_restart();
     check(string_field(engine.operator_call("participant_read",
-                                            Json::object({{"run_id", Json{run_id}}})),
+                                            Value::object({{"run_id", Value{run_id}}})),
                        "state") == "completed");
     unwrap(context.checkpoint());
     bool participant_saved = false;

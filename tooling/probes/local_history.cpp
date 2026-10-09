@@ -1,4 +1,5 @@
 #include "blackbird/context.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/local_timing.hpp"
 #include <filesystem>
 #include <fstream>
@@ -32,13 +33,13 @@ int main(int argc, char **argv) {
                                      "audit", h, {256 * 1024 * 1024, 100000}));
     AuditLog log{*root};
     ContextStore context{log};
-    Json::Array items;
+    Value::Array items;
     const auto context_entries = 64 + history;
     for (unsigned long i = 0; i < context_entries; ++i)
-      items.push_back(Json::object(
-          {{"role", Json{"user"}}, {"content", Json{std::string(128, 'x')}}}));
+      items.push_back(Value::object(
+          {{"role", Value{"user"}}, {"content", Value{std::string(128, 'x')}}}));
     context.append(std::move(items), "fixture");
-    const auto packet = Json::object({{"fixture", Json{std::string(128, 'x')}}});
+    const auto packet = Value::object({{"fixture", Value{std::string(128, 'x')}}});
     for (unsigned i = 0; i < history; ++i)
       log.record(ApplicationChannel::log, packet);
     auto sink = std::make_unique<LocalTimingSink>();
@@ -70,8 +71,8 @@ int main(int argc, char **argv) {
       std::size_t bytes;
       {
         LocalSpan prepare{"fixture.prepare_subset", "ContextStore::items + dump_json"};
-        auto request = Json::object(
-            {{"model", Json{"fixture"}}, {"input", Json{context.items()}}});
+        auto request = Value::object(
+            {{"model", Value{"fixture"}}, {"input", Value{context.items()}}});
         bytes = unwrap(dump_json(request)).size();
         prepare.observe(after.indexed_records, bytes);
         prepare.linkage(context.head());

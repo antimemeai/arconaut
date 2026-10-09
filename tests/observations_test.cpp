@@ -8,34 +8,34 @@ template <class T> T id(unsigned char n) {
   bytes[0] = std::byte{n};
   return unwrap(T::from_bytes(bytes));
 }
-Json num(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
+Value num(std::size_t n) { return Value{Number{std::to_string(n)}}; }
 void check(bool good, const char *message) {
   if (!good)
     throw std::runtime_error(message);
 }
 class Provider final : public CodingProvider {
 public:
-  std::vector<Json> requests;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &) override {
+  std::vector<Value> requests;
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &) override {
     requests.push_back(request);
     const auto text =
-        Json::object({{"type", Json{"output_text"}}, {"text", Json{"done"}}});
+        Value::object({{"type", Value{"output_text"}}, {"text", Value{"done"}}});
     const auto message =
-        Json::object({{"type", Json{"message"}},
-                      {"role", Json{"assistant"}},
-                      {"id", Json{"m" + std::to_string(requests.size())}},
-                      {"content", Json{Json::Array{text}}}});
-    return Json::object({{"output", Json{Json::Array{message}}}});
+        Value::object({{"type", Value{"message"}},
+                       {"role", Value{"assistant"}},
+                       {"id", Value{"m" + std::to_string(requests.size())}},
+                       {"content", Value{Value::Array{text}}}});
+    return Value::object({{"output", Value{Value::Array{message}}}});
   }
 };
-Json variables(AuditLog &log, std::string name = "") {
-  auto query = Json::object({{"variables", Json{true}},
-                             {"cursor", num(0)},
-                             {"count", num(64)},
-                             {"scan", num(256)}});
+Value variables(AuditLog &log, std::string name = "") {
+  auto query = Value::object({{"variables", Value{true}},
+                              {"cursor", num(0)},
+                              {"count", num(64)},
+                              {"scan", num(256)}});
   if (!name.empty())
-    query.object().emplace_back("variable", Json{name});
+    query.object().emplace_back("variable", Value{name});
   return log.trajectory(query);
 }
 int main() {
@@ -50,7 +50,7 @@ int main() {
                                {1024 * 1024, 4 * 1024 * 1024},
                                std::nullopt};
     const JournalCapacity cap{32 * 1024 * 1024, 20000};
-    Json frozen;
+    Value frozen;
     std::size_t end = 0;
     {
       auto root =
@@ -64,20 +64,18 @@ int main() {
                                   return ObservationTime{1000 - step * 10, step * 100,
                                                          7};
                                 }};
-      const auto a =
-          observations.sample("experiment.temperature", Json{JsonNumber{"0.2"}},
-                              Json::object({{"kind", Json{"fixture"}}}));
-      const auto b =
-          observations.sample("experiment.temperature", Json{JsonNumber{"0.7"}},
-                              Json::object({{"kind", Json{"fixture"}}}));
-      check(field(field(a, "time"), "utc_ns").number().text == "980" &&
-                field(field(b, "time"), "utc_ns").number().text == "970",
+      const auto a = observations.sample("experiment.temperature", Value{Number{"0.2"}},
+                                         Value::object({{"kind", Value{"fixture"}}}));
+      const auto b = observations.sample("experiment.temperature", Value{Number{"0.7"}},
+                                         Value::object({{"kind", Value{"fixture"}}}));
+      check(field(field(a, "time"), "utc_ns").number().text() == "980" &&
+                field(field(b, "time"), "utc_ns").number().text() == "970",
             "wall clock adjustment altered");
-      check(field(field(a, "time"), "monotonic_ns").number().text == "200" &&
-                field(field(b, "time"), "monotonic_ns").number().text == "300",
+      check(field(field(a, "time"), "monotonic_ns").number().text() == "200" &&
+                field(field(b, "time"), "monotonic_ns").number().text() == "300",
             "monotonic readings lost");
       check(string_field(field(a, "time"), "synchronization") == "unknown" &&
-                field(field(a, "time"), "sampling_span_ns").number().text == "7",
+                field(field(a, "time"), "sampling_span_ns").number().text() == "7",
             "clock precision fabricated");
       auto page = variables(log, "experiment.temperature");
       check(field(page, "events").array().size() == 2, "extensible variable absent");
@@ -89,8 +87,8 @@ int main() {
                 plot.find("synchronization unknown") != std::string::npos,
             "plot lost uncertainty/lanes");
       Observations second{log, [&]() { return ObservationTime{2000, 400, 9}; }};
-      const auto c = second.sample("experiment.temperature", Json{JsonNumber{"0.8"}},
-                                   Json::object({}));
+      const auto c = second.sample("experiment.temperature", Value{Number{"0.8"}},
+                                   Value::object({}));
       check(string_field(field(c, "time"), "clock_id") !=
                 string_field(field(a, "time"), "clock_id"),
             "clock domains conflated");
@@ -99,7 +97,7 @@ int main() {
       const auto invalid_before = root->fact_count();
       bool refused = false;
       try {
-        observations.sample("bad name", Json{}, Json::object({}));
+        observations.sample("bad name", Value{}, Value::object({}));
       } catch (const Error &e) {
         refused = e.code == ErrorCode::invalid_range;
       }
@@ -107,12 +105,12 @@ int main() {
             "invalid sample published");
       end = root->fact_count();
       frozen = variables(log);
-      observations.sample("experiment.later", Json{true}, Json::object({}));
-      auto pinned = log.trajectory(Json::object({{"variables", Json{true}},
-                                                 {"cursor", num(0)},
-                                                 {"count", num(64)},
-                                                 {"scan", num(256)},
-                                                 {"end", num(end)}}));
+      observations.sample("experiment.later", Value{true}, Value::object({}));
+      auto pinned = log.trajectory(Value::object({{"variables", Value{true}},
+                                                  {"cursor", num(0)},
+                                                  {"count", num(64)},
+                                                  {"scan", num(256)},
+                                                  {"end", num(end)}}));
       check(pinned == frozen, "later variable leaked into pinned prefix");
       ContextStore context{log};
       Provider provider;
@@ -139,16 +137,16 @@ int main() {
       const auto source_attempt =
           string_field(field(doctrines[0], "source"), "attempt");
       const auto linked =
-          log.trajectory(Json::object({{"attempt", Json{source_attempt}},
-                                       {"cursor", num(0)},
-                                       {"count", num(64)},
-                                       {"scan", num(256)}}));
+          log.trajectory(Value::object({{"attempt", Value{source_attempt}},
+                                        {"cursor", num(0)},
+                                        {"count", num(64)},
+                                        {"scan", num(256)}}));
       bool found_doctrine = false, found_duration = false;
       for (const auto &row : field(linked, "events").array()) {
         if (row.find("variable"))
           found_doctrine = true;
         if (row.find("duration_ns")) {
-          check(std::stoll(field(row, "duration_ns").number().text) >= 0,
+          check(std::stoll(field(row, "duration_ns").number().text()) >= 0,
                 "negative duration");
           found_duration = true;
         }
@@ -157,32 +155,33 @@ int main() {
       const auto exact_end = root->fact_count();
       const auto shared = engine.operator_call(
           "variables_read",
-          Json::object(
-              {{"query", Json::object({{"variable", Json{"doctrine.effective"}},
-                                       {"end", num(exact_end)},
-                                       {"scan", num(256)}})}}));
+          Value::object(
+              {{"query", Value::object({{"variable", Value{"doctrine.effective"}},
+                                        {"end", num(exact_end)},
+                                        {"scan", num(256)}})}}));
       check(field(shared, "events").array().size() == 3,
             "shared variable query differs");
       const auto cursor = root->fact_count();
       for (unsigned i = 0; i < 20; ++i)
-        log.record(ApplicationChannel::log, Json::object({{"label", Json{"noise"}}}));
-      const auto empty = log.trajectory(Json::object(
-          {{"variables", Json{true}}, {"cursor", num(cursor)}, {"scan", num(5)}}));
+        log.record(ApplicationChannel::log, Value::object({{"label", Value{"noise"}}}));
+      const auto empty = log.trajectory(Value::object(
+          {{"variables", Value{true}}, {"cursor", num(cursor)}, {"scan", num(5)}}));
       check(field(empty, "events").array().empty() &&
-                field(empty, "scanned").number().text == "5",
+                field(empty, "scanned").number().text() == "5",
             "filtered query exceeded scan bound");
       check(correlation_plot(
-                Json::object({{"events", Json{Json::Array{Json::object({})}}}}))
+                Value::object({{"events", Value{Value::Array{Value::object({})}}}}))
                     .find("undated=1") != std::string::npos,
             "legacy untimed records invented timestamps");
-      check(correlation_plot(
-                Json::object(
-                    {{"events",
-                      Json{Json::Array{Json::object(
-                          {{"time", Json::object({{"clock_id", Json{"old"}},
-                                                  {"utc_ns", Json{"invalid"}}})}})}}}}))
-                    .find("undated=1") != std::string::npos,
-            "invalid clock metadata presented as time");
+      check(
+          correlation_plot(
+              Value::object(
+                  {{"events",
+                    Value{Value::Array{Value::object(
+                        {{"time", Value::object({{"clock_id", Value{"old"}},
+                                                 {"utc_ns", Value{"invalid"}}})}})}}}}))
+                  .find("undated=1") != std::string::npos,
+          "invalid clock metadata presented as time");
     }
     {
       auto root =
@@ -191,11 +190,11 @@ int main() {
                                      "audit", header, cap));
       unwrap(root->confirm_recovery());
       AuditLog log{*root};
-      const auto pinned = log.trajectory(Json::object({{"variables", Json{true}},
-                                                       {"cursor", num(0)},
-                                                       {"count", num(64)},
-                                                       {"scan", num(256)},
-                                                       {"end", num(end)}}));
+      const auto pinned = log.trajectory(Value::object({{"variables", Value{true}},
+                                                        {"cursor", num(0)},
+                                                        {"count", num(64)},
+                                                        {"scan", num(256)},
+                                                        {"end", num(end)}}));
       check(pinned == frozen, "variable history changed on reopen");
     }
     std::filesystem::remove_all(directory);

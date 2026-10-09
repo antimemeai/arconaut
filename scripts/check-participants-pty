@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix='blackbird-participants-') as work:
     try:
         wait(lambda:'Workflow reloads' in screen.text(),'initial UI')
         command('/new')
-        wait(lambda: len(list(root.glob('session-*/session-info.json'))) == 1 and 'Workflow reloads' in screen.text(), 'fresh session switch')
+        wait(lambda: len(list(root.glob('session-*/session-info.bbm'))) == 1 and 'Workflow reloads' in screen.text(), 'fresh session switch')
         session=next(root.glob('session-*'))
         command('/tasks add ALPHA_WORK');wait(lambda:'t1 ALPHA_WORK' in screen.text(),'first task')
         command('/tasks add BETA_WORK');wait(lambda:'t2 BETA_WORK' in screen.text(),'second task')

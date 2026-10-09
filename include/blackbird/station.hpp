@@ -6,12 +6,12 @@ namespace blackbird {
 class StationStore {
 public:
   explicit StationStore(AuditLog &log);
-  bool control(const Json &command);
-  bool admit(const Json &event);
+  bool control(const Value &command);
+  bool admit(const Value &event);
   void pause(std::string_view reason);
-  void finish(const Json &event, bool returned);
-  std::string prompt(const Json &event) const;
-  Json view() const;
+  void finish(const Value &event, bool returned);
+  std::string prompt(const Value &event) const;
+  Value view() const;
   bool paused() const noexcept { return paused_; }
   bool stopped() const noexcept { return stopped_; }
 
@@ -21,6 +21,6 @@ private:
   std::string steer_;
   std::set<std::string> controls_;
   std::map<std::pair<std::string, std::string>, std::string> events_;
-  void apply_control(const Json &command);
+  void apply_control(const Value &command);
 };
 } // namespace blackbird

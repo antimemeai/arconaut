@@ -15,7 +15,7 @@ blackbird = {}
 ---@return table response
 function blackbird.request(options) end
 ---@param name string
----@param arguments table|string JSON arguments or decoded object.
+---@param arguments table Native arguments; decode external interchange explicitly.
 ---@return any result
 function blackbird.call(name, arguments) end
 ---@return BlackbirdContext
@@ -53,3 +53,16 @@ function blackbird.restarting() end
 
 -- Compatibility alias for existing retained scripts.
 arco = blackbird
+
+---Owned native BBM2 persistence; accepts raw bytes or a read_file hex byte value.
+blackbird.binary = {}
+---@param value any
+---@return string
+function blackbird.binary.encode(value) end
+---@param bytes string|table
+---@return any
+function blackbird.binary.decode(bytes) end
+---Bounded native text presentation for operators/model prompts.
+---@param value any
+---@return string
+function blackbird.format(value) end

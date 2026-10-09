@@ -2,6 +2,10 @@
 """Development-only direct native station process oracle; no provider request."""
 import json
 from pathlib import Path
+import importlib.util as packet_import
+packet_spec = packet_import.spec_from_file_location('native_packet', Path(__file__).resolve().parent.parent / 'scripts/native-packet.py')
+native_packet = packet_import.module_from_spec(packet_spec)
+packet_spec.loader.exec_module(native_packet)
 import subprocess
 import sys
 import tempfile
@@ -50,7 +54,7 @@ if tostring(arco.json.encode(c)):find('FAIL_EVENT',1,true) then error('unknown a
                                "--station", str(adapter)], stdout=output, stderr=output)
     def status():
         try:
-            return json.loads((session / "station-status.json").read_text())
+            return native_packet.read_packet((session / "station-status.bbm"))
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
     try:
@@ -109,14 +113,14 @@ with tempfile.TemporaryDirectory(prefix="arco-station-rrc-") as tmp:
     first = subprocess.run([sys.argv[1], "--session", str(session), "--workflow", str(workflow),
                             "--station", str(adapter)], capture_output=True, text=True, timeout=15)
     assert first.returncode == 75, first.stdout + first.stderr
-    before = json.loads((session / "station-status.json").read_text())
+    before = native_packet.read_packet((session / "station-status.bbm"))
     size = effect.stat().st_mtime_ns
     output = (root / "output").open("w")
     second = subprocess.Popen([sys.argv[1], "--session", str(session), "--resume-continue"], stdout=output, stderr=output)
     try:
         def resumed():
             try:
-                s = json.loads((session / "station-status.json").read_text())
+                s = native_packet.read_packet((session / "station-status.bbm"))
                 return s if s.get("pid") == second.pid and s.get("phase") == "idle" else None
             except (FileNotFoundError, json.JSONDecodeError):
                 return None
@@ -127,7 +131,7 @@ with tempfile.TemporaryDirectory(prefix="arco-station-rrc-") as tmp:
         # Malformed source must stop visibly and retain paused scheduling, not infer.
         put(adapter / "events.json", [{}])
         assert second.wait(timeout=12) == 1
-        s = json.loads((session / "station-status.json").read_text())
+        s = native_packet.read_packet((session / "station-status.bbm"))
         assert s["phase"] == "blocked" and s["station"]["paused"]
         print("station RRC: stable actor, no implicit continue/replay, malformed source blocked passed")
     finally:

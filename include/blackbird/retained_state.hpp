@@ -1,10 +1,10 @@
 #pragma once
 
 #include "blackbird/journal_writer.hpp"
-#include "blackbird/json.hpp"
 #include "blackbird/recovery_index.hpp"
 #include "blackbird/retained_events.hpp"
 #include "blackbird/shared_sequence.hpp"
+#include "blackbird/value.hpp"
 
 namespace blackbird {
 struct SavedState;
@@ -79,7 +79,7 @@ public:
   // Current projection only. Full ledger replay remains the safe fallback until
   // archive-locator migration covers all semantic predicates.
   const SavedState *saved_state() const noexcept { return saved_.get(); }
-  Result<void> save_current_state(const Json &context);
+  Result<void> save_current_state(const Value &context);
   Result<void> store_diagnostic(std::string_view name, ByteView bytes,
                                 std::uint64_t now) {
     return directory_->store_diagnostic(name, bytes, now);
@@ -98,7 +98,7 @@ public:
   const std::optional<Error> &maintenance_error() const noexcept {
     return maintenance_error_;
   }
-  Json::Array current_programs() const;
+  Value::Array current_programs() const;
   RetainedState(const RetainedState &) = delete;
   RetainedState &operator=(const RetainedState &) = delete;
   // Native-only, borrowed lifetime: owner must outlive the scope. No nested reset.

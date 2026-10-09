@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -15,8 +16,8 @@ class Observer final : public CodingProvider {
 public:
   bool expect_trigger = false;
   int calls = 0;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
     if (calls == 1) {
       require(string_field(request, "model") == "request-override");
@@ -28,7 +29,7 @@ public:
     if (calls == 2)
       require(unwrap(dump_json(field(request, "input"))).find("REPAIR_REQUIRED_42") !=
               std::string::npos);
-    auto response = Json::object({{"output", Json{Json::Array{}}}});
+    auto response = Value::object({{"output", Value{Value::Array{}}}});
     capture(unwrap(dump_json(response)));
     return response;
   }
@@ -40,7 +41,7 @@ int main() {
     return 1;
   const std::filesystem::path path{made};
   try {
-    Json expected_policy;
+    Value expected_policy;
     {
       auto root = unwrap(
           RetainedState::create(std::make_unique<NativeJournalDirectory>(unwrap(
@@ -100,17 +101,17 @@ int main() {
       require(std::get<bool>(field(field(engine.stats(), "context_budget"), "effective")
                                  .find("enabled")
                                  ->value()));
-      require(field(field(engine.stats(), "context_budget"), "pending") == Json{});
-      context.append({Json::object({{"role", Json{"assistant"}},
-                                    {"content", Json{"REPAIR_REQUIRED_42 " +
-                                                     std::string(300, 'x')}}})},
+      require(field(field(engine.stats(), "context_budget"), "pending") == Value{});
+      context.append({Value::object({{"role", Value{"assistant"}},
+                                     {"content", Value{"REPAIR_REQUIRED_42 " +
+                                                       std::string(300, 'x')}}})},
                      "oracle");
       const auto original =
           string_field(field(context.view(), "entries").array().back(), "id");
       const auto before_combined = context.view();
       engine.operation_completed = [&](std::string_view v) {
         if (v.starts_with("context_budget"))
-          context.protect = [](const Json::Array &, const Json &) {
+          context.protect = [](const Value::Array &, const Value &) {
             throw Error{ErrorCode::capacity};
           };
       };
@@ -132,7 +133,7 @@ int main() {
       require(std::get<bool>(field(field(engine.stats(), "context_budget"), "effective")
                                  .find("enabled")
                                  ->value()));
-      require(field(field(engine.stats(), "context_budget"), "pending") == Json{});
+      require(field(field(engine.stats(), "context_budget"), "pending") == Value{});
       provider.expect_trigger = true;
       engine.turn({"", "arco.request({model='request-override'})"});
       engine.turn({"", "local v=arco.context(); local "
@@ -193,7 +194,7 @@ int main() {
       CodingEngine engine{log, context, provider, "reopened-model"};
       require(field(field(engine.stats(), "context_budget"), "effective") ==
               expected_policy);
-      require(field(field(engine.stats(), "context_budget"), "pending") == Json{});
+      require(field(field(engine.stats(), "context_budget"), "pending") == Value{});
     }
     std::filesystem::remove_all(path);
     std::cout << "context budget boundary/trigger/repair/reopen passed\n";

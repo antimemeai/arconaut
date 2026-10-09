@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/provider_auth.hpp"
 #include "blackbird/tools.hpp"
 #include <atomic>
@@ -24,7 +25,7 @@ template <class F> void rejects(F f, ErrorCode code) {
   }
   throw std::runtime_error{"not rejected"};
 }
-Json tokens() {
+Value tokens() {
   return unwrap(parse_json(
       R"({"access_token":"new-secret","refresh_token":"rotated-secret","expires_in":3600,"token_type":"Bearer"})"));
 }
@@ -62,14 +63,14 @@ int main() {
     auth.set_key("openai", "work", "api-secret");
     check(auth.selected("openai"), "key not selected");
     struct stat st{};
-    check(::stat((root / "credentials.json").c_str(), &st) == 0 &&
+    check(::stat((root / "credentials.bbm").c_str(), &st) == 0 &&
               (st.st_mode & 0777) == 0600,
           "credential mode");
     check(::stat(root.c_str(), &st) == 0 && (st.st_mode & 0777) == 0700,
           "directory mode");
     const auto status = unwrap(dump_json(auth.status()));
     check(status.find("secret") == std::string::npos, "status secret leak");
-    (void)auth.request("openai", "responses", Json::object({}), 10);
+    (void)auth.request("openai", "responses", Value::object({}), 10);
     check(requests == 1, "request absent");
     rejects([&] { auth.set_key("openai", "bad", "key\nInjected: yes"); },
             ErrorCode::invalid_range);
@@ -87,10 +88,10 @@ int main() {
                     d.find("token_url")->string());
     clock = 4550;
     std::thread a{
-        [&] { (void)auth.request("openai", "responses", Json::object({}), 10); }};
+        [&] { (void)auth.request("openai", "responses", Value::object({}), 10); }};
     std::thread b{[&] {
       ProviderAuth other{config};
-      (void)other.request("openai", "responses", Json::object({}), 10);
+      (void)other.request("openai", "responses", Value::object({}), 10);
     }};
     a.join();
     b.join();
@@ -98,14 +99,14 @@ int main() {
     auth.set_key("openai", "logged_out", "api-secret");
     auth.use("openai", "personal");
     auth.logout("openai", "personal");
-    rejects([&] { (void)auth.request("openai", "responses", Json::object({}), 10); },
+    rejects([&] { (void)auth.request("openai", "responses", Value::object({}), 10); },
             ErrorCode::provider_auth);
     auth.use("openai", "work");
-    (void)auth.request("openai", "responses", Json::object({}), 10);
+    (void)auth.request("openai", "responses", Value::object({}), 10);
     auto broken = tokens();
     for (auto &[k, v] : broken.object())
       if (k == "expires_in")
-        v = Json{JsonNumber{"0"}};
+        v = Value{Number{"0"}};
     rejects(
         [&] {
           auth.save_oauth("openai", "broken", broken, "issued",
@@ -131,7 +132,7 @@ int main() {
     check(requests == count, "poll ignored interval");
     clock += 2;
     auto poll = device.device_poll("kimi", "code");
-    check(poll.find("wait_seconds")->number().text == "7", "slow_down ignored");
+    check(poll.find("wait_seconds")->number().text() == "7", "slow_down ignored");
     clock += 31;
     poll = device.device_poll("kimi", "code");
     check(poll.find("state")->string() == "expired", "device expiry ignored");
@@ -145,7 +146,7 @@ int main() {
     rejects(
         [&] {
           auth.save_oauth("openai", "never-signed-in", tokens(), "issued",
-                          d.find("token_url")->string(), Json::object({}), -1);
+                          d.find("token_url")->string(), Value::object({}), -1);
         },
         ErrorCode::conflict);
     // Separate processes share the rotating token under the native file lock.
@@ -181,7 +182,7 @@ int main() {
           ::_exit(2);
         try {
           ProviderAuth child_auth{process_config};
-          (void)child_auth.request("openai", "responses", Json::object({}), 10);
+          (void)child_auth.request("openai", "responses", Value::object({}), 10);
           ::_exit(0);
         } catch (...) {
           ::_exit(3);
@@ -201,11 +202,11 @@ int main() {
     check(std::filesystem::file_size(count_file) == 1,
           "cross-process token rotation raced");
     // Owner-only mode and symlink policy are enforced before reading secrets.
-    check(::chmod((root / "credentials.json").c_str(), 0644) == 0, "chmod");
+    check(::chmod((root / "credentials.bbm").c_str(), 0644) == 0, "chmod");
     rejects([&] { (void)auth.status(); }, ErrorCode::conflict);
-    check(::chmod((root / "credentials.json").c_str(), 0600) == 0, "chmod restore");
-    std::filesystem::rename(root / "credentials.json", root / "original");
-    std::filesystem::create_symlink(root / "original", root / "credentials.json");
+    check(::chmod((root / "credentials.bbm").c_str(), 0600) == 0, "chmod restore");
+    std::filesystem::rename(root / "credentials.bbm", root / "original");
+    std::filesystem::create_symlink(root / "original", root / "credentials.bbm");
     rejects([&] { (void)auth.status(); }, ErrorCode::io);
     std::filesystem::remove_all(tmp);
     std::cout << "provider auth checks passed\n";

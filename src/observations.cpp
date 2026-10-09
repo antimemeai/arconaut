@@ -1,4 +1,5 @@
 #include "blackbird/observations.hpp"
+#include "blackbird/packet.hpp"
 #include "native_process.hpp"
 #include <algorithm>
 #include <charconv>
@@ -8,14 +9,15 @@
 #include <unistd.h>
 namespace blackbird {
 namespace {
-Json integer(std::int64_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-std::int64_t numeric(const Json &v) {
-  const auto *n = std::get_if<JsonNumber>(&v.value());
+Value integer(std::int64_t n) { return Value{Number{n}}; }
+std::int64_t numeric(const Value &v) {
+  const auto *n = std::get_if<Number>(&v.value());
   if (!n)
     throw Error{ErrorCode::invalid_range};
   std::int64_t out = 0;
-  const auto r = std::from_chars(n->text.data(), n->text.data() + n->text.size(), out);
-  if (r.ec != std::errc{} || r.ptr != n->text.data() + n->text.size())
+  const auto digits = n->text();
+  const auto r = std::from_chars(digits.data(), digits.data() + digits.size(), out);
+  if (r.ec != std::errc{} || r.ptr != digits.data() + digits.size())
     throw Error{ErrorCode::invalid_range};
   return out;
 }
@@ -59,27 +61,26 @@ Observations::Observations(AuditLog &log, std::function<ObservationTime()> clock
   const bool known = gethostname(host, sizeof(host) - 1) == 0;
   log_.record(
       ApplicationChannel::log,
-      Json::object(
-          {{"label", Json{"clock.domain"}},
-           {"clock_id", Json{clock_id_}},
-           {"host", Json{known ? host : "unknown"}},
+      Value::object(
+          {{"label", Value{"clock.domain"}},
+           {"clock_id", Value{clock_id_}},
+           {"host", Value{known ? host : "unknown"}},
            {"pid", integer(getpid())},
            {"time", time()},
-           {"synchronization", Json{"unknown"}},
+           {"synchronization", Value{"unknown"}},
            {"scope",
-            Json{"local process clock mapping; cross-host alignment unverified"}}}));
+            Value{"local process clock mapping; cross-host alignment unverified"}}}));
 }
-Json Observations::time() const {
+Value Observations::time() const {
   const auto t = clock_();
-  return Json::object(
-      {{"clock_id", Json{clock_id_}},
-       {"utc_ns", integer(t.utc_ns)},
-       {"monotonic_ns", integer(t.monotonic_ns)},
-       {"sampling_span_ns", Json{JsonNumber{std::to_string(t.sampling_span_ns)}}},
-       {"synchronization", Json{"unknown"}}});
+  return Value::object({{"clock_id", Value{clock_id_}},
+                        {"utc_ns", integer(t.utc_ns)},
+                        {"monotonic_ns", integer(t.monotonic_ns)},
+                        {"sampling_span_ns", Value{Number{t.sampling_span_ns}}},
+                        {"synchronization", Value{"unknown"}}});
 }
-Json Observations::sample(std::string_view name, const Json &value, const Json &source,
-                          std::string_view status) {
+Value Observations::sample(std::string_view name, const Value &value,
+                           const Value &source, std::string_view status) {
   if (name.empty() || name.size() > 64 ||
       !std::all_of(name.begin(), name.end(),
                    [](char c) {
@@ -87,23 +88,24 @@ Json Observations::sample(std::string_view name, const Json &value, const Json &
                             c == '.' || c == '_' || c == '-';
                    }) ||
       (status != "observed" && status != "unavailable") ||
-      !std::holds_alternative<Json::Object>(source.value()) ||
-      unwrap(dump_json(value)).size() > 4096 || unwrap(dump_json(source)).size() > 4096)
+      !std::holds_alternative<Value::Object>(source.value()) ||
+      unwrap(encode_packet_string(value)).size() > 4096 ||
+      unwrap(encode_packet_string(source)).size() > 4096)
     throw Error{ErrorCode::invalid_range};
   const auto identity = log_.issue();
-  auto packet = Json::object({{"label", Json{"variable.sample"}},
-                              {"sample_id", Json{hex_identity(identity.bytes())}},
-                              {"variable", Json{std::string{name}}},
-                              {"value", value},
-                              {"source", source},
-                              {"observation_status", Json{std::string{status}}},
-                              {"time", time()}});
+  auto packet = Value::object({{"label", Value{"variable.sample"}},
+                               {"sample_id", Value{hex_identity(identity.bytes())}},
+                               {"variable", Value{std::string{name}}},
+                               {"value", value},
+                               {"source", source},
+                               {"observation_status", Value{std::string{status}}},
+                               {"time", time()}});
   // issue precedes cursor selection, including any issuer reservation record.
   const auto record = log_.root().fact_count();
   log_.record(identity, ApplicationChannel::log, packet);
-  packet.object().emplace_back("record", Json{JsonNumber{std::to_string(record)}});
+  packet.object().emplace_back("record", Value{Number{record}});
   packet.object().emplace_back(
-      "journal", Json{hex_identity(log_.root().cursor().journal.bytes())});
+      "journal", Value{hex_identity(log_.root().cursor().journal.bytes())});
   return packet;
 }
 void Observations::doctrine(std::string_view content, InvocationId invocation,
@@ -115,18 +117,19 @@ void Observations::doctrine(std::string_view content, InvocationId invocation,
     doctrine_id_.swap(next_id);
   }
   sample(
-      "doctrine.effective", Json::object({{"content_observation", Json{doctrine_id_}}}),
-      Json::object(
-          {{"kind", Json{"native_request_field"}},
-           {"invocation", Json{hex_identity(invocation.bytes())}},
-           {"attempt", Json{hex_identity(attempt.bytes())}},
-           {"field", Json{"instructions"}},
+      "doctrine.effective",
+      Value::object({{"content_observation", Value{doctrine_id_}}}),
+      Value::object(
+          {{"kind", Value{"native_request_field"}},
+           {"invocation", Value{hex_identity(invocation.bytes())}},
+           {"attempt", Value{hex_identity(attempt.bytes())}},
+           {"field", Value{"instructions"}},
            {"identity_scope",
-            Json{
+            Value{
                 "consecutive equal instruction bytes within this process observer"}}}));
 }
-Json Observations::git(const Json &query, const std::function<bool()> &cancelled) {
-  if (!std::holds_alternative<Json::Object>(query.value()))
+Value Observations::git(const Value &query, const std::function<bool()> &cancelled) {
+  if (!std::holds_alternative<Value::Object>(query.value()))
     throw Error{ErrorCode::invalid_range};
   for (const auto &[key, value] : query.object()) {
     (void)value;
@@ -157,22 +160,22 @@ Json Observations::git(const Json &query, const std::function<bool()> &cancelled
   const auto repo =
       line(run({"/usr/bin/git", "-C", path, "rev-parse", "--show-toplevel"}, code));
   if (code != 0) {
-    auto observed = sample("git.head", Json{},
-                           Json::object({{"kind", Json{"git_cli"}},
-                                         {"path", Json{path}},
-                                         {"exit_code", integer(code)}}),
+    auto observed = sample("git.head", Value{},
+                           Value::object({{"kind", Value{"git_cli"}},
+                                          {"path", Value{path}},
+                                          {"exit_code", integer(code)}}),
                            "unavailable");
-    return Json::object({{"samples", Json{Json::Array{observed}}},
-                         {"scope", Json{"repository lookup failed"}}});
+    return Value::object({{"samples", Value{Value::Array{observed}}},
+                          {"scope", Value{"repository lookup failed"}}});
   }
   const auto head =
       line(run({"/usr/bin/git", "-C", path, "rev-parse", "--verify", "HEAD"}, code));
-  auto source = Json::object({{"kind", Json{"git_cli"}},
-                              {"repository", Json{repo}},
-                              {"requested_path", Json{path}},
-                              {"exit_code", integer(code)}});
-  Json::Array samples;
-  samples.push_back(sample("git.head", code == 0 && oid(head) ? Json{head} : Json{},
+  auto source = Value::object({{"kind", Value{"git_cli"}},
+                               {"repository", Value{repo}},
+                               {"requested_path", Value{path}},
+                               {"exit_code", integer(code)}});
+  Value::Array samples;
+  samples.push_back(sample("git.head", code == 0 && oid(head) ? Value{head} : Value{},
                            source,
                            code == 0 && oid(head) ? "observed" : "unavailable"));
   if (code == 0 && oid(head) && count > 0) {
@@ -199,24 +202,24 @@ Json Observations::git(const Json &query, const std::function<bool()> &cancelled
       }
       if (!oid(fields[0]) || samples.size() > static_cast<std::size_t>(count))
         throw Error{ErrorCode::corrupt};
-      const auto author = numeric(Json{JsonNumber{fields[1]}});
-      const auto committer = numeric(Json{JsonNumber{fields[2]}});
+      const auto author = numeric(Value{Number{fields[1]}});
+      const auto committer = numeric(Value{Number{fields[2]}});
       samples.push_back(
           sample("git.commit",
-                 Json::object({{"commit", Json{fields[0]}},
-                               {"author_unix_seconds", integer(author)},
-                               {"committer_unix_seconds", integer(committer)},
-                               {"parents", Json{fields[3]}}}),
+                 Value::object({{"commit", Value{fields[0]}},
+                                {"author_unix_seconds", integer(author)},
+                                {"committer_unix_seconds", integer(committer)},
+                                {"parents", Value{fields[3]}}}),
                  source));
     }
   }
-  return Json::object(
-      {{"samples", Json{std::move(samples)}},
+  return Value::object(
+      {{"samples", Value{std::move(samples)}},
        {"scope",
-        Json{"point observations; commit metadata times are not activation times; "
-             "HEAD is not loaded executable identity; worktree bytes not observed"}}});
+        Value{"point observations; commit metadata times are not activation times; "
+              "HEAD is not loaded executable identity; worktree bytes not observed"}}});
 }
-std::string correlation_plot(const Json &page) {
+std::string correlation_plot(const Value &page) {
   struct Point {
     std::int64_t utc;
     std::string clock, lane, label, record;
@@ -250,8 +253,8 @@ std::string correlation_plot(const Json &page) {
                                   : string_field(row, "event");
     const auto value = row.find("value");
     points.push_back({utc, clock, lane,
-                      value ? unwrap(dump_json(*value)) : string_field(row, "event"),
-                      field(row, "record").number().text});
+                      value ? unwrap(format_value(*value)) : string_field(row, "event"),
+                      field(row, "record").number().text()});
     clocks.insert(clock);
   }
   if (points.empty())
@@ -285,8 +288,8 @@ std::string correlation_plot(const Json &page) {
   for (const auto &p : points)
     out += "#" + p.record + " " + std::to_string(p.utc) + " " + display(p.lane) + " " +
            display(p.label) + " clock=" + p.clock + "\n";
-  out += "next=" + field(page, "next").number().text +
-         " end=" + field(page, "end").number().text + "\n";
+  out += "next=" + field(page, "next").number().text() +
+         " end=" + field(page, "end").number().text() + "\n";
   return out;
 }
 } // namespace blackbird

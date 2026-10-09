@@ -1,11 +1,12 @@
 #include "../src/native_process.hpp"
 #include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <exception>
 #include <fstream>
 
 #include <iostream>
 #include <thread>
-using blackbird::Json;
+using blackbird::Value;
 namespace fs = std::filesystem;
 namespace {
 void require(bool b, const char *s) {
@@ -23,21 +24,21 @@ std::string run(std::vector<std::string> a, int expected = 0) {
     throw std::runtime_error("unexpected exit: " + out);
   return out;
 }
-Json obj(std::initializer_list<std::pair<std::string, Json>> a) {
-  return Json::object(a);
+Value obj(std::initializer_list<std::pair<std::string, Value>> a) {
+  return Value::object(a);
 }
-Json s(const std::string &a) { return Json{a}; }
-Json n(std::size_t a) { return Json{blackbird::JsonNumber{std::to_string(a)}}; }
+Value s(const std::string &a) { return Value{a}; }
+Value n(std::size_t a) { return Value{blackbird::Number{std::to_string(a)}}; }
 void put(const fs::path &p, const std::string &a) {
   std::ofstream f(p);
   f << a;
 }
-Json parse(const std::string &v) {
+Value parse(const std::string &v) {
   auto r = blackbird::parse_json(v);
   require(r.has_value(), "parse");
   return r.value();
 }
-std::string dump(const Json &v) {
+std::string dump(const Value &v) {
   auto r = blackbird::dump_json(v);
   require(r.has_value(), "dump");
   return r.value();
@@ -70,11 +71,11 @@ int main(int argc, char **argv) {
       base.pop_back();
     put(repo / "unrelated", "keep me\n"); // Primary dirt must never be touched.
     std::size_t seq = 0;
-    auto call = [&](const std::string &cmd, const Json &r, int expected = 0) {
+    auto call = [&](const std::string &cmd, const Value &r, int expected = 0) {
       auto req = dir / ("request-" + std::to_string(seq++) + ".json");
       put(req, dump(r));
       auto out = run({argv[1], pool.string(), cmd, req.string()}, expected);
-      return expected ? Json{} : parse(out);
+      return expected ? Value{} : parse(out);
     };
     call("init", obj({{"repo", s(repo.string())}, {"cap", n(1)}}));
     auto enqueue = [&](const std::string &name) {
@@ -99,7 +100,7 @@ int main(int argc, char **argv) {
     call("release", evidence, 1); // No checkpoint, no switch.
     put(wt / "source", "candidate one\n");
     auto checkpoint = evidence;
-    checkpoint.object().emplace_back("files", Json{Json::Array{s("source")}});
+    checkpoint.object().emplace_back("files", Value{Value::Array{s("source")}});
     checkpoint.object().emplace_back("message", s("one useful source"));
     call("checkpoint", checkpoint);
     auto activation = call("status", obj({}));
@@ -117,10 +118,11 @@ int main(int argc, char **argv) {
     // Start managed run in separate caller; global state must remain available,
     // but slot lock blocks settle/release while program is using the checkout.
     auto req = dir / "run.json";
-    put(req, dump(obj({{"slot", n(0)},
-                       {"seconds", n(10)},
-                       {"argv",
-                        Json{Json::Array{s("/bin/sh"), s("-c"),
+    put(req,
+        dump(obj(
+            {{"slot", n(0)},
+             {"seconds", n(10)},
+             {"argv", Value{Value::Array{s("/bin/sh"), s("-c"),
                                          s("touch running; sleep 2; rm running")}}}})));
     std::exception_ptr failure;
     std::jthread runner([&] {
@@ -163,8 +165,8 @@ int main(int argc, char **argv) {
     auto timeout = call(
         "run", obj({{"slot", n(0)},
                     {"seconds", n(1)},
-                    {"argv", Json{Json::Array{s("/bin/sh"), s("-c"),
-                                              s("echo once >> effect; sleep 5")}}}}));
+                    {"argv", Value{Value::Array{s("/bin/sh"), s("-c"),
+                                                s("echo once >> effect; sleep 5")}}}}));
     require(timeout.find("observation")->find("outcome")->string().find("unknown") !=
                 std::string::npos,
             "timeout explicit unknown");
@@ -216,11 +218,11 @@ int main(int argc, char **argv) {
     call("dispatch", obj({}));
     auto aw = fs::path(a.find("path")->string());
     auto cr = dir / "concurrent-run.json";
-    put(cr, dump(obj(
-                {{"slot", n(0)},
-                 {"seconds", n(10)},
-                 {"argv", Json{Json::Array{s("/bin/sh"), s("-c"),
-                                           s("touch active; sleep 2; rm active")}}}})));
+    put(cr, dump(obj({{"slot", n(0)},
+                      {"seconds", n(10)},
+                      {"argv",
+                       Value{Value::Array{s("/bin/sh"), s("-c"),
+                                          s("touch active; sleep 2; rm active")}}}})));
     std::jthread concurrent([&] {
       try {
         run({argv[1], pool.string(), "run", cr.string()});
@@ -232,11 +234,11 @@ int main(int argc, char **argv) {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     require(fs::exists(aw / "active"), "first concurrent run active");
     auto br = call(
-        "run",
-        obj({{"slot", n(1)},
-             {"seconds", n(10)},
-             {"argv", Json{Json::Array{s("/bin/echo"), s("other lease proceeds")}}}}));
-    require(br.find("observation")->find("exit_code")->number().text == "0",
+        "run", obj({{"slot", n(1)},
+                    {"seconds", n(10)},
+                    {"argv",
+                     Value{Value::Array{s("/bin/echo"), s("other lease proceeds")}}}}));
+    require(br.find("observation")->find("exit_code")->number().text() == "0",
             "other lease proceeds concurrently");
     require(!fs::exists(pool / "slot-2"), "pool never auto-enlarges");
     auto overflow = call("dispatch", obj({}));
@@ -252,7 +254,7 @@ int main(int argc, char **argv) {
           v = n(k);
       call("settle", e);
       auto cp = e;
-      cp.object().emplace_back("files", Json{Json::Array{}});
+      cp.object().emplace_back("files", Value{Value::Array{}});
       cp.object().emplace_back("message", s("same source, actual run record"));
       call("checkpoint", cp);
       call("retire", e);
@@ -268,6 +270,14 @@ int main(int argc, char **argv) {
     require(git({"branch", "--show-current"}).find("candidate/alias") ==
                 std::string::npos,
             "primary never switched through alias");
+    const auto native_request = dir / "native-status.bbm";
+    put(native_request, blackbird::encode_packet_string(obj({})).value());
+    const auto native_result =
+        run({argv[1], pool.string(), "status", native_request.string()});
+    const auto native_state = blackbird::decode_packet_string(native_result);
+    require(native_state.has_value(), "candidate native IPC failed");
+    require(native_state.value() == call("status", obj({})),
+            "native and external status differ");
     fs::remove_all(dir);
     std::cout << "candidate direct checks passed\n";
     return 0;

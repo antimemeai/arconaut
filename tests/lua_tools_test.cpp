@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -15,24 +16,24 @@ class Observer final : public CodingProvider {
 public:
   bool expected = false;
   std::string delivery_path;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     bool found = false;
     for (const auto &t : field(request, "tools").array())
       if (string_field(t, "name") == "deliver_note")
         found = true;
     require(found == expected);
-    Json::Array output;
+    Value::Array output;
     if (!delivery_path.empty()) {
-      output.push_back(Json::object(
-          {{"type", Json{"function_call"}},
-           {"call_id", Json{"live-lua-delivery"}},
-           {"name", Json{"deliver_note"}},
-           {"arguments",
-            Json{unwrap(dump_json(Json::object({{"path", Json{delivery_path}}})))}}}));
+      output.push_back(
+          Value::object({{"type", Value{"function_call"}},
+                         {"call_id", Value{"live-lua-delivery"}},
+                         {"name", Value{"deliver_note"}},
+                         {"arguments", Value{unwrap(dump_json(Value::object(
+                                           {{"path", Value{delivery_path}}})))}}}));
       delivery_path.clear();
     }
-    auto r = Json::object({{"output", Json{std::move(output)}}});
+    auto r = Value::object({{"output", Value{std::move(output)}}});
 
     capture(unwrap(dump_json(r)));
     return r;
@@ -76,7 +77,7 @@ int main() {
                 "Use retained outputs; never replay unknown effects.\n");
 
         engine.turn({"", "arco.request(); local r=arco.call('deliver_note',{path=" +
-                             unwrap(dump_json(Json{(path / "note").string()})) +
+                             unwrap(dump_json(Value{(path / "note").string()})) +
                              "}); assert(r.written)"});
         require(read_file(path / "note") ==
                 "Use retained outputs; never replay unknown effects.\n");
@@ -93,14 +94,14 @@ int main() {
       )lua"});
         try {
           engine.turn(
-              {"",
-               definition + "d.source='return 99'; assert(arco.define_tool(d).staged); "
-                            "error('failed workflow')"});
+              {"", definition +
+                       "d.source='return 99'; assert(arco.define_tool(d).staged); "
+                       "error('failed workflow')"});
           require(false);
         } catch (const Error &) {
         }
         engine.turn({"", "assert(arco.call('deliver_note',{path=" +
-                             unwrap(dump_json(Json{(path / "note2").string()})) +
+                             unwrap(dump_json(Value{(path / "note2").string()})) +
                              "}).written)"});
         engine.turn({"", definition + R"lua(
         local v=arco.call('tool_registry',{})
@@ -137,14 +138,14 @@ int main() {
         engine.cancelled = {};
         engine.operation_completed = {};
         engine.turn({"", "assert(arco.call('deliver_note',{path=" +
-                             unwrap(dump_json(Json{(path / "after-pause").string()})) +
+                             unwrap(dump_json(Value{(path / "after-pause").string()})) +
                              "}).written)"});
-        engine.effect_policy = [](std::string_view n, const Json &) {
+        engine.effect_policy = [](std::string_view n, const Value &) {
           if (n == "write_file")
             throw Error{ErrorCode::conflict};
         };
         engine.turn({"", "assert(arco.call('deliver_note',{path=" +
-                             unwrap(dump_json(Json{(path / "blocked").string()})) +
+                             unwrap(dump_json(Value{(path / "blocked").string()})) +
                              "}).error)"});
         require(!std::filesystem::exists(path / "blocked"));
         engine.effect_policy = {};
@@ -186,7 +187,7 @@ int main() {
       engine.turn(
           {"", "arco.request(); assert(#arco.call('tool_registry',{}).effective==5); "
                "assert(arco.call('deliver_note',{path=" +
-                   unwrap(dump_json(Json{(path / "disk-reopen").string()})) +
+                   unwrap(dump_json(Value{(path / "disk-reopen").string()})) +
                    "}).written)"});
       require(read_file(path / "disk-reopen") ==
               "Use retained outputs; never replay unknown effects.\n");

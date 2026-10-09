@@ -1,5 +1,6 @@
 #include "blackbird/coding.hpp"
 #include "blackbird/decision_models.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
 #include <unistd.h>
 
@@ -9,8 +10,8 @@ void check(bool value, const char *message) {
   if (!value)
     throw std::runtime_error(message);
 }
-Json parse(std::string_view s) { return unwrap(parse_json(s)); }
-Json request() {
+Value parse(std::string_view s) { return unwrap(parse_json(s)); }
+Value request() {
   return parse(R"({"state":{"message":"Compiler error: mismatched types"},"questions":{
     "route":{"type":"choice","instructions":"Classify message","criteria":{"compiler":"Compilation error","other":null}},
     "failure":{"type":"noul","instructions":{"question":"Does message report failure?"}},
@@ -23,7 +24,7 @@ std::string response() {
     "severity":{"type":"score","score":1.5,"probabilities":{"0":0,"1":0.5,"2":0.5},"legend":{"0":"None","1":"Moderate","2":"Severe"},"confidence":0.5}},
     "usage":{"input_tokens":421,"output_tokens":14}})";
 }
-void set(Json &v, std::string_view key, Json value) {
+void set(Value &v, std::string_view key, Value value) {
   for (auto &[k, x] : v.object())
     if (k == key) {
       x = std::move(value);
@@ -42,10 +43,10 @@ template <class F> void rejects(F f, ErrorCode code) {
 }
 int fake(int argc, char **argv) {
   const auto base = std::filesystem::path(std::getenv("BB_JEV_TEST_ROOT"));
-  Json::Array args;
+  Value::Array args;
   for (int i = 1; i < argc; ++i)
     args.emplace_back(std::string{argv[i]});
-  write_file(base / "argv", unwrap(dump_json(Json{args})));
+  write_file(base / "argv", unwrap(dump_json(Value{args})));
   std::string input{std::istreambuf_iterator<char>{std::cin},
                     std::istreambuf_iterator<char>{}};
   if (input.find("Authorization: Bearer native-test-secret") == std::string::npos ||
@@ -86,7 +87,7 @@ template <class T> T id(unsigned char value) {
   return unwrap(T::from_bytes(b));
 }
 class NoProvider final : public CodingProvider {
-  Json respond(const Json &, const std::function<void(std::string_view)> &) override {
+  Value respond(const Value &, const std::function<void(std::string_view)> &) override {
     throw std::runtime_error("unexpected conversational call");
   }
 };
@@ -106,16 +107,16 @@ int main(int argc, char **argv) {
                             "\"unknown\",\"instructions\":\"x\"}}}"})
       rejects([&] { (void)jev_request(parse(bad)); }, ErrorCode::invalid_range);
     auto credentials = q;
-    set(credentials, "api_key", Json{"never accept"});
+    set(credentials, "api_key", Value{"never accept"});
     rejects([&] { (void)jev_request(credentials); }, ErrorCode::invalid_range);
     auto alien = q;
-    set(alien, "provider", Json{"alien"});
+    set(alien, "provider", Value{"alien"});
     rejects([&] { (void)jev_request(alien); }, ErrorCode::unsupported);
     auto model = parse(response());
-    set(model, "model", Json{"jev-1.14.0"});
+    set(model, "model", Value{"jev-1.14.0"});
     rejects([&] { validate_jev_response(service, model); }, ErrorCode::corrupt);
     auto alias = q;
-    set(alias, "model", Json{"jev-latest"});
+    set(alias, "model", Value{"jev-latest"});
     validate_jev_response(jev_request(alias), model);
     for (const auto &bad : {"\"noul\":1.9", "\"score\":1.7", "\"choice\":\"other\"",
                             "\"input_tokens\":-1"}) {
@@ -192,7 +193,7 @@ int main(int argc, char **argv) {
     large_config.response_limit = 262144;
     DecisionModels large{large_config};
     auto short_request = q;
-    set(short_request, "timeout_seconds", Json{JsonNumber{"1"}});
+    set(short_request, "timeout_seconds", Value{Number{"1"}});
     check(string_field(large.evaluate(short_request), "status") == "ok",
           "quiet stderr stalled body drainage");
     write_file(base / "mode", "cancel");
@@ -201,7 +202,7 @@ int main(int argc, char **argv) {
     adapter.cancelled = {};
     write_file(base / "mode", "timeout");
     auto timed = q;
-    set(timed, "timeout_seconds", Json{JsonNumber{"1"}});
+    set(timed, "timeout_seconds", Value{Number{"1"}});
     rejects([&] { (void)adapter.evaluate(timed); }, ErrorCode::provider_transport);
     write_file(base / "credentials", "jev='bad\nheader'\n");
     rejects([&] { (void)adapter.evaluate(q); }, ErrorCode::unsupported);

@@ -3,8 +3,8 @@
 #include "blackbird/journal.hpp"
 
 #include <algorithm>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <utility>
 
 namespace blackbird {
@@ -29,7 +29,7 @@ public:
   template <typename Iterator>
   ImmutableBytes(Iterator first, Iterator last)
       : ImmutableBytes(std::vector<std::byte>{first, last}) {}
-  using Reader = std::function<Result<std::vector<std::byte>>() >;
+  using Reader = std::function<Result<std::vector<std::byte>>()>;
   static ImmutableBytes cold(std::size_t size, Reader reader) {
     ImmutableBytes result;
     result.size_ = size;
@@ -51,25 +51,32 @@ public:
     }
   }
   const std::byte *data() const { return value().data(); }
-  std::size_t size() const noexcept { return reader_ ? size_ : (bytes_ ? bytes_->size() : 0); }
+  std::size_t size() const noexcept {
+    return reader_ ? size_ : (bytes_ ? bytes_->size() : 0);
+  }
   bool empty() const noexcept { return size() == 0; }
   const std::byte &operator[](std::size_t i) const { return value()[i]; }
   auto begin() const { return value().begin(); }
   auto end() const { return value().end(); }
   friend bool operator==(const ImmutableBytes &a, const ImmutableBytes &b) {
-    if (a.size() != b.size()) return false;
-    if (!a.reader_ && !b.reader_) return a.bytes_ == b.bytes_ || a.value() == b.value();
+    if (a.size() != b.size())
+      return false;
+    if (!a.reader_ && !b.reader_)
+      return a.bytes_ == b.bytes_ || a.value() == b.value();
     auto left = a.read();
-    if (!left.has_value()) throw left.error();
+    if (!left.has_value())
+      throw left.error();
     auto right = b.read();
-    if (!right.has_value()) throw right.error();
+    if (!right.has_value())
+      throw right.error();
     return left.value() == right.value();
   }
 
 private:
   const std::vector<std::byte> &value() const {
     // An eager accessor must never turn a historical visit into a pinned cache.
-    if (reader_) throw Error{ErrorCode::stale_handle};
+    if (reader_)
+      throw Error{ErrorCode::stale_handle};
     static const std::vector<std::byte> empty;
     return bytes_ ? *bytes_ : empty;
   }
@@ -242,7 +249,7 @@ RetainedKind retained_kind(const RetainedBody &body) noexcept;
 // transition or authorize a source dependency. RetainedState owns root checks;
 // the selected-chain owner alone validates maintenance placement and capture sets.
 Result<std::vector<std::byte>> encode_retained_event(const RetainedEvent &event,
-                                             std::uint32_t max_payload);
+                                                     std::uint32_t max_payload);
 Result<RetainedEvent> decode_retained_event(ByteView bytes, std::uint32_t max_payload);
 
 } // namespace blackbird

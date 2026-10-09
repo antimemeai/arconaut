@@ -11,6 +11,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import importlib.util
+packet_spec = importlib.util.spec_from_file_location('native_packet', Path(__file__).resolve().parents[2] / 'scripts/native-packet.py')
+native_packet = importlib.util.module_from_spec(packet_spec)
+packet_spec.loader.exec_module(native_packet)
 import pty
 import resource
 import select
@@ -55,7 +59,7 @@ def sample(executable, idle, tail, sync_probe, direct, seed=None, timing=False, 
         if published:
             env.pop("BLACKBIRD_EXECUTABLE", None)
             env.pop("ARCO_EXECUTABLE", None)
-        timing_path = Path(directory) / "local-phases.jsonl"
+        timing_path = Path(directory) / "local-phases.bbm"
         if timing:
             env["BLACKBIRD_LOCAL_TIMING"] = str(timing_path)
         sync_log = Path(directory) / "sync-count.log"
@@ -125,7 +129,7 @@ def sample(executable, idle, tail, sync_probe, direct, seed=None, timing=False, 
             if complete is None:
                 raise RuntimeError("missing successful local command/completion endpoint")
             # UI state must preserve any bytes delivered after Enter in the same batch.
-            saved = json.loads((Path(directory) / "ui-state.json").read_text())
+            saved = native_packet.read_packet(Path(directory) / "ui-state.bbm")
             if bytes.fromhex(saved["draft"]).decode() != tail:
                 raise RuntimeError("trailing input was not persisted")
             os.write(master, b"\x01\x0b\x04")  # clear trailing draft, quit while idle
@@ -158,7 +162,7 @@ def sample(executable, idle, tail, sync_probe, direct, seed=None, timing=False, 
                 result["clock_monotonic_seconds"] = dict(spawn=started_clock, first_frame=frame_clock,
                                                         submit=sent_clock, marker=marker_clock,
                                                         complete=complete_clock)
-                result["native_phases"] = [json.loads(line) for line in timing_path.read_text().splitlines()]
+                result["native_phases"] = native_packet.read_stream(timing_path)
                 startup = next((row for row in result["native_phases"] if row.get("action") == "startup.initialize"), None)
                 if startup:
                     result["spawn_to_native_entry_ms"] = (startup["start_wall_ns"] / 1e9 - started_clock) * 1000

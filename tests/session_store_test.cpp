@@ -62,7 +62,7 @@ int main() {
       workflow = hex_identity(identity.workflow.bytes());
       check(session_identity(log).conversation == identity.conversation);
       save_session_info(path, store.settings(), identity);
-      const auto metadata_path = std::filesystem::path{path} / "session-info.json";
+      const auto metadata_path = std::filesystem::path{path} / "session-info.bbm";
       const auto old_time =
           std::filesystem::file_time_type::clock::now() - std::chrono::hours{1};
       std::filesystem::last_write_time(metadata_path, old_time);
@@ -83,7 +83,7 @@ int main() {
                 "snapshot");
       check(string_field(field(field(listed, "sessions").array()[0], "configuration"),
                          "name") == "My session");
-      write_file(std::filesystem::path{path} / "session-info.json",
+      write_file(std::filesystem::path{path} / "session-info.bbm",
                  std::string(1024 * 1024 + 1, 'x'));
       listed = list_sessions(path);
       check(string_field(field(listed, "sessions").array()[0], "metadata_status") ==
@@ -96,9 +96,10 @@ int main() {
       const auto packet = unwrap(read_packet(record.payload));
       const auto origin = "rrc:" + string_field(packet, "token");
       // Simulate a crash after the context append, before consuming the intent.
-      context.append({Json::object({{"role", Json{"user"}},
-                                    {"content", Json{"continue\nRetain this note"}}})},
-                     origin);
+      context.append(
+          {Value::object({{"role", Value{"user"}},
+                          {"content", Value{"continue\nRetain this note"}}})},
+          origin);
     }
     {
       auto root =

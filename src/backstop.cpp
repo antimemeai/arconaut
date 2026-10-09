@@ -1,4 +1,5 @@
 #include "blackbird/backstop.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/process_lifetime.hpp"
 #include <fstream>
 #include <set>
@@ -7,7 +8,7 @@
 #include <unistd.h>
 namespace blackbird {
 namespace {
-Json number(std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; }
+Value number(std::uint64_t n) { return Value{Number{n}}; }
 template <class T> T random_identity() {
   IdentityBytes bytes{};
   if (::getentropy(bytes.data(), bytes.size()) != 0)
@@ -15,7 +16,7 @@ template <class T> T random_identity() {
   return unwrap(T::from_bytes(bytes));
 }
 constexpr std::string_view assessment = R"lua(
-local response = blackbird.request({tools=blackbird.json.decode('[]'), retry_policy={max_attempts=1}})
+local response = blackbird.request({tools=blackbird.array({}), retry_policy={max_attempts=1}})
 local text = ''
 for _, item in ipairs(response.output) do
   if item.type == 'function_call' then error('Assessment must not dispatch tools') end
@@ -43,7 +44,7 @@ constexpr std::string_view instruction =
     "exec/restart and provider requests during action are refused in recovery; use "
     "native file/context APIs. Two-minute total deadline. File mutations "
     "and oracles inside the predecessor session tree (including aliases) are refused. "
-    "Calls return errors as JSON; check "
+    "Calls return native error values; check "
     "them. You have at most two assessment/pivot attempts, one request per assessment. "
     "Keep action and expected artifact small. The oracle must be absent or different "
     "before action; stale output does not establish progress. Explicit pause stays "
@@ -53,14 +54,14 @@ void check_pause(const std::function<bool()> &paused) {
     throw Error{ErrorCode::interrupted};
 }
 } // namespace
-Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
-                  const std::filesystem::path &source_session, const Json &mission,
-                  CodingProvider &assessor, const SessionSettings &settings,
-                  const std::function<bool()> &paused,
-                  const std::function<void(std::string_view)> &display) {
+Value run_backstop(CodingEngine &source_engine, AuditLog &source_log,
+                   const std::filesystem::path &source_session, const Value &mission,
+                   CodingProvider &assessor, const SessionSettings &settings,
+                   const std::function<bool()> &paused,
+                   const std::function<void(std::string_view)> &display) {
   check_pause(paused);
-  if (!std::holds_alternative<Json::Object>(mission.value()) ||
-      unwrap(dump_json(mission)).size() > 32768 ||
+  if (!std::holds_alternative<Value::Object>(mission.value()) ||
+      unwrap(encode_packet_string(mission)).size() > 32768 ||
       string_field(mission, "mission").empty())
     throw Error{ErrorCode::invalid_range};
   const auto cause = source_engine.claim_backstop();
@@ -78,22 +79,22 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   if (!file)
     throw Error{ErrorCode::incomplete};
   const auto source_header = unwrap(decode_journal_header(bytes));
-  Json lineage = Json::object(
-      {{"session", Json{source_path.string()}},
-       {"environment", Json{hex_identity(source_header.environment.bytes())}},
-       {"journal", Json{hex_identity(cursor.journal.bytes())}},
+  Value lineage = Value::object(
+      {{"session", Value{source_path.string()}},
+       {"environment", Value{hex_identity(source_header.environment.bytes())}},
+       {"journal", Value{hex_identity(cursor.journal.bytes())}},
        {"prefix_sequence", number(cursor.sequence)},
        {"prefix_end", number(cursor.end_offset)},
-       {"context_revision", Json{source_engine.context().head()}},
-       {"status", Json{"unsettled"}},
-       {"reason", Json{"Cooperative backstop: remote effects remain unknown; no "
-                       "inherited admissions"}}});
-  Json::Array selected;
+       {"context_revision", Value{source_engine.context().head()}},
+       {"status", Value{"unsettled"}},
+       {"reason", Value{"Cooperative backstop: remote effects remain unknown; no "
+                        "inherited admissions"}}});
+  Value::Array selected;
   const auto view = source_engine.context().view();
   // Preserve all governing messages and the latest operator prompt, not the huge
   // predecessor working presentation. Refuse oversized authority, never truncate.
   const auto &entries = field(view, "entries").array();
-  const Json *last_user = nullptr;
+  const Value *last_user = nullptr;
   for (const auto &entry : entries) {
     const auto &item = field(entry, "item");
     const auto *role = item.find("role");
@@ -106,9 +107,9 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   }
   if (last_user)
     selected.push_back(*last_user);
-  if (selected.empty() || unwrap(dump_json(Json{selected})).size() > 65536)
+  if (selected.empty() || unwrap(encode_packet_string(Value{selected})).size() > 65536)
     throw Error{ErrorCode::capacity};
-  Json::Array attempts;
+  Value::Array attempts;
   std::size_t total = 0;
   for (std::size_t ordinal = 0; ordinal < source_log.root().fact_count(); ++ordinal) {
     const auto fact = unwrap(source_log.root().fact(ordinal));
@@ -121,28 +122,29 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
     const auto state = unwrap(source_log.root().attempt(admission->attempt));
     const bool unknown = !state.observation ||
                          state.observation->disposition == AttemptDisposition::unknown;
-    attempts.push_back(Json::object(
-        {{"attempt", Json{hex_identity(admission->attempt.bytes())}},
+    attempts.push_back(Value::object(
+        {{"attempt", Value{hex_identity(admission->attempt.bytes())}},
          {"input",
-          Json{std::string{reinterpret_cast<const char *>(admission->input.data()),
-                           std::min<std::size_t>(admission->input.size(), 1024)}}},
-         {"input_truncated", Json{admission->input.size() > 1024}},
-         {"outcome_unknown", Json{unknown}},
-         {"replay_authority", Json{false}}}));
+          Value{std::string{reinterpret_cast<const char *>(admission->input.data()),
+                            std::min<std::size_t>(admission->input.size(), 1024)}}},
+         {"input_truncated", Value{admission->input.size() > 1024}},
+         {"outcome_unknown", Value{unknown}},
+         {"replay_authority", Value{false}}}));
   }
-  Json packet = Json::object(
+  Value packet = Value::object(
       {{"mission", mission},
        {"source", lineage},
-       {"cause", Json{std::string{error_name(cause.code)}}},
-       {"detail", Json{JsonNumber{std::to_string(cause.detail)}}},
+       {"cause", Value{std::string{error_name(cause.code)}}},
+       {"detail", Value{Number{cause.detail}}},
        {"local_quiescence",
-        Json{"cooperative-native; no live callbacks or children; no uncontained exec"}},
-       {"attempts", Json{attempts}},
+        Value{
+            "cooperative-native; no live callbacks or children; no uncontained exec"}},
+       {"attempts", Value{attempts}},
        {"attempt_count", number(total)},
        {"older_attempts",
-        Json{"inspect exact original audit; not retroactively settled"}},
-       {"dirty_paths", Json{"unavailable unless supplied in root mission packet; do "
-                            "not reset checkout"}}});
+        Value{"inspect exact original audit; not retroactively settled"}},
+       {"dirty_paths", Value{"unavailable unless supplied in root mission packet; do "
+                             "not reset checkout"}}});
   std::uint64_t issuer = 0;
   if (::getentropy(&issuer, sizeof(issuer)) != 0 || issuer == 0)
     throw Error{ErrorCode::io};
@@ -158,12 +160,12 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
                             {64ULL * 1024 * 1024, 20000}));
   AuditLog log{*root};
   ContextStore context{log};
-  context.seed_successor(Json::object(
-      {{"version", number(1)}, {"source", lineage}, {"entries", Json{selected}}}));
-  context.append({Json::object({{"role", Json{"developer"}},
-                                {"content", Json{std::string{instruction}}}})},
+  context.seed_successor(Value::object(
+      {{"version", number(1)}, {"source", lineage}, {"entries", Value{selected}}}));
+  context.append({Value::object({{"role", Value{"developer"}},
+                                 {"content", Value{std::string{instruction}}}})},
                  "backstop.instructions");
-  log.original({"backstop.packet", unwrap(dump_json(packet)), Json{}});
+  log.original({"backstop.packet", unwrap(encode_packet_string(packet)), Value{}});
   // request() installs the engine cancellation callback on the shared adapter.
   // Restore it before this recovery lifetime ends; do not leave borrowed captures.
   struct RestoreCancellation {
@@ -202,7 +204,7 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
   };
   bool assessing = false;
   unsigned assessment_calls = 0;
-  engine.effect_policy = [&](std::string_view name, const Json &input) {
+  engine.effect_policy = [&](std::string_view name, const Value &input) {
     if (name == "provider" && (!assessing || ++assessment_calls > 1))
       throw Error{ErrorCode::conflict};
     if (name == "exec" || name == "restart")
@@ -211,7 +213,7 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
       protect_path(string_field(input, "path"));
   };
   std::set<std::string> attempted_actions;
-  Json outcome;
+  Value outcome;
   for (unsigned pivot = 1; pivot <= 2; ++pivot) {
     check_pause(paused);
     if (!detail::locally_quiescent())
@@ -219,7 +221,7 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
     try {
       assessing = true;
       assessment_calls = 0;
-      engine.turn({unwrap(dump_json(packet)), assessment});
+      engine.turn({unwrap(format_value(packet)), assessment});
       assessing = false;
       const auto choice = engine.workflow_result();
       for (const auto key : {"retained", "uncertain", "change", "next", "action"})
@@ -242,8 +244,8 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
       if (existed && prior == expected)
         throw Error{ErrorCode::conflict};
       check_pause(paused);
-      log.original({"backstop.pivot", unwrap(dump_json(choice)),
-                    Json::object({{"ordinal", number(pivot)}})});
+      log.original({"backstop.pivot", unwrap(encode_packet_string(choice)),
+                    Value::object({{"ordinal", number(pivot)}})});
       attempted_actions.insert(action);
       packet.object().emplace_back("selected_pivot_" + std::to_string(pivot), choice);
       engine.turn(
@@ -252,25 +254,27 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
       const auto actual = read_file(path, 1024 * 1024);
       if (actual != expected)
         throw Error{ErrorCode::conflict};
-      outcome = Json::object({{"phase", Json{"useful-work-observed"}},
-                              {"pivot", number(pivot)},
-                              {"artifact", Json{path.string()}},
-                              {"content", Json{actual}},
-                              {"session", Json{destination.string()}},
-                              {"remote_effects_settled", Json{false}}});
-      log.original({"backstop.outcome", unwrap(dump_json(outcome)), Json{}});
+      outcome = Value::object({{"phase", Value{"useful-work-observed"}},
+                               {"pivot", number(pivot)},
+                               {"artifact", Value{path.string()}},
+                               {"content", Value{actual}},
+                               {"session", Value{destination.string()}},
+                               {"remote_effects_settled", Value{false}}});
+      log.original(
+          {"backstop.outcome", unwrap(encode_packet_string(outcome)), Value{}});
       return outcome;
     } catch (const Error &error) {
       const bool expired = std::chrono::steady_clock::now() >= deadline;
-      outcome = Json::object(
-          {{"phase", Json{expired                                ? "deadline-blocked"
-                          : error.code == ErrorCode::interrupted ? "paused"
-                                                                 : "no-progress"}},
+      outcome = Value::object(
+          {{"phase", Value{expired                                ? "deadline-blocked"
+                           : error.code == ErrorCode::interrupted ? "paused"
+                                                                  : "no-progress"}},
            {"pivot", number(pivot)},
-           {"error", Json{std::string{error_name(error.code)}}},
-           {"session", Json{destination.string()}},
-           {"effect_outcome", Json{"unknown; inspect recovery audit; no replay"}}});
-      log.original({"backstop.outcome", unwrap(dump_json(outcome)), Json{}});
+           {"error", Value{std::string{error_name(error.code)}}},
+           {"session", Value{destination.string()}},
+           {"effect_outcome", Value{"unknown; inspect recovery audit; no replay"}}});
+      log.original(
+          {"backstop.outcome", unwrap(encode_packet_string(outcome)), Value{}});
       if (error.code == ErrorCode::interrupted || !detail::locally_quiescent() ||
           root->state() != JournalWriterState::live)
         return outcome;
@@ -279,8 +283,8 @@ Json run_backstop(CodingEngine &source_engine, AuditLog &source_log,
     }
   }
   outcome.object().emplace_back(
-      "bound", Json{"two no-progress pivots exhausted; explicit inspection required"});
-  log.original({"backstop.blocked", unwrap(dump_json(outcome)), Json{}});
+      "bound", Value{"two no-progress pivots exhausted; explicit inspection required"});
+  log.original({"backstop.blocked", unwrap(encode_packet_string(outcome)), Value{}});
   return outcome;
 }
 } // namespace blackbird

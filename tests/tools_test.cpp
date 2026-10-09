@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/tools.hpp"
 #include <iostream>
 #include <unistd.h>
@@ -10,52 +11,51 @@ int main() {
   try {
     LocalTools tools;
     const auto file = std::string{path} + "/source.cpp";
-    tools.run("write_file", Json::object({{"path", Json{file}},
-                                          {"content", Json{"int answer = 1;\n"}}}));
-    tools.run("edit_file",
-              Json::object(
-                  {{"path", Json{file}}, {"old", Json{"= 1"}}, {"new", Json{"= 42"}}}));
+    tools.run("write_file", Value::object({{"path", Value{file}},
+                                           {"content", Value{"int answer = 1;\n"}}}));
+    tools.run("edit_file", Value::object({{"path", Value{file}},
+                                          {"old", Value{"= 1"}},
+                                          {"new", Value{"= 42"}}}));
     if (read_file(file) != "int answer = 42;\n")
       throw Error{ErrorCode::corrupt};
     auto result = tools.run(
         "exec",
-        Json::object({{"command", Json{"printf OUT; printf ERR >&2; exit 7"}}}));
+        Value::object({{"command", Value{"printf OUT; printf ERR >&2; exit 7"}}}));
     if (string_field(result, "output") != "OUTERR" ||
-        field(result, "exit_code").number().text != "7")
+        field(result, "exit_code").number().text() != "7")
       throw Error{ErrorCode::corrupt};
     if (tools.captured().size() != 1 || tools.captured()[0].bytes != "OUTERR")
       throw Error{ErrorCode::corrupt};
     auto fallback =
-        tools.run("exec", Json::object({{"command", Json{"printf EMPTY_ARGV_OK"}},
-                                        {"argv", Json{Json::Array{}}}}));
+        tools.run("exec", Value::object({{"command", Value{"printf EMPTY_ARGV_OK"}},
+                                         {"argv", Value{Value::Array{}}}}));
     if (string_field(fallback, "output") != "EMPTY_ARGV_OK")
       throw Error{ErrorCode::corrupt};
     auto bounded =
-        tools.run("exec", Json::object({{"command", Json{"printf abcdef; exit 9"}},
-                                        {"output_max_bytes", Json{JsonNumber{"2"}}}}));
+        tools.run("exec", Value::object({{"command", Value{"printf abcdef; exit 9"}},
+                                         {"output_max_bytes", Value{Number{"2"}}}}));
     if (string_field(bounded, "output") != "ab" ||
-        field(bounded, "omitted_bytes").number().text != "4" ||
-        field(bounded, "exit_code").number().text != "9" ||
+        field(bounded, "omitted_bytes").number().text() != "4" ||
+        field(bounded, "exit_code").number().text() != "9" ||
         tools.captured()[0].bytes != "abcdef")
       throw Error{ErrorCode::corrupt};
     auto zero =
-        tools.run("exec", Json::object({{"command", Json{"printf x"}},
-                                        {"output_max_bytes", Json{JsonNumber{"0"}}}}));
+        tools.run("exec", Value::object({{"command", Value{"printf x"}},
+                                         {"output_max_bytes", Value{Number{"0"}}}}));
     if (string_field(zero, "output") != "" ||
-        field(zero, "output_bytes").number().text != "1")
+        field(zero, "output_bytes").number().text() != "1")
       throw Error{ErrorCode::corrupt};
     auto split =
-        tools.run("exec", Json::object({{"command", Json{"printf '\\303\\251'"}},
-                                        {"output_max_bytes", Json{JsonNumber{"1"}}}}));
+        tools.run("exec", Value::object({{"command", Value{"printf '\\303\\251'"}},
+                                         {"output_max_bytes", Value{Number{"1"}}}}));
     if (string_field(field(split, "output"), "bytes") != "c3")
       throw Error{ErrorCode::corrupt};
     const auto marker = std::string{path} + "/nul-command-marker";
     for (const auto *number : {"-1", "1.5", "18446744073709551616"}) {
       bool rejected = false;
       try {
-        tools.run("exec",
-                  Json::object({{"command", Json{"touch '" + marker + "'"}},
-                                {"output_max_bytes", Json{JsonNumber{number}}}}));
+        tools.run("exec", Value::object({{"command", Value{"touch '" + marker + "'"}},
+                                         {"output_max_bytes", Value{Number{number}}}}));
       } catch (const Error &e) {
         rejected = e.code == ErrorCode::invalid_range;
       }
@@ -67,7 +67,7 @@ int main() {
     command += "ignored suffix";
     bool command_refused = false;
     try {
-      tools.run("exec", Json::object({{"command", Json{command}}}));
+      tools.run("exec", Value::object({{"command", Value{command}}}));
     } catch (const Error &e) {
       command_refused = e.code == ErrorCode::invalid_range;
     }
@@ -149,16 +149,16 @@ int main() {
     range("\"byte_start\":1,\"byte_end\":2", std::string(1, '\0'));
     auto binary = tools.run(
         "read_file",
-        Json::object({{"path", Json{file}}, {"byte_start", Json{JsonNumber{"2"}}}}));
+        Value::object({{"path", Value{file}}, {"byte_start", Value{Number{"2"}}}}));
     if (string_field(field(binary, "content"), "bytes") != "ff" ||
         tools.captured()[0].bytes != std::string{"x\0\xff", 3})
       throw Error{ErrorCode::corrupt};
     write_file(file, "same same");
     bool refused = false;
     try {
-      tools.run("edit_file", Json::object({{"path", Json{file}},
-                                           {"old", Json{"same"}},
-                                           {"new", Json{"bad"}}}));
+      tools.run("edit_file", Value::object({{"path", Value{file}},
+                                            {"old", Value{"same"}},
+                                            {"new", Value{"bad"}}}));
     } catch (const Error &e) {
       refused = e.code == ErrorCode::conflict;
     }

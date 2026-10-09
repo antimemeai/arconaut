@@ -267,8 +267,7 @@ metadata and native operation continuation packets with an owned versioned binar
 value encoding. Fixed field/value dictionary IDs avoid recurring names, identities
 use raw16 bytes, integers/lengths use canonical varints, and arbitrary variable
 values remain tagged extensible data. JSON remains the tool/provider boundary and
-legacy read path. Context documents and original upstream request/output bytes
-are outside this metadata conversion; no destructive history rewrite.
+legacy read path in that earlier unit. This plan is superseded by the operator-expanded native-only policy below.
 
 Written plan: define version/tag/dictionary rules and bounded codec; direct byte
 layout/round-trip/size/malformed/bounds checks; integrate all affected readers with
@@ -278,73 +277,100 @@ readers before changing the application packet format. No new dependency or
 compression library, new store, mutable authority or clock semantics.
 
 
-### BBM1 wire layout and compatibility
+### Current native layout: BBM2
 
-Metadata payloads begin with bytes `42 42 4d 01` (`BBM`, version1), followed by
-one tagged value. The existing journal frame, batch commit/checksum and retained
-causal IDs remain unchanged. All integer lengths/counts use unsigned LEB128
-(canonical shortest representation, at most10 bytes, bounded to64 bits).
+BBM2 begins with `42 42 4d 02`, followed by one native value. The existing
+journal frames, batch commit/checksums and retained envelope remain. Internal
+values own signed/unsigned 64-bit integers, finite binary64 values, exact decimals
+(sign, signed exponent, base1e9 coefficient limbs), byte strings, arrays and maps.
+Numbers never retain JSON token text. Map order is preserved on disk; Lua maps
+have their ordinary unordered semantics. Mutable container borrows remain private.
 
-| Tag | Value body |
+Lengths/counts/unsigned integers use canonical unsigned LEB128. Signed integers
+use a negative-magnitude tag. Decimal exponents use zigzag LEB128; coefficient
+limbs and binary64 bits use little endian. Decimal coefficients normalize trailing
+zeros without precision loss. Signed zero is retained. Strings may contain arbitrary
+bytes; JSON adapters export invalid UTF-8 byte strings as `{encoding:"hex",bytes:"..."}`;
+native presentation escapes binary bytes.
+
+| Tag | Payload |
 | --- | --- |
-| 0 | null, no body |
-| 1 / 2 | false / true, no body |
-| 3 | unsigned integer magnitude |
-| 4 | negative integer magnitude, nonzero |
-| 5 | length-prefixed exact decimal/exponent number text |
-| 6 | length-prefixed string bytes |
-| 7 |16 identity bytes, decoded as lowercase hex at the JSON boundary |
-| 8 | nonzero dictionary ID |
-| 9 | count followed by array values |
-|10 | count followed by string-key/value pairs, preserving member order |
+|0 | null |
+|1/2 | false/true |
+|3 | unsigned integer magnitude |
+|4 | nonzero negative int64 magnitude |
+|5 | sign byte, zigzag exponent, limb count, uint32 coefficient limbs |
+|6 | byte length followed by string bytes |
+|7 |16 identity bytes, exposed as lowercase hex in native values |
+|8 | one-based ID in the fixed `src/packet.cpp` dictionary |
+|9 | count followed by array values |
+|10 | count followed by string-key/value pairs |
+|11 | finite IEEE754 binary64 bits |
 
-Dictionary IDs are one-based positions in `src/packet.cpp`'s fixed `words` table.
-Keys and recurring string values share that table. Never reorder/remove assigned
-entries within version1. Unknown IDs/tags, overflowing/noncanonical varints,
-truncation and trailing bytes fail decoding. Unknown packet versions are reported
-unsupported, not attempted as JSON. Encode/decode enforce byte/node/depth limits
-and validate lexical numbers without floating-point conversion. No runtime
-schema negotiation, external codec library or compression dependency.
+Unknown versions, dictionary IDs/tags, overflow, noncanonical varints, truncation,
+trailing bytes and exceeded byte/node/depth bounds fail. No JSON/BBM1 sniffing,
+fallback or migration. Root-field projection skips omitted string/container payload allocation
+while consuming and validating the entire packet.
 
-New log/program records, native operation continuation metadata and terminal result
-locators use BBM1. A terminal attempt references the already-retained result by
-record index and identity; it no longer duplicates the complete response. When
-result capture fails, settlement retains the bounded error instead. The retained
-native disposition still determines success/failure/unknown independently of that
-reference. Old terminal result bodies remain readable as original bytes.
-Existing JSON history stays readable and is not rewritten. Exact source payloads
-(including upstream JSON) and context documents retain their current formats.
-Pre-BBM executables cannot interpret new metadata; use the updated reader for
-sessions written by this candidate. JSON tool interfaces remain unchanged.
-For full metadata inspection, `audit_inspect({query={record=N,packet=true}})`
-returns a decoded JSON packet. `limit` bounds stored and expanded bytes; source,
-diagnostic and offset selectors are incompatible with decoded-packet mode.
-Raw exact-byte inspection remains available separately.
+All context/application records, admissions, continuations, native operation
+results and saved context/program state use native binary values. Terminal attempts
+reference an already-retained result by record index and identity rather than
+retaining another complete copy. Original provider/process/file bytes remain opaque
+source evidence. `audit_inspect({query={record=N,packet=true}})` decodes metadata;
+adding `source=0` decodes a known native source packet. Opaque external sources
+remain available through byte inspection and are never guessed to be JSON.
 
+Owned sidecars: `credentials.bbm`, `session-info.bbm`, `ui-state.bbm`,
+`station-status.bbm` and candidate-pool `state.bbm`. Timing diagnostics and paged
+context inspection use BBMS1: `42 42 4d 53 01`, then repeated uint64 little-endian
+packet lengths and BBM2 packets. Context inspection defaults to `bbm2-stream`;
+`format=json` explicitly chooses the bounded virtual JSON export. No aggregate
+history is materialized for either export.
 
-Compact unit remediation found a second scaling cost: full operation results were
-retained again inside terminal attempt bodies. Replaced that copy with the result
-capture's exact locator. Direct262144-byte file-read fixture retains one262158-byte
-JSON result original and a29-byte binary settlement; after reopen, the locator's
-identity and source bytes match the actual returned result. This fixture also
-counts source frames to detect duplicate storage. Original results remain exact;
-large raw response bytes are not presented as a throughput claim.
+Lua uses direct native transfer for calls, operator invocations and tool arguments.
+Integers and reals use Lua's native numbers; unsigned integers beyond its signed
+range and exact decimals use tagged native component tables. Null and empty arrays
+retain tags. `blackbird.binary.encode/decode` handles BBM2, including the hex-byte
+presentation returned by binary file reads. `blackbird.format` produces bounded
+human/model text. JSON helpers exist only for chosen external interchange.
+Built-in workflows retain native tool results. The provider adapter parses function
+arguments at receipt and formats function arguments/results at send. Provider wire
+JSON and explicit user JSON import/export are supported. Candidate CLI `.bbm`
+requests/results use binary IPC; `.json` selects external JSON interchange.
 
-The doctrine metadata fixture measures524 JSON bytes versus162 BBM1 bytes with
-identical decoded values. Codec oracles cover fixed byte layouts, integer extrema,
-lexical numbers, arbitrary fields, truncation, overflowing/noncanonical lengths,
-unknown versions/tags/dictionary IDs, trailing data and byte/node/depth bounds.
-A mixed-format native journal is appended and reopened with exact source bytes
-(including NUL) and bounded decoded inspection. The admission byte-capacity oracle
-now uses the compact encoding for its allowance, preserving refusal before effects.
+Old internal files/sessions have no compatibility reader. Reauthentication creates
+new binary credential state; existing JSON credential files are not read, rewritten
+or deleted. No provider inference, credential-content inspection or dependency
+adoption was needed for this change.
 
 
-Final compact-unit recheck:20 selected cases passed on Mac release
-(Clang23.1.2/Lua5.4.8) and Linux debug (Clang18.1.3/libstdc++13/Lua5.4.8).
-Affected Mac debug cases also passed after remediation. Cases: packet,
-observations/CLI, trajectory/CLI, audit, coding, request_storage, context,
-station/driver, session_store, program_config, colleague_engine,
-participant_recovery, workflows, context_delta, successor_seed, saved_state,
-and tasks. Local captures: context/compact-release-build.log,
-context/compact-release-checks.log; Linux: context/linux/run-6xvy3zgj.
-No additional assurance layer or live provider run.
+## Operator-expanded internal JSON removal
+
+The operator explicitly rejects JSON internally, not only on disk, and authorizes
+the full cleanup. The earlier20min compatibility-only note is superseded by this
+expanded scope. Remaining allowance150min, including at most20min two-layer
+hardening. Own native value/number types, binary context and sidecars, native
+Lua transfer and bounded binary projection replace internal JSON use. Provider
+wire interchange and explicit user export/presentation remain boundary adapters.
+No compatibility or migration for former internal formats. Update workspace and
+repo doctrine. Direct oracles: typed numeric/binary layouts and bounds; native
+Lua values without textual transfer; context/saved-state/sidecar reopen; original
+external bytes intact; external JSON interoperability; affected native/CLI suite
+and one scoped profile recheck. No new dependency, live provider call or third
+assurance layer.
+
+
+### Native-unit verification and remaining gates
+
+Completed native-format implementation and direct remediation within the declared
+unit. Mac debug80/80 passed; selected Mac release24/24 and Linux debug24/24 passed.
+After strengthening the large-history fixture, compaction/journal/native-value/packet
+passed4/4; the actual binary candidate CLI passed1/1. Captures are recorded in the
+2026-10-09 journal entry. These checks make no general performance claim.
+
+Repository-wide rigor remains failing: existing formatting findings and native
+analysis findings are tracked in arconaut-1qa. A parallel diagnostic invocation of
+the original lint machinery analyzed112 translation units;19 commands failed and
+the Lua formatting gate prevented later Lua checks. Existing schema argument-order
+and saved-state optional-guard patterns were verified in prior HEAD. Other findings
+require triage. No extra assurance layer or new unbounded hardening unit is implied.

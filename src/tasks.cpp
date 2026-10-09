@@ -1,4 +1,6 @@
 #include "blackbird/tasks.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <algorithm>
 #include <charconv>
 #include <chrono>
@@ -8,25 +10,26 @@ namespace blackbird {
 namespace {
 constexpr std::array<std::string_view, 5> statuses{"queued", "active", "blocked",
                                                    "done", "dropped"};
-Json number(std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-std::uint64_t integer(const Json &value) {
-  const auto *n = std::get_if<JsonNumber>(&value.value());
+Value number(std::uint64_t n) { return Value{Number{n}}; }
+std::uint64_t integer(const Value &value) {
+  const auto *n = std::get_if<Number>(&value.value());
   if (!n)
     throw Error{ErrorCode::invalid_range};
   std::uint64_t out = 0;
-  const auto r = std::from_chars(n->text.data(), n->text.data() + n->text.size(), out);
-  if (r.ec != std::errc{} || r.ptr != n->text.data() + n->text.size())
+  const auto digits = n->text();
+  const auto r = std::from_chars(digits.data(), digits.data() + digits.size(), out);
+  if (r.ec != std::errc{} || r.ptr != digits.data() + digits.size())
     throw Error{ErrorCode::invalid_range};
   return out;
 }
-std::size_t status_index(const Json &row) {
+std::size_t status_index(const Value &row) {
   const auto &s = string_field(row, "status");
   const auto i = std::find(statuses.begin(), statuses.end(), s);
   if (i == statuses.end())
     throw Error{ErrorCode::invalid_range};
   return static_cast<std::size_t>(i - statuses.begin());
 }
-void put(Json &value, std::string_view key, Json fresh) {
+void put(Value &value, std::string_view key, Value fresh) {
   for (auto &[name, entry] : value.object())
     if (name == key) {
       entry = std::move(fresh);
@@ -34,22 +37,22 @@ void put(Json &value, std::string_view key, Json fresh) {
     }
   value.object().emplace_back(key, std::move(fresh));
 }
-void bounded_text(const Json &value, std::size_t bound, bool allow_empty = true) {
+void bounded_text(const Value &value, std::size_t bound, bool allow_empty = true) {
   const auto *text = std::get_if<std::string>(&value.value());
   if (!text || text->size() > bound || (!allow_empty && text->empty()) ||
       text->find('\0') != std::string::npos)
     throw Error{ErrorCode::invalid_range};
 }
-void keys(const Json &object, std::initializer_list<std::string_view> allowed) {
+void keys(const Value &object, std::initializer_list<std::string_view> allowed) {
   for (const auto &[key, value] : object.object()) {
     (void)value;
     if (std::find(allowed.begin(), allowed.end(), key) == allowed.end())
       throw Error{ErrorCode::invalid_range};
   }
 }
-bool same_arguments(const Json &left, const Json &right) {
-  if (const auto *object = std::get_if<Json::Object>(&left.value())) {
-    const auto *other = std::get_if<Json::Object>(&right.value());
+bool same_arguments(const Value &left, const Value &right) {
+  if (const auto *object = std::get_if<Value::Object>(&left.value())) {
+    const auto *other = std::get_if<Value::Object>(&right.value());
     if (!other || object->size() != other->size())
       return false;
     for (const auto &[key, value] : *object) {
@@ -59,8 +62,8 @@ bool same_arguments(const Json &left, const Json &right) {
     }
     return true;
   }
-  if (const auto *array = std::get_if<Json::Array>(&left.value())) {
-    const auto *other = std::get_if<Json::Array>(&right.value());
+  if (const auto *array = std::get_if<Value::Array>(&left.value())) {
+    const auto *other = std::get_if<Value::Array>(&right.value());
     if (!other || array->size() != other->size())
       return false;
     for (std::size_t i = 0; i < array->size(); ++i)
@@ -70,7 +73,7 @@ bool same_arguments(const Json &left, const Json &right) {
   }
   return left == right;
 }
-void validate_row(const Json &row) {
+void validate_row(const Value &row) {
   bounded_text(field(row, "id"), 32, false);
   bounded_text(field(row, "title"), 512, false);
   bounded_text(field(row, "parent"), 32);
@@ -82,11 +85,11 @@ void validate_row(const Json &row) {
     throw Error{ErrorCode::invalid_range};
   (void)integer(field(row, "updated"));
 }
-Json counts_json(const std::array<std::size_t, 5> &counts) {
-  Json::Object out;
+Value counts_json(const std::array<std::size_t, 5> &counts) {
+  Value::Object out;
   for (std::size_t i = 0; i < counts.size(); ++i)
     out.emplace_back(statuses[i], number(counts[i]));
-  return Json{std::move(out)};
+  return Value{std::move(out)};
 }
 std::uint64_t now_seconds() {
   return static_cast<std::uint64_t>(
@@ -96,7 +99,7 @@ std::uint64_t now_seconds() {
 }
 } // namespace
 
-const Json *TaskState::item(std::string_view id) const {
+const Value *TaskState::item(std::string_view id) const {
   const auto found = items_.find(std::string{id});
   return found == items_.end() ? nullptr : &found->second;
 }
@@ -106,10 +109,10 @@ std::optional<std::size_t> TaskState::position(std::string_view id) const {
     return std::nullopt;
   return static_cast<std::size_t>(found - order_.begin());
 }
-TaskState::Prepared TaskState::prepare(const Json &request) const {
+TaskState::Prepared TaskState::prepare(const Value &request) const {
   keys(request, {"op_id", "base", "ops"});
   bounded_text(field(request, "op_id"), 64, false);
-  if (unwrap(dump_json(request)).size() > 65536)
+  if (unwrap(encode_packet_string(request)).size() > 65536)
     throw Error{ErrorCode::invalid_range};
   for (const auto &receipt : receipts_)
     if (field(receipt, "op_id") == field(request, "op_id")) {
@@ -136,13 +139,13 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
       p.order = order_;
     return *p.order;
   };
-  const auto lookup = [&](std::string_view id) -> const Json * {
+  const auto lookup = [&](std::string_view id) -> const Value * {
     if (std::find(p.removed.begin(), p.removed.end(), id) != p.removed.end())
       return nullptr;
     const auto found = p.changed.find(std::string{id});
     return found == p.changed.end() ? item(id) : &found->second;
   };
-  const auto resolve = [&](const Json &op, std::string_view key) {
+  const auto resolve = [&](const Value &op, std::string_view key) {
     const auto *value = op.find(key);
     return value ? value->string() : std::string{};
   };
@@ -174,7 +177,7 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
     order.insert(position, id);
   };
   const auto timestamp = now_seconds();
-  Json::Array added;
+  Value::Array added;
   for (const auto &op : ops) {
     const auto &kind = string_field(op, "op");
     if (kind == "list") {
@@ -210,22 +213,22 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
         if (!owner || !string_field(*owner, "parent").empty())
           throw Error{ErrorCode::invalid_range};
       }
-      auto row = Json::object({{"id", Json{id}},
-                               {"parent", Json{parent}},
-                               {"title", field(op, "title")},
-                               {"status", Json{"queued"}},
-                               {"owner", Json{""}},
-                               {"note", Json{""}},
-                               {"blocker", Json{""}},
-                               {"version", number(1)},
-                               {"updated", number(timestamp)}});
+      auto row = Value::object({{"id", Value{id}},
+                                {"parent", Value{parent}},
+                                {"title", field(op, "title")},
+                                {"status", Value{"queued"}},
+                                {"owner", Value{""}},
+                                {"note", Value{""}},
+                                {"blocker", Value{""}},
+                                {"version", number(1)},
+                                {"updated", number(timestamp)}});
       for (const auto key : {"status", "owner", "note", "blocker"})
         if (const auto *value = op.find(key))
           put(row, key, *value);
       validate_row(row);
       p.changed.emplace(id, row);
       place(id, parent, resolve(op, "after"));
-      added.push_back(Json{id});
+      added.push_back(Value{id});
       continue;
     }
     const auto &id = string_field(op, "id");
@@ -276,7 +279,7 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
           children.push_back(candidate);
       for (const auto &child : children)
         std::erase(order, child);
-      put(row, "parent", Json{parent});
+      put(row, "parent", Value{parent});
       p.changed.emplace(id, row);
       place(id, parent, resolve(op, "after"));
       auto pos = std::find(order.begin(), order.end(), id) + 1;
@@ -300,7 +303,7 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
     if (string_field(row, "parent").empty())
       ++p.counts[status_index(row)];
   }
-  const auto adjust_child = [&](const Json &row, bool adding) {
+  const auto adjust_child = [&](const Value &row, bool adding) {
     const auto &parent = string_field(row, "parent");
     if (parent.empty())
       return;
@@ -331,37 +334,37 @@ TaskState::Prepared TaskState::prepare(const Json &request) const {
       adjust_child(*old, false);
     adjust_child(row, true);
   }
-  Json::Array changed, removed;
+  Value::Array changed, removed;
   for (const auto &[id, row] : p.changed) {
     (void)id;
     changed.push_back(row);
   }
   for (const auto &id : p.removed)
-    removed.push_back(Json{id});
-  p.result = Json::object({{"accepted", Json{true}},
-                           {"revision", number(p.revision)},
-                           {"changed", Json{changed}},
-                           {"removed", Json{removed}},
-                           {"added", Json{std::move(added)}},
-                           {"counts", counts_json(p.counts)}});
-  auto receipt = Json::object(
+    removed.push_back(Value{id});
+  p.result = Value::object({{"accepted", Value{true}},
+                            {"revision", number(p.revision)},
+                            {"changed", Value{changed}},
+                            {"removed", Value{removed}},
+                            {"added", Value{std::move(added)}},
+                            {"counts", counts_json(p.counts)}});
+  auto receipt = Value::object(
       {{"op_id", field(request, "op_id")}, {"request", request}, {"result", p.result}});
   p.receipts.push_back(receipt);
   if (p.receipts.size() > retry_window)
     p.receipts.pop_front();
-  p.packet = Json::object({{"label", Json{"task-delta-v1"}},
-                           {"revision", number(p.revision)},
-                           {"next", number(p.next)},
-                           {"title", Json{p.title}},
-                           {"bead", Json{p.bead}},
-                           {"changed", Json{std::move(changed)}},
-                           {"removed", Json{std::move(removed)}},
-                           {"receipt", std::move(receipt)}});
+  p.packet = Value::object({{"label", Value{"task-delta-v1"}},
+                            {"revision", number(p.revision)},
+                            {"next", number(p.next)},
+                            {"title", Value{p.title}},
+                            {"bead", Value{p.bead}},
+                            {"changed", Value{std::move(changed)}},
+                            {"removed", Value{std::move(removed)}},
+                            {"receipt", std::move(receipt)}});
   if (p.order) {
-    Json::Array order;
+    Value::Array order;
     for (const auto &id : *p.order)
-      order.push_back(Json{id});
-    put(p.packet, "order", Json{std::move(order)});
+      order.push_back(Value{id});
+    put(p.packet, "order", Value{std::move(order)});
   }
   return p;
 }
@@ -389,7 +392,7 @@ void TaskState::commit(Prepared p) {
   title_.swap(p.title);
   bead_.swap(p.bead);
 }
-void TaskState::replay(const Json &packet) {
+void TaskState::replay(const Value &packet) {
   if (integer(field(packet, "revision")) != revision_ + 1)
     throw Error{ErrorCode::corrupt};
   auto prepared = prepare(field(field(packet, "receipt"), "request"));
@@ -421,26 +424,26 @@ void TaskState::replay(const Json &packet) {
   prepared.receipts.back() = field(packet, "receipt");
   commit(std::move(prepared));
 }
-Json TaskState::snapshot() const {
-  Json::Array rows, order, receipts;
+Value TaskState::snapshot() const {
+  Value::Array rows, order, receipts;
   for (const auto &[id, row] : items_) {
     (void)id;
     rows.push_back(row);
   }
   for (const auto &id : order_)
-    order.push_back(Json{id});
+    order.push_back(Value{id});
   for (const auto &receipt : receipts_)
     receipts.push_back(receipt);
-  return Json::object({{"label", Json{"task-state-v1"}},
-                       {"revision", number(revision_)},
-                       {"next", number(next_)},
-                       {"title", Json{title_}},
-                       {"bead", Json{bead_}},
-                       {"items", Json{std::move(rows)}},
-                       {"order", Json{std::move(order)}},
-                       {"receipts", Json{std::move(receipts)}}});
+  return Value::object({{"label", Value{"task-state-v1"}},
+                        {"revision", number(revision_)},
+                        {"next", number(next_)},
+                        {"title", Value{title_}},
+                        {"bead", Value{bead_}},
+                        {"items", Value{std::move(rows)}},
+                        {"order", Value{std::move(order)}},
+                        {"receipts", Value{std::move(receipts)}}});
 }
-void TaskState::restore(const Json &snapshot) {
+void TaskState::restore(const Value &snapshot) {
   TaskState candidate;
   candidate.revision_ = integer(field(snapshot, "revision"));
   candidate.next_ = integer(field(snapshot, "next"));
@@ -498,12 +501,12 @@ void TaskState::restore(const Json &snapshot) {
     candidate.receipts_.push_back(receipt);
   *this = std::move(candidate);
 }
-Json TaskState::read(const Json &query) const {
+Value TaskState::read(const Value &query) const {
   keys(query, {"revision", "offset", "limit", "collapsed", "status", "id", "owner",
                "compact"});
   if (const auto *revision = query.find("revision");
       revision && integer(*revision) != revision_)
-    return Json::object({{"conflict", Json{true}}, {"revision", number(revision_)}});
+    return Value::object({{"conflict", Value{true}}, {"revision", number(revision_)}});
   const auto offset = query.find("offset") ? integer(field(query, "offset")) : 0;
   const auto limit = query.find("limit") ? integer(field(query, "limit")) : 32;
   if (!limit || limit > max_page || offset > order_.size())
@@ -527,7 +530,7 @@ Json TaskState::read(const Json &query) const {
     bounded_text(*selected, 32, false);
   if (owner_filter)
     bounded_text(*owner_filter, 128);
-  Json::Array rows;
+  Value::Array rows;
   std::size_t cursor = static_cast<std::size_t>(offset);
   for (; cursor < order_.size() && rows.size() < limit; ++cursor) {
     const auto &row = items_.at(order_[cursor]);
@@ -560,26 +563,26 @@ Json TaskState::read(const Json &query) const {
       put(visible, "parent_title", field(items_.at(parent), "title"));
     rows.push_back(std::move(visible));
   }
-  return Json::object({{"scope", Json{"session"}},
-                       {"revision", number(revision_)},
-                       {"title", Json{title_}},
-                       {"bead", Json{bead_}},
-                       {"counts", counts_json(counts_)},
-                       {"total", number(items_.size())},
-                       {"offset", number(offset)},
-                       {"next", cursor < order_.size() ? number(cursor) : Json{}},
-                       {"items", Json{std::move(rows)}},
-                       {"retry_window", number(retry_window)}});
+  return Value::object({{"scope", Value{"session"}},
+                        {"revision", number(revision_)},
+                        {"title", Value{title_}},
+                        {"bead", Value{bead_}},
+                        {"counts", counts_json(counts_)},
+                        {"total", number(items_.size())},
+                        {"offset", number(offset)},
+                        {"next", cursor < order_.size() ? number(cursor) : Value{}},
+                        {"items", Value{std::move(rows)}},
+                        {"retry_window", number(retry_window)}});
 }
 TaskStore::TaskStore(AuditLog &log) : log_(log) {
   for (const auto &packet : log.root().current_programs())
     if (string_field(packet, "label") == "task-state-v1")
       state_.restore(packet);
 }
-Json TaskStore::edit(const Json &request) {
+Value TaskStore::edit(const Value &request) {
   try {
     auto prepared = state_.prepare(request);
-    if (prepared.packet == Json{})
+    if (prepared.packet == Value{})
       return prepared.result;
     auto result = prepared.result;
     auto packet = prepared.packet;
@@ -597,36 +600,36 @@ Json TaskStore::edit(const Json &request) {
   } catch (const Error &e) {
     if (e.code != ErrorCode::conflict)
       throw;
-    Json::Array current;
+    Value::Array current;
     if (const auto *ops = request.find("ops"))
-      if (const auto *array = std::get_if<Json::Array>(&ops->value()))
+      if (const auto *array = std::get_if<Value::Array>(&ops->value()))
         for (std::size_t i = 0; i < std::min(TaskState::max_batch, array->size()); ++i)
           if (const auto *id = (*array)[i].find("id");
               id && std::holds_alternative<std::string>(id->value()))
             if (const auto *row = state_.item(id->string()))
               current.push_back(*row);
-    return Json::object(
-        {{"accepted", Json{false}},
-         {"conflict", Json{true}},
+    return Value::object(
+        {{"accepted", Value{false}},
+         {"conflict", Value{true}},
          {"revision", number(state_.revision())},
-         {"current", Json{std::move(current)}},
+         {"current", Value{std::move(current)}},
          {"message",
-          Json{"Stale version/base or reused op_id. Read current rows; use a fresh "
-               "op_id for a revised edit. Identical retries are remembered for the "
-               "last 16 edits; older guarded retries conflict."}}});
+          Value{"Stale version/base or reused op_id. Read current rows; use a fresh "
+                "op_id for a revised edit. Identical retries are remembered for the "
+                "last 16 edits; older guarded retries conflict."}}});
   }
 }
-Json TaskStore::operator_command(std::string_view command) {
+Value TaskStore::operator_command(std::string_view command) {
   if (command == "help")
-    return Json::object(
+    return Value::object(
         {{"help",
-          Json{"/tasks [list] · add TITLE · sub ID TITLE · queued/active/done/dropped "
-               "ID · "
-               "block ID REASON · rename ID TITLE · note ID TEXT · owner ID NAME · "
-               "title TEXT · bead ID · archive ID (includes children) · read JSON · "
-               "apply JSON\n"
-               "Pane: up · down · fold ID · expand · show · hide. Tasks and subtasks "
-               "only."}}});
+          Value{"/tasks [list] · add TITLE · sub ID TITLE · queued/active/done/dropped "
+                "ID · "
+                "block ID REASON · rename ID TITLE · note ID TEXT · owner ID NAME · "
+                "title TEXT · bead ID · archive ID (includes children) · read JSON · "
+                "apply JSON\n"
+                "Pane: up · down · fold ID · expand · show · hide. Tasks and subtasks "
+                "only."}}});
   if (command.empty() || command == "list")
     return read();
   if (command.starts_with("read "))
@@ -637,12 +640,12 @@ Json TaskStore::operator_command(std::string_view command) {
   const auto verb = command.substr(0, space);
   auto args =
       space == std::string_view::npos ? std::string_view{} : command.substr(space + 1);
-  Json op;
+  Value op;
   if (verb == "add")
-    op = Json::object({{"op", Json{"add"}}, {"title", Json{std::string{args}}}});
+    op = Value::object({{"op", Value{"add"}}, {"title", Value{std::string{args}}}});
   else if (verb == "title" || verb == "bead")
-    op = Json::object(
-        {{"op", Json{"list"}}, {std::string{verb}, Json{std::string{args}}}});
+    op = Value::object(
+        {{"op", Value{"list"}}, {std::string{verb}, Value{std::string{args}}}});
   else {
     const auto end = args.find(' ');
     const auto id = std::string{args.substr(0, end)};
@@ -651,29 +654,29 @@ Json TaskStore::operator_command(std::string_view command) {
     if (!row)
       throw Error{ErrorCode::invalid_range};
     if (verb == "sub")
-      op = Json::object({{"op", Json{"add"}},
-                         {"parent", Json{id}},
-                         {"title", Json{std::string{args}}}});
+      op = Value::object({{"op", Value{"add"}},
+                          {"parent", Value{id}},
+                          {"title", Value{std::string{args}}}});
     else {
-      op = Json::object({{"op", Json{verb == "archive" ? "archive" : "set"}},
-                         {"id", Json{id}},
-                         {"version", field(*row, "version")}});
+      op = Value::object({{"op", Value{verb == "archive" ? "archive" : "set"}},
+                          {"id", Value{id}},
+                          {"version", field(*row, "version")}});
       if (verb == "rename" || verb == "note" || verb == "owner")
-        put(op, verb == "rename" ? "title" : verb, Json{std::string{args}});
+        put(op, verb == "rename" ? "title" : verb, Value{std::string{args}});
       else if (verb == "block") {
-        put(op, "status", Json{"blocked"});
-        put(op, "blocker", Json{std::string{args}});
+        put(op, "status", Value{"blocked"});
+        put(op, "blocker", Value{std::string{args}});
       } else if (verb != "archive") {
         if (std::find(statuses.begin(), statuses.end(), verb) == statuses.end())
           throw Error{ErrorCode::invalid_range};
-        put(op, "status", Json{std::string{verb}});
+        put(op, "status", Value{std::string{verb}});
         if (verb != "blocked")
-          put(op, "blocker", Json{""});
+          put(op, "blocker", Value{""});
       }
     }
   }
-  return edit(Json::object({{"op_id", Json{hex_identity(log_.issue().bytes())}},
-                            {"base", number(state_.revision())},
-                            {"ops", Json{Json::Array{op}}}}));
+  return edit(Value::object({{"op_id", Value{hex_identity(log_.issue().bytes())}},
+                             {"base", number(state_.revision())},
+                             {"ops", Value{Value::Array{op}}}}));
 }
 } // namespace blackbird

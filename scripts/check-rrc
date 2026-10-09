@@ -81,13 +81,13 @@ with tempfile.TemporaryDirectory(prefix='arco-discovery-') as tmp:
     try:
         import time
         deadline = time.monotonic() + 5
-        while not (session / 'session-info.json').exists() and time.monotonic() < deadline:
+        while not (session / 'session-info.bbm').exists() and time.monotonic() < deadline:
             time.sleep(0.02)
-        assert (session / 'session-info.json').exists(), 'session discovery summary missing'
+        assert (session / 'session-info.bbm').exists(), 'session discovery summary missing'
         broken = root / 'broken'
         broken.mkdir(); (broken / 'audit').write_bytes(b'not an audit')
-        (broken / 'session-info.json').write_text('not JSON')
-        originals = {p: p.read_bytes() for p in [session/'audit', session/'session-info.json', broken/'audit']}
+        (broken / 'session-info.bbm').write_text('not JSON')
+        originals = {p: p.read_bytes() for p in [session/'audit', session/'session-info.bbm', broken/'audit']}
         result = subprocess.run([binary, '--list-sessions', str(root)], capture_output=True, text=True, timeout=5)
         assert result.returncode == 0, result.stderr
         entries = json.loads(result.stdout)['sessions']
@@ -99,8 +99,8 @@ with tempfile.TemporaryDirectory(prefix='arco-discovery-') as tmp:
         assert shlex.split(entry['resume_command']) == ['./scripts/blackbird', '--session', str(session.resolve())]
         assert next(e for e in entries if e['path']==str(broken.resolve()))['metadata_status'] == 'damaged'
         assert all(p.read_bytes()==raw for p,raw in originals.items()), 'listing changed session files'
-        (broken / 'session-info.json').unlink()
-        os.mkfifo(broken / 'session-info.json')
+        (broken / 'session-info.bbm').unlink()
+        os.mkfifo(broken / 'session-info.bbm')
         result = subprocess.run([binary, '--list-sessions', str(root)], capture_output=True, text=True, timeout=5)
         assert result.returncode == 0 and next(e for e in json.loads(result.stdout)['sessions']
             if e['path']==str(broken.resolve()))['metadata_status'] == 'damaged', 'nonregular metadata blocked discovery'

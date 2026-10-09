@@ -1,16 +1,8 @@
 #include "blackbird/json.hpp"
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 
 namespace blackbird {
-const Json *Json::find(std::string_view key) const noexcept {
-  const auto *fields = std::get_if<Object>(&value());
-  if (fields != nullptr)
-    for (const auto &[name, value] : *fields)
-      if (name == key)
-        return &value;
-  return nullptr;
-}
 namespace {
 [[noreturn]] void bad() { throw Error{ErrorCode::corrupt}; }
 [[noreturn]] void full() { throw Error{ErrorCode::capacity}; }
@@ -68,9 +60,10 @@ void scalar_utf8(std::string &out, unsigned scalar) {
 }
 class Parser {
 public:
-  Parser(std::string_view input, JsonLimits bounds, std::span<const std::string_view> omit = {})
+  Parser(std::string_view input, ValueLimits bounds,
+         std::span<const std::string_view> omit = {})
       : text(input), limits(bounds), omitted(omit) {}
-  Json run() {
+  Value run() {
     if (text.size() > limits.bytes)
       full();
     auto result = item(0);
@@ -82,7 +75,7 @@ public:
 
 private:
   std::string_view text;
-  JsonLimits limits;
+  ValueLimits limits;
   std::span<const std::string_view> omitted;
   std::size_t pos = 0, nodes = 0;
   void space() {
@@ -133,20 +126,26 @@ private:
         unsigned special = 0;
         for (std::size_t i = 0; i < 16; ++i) {
           const auto byte = static_cast<unsigned char>(text[pos + i]);
-          special |= static_cast<unsigned>(byte < 32 || byte >= 128 ||
-                                            byte == '"' || byte == '\\');
+          special |= static_cast<unsigned>(byte < 32 || byte >= 128 || byte == '"' ||
+                                           byte == '\\');
         }
-        if (special == 0) { pos += 16; continue; }
+        if (special == 0) {
+          pos += 16;
+          continue;
+        }
       }
       const auto c = static_cast<unsigned char>(text[pos]);
       if (c == '"') {
         const auto value = text.substr(start, pos - start);
         ++pos;
-        if (non_ascii && !utf8(value)) bad();
+        if (non_ascii && !utf8(value))
+          bad();
         return retain ? std::string{value} : std::string{};
       }
-      if (c < 32) bad();
-      if (c == '\\') break;
+      if (c < 32)
+        bad();
+      if (c == '\\')
+        break;
       non_ascii = non_ascii || c >= 128;
       ++pos;
     }
@@ -209,7 +208,7 @@ private:
       bad();
     return retain ? std::move(out) : std::string{};
   }
-  Json number(bool retain) {
+  Value number(bool retain) {
     const auto start = pos;
     (void)eat('-');
     if (!eat('0')) {
@@ -234,9 +233,10 @@ private:
       if (before == pos)
         bad();
     }
-    return retain ? Json{JsonNumber{std::string{text.substr(start, pos - start)}}} : Json{};
+    return retain ? Value{Number{std::string{text.substr(start, pos - start)}}}
+                  : Value{};
   }
-  Json item(std::size_t depth, bool retain = true) {
+  Value item(std::size_t depth, bool retain = true) {
     if (depth > limits.depth || nodes == limits.nodes)
       full();
     ++nodes;
@@ -244,26 +244,27 @@ private:
     if (pos == text.size())
       bad();
     if (text[pos] == '"')
-      return Json{string(retain)};
+      return Value{string(retain)};
     if (eat('[')) {
-      Json::Array values;
+      Value::Array values;
       space();
       if (eat(']'))
-        return Json{std::move(values)};
+        return Value{std::move(values)};
       do {
         auto value = item(depth + 1, retain);
-        if (retain) values.push_back(std::move(value));
+        if (retain)
+          values.push_back(std::move(value));
         space();
         if (eat(']'))
-          return Json{std::move(values)};
+          return Value{std::move(values)};
       } while (eat(','));
       bad();
     }
     if (eat('{')) {
-      Json::Object fields;
+      Value::Object fields;
       space();
       if (eat('}'))
-        return Json::object(std::move(fields));
+        return Value::object(std::move(fields));
       do {
         space();
         auto key = string();
@@ -273,13 +274,14 @@ private:
         space();
         if (!eat(':'))
           bad();
-        const bool keep = retain && !(depth == 0 &&
-            std::find(omitted.begin(), omitted.end(), key) != omitted.end());
+        const bool keep =
+            retain && !(depth == 0 && std::find(omitted.begin(), omitted.end(), key) !=
+                                          omitted.end());
         auto value = item(depth + 1, keep);
-        fields.emplace_back(std::move(key), keep ? std::move(value) : Json{});
+        fields.emplace_back(std::move(key), keep ? std::move(value) : Value{});
         space();
         if (eat('}'))
-          return Json::object(std::move(fields));
+          return Value::object(std::move(fields));
       } while (eat(','));
       bad();
     }
@@ -287,7 +289,7 @@ private:
                                std::string_view{"null"}}) {
       if (text.substr(pos, literal.size()) == literal) {
         pos += literal.size();
-        return literal == "null" ? Json{} : Json{literal == "true"};
+        return literal == "null" ? Value{} : Value{literal == "true"};
       }
     }
     return number(retain);
@@ -295,14 +297,14 @@ private:
 };
 class Writer {
 public:
-  explicit Writer(JsonLimits bounds) : limits(bounds) {}
-  std::string run(const Json &value) {
+  explicit Writer(ValueLimits bounds) : limits(bounds) {}
+  std::string run(const Value &value) {
     item(value, 0);
     return std::move(out);
   }
 
 private:
-  JsonLimits limits;
+  ValueLimits limits;
   std::size_t nodes = 0;
   std::string out;
   void add(std::string_view s) {
@@ -329,7 +331,7 @@ private:
     }
     add("\"");
   }
-  void item(const Json &j, std::size_t depth) {
+  void item(const Value &j, std::size_t depth) {
     if (depth > limits.depth || nodes == limits.nodes)
       full();
     ++nodes;
@@ -340,15 +342,27 @@ private:
             add("null");
           else if constexpr (std::is_same_v<T, bool>)
             add(v ? "true" : "false");
-          else if constexpr (std::is_same_v<T, JsonNumber>) {
-            auto check = parse_json(v.text, {limits.bytes, 1, 0});
-            if (!check.has_value() ||
-                !std::holds_alternative<JsonNumber>(check.value().value()))
-              bad();
-            add(v.text);
-          } else if constexpr (std::is_same_v<T, std::string>)
-            string(v);
-          else if constexpr (std::is_same_v<T, Json::Array>) {
+          else if constexpr (std::is_same_v<T, Number>) {
+            add(v.text());
+          } else if constexpr (std::is_same_v<T, std::string>) {
+            if (valid_utf8(v))
+              string(v);
+            else {
+              constexpr char digits[] = "0123456789abcdef";
+              std::string hex;
+              if (v.size() > limits.bytes / 2)
+                full();
+              hex.reserve(v.size() * 2);
+              for (const char character : v) {
+                const auto byte = static_cast<unsigned char>(character);
+                hex += digits[byte >> 4];
+                hex += digits[byte & 15];
+              }
+              item(Value::object(
+                       {{"encoding", Value{"hex"}}, {"bytes", Value{std::move(hex)}}}),
+                   depth);
+            }
+          } else if constexpr (std::is_same_v<T, Value::Array>) {
             add("[");
             bool first = true;
             for (const auto &child : v) {
@@ -379,31 +393,31 @@ private:
   }
 };
 } // namespace
-Result<Json> parse_json(std::string_view input, JsonLimits limits) {
+Result<Value> parse_json(std::string_view input, ValueLimits limits) {
   try {
-    return Result<Json>::success(Parser{input, limits}.run());
+    return Result<Value>::success(Parser{input, limits}.run());
   } catch (const Error &e) {
-    return Result<Json>::failure(e);
+    return Result<Value>::failure(e);
   } catch (const std::bad_alloc &) {
-    return Result<Json>::failure({ErrorCode::allocation});
+    return Result<Value>::failure({ErrorCode::allocation});
   } catch (const std::length_error &) {
-    return Result<Json>::failure({ErrorCode::capacity});
+    return Result<Value>::failure({ErrorCode::capacity});
   }
 }
-Result<Json> parse_json_projection(std::string_view input,
-                                   std::span<const std::string_view> omitted,
-                                   JsonLimits limits) {
+Result<Value> parse_json_projection(std::string_view input,
+                                    std::span<const std::string_view> omitted,
+                                    ValueLimits limits) {
   try {
-    return Result<Json>::success(Parser{input, limits, omitted}.run());
+    return Result<Value>::success(Parser{input, limits, omitted}.run());
   } catch (const Error &e) {
-    return Result<Json>::failure(e);
+    return Result<Value>::failure(e);
   } catch (const std::bad_alloc &) {
-    return Result<Json>::failure({ErrorCode::allocation});
+    return Result<Value>::failure({ErrorCode::allocation});
   } catch (const std::length_error &) {
-    return Result<Json>::failure({ErrorCode::capacity});
+    return Result<Value>::failure({ErrorCode::capacity});
   }
 }
-Result<std::string> dump_json(const Json &value, JsonLimits limits) {
+Result<std::string> dump_json(const Value &value, ValueLimits limits) {
   try {
     return Result<std::string>::success(Writer{limits}.run(value));
   } catch (const Error &e) {
@@ -413,5 +427,48 @@ Result<std::string> dump_json(const Json &value, JsonLimits limits) {
   } catch (const std::length_error &) {
     return Result<std::string>::failure({ErrorCode::capacity});
   }
+}
+Value import_provider_response(Value response) {
+  auto *output = response.find("output");
+  if (!output || !std::holds_alternative<Value::Array>(output->value()))
+    return response;
+  for (auto &entry : response.object())
+    if (entry.first == "output")
+      for (auto &item : entry.second.array()) {
+        const auto *type = item.find("type");
+        if (!type || *type != Value{"function_call"})
+          continue;
+        for (auto &[key, value] : item.object())
+          if (key == "arguments" &&
+              std::holds_alternative<std::string>(value.value())) {
+            auto parsed = parse_json(value.string());
+            if (!parsed.has_value())
+              throw parsed.error();
+            value = std::move(parsed).value();
+          }
+      }
+  return response;
+}
+Value export_provider_request(Value request) {
+  for (auto &[key, input] : request.object())
+    if (key == "input" && std::holds_alternative<Value::Array>(input.value()))
+      for (auto &item : input.array()) {
+        const auto *type = item.find("type");
+        if (!type)
+          continue;
+        const bool output = *type == Value{"function_call_output"};
+        const bool call = *type == Value{"function_call"};
+        for (auto &[field, value] : item.object()) {
+          if (!((output && field == "output") || (call && field == "arguments")))
+            continue;
+          if (!std::holds_alternative<std::string>(value.value())) {
+            auto encoded = dump_json(value);
+            if (!encoded.has_value())
+              throw encoded.error();
+            value = Value{std::move(encoded).value()};
+          }
+        }
+      }
+  return request;
 }
 } // namespace blackbird

@@ -1,6 +1,6 @@
 # Local candidate and contrast tools
 
-`build/release/arco-candidate POOL COMMAND REQUEST.json` returns JSON; nonzero
+`build/release/arco-candidate POOL COMMAND REQUEST.bbm` uses native BBM2 requests/results; `REQUEST.json` explicitly selects JSON interchange; nonzero
 refuses/fails without pretending success. Use through ordinary audited `exec`.
 POOL and request/evidence files belong under ignored `context/`, not publication.
 Source commits and concise reports are the publication surface. All commands
@@ -73,7 +73,7 @@ is a hypothesis, not statistical evidence; actual behavior/outcomes remain separ
 Use a distinct local request file per actual attempt; failed/unknown effects are
 returned, never retried automatically.
 
-`programs/useful_turn.lua` reads the helper and `context/useful-work/steer.json`
+`programs/useful_turn.lua` reads the helper and `context/useful-work/steer.bbm`
 with at least a `direction` string at each affected workflow boundary. Missing or
 invalid steer is visible failure, not silent disregard. Operator direction persists
 on disk and runtime workflow settings survive RRC. `/workflow ABSOLUTE_FILE`

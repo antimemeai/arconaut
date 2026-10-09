@@ -1,6 +1,8 @@
 #include "../src/native_process.hpp"
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
+#include <source_location>
 #include <unistd.h>
 using namespace blackbird;
 template <class T> T id(unsigned char n) {
@@ -8,16 +10,18 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
-void require(bool value) {
-  if (!value)
+void require(bool value, std::source_location where = std::source_location::current()) {
+  if (!value) {
+    std::cerr << "require line " << where.line() << "\n";
     throw Error{ErrorCode::corrupt};
+  }
 }
 class Provider final : public CodingProvider {
 public:
   int calls = 0;
-  Json::Array input;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value::Array input;
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     input = field(request, "input").array();
     ++calls;
     auto response = unwrap(parse_json(
@@ -55,10 +59,11 @@ int main() {
             .array(),
         "test.known");
     const auto command = "printf x >> " + marker;
-    const auto args = unwrap(dump_json(Json::object({{"command", Json{command}}})));
+    const auto args = unwrap(dump_json(Value::object({{"command", Value{command}}})));
     try {
-      engine.turn({"failed work", "arco.request(); arco.call('exec', [==[" + args +
-                                      "]==]); error('custom failure before append')"});
+      engine.turn(
+          {"failed work", "arco.request(); arco.call('exec', arco.json.decode([==[" +
+                              args + "]==])); error('custom failure before append')"});
       require(false);
     } catch (const Error &e) {
       require(e.code == ErrorCode::external_unknown);
@@ -84,18 +89,18 @@ int main() {
     require(detail::owned_children.load() == 0);
     engine.turn(
         {"",
-         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired[1])==2); arco.request())"});
+         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired)==2); arco.request())"});
     require(provider.calls == 2);
     std::size_t outputs = 0;
     for (const auto &item : provider.input) {
-      if (item.find("type") && field(item, "type") == Json{"function_call_output"}) {
+      if (item.find("type") && field(item, "type") == Value{"function_call_output"}) {
         if (string_field(item, "call_id") == "known") {
           require(string_field(item, "output") == "known-result");
           continue;
         }
-        auto output = unwrap(parse_json(string_field(item, "output")));
-        require(field(output, "effect_outcome") == Json{"unknown"});
-        require(field(output, "replayed") == Json{false});
+        const auto &output = field(item, "output");
+        require(field(output, "effect_outcome") == Value{"unknown"});
+        require(field(output, "replayed") == Value{false});
         ++outputs;
       }
     }
@@ -110,7 +115,7 @@ int main() {
     }
     engine.turn(
         {"",
-         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired[1])==0))"});
+         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired)==0))"});
     engine.turn(
         {"",
          R"(local r=arco.call('context_repair',{base='stale'}); assert(r.error=='conflict'))"});
@@ -130,7 +135,7 @@ int main() {
     // A subsequent explicit workflow may close it; never the workflow that created it.
     engine.turn(
         {"",
-         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired[1])==1))"});
+         R"(local r=arco.call('context_repair',{base=arco.context().base}); assert(tonumber(r.repaired)==1))"});
     engine.turn({"", "local r=arco.call('read_file',{path='" + marker +
                          "'}); assert(r.content=='x')"});
     ContextStore reloaded{log};

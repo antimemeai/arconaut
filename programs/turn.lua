@@ -10,7 +10,7 @@ for step = 1, 64 do
         {
           type = "function_call_output",
           call_id = item.call_id,
-          output = blackbird.json.encode(result),
+          output = result,
         },
       })
     elseif item.type == "message" then

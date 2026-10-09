@@ -1,5 +1,6 @@
 #include "blackbird/context.hpp"
 #include "blackbird/journal_storage.hpp"
+#include "blackbird/json.hpp"
 #include <filesystem>
 #include <iostream>
 #include <source_location>
@@ -16,7 +17,7 @@ void check(bool good, std::source_location where = std::source_location::current
     throw Error{ErrorCode::corrupt};
   }
 }
-Json seed() {
+Value seed() {
   return unwrap(parse_json(R"({"version":1,"source":{
     "session":"/retained/predecessor","environment":"11000000000000000000000000000000",
     "journal":"22000000000000000000000000000000","prefix_sequence":17,
@@ -48,7 +49,7 @@ int main() {
                                        "audit", header, capacity));
       AuditLog log{*root};
       ContextStore context{log};
-      auto reject = [&](const Json &bad) {
+      auto reject = [&](const Value &bad) {
         const auto cursor = root->cursor();
         bool refused = false;
         try {
@@ -61,7 +62,7 @@ int main() {
               context.items().empty() && root->committed_facts().empty());
       };
       auto bad = original;
-      bad.object().emplace_back("extra", Json{std::string(1024 * 1024, 'x')});
+      bad.object().emplace_back("extra", Value{std::string(1024 * 1024, 'x')});
       reject(bad);
       auto raw = unwrap(dump_json(original));
       auto replace = [&](std::string from, std::string to) {
@@ -97,7 +98,7 @@ int main() {
       context.seed_successor(original);
       revision = context.head();
       check(root->committed_facts().size() == 2 && context.items().size() == 3);
-      Json::Array expected;
+      Value::Array expected;
       for (const auto &e : field(original, "entries").array())
         expected.push_back(field(e, "item"));
       check(context.items() == expected);

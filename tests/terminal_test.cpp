@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/terminal.hpp"
 #include "blackbird/tools.hpp"
 #include <clocale>
@@ -282,7 +283,7 @@ int main() {
       unicode_line += "é";
     trim_terminal_transcript(unicode_line);
     check(unicode_line.size() <= 1024 * 1024 &&
-          dump_json(Json{unicode_line}).has_value());
+          dump_json(Value{unicode_line}).has_value());
     const char *old_visual = std::getenv("VISUAL");
     const char *old_editor = std::getenv("EDITOR");
     const std::optional<std::string> visual =
@@ -318,7 +319,7 @@ int main() {
     char path[] = "/tmp/arco-ui-state-XXXXXX";
     const auto dir = mkdtemp(path);
     check(dir != nullptr);
-    const auto file = std::filesystem::path{dir} / "ui-state.json";
+    const auto file = std::filesystem::path{dir} / "ui-state.bbm";
     TerminalState state{std::string{"x\xff\0", 3}, 1, {"sent"}, {"queued"}};
     save_terminal_state(file, state);
     const auto loaded = load_terminal_state(file);

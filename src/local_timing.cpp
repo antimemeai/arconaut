@@ -1,4 +1,5 @@
 #include "blackbird/local_timing.hpp"
+#include "blackbird/packet.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -57,52 +58,45 @@ bool LocalTimingSink::persist(std::string_view path) noexcept {
       }
       return true;
     };
-    // Strings are native labels or existing hexadecimal identities, not content.
-    // Escape linkage and labels to keep the primitive safe for any caller.
-    const auto escaped = [](const char *s) {
-      std::string out;
-      for (; *s; ++s) {
-        const auto c = static_cast<unsigned char>(*s);
-        if (c < 32 || c == '"' || c == '\\') {
-          char escape[7];
-          std::snprintf(escape, sizeof escape, "\\u%04x", c);
-          out += escape;
-        } else
-          out += *s;
-      }
-      return out;
+    const auto write_packet = [&](const Value &value) {
+      auto encoded = encode_packet_string(value);
+      if (!encoded.has_value())
+        throw encoded.error();
+      const auto packet = std::move(encoded).value();
+      std::array<char, 8> length{};
+      for (unsigned i = 0; i < 8; ++i)
+        length[i] = static_cast<char>(
+            (static_cast<std::uint64_t>(packet.size()) >> (i * 8)) & 255U);
+      return write_all(length.data(), length.size()) &&
+             write_all(packet.data(), packet.size());
     };
-    char line[2048];
+    ok = write_all("BBMS\1", 5);
     for (std::size_t i = 0; i < size_ && ok; ++i) {
       const auto &m = records_[i];
-      const auto action = escaped(m.action), source = escaped(m.source),
-                 outcome = escaped(m.outcome), revision = escaped(m.revision.data()),
-                 attempt = escaped(m.attempt.data());
-      const int n = std::snprintf(
-          line, sizeof line,
-          "{\"type\":\"span\",\"action\":\"%s\",\"source\":\"%s\",\"outcome\":\"%s\","
-          "\"start_wall_ns\":%llu,\"wall_ns\":%llu,\"thread_cpu_ns\":%s,\"clock_"
-          "valid\":%s,\"history_"
-          "records\":%llu,\"observed_bytes\":%llu,\"sequence\":%llu,\"revision\":\"%"
-          "s\",\"attempt\":\"%s\",\"linkage_truncated\":%s}\n",
-          action.c_str(), source.c_str(), outcome.c_str(),
-          static_cast<unsigned long long>(m.start_wall_ns),
-          static_cast<unsigned long long>(m.wall_ns),
-          m.cpu_measured ? std::to_string(m.cpu_ns).c_str() : "null",
-          m.clock_valid ? "true" : "false", static_cast<unsigned long long>(m.history),
-          static_cast<unsigned long long>(m.bytes),
-          static_cast<unsigned long long>(m.sequence), revision.c_str(),
-          attempt.c_str(), m.linkage_truncated ? "true" : "false");
-      ok = n > 0 && static_cast<std::size_t>(n) < sizeof line &&
-           write_all(line, static_cast<std::size_t>(n));
+      ok = write_packet(Value::object(
+          {{"type", Value{"span"}},
+           {"action", Value{m.action}},
+           {"source", Value{m.source}},
+           {"outcome", Value{m.outcome}},
+           {"start_wall_ns", Value{Number{m.start_wall_ns}}},
+           {"wall_ns", Value{Number{m.wall_ns}}},
+           {"thread_cpu_ns", m.cpu_measured ? Value{Number{m.cpu_ns}} : Value{}},
+           {"clock_valid", Value{m.clock_valid}},
+           {"history_records", Value{Number{m.history}}},
+           {"observed_bytes", Value{Number{m.bytes}}},
+           {"sequence", Value{Number{m.sequence}}},
+           {"revision", Value{m.revision.data()}},
+           {"attempt", Value{m.attempt.data()}},
+           {"linkage_truncated", Value{m.linkage_truncated}}}));
     }
-    const int n = std::snprintf(
-        line, sizeof line,
-        "{\"type\":\"final_status\",\"buffered\":%zu,\"dropped\":%llu,\"write_ok\":%s,"
-        "\"clock\":\"CLOCK_MONOTONIC/CLOCK_THREAD_CPUTIME_ID\",\"durable\":false}\n",
-        size_, static_cast<unsigned long long>(dropped_), ok ? "true" : "false");
-    if (n > 0)
-      ok = write_all(line, static_cast<std::size_t>(n)) && ok;
+    ok = write_packet(
+             Value::object({{"type", Value{"final_status"}},
+                            {"buffered", Value{Number{size_}}},
+                            {"dropped", Value{Number{dropped_}}},
+                            {"write_ok", Value{ok}},
+                            {"clock", Value{"CLOCK_MONOTONIC/CLOCK_THREAD_CPUTIME_ID"}},
+                            {"durable", Value{false}}})) &&
+         ok;
     if (close(fd) != 0)
       ok = false;
     owner.value = -1;

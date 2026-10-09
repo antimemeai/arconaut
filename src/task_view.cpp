@@ -4,15 +4,15 @@
 #include <algorithm>
 
 namespace blackbird {
-std::string task_summary(const Json &page) {
+std::string task_summary(const Value &page) {
   const auto &counts = field(page, "counts");
-  return field(counts, "done").number().text + " done · " +
-         field(counts, "active").number().text + " active · " +
-         field(counts, "blocked").number().text + " blocked · " +
-         field(counts, "queued").number().text + " queued";
+  return field(counts, "done").number().text() + " done · " +
+         field(counts, "active").number().text() + " active · " +
+         field(counts, "blocked").number().text() + " blocked · " +
+         field(counts, "queued").number().text() + " queued";
 }
-std::vector<ChatRow> task_pane_rows(const Json &page, std::size_t width,
-                                    const std::map<std::string, Json> &activity) {
+std::vector<ChatRow> task_pane_rows(const Value &page, std::size_t width,
+                                    const std::map<std::string, Value> &activity) {
   std::vector<ChatRow> out;
   if (width < 8)
     return out;
@@ -49,16 +49,17 @@ std::vector<ChatRow> task_pane_rows(const Json &page, std::size_t width,
     detail += status;
     if (const auto found = activity.find(id); found != activity.end())
       detail += " · " + string_field(found->second, "phase");
-    if (const auto *count = row.find("subtasks"); count && count->number().text != "0")
-      detail += " · " + field(row, "subtasks_done").number().text + "/" +
-                count->number().text;
+    if (const auto *count = row.find("subtasks");
+        count && count->number().text() != "0")
+      detail += " · " + field(row, "subtasks_done").number().text() + "/" +
+                count->number().text();
     if (!string_field(row, "owner").empty())
       detail += " · " + string_field(row, "owner");
     append(detail, Ink::muted, 1);
     if (status == "blocked" && !string_field(row, "blocker").empty())
       append("   " + string_field(row, "blocker"), Ink::failure, 2);
   }
-  if (field(page, "next") != Json{})
+  if (field(page, "next") != Value{})
     append("More tasks ↓", Ink::muted, 1);
   append("/tasks up · down · fold ID", Ink::muted, 1);
   return out;

@@ -6,8 +6,8 @@
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -129,7 +129,8 @@ public:
   Result<void> synchronize(SyncStrength strength) override {
     CHECK(strength == SyncStrength::full);
     ++state_->sync_calls;
-    if (state_->on_sync) state_->on_sync();
+    if (state_->on_sync)
+      state_->on_sync();
     if (state_->fail_sync || state_->sync_calls == state_->fail_sync_call) {
       return Result<void>::failure({ErrorCode::io, 5});
     }
@@ -210,38 +211,41 @@ AttemptAdmissionEvent admission(unsigned char attempt = 11,
 void indexed_errors_close_queries() {
   auto storage = std::make_shared<StorageState>();
   auto state = require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
-                                            "journal", header(), capacity));
+                                             "journal", header(), capacity));
   auto index_storage = std::make_shared<StorageState>();
-  require(state->enable_indexed_queries(std::make_unique<MemoryFile>(index_storage),4*1024*1024));
+  require(state->enable_indexed_queries(std::make_unique<MemoryFile>(index_storage),
+                                        4 * 1024 * 1024));
   const RetainedEvent event{{}, decision()};
   require(state->submit(event));
   const auto before = state->cursor();
   const auto bytes = storage->bytes;
   // Selected-page corruption is a query error, never absence or a new submission.
   index_storage->bytes.back() ^= std::byte{1};
-  error_is(state->submit(event),ErrorCode::corrupt);
-  error_is(state->fact(0),ErrorCode::corrupt);
+  error_is(state->submit(event), ErrorCode::corrupt);
+  error_is(state->fact(0), ErrorCode::corrupt);
   CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
   index_storage->bytes.back() ^= std::byte{1};
   CHECK(require(state->submit(event)).existing);
   index_storage->fail_after = index_storage->writes;
-  error_is(state->submit({{}, invocation()}),ErrorCode::io);
+  error_is(state->submit({{}, invocation()}), ErrorCode::io);
   CHECK(state->cursor().sequence == before.sequence && storage->bytes == bytes);
   CHECK(require(state->submit(event)).existing); // old root survives failed derivation
 }
 bool indexed_mode = false;
 std::unique_ptr<RetainedState> attach(std::unique_ptr<RetainedState> state) {
-  if (indexed_mode) require(state->enable_indexed_queries(
-      std::make_unique<MemoryFile>(std::make_shared<StorageState>()),256*1024*1024));
+  if (indexed_mode)
+    require(state->enable_indexed_queries(
+        std::make_unique<MemoryFile>(std::make_shared<StorageState>()),
+        256 * 1024 * 1024));
   return state;
 }
 std::unique_ptr<RetainedState> create(const std::shared_ptr<StorageState> &storage) {
-  return attach(require(RetainedState::create(std::make_unique<MemoryDirectory>(storage),
-                                       "journal", header(), capacity)));
+  return attach(require(RetainedState::create(
+      std::make_unique<MemoryDirectory>(storage), "journal", header(), capacity)));
 }
 std::unique_ptr<RetainedState> open(const std::shared_ptr<StorageState> &storage) {
   return attach(require(RetainedState::open(std::make_unique<MemoryDirectory>(storage),
-                                     "journal", header(), capacity)));
+                                            "journal", header(), capacity)));
 }
 void prepare(RetainedState &state) {
   require(state.submit({{}, decision()}));
@@ -467,7 +471,8 @@ void replay_avoids_prefix_payload_copies() {
   Custody custody;
   require(reopened->reconcile(custody));
   const auto prefix =
-      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body).payload;
+      std::get<ApplicationRecordEvent>(reopened->committed_facts()[0].event.body)
+          .payload;
   CHECK(prefix.is_cold() && prefix.resident_bytes() == 0);
   allocated_bytes.store(0);
   measure_allocation.store(true);
@@ -769,11 +774,11 @@ void issuer_count_and_credit() {
   CHECK(state->committed_facts().size() == 15);
   CHECK(storage->sync_calls == syncs + 15);
   for (std::size_t i = 0; i < 15; ++i)
-    CHECK(std::get<IssuerReservationEvent>(state->committed_facts()[i].event.body).counter ==
-          (i + 1) * 1024);
+    CHECK(std::get<IssuerReservationEvent>(state->committed_facts()[i].event.body)
+              .counter == (i + 1) * 1024);
   const auto usage = state->journal_usage();
-  auto scope = require(state->protect_settlement(
-      {*usage.remaining_bytes(), usage.remaining_records()}));
+  auto scope = require(
+      state->protect_settlement({*usage.remaining_bytes(), usage.remaining_records()}));
   const auto before = storage->bytes;
   const auto credit = *state->protected_settlement();
   // Already durable IDs consume no audit capacity or protected credit.
@@ -818,7 +823,8 @@ void issuer() {
   CHECK(identity_counter(require(state->issue<WorkflowId>()).bytes()) == 3073);
   // External highwater burns the cached remainder; final range is shortened.
   require(state->submit({{}, IssuerReservationEvent{UINT64_MAX - 2}}));
-  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX - 1);
+  CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) ==
+        UINT64_MAX - 1);
   CHECK(identity_counter(require(state->issue<ParticipantId>()).bytes()) == UINT64_MAX);
   error_is(state->issue<ParticipantId>(), ErrorCode::overflow);
   // Reentrant issue during submission cannot dispense cached durable space.
@@ -1259,7 +1265,8 @@ void torn_reservation_burn() {
   const auto report = state->recovery_report();
   CHECK(report.problem && report.problem->code == ErrorCode::incomplete);
   require(state->confirm_recovery());
-  CHECK(state->state() == JournalWriterState::blocked && state->issuer_counter() == 1077);
+  CHECK(state->state() == JournalWriterState::blocked &&
+        state->issuer_counter() == 1077);
   error_is(state->issue<InvocationId>(), ErrorCode::audit_unavailable);
 }
 void rejection_preflight_limits() {
@@ -1592,7 +1599,8 @@ int main(int argc, char **) {
     duplicates_and_retries();
     recovery_and_failed_admission();
     uncertain_open();
-    if (!indexed_mode) replay_avoids_prefix_payload_copies();
+    if (!indexed_mode)
+      replay_avoids_prefix_payload_copies();
     sources_and_invalid_replay();
     pending_source_inspection();
     pending_proposal_owns_originals();

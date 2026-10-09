@@ -100,9 +100,9 @@ public:
   void operation_completed(std::string_view text, Ink outcome = Ink::muted);
   void failed();
   void title(std::string_view text);
-  void sessions(const Json &listing);
-  void tasks(const Json &publication);
-  void task_activity(const Json &event);
+  void sessions(const Value &listing);
+  void tasks(const Value &publication);
+  void task_activity(const Value &event);
   void run(const std::function<void(std::string_view)> &perform,
            std::atomic_bool &cancelled,
            const std::function<bool()> &exit_requested = {}, std::string initial = {},
@@ -130,6 +130,7 @@ private:
     Kind kind;
     std::string text;
     Ink outcome = Ink::muted;
+    Value data;
   };
   std::mutex mutex_;
   int notification_ = -1;
@@ -137,8 +138,8 @@ private:
   std::string title_;
   TaskState task_state_;
   bool tasks_dirty_ = true;
-  std::map<std::string, Json> task_activity_;
-  std::map<std::string, std::map<std::string, Json>> task_runs_;
+  std::map<std::string, Value> task_activity_;
+  std::map<std::string, std::map<std::string, Value>> task_runs_;
   std::set<std::string> task_folded_;
   std::size_t task_offset_ = 0;
   std::string task_anchor_;

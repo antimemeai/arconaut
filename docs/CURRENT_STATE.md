@@ -118,11 +118,8 @@ See [design and usage](TRAJECTORIES.md).
 
 
 The candidate now writes trajectory log/program metadata and native operation
-continuations in owned versioned BBM1 binary packets. Recurring fields use
-stable dictionary IDs; identities are16 raw bytes; counts/timestamps are integer
-varints. Terminal attempts reference their retained result instead of storing a
-second complete result. Existing JSON metadata remains readable; no history is
-rewritten. Context documents and exact original request/output bytes keep their
-current formats. Model/operator query results remain JSON, including optional
-bounded decoded metadata through audit_inspect. See the wire layout in
-[trajectory design](TRAJECTORIES.md).
+continuations in owned BBM2 binary packets. Native values and typed numeric
+components replace internal JSON throughout context, saved state, sidecars and
+owned IPC. Lua transfers arguments/results directly. JSON remains external
+protocol interchange and explicitly selected export. No legacy format reader.
+See [TRAJECTORIES](TRAJECTORIES.md) for the wire layout and file names.

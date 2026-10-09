@@ -1,7 +1,7 @@
 #pragma once
-#include "blackbird/json.hpp"
 #include "blackbird/packet.hpp"
 #include "blackbird/retained_state.hpp"
+#include "blackbird/value.hpp"
 #include <functional>
 #include <map>
 
@@ -16,29 +16,31 @@ inline void unwrap(Result<void> result) {
     throw result.error();
 }
 std::string read_text(const ImmutableBytes &bytes);
-Result<Json> read_packet(const ImmutableBytes &bytes, JsonLimits limits = {});
+Result<Value> read_packet(const ImmutableBytes &bytes, ValueLimits limits = {});
+// Dispatch by the declared channel, not by guessing the payload format.
+Result<Value> read_application_packet(const ApplicationRecordEvent &record);
 std::string hex_identity(const IdentityBytes &bytes);
-const Json &field(const Json &value, std::string_view name);
-const std::string &string_field(const Json &value, std::string_view name);
+const Value &field(const Value &value, std::string_view name);
+const std::string &string_field(const Value &value, std::string_view name);
 struct OriginalCapture {
   std::string_view label;
   std::string_view bytes;
-  Json metadata;
+  Value metadata;
 };
 class AuditLog {
 public:
   explicit AuditLog(RetainedState &root) : root_(root) {}
   ApplicationRecordId issue() { return unwrap(root_.issue<ApplicationRecordId>()); }
-  std::string record(ApplicationChannel channel, const Json &packet);
+  std::string record(ApplicationChannel channel, const Value &packet);
   void record(ApplicationRecordId identity, ApplicationChannel channel,
-              const Json &packet);
+              const Value &packet);
   // Atomically append managed context plus a native successful-boundary program record.
-  void record_boundary(ApplicationRecordId identity, const Json &context_packet,
-                       const Json &program_packet);
+  void record_boundary(ApplicationRecordId identity, const Value &context_packet,
+                       const Value &program_packet);
   std::string original(OriginalCapture capture);
   void retain_program(std::string_view source, DefinitionGenerationId generation);
-  Json inspect(const Json &query);
-  Json trajectory(const Json &query);
+  Value inspect(const Value &query);
+  Value trajectory(const Value &query);
   RetainedState &root() noexcept { return root_; }
 
 private:
@@ -55,29 +57,29 @@ public:
     return checkpoint_error_;
   }
   const std::string &head() const noexcept { return head_; }
-  Json view() const;
-  Json stats() const;
-  Json::Array items() const;
-  void append(Json::Array items, std::string_view origin);
-  static void validate_successor_seed(const Json &seed);
-  void seed_successor(const Json &seed);
-  Json edit(const Json &candidate);
+  Value view() const;
+  Value stats() const;
+  Value::Array items() const;
+  void append(Value::Array items, std::string_view origin);
+  static void validate_successor_seed(const Value &seed);
+  void seed_successor(const Value &seed);
+  Value edit(const Value &candidate);
   void restore(std::string_view entry);
-  Json originals() const;
-  Json manage(const Json &proposal);
-  Json inspect(const Json &query) const;
+  Value originals() const;
+  Value manage(const Value &proposal);
+  Value inspect(const Value &query) const;
   // Native workflow owner validates prospective obligations before publication.
-  std::function<void(const Json::Array &, const Json &)> protect;
-  static Json::Array stop_outputs(const Json::Array &entries, bool interrupted);
-  JournalCapacity cancellation_budget(const Json::Array &entries,
-                                      const Json &proposal) const;
-  Json pending_proposal() const;
+  std::function<void(const Value::Array &, const Value &)> protect;
+  static Value::Array stop_outputs(const Value::Array &entries, bool interrupted);
+  JournalCapacity cancellation_budget(const Value::Array &entries,
+                                      const Value &proposal) const;
+  Value pending_proposal() const;
   void begin_workflow();
-  Json finish_workflow(bool success, const Json &boundary_program = Json{});
+  Value finish_workflow(bool success, const Value &boundary_program = Value{});
 
 private:
   ContextStore(AuditLog &log, bool restore_saved);
-  std::optional<Json> original_entry(std::string_view id) const;
+  std::optional<Value> original_entry(std::string_view id) const;
   void maybe_checkpoint();
   mutable bool archive_loaded_ = true;
   std::optional<Error> checkpoint_error_;
@@ -85,32 +87,33 @@ private:
   std::weak_ptr<void> root_lifetime_;
   RetainedState::FactHistory historical_;
   std::string head_;
-  Json::Array entries_;
+  Value::Array entries_;
   struct Original {
     ImmutableBytes payload;
     std::size_t index = 0;
     bool packet = false;
     std::string id;
-    Original(const Json &entry);
+    Original(const Value &entry);
     Original(ImmutableBytes source, std::size_t ordinal, std::string identity)
         : payload(std::move(source)), index(ordinal), packet(true),
           id(std::move(identity)) {}
-    Json entry() const;
+    Value entry() const;
   };
   mutable std::map<std::string, Original> originals_;
   mutable std::vector<Original> captured_;
-  Json::Array captured_entries() const;
+  Value::Array captured_entries() const;
   bool workflow_ = false;
   struct Pending {
-    Json proposal;
-    Json::Array snapshot;
+    Value proposal;
+    Value::Array snapshot;
     std::string expected, stage;
   };
   std::optional<Pending> pending_;
-  Json publish_managed(const Json &proposal, const Json::Array &basis,
-                       std::string_view stage, const Json &boundary_program = Json{});
-  Json reject_managed(const Json &proposal, std::string_view reason);
-  bool valid_entries(const Json &entries) const;
-  void append_impl(Json::Array items, std::string_view origin, const Json *lineage);
+  Value publish_managed(const Value &proposal, const Value::Array &basis,
+                        std::string_view stage,
+                        const Value &boundary_program = Value{});
+  Value reject_managed(const Value &proposal, std::string_view reason);
+  bool valid_entries(const Value &entries) const;
+  void append_impl(Value::Array items, std::string_view origin, const Value *lineage);
 };
 } // namespace blackbird

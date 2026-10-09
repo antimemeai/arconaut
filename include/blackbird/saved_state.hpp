@@ -1,6 +1,6 @@
 #pragma once
-#include "blackbird/json.hpp"
 #include "blackbird/retained_state.hpp"
+#include "blackbird/value.hpp"
 
 namespace blackbird {
 // Derived current-state reduction, not a serialized Snapshot or physical catalog.
@@ -9,14 +9,17 @@ struct SavedState {
   JournalCursor boundary;
   std::uint64_t fact_count = 0;
   std::uint64_t issuer_counter = 0;
-  Json context;
-  Json programs;
+  Value context;
+  Value programs;
   std::vector<RetainedFact> unresolved;
   unsigned slot = 0;
 };
-Result<std::optional<SavedState>> load_saved_state(
-    JournalDirectory &directory, std::string_view name, FramedJournal &journal,
-    JournalCapacity capacity, bool before_scan = false);
+Result<std::optional<SavedState>> load_saved_state(JournalDirectory &directory,
+                                                   std::string_view name,
+                                                   FramedJournal &journal,
+                                                   JournalCapacity capacity,
+                                                   bool before_scan = false);
 Result<void> publish_saved_state(JournalDirectory &directory, std::string_view name,
-    FramedJournal &journal, const SavedState &saved, unsigned slot);
+                                 FramedJournal &journal, const SavedState &saved,
+                                 unsigned slot);
 } // namespace blackbird

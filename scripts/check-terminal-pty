@@ -12,6 +12,10 @@ import tempfile
 import termios
 import time
 from pathlib import Path
+import importlib.util as packet_import
+packet_spec = packet_import.spec_from_file_location('native_packet', Path(__file__).resolve().parent.parent / 'scripts/native-packet.py')
+native_packet = packet_import.module_from_spec(packet_spec)
+packet_spec.loader.exec_module(native_packet)
 import importlib.util
 spec = importlib.util.spec_from_file_location('screen_oracle', Path(__file__).with_name('terminal-screen-oracle.py'))
 oracle = importlib.util.module_from_spec(spec)
@@ -196,7 +200,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-") as work:
             deadline = time.monotonic() + 3
             while time.monotonic() < deadline:
                 try:
-                    state = json.loads((Path(work) / 'ui-state.json').read_text())
+                    state = native_packet.read_packet((Path(work) / 'ui-state.bbm'))
                     if bytes.fromhex(state['draft']) == expected:
                         return
                 except (OSError, ValueError):
@@ -211,7 +215,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-") as work:
         send(b'\x1b')
         wait_for(b'> ORIGINAL_DRAFT')
         time.sleep(0.1)
-        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        saved = native_packet.read_packet((Path(work) / 'ui-state.bbm'))
         assert bytes.fromhex(saved['draft']) == b'ORIGINAL_DRAFT' and saved['cursor'] == 12
         send(b'\x14SESSION')
         wait_for(b'> /session')
@@ -261,7 +265,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-full-") as work:
     import json
     state = {'encoding': 'hex-v1', 'draft': b'KEEP_FULL'.hex(), 'cursor': 3,
              'history': [], 'queued': [b'recovered'.hex()] * 128}
-    (Path(work) / 'ui-state.json').write_text(json.dumps(state))
+    native_packet.write_packet(Path(work) / 'ui-state.bbm', state)
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = subprocess.Popen([sys.argv[1], '--session', work], stdin=slave,
@@ -273,7 +277,7 @@ with tempfile.TemporaryDirectory(prefix="arco-palette-full-") as work:
         wait_for(b'Draft storage full')
         send(b'\x11')
         assert child.wait(timeout=5) == 0
-        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        saved = native_packet.read_packet((Path(work) / 'ui-state.bbm'))
         assert bytes.fromhex(saved['draft']) == b'KEEP_FULL' and saved['cursor'] == 3
         assert len(saved['queued']) == 128
     finally:
@@ -329,7 +333,7 @@ with tempfile.TemporaryDirectory(prefix="arco-editor-") as work:
         action.write_text('fail')
         send(b'\x15KEEP_CURSOR\x1b[D\x1b[D\x07')
         wait_for(b'Editor cancelled or failed')
-        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        saved = native_packet.read_packet((Path(work) / 'ui-state.bbm'))
         assert bytes.fromhex(saved['draft']) == b'KEEP_CURSOR' and saved['cursor'] == 9
         assert calls.read_text() == 'XX'
         send(b'\x11')
@@ -367,7 +371,7 @@ with tempfile.TemporaryDirectory(prefix="arco-composer-") as work:
         wait_for(b"abc?")
         send(b"\x11")
         assert child.wait(timeout=5) == 0
-        saved = json.loads((Path(work) / 'ui-state.json').read_text())
+        saved = native_packet.read_packet((Path(work) / 'ui-state.bbm'))
         assert bytes.fromhex(saved['draft']) == 'abc?\n界x!\n12345'.encode(), saved
         assert saved['cursor'] == 4, "history did not restore the edited draft cursor"
     finally:
@@ -422,7 +426,7 @@ with tempfile.TemporaryDirectory(prefix="arco-ui-state-") as work:
         time.sleep(0.1)
         send(b'\x11')  # Ctrl-Q preserves unsent draft on ordinary exit.
         assert exit_code() == 0
-        saved = json.loads((Path(session) / 'ui-state.json').read_text())
+        saved = native_packet.read_packet((Path(session) / 'ui-state.bbm'))
         assert bytes.fromhex(saved['draft']) == 'é\nUNSENT'.encode()
         assert saved['cursor'] == len('é\nUNSENT'.encode()) - 2
         child = launch()
@@ -480,8 +484,8 @@ with tempfile.TemporaryDirectory(prefix="arco-ui-state-") as work:
         assert exit_code() == 0
         child = launch()
         wait_for('╭'.encode())  # Composer is stable even when restored history scrolls.
-        state_file = Path(session) / 'ui-state.json'
-        prior_file = Path(session) / 'prior-ui-state.json'
+        state_file = Path(session) / 'ui-state.bbm'
+        prior_file = Path(session) / 'prior-ui-state.bbm'
         state_file.rename(prior_file)
         state_file.mkdir()  # Deterministic atomic-rename failure, even as root.
         send(queued.encode())

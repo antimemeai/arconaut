@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/openai.hpp"
 #include <iostream>
 using namespace blackbird;
@@ -26,14 +27,14 @@ int main(int argc, char **argv) {
             << models.value().find("models")->array().size() << " models available\n";
   if (!live)
     return 0;
-  auto request = Json::object(
-      {{"model", Json{argv[2]}},
-       {"instructions", Json{"Reply exactly ARCO_LOGIN_OK."}},
-       {"input",
-        Json{Json::Array{Json::object(
-            {{"role", Json{"user"}}, {"content", Json{"Verify this connection."}}})}}},
-       {"store", Json{false}},
-       {"stream", Json{true}}});
+  auto request =
+      Value::object({{"model", Value{argv[2]}},
+                     {"instructions", Value{"Reply exactly ARCO_LOGIN_OK."}},
+                     {"input", Value{Value::Array{Value::object(
+                                   {{"role", Value{"user"}},
+                                    {"content", Value{"Verify this connection."}}})}}},
+                     {"store", Value{false}},
+                     {"stream", Value{true}}});
   auto stream = openai_http(config, login.value(), "responses", &request);
   if (!stream.has_value()) {
     std::cerr << "inference: " << error_name(stream.error().code) << ' '

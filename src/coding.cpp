@@ -1,5 +1,7 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/local_timing.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/process_lifetime.hpp"
 #include "blackbird/provider_auth.hpp"
 #include "stream_capture.hpp"
@@ -18,14 +20,14 @@ extern "C" {
 
 namespace blackbird {
 namespace {
-enum class JsonTag { array, object, number, null };
+enum class ValueTag { array, object, number, null };
 char markers[4]; // array, object, exact number, null (registry keys, no string
                  // allocation).
-void tag(lua_State *L, JsonTag kind) {
+void tag(lua_State *L, ValueTag kind) {
   lua_rawgetp(L, LUA_REGISTRYINDEX, &markers[static_cast<int>(kind)]);
   lua_setmetatable(L, -2);
 }
-bool tagged(lua_State *L, int index, JsonTag kind) {
+bool tagged(lua_State *L, int index, ValueTag kind) {
   if (!lua_getmetatable(L, index))
     return false;
   lua_rawgetp(L, LUA_REGISTRYINDEX, &markers[static_cast<int>(kind)]);
@@ -33,37 +35,74 @@ bool tagged(lua_State *L, int index, JsonTag kind) {
   lua_pop(L, 2);
   return equal;
 }
-void push_json(lua_State *L, const Json &j) {
+void push_value(lua_State *L, const Value &j) {
   std::visit(
       [&](const auto &v) {
         using T = std::decay_t<decltype(v)>;
         if constexpr (std::is_same_v<T, std::nullptr_t>) {
           lua_newtable(L);
-          tag(L, JsonTag::null);
+          tag(L, ValueTag::null);
         } else if constexpr (std::is_same_v<T, bool>)
           lua_pushboolean(L, v);
         else if constexpr (std::is_same_v<T, std::string>)
           lua_pushlstring(L, v.data(), v.size());
-        else if constexpr (std::is_same_v<T, JsonNumber>) {
-          lua_createtable(L, 1, 0);
-          lua_pushlstring(L, v.text.data(), v.text.size());
-          lua_rawseti(L, -2, 1);
-          tag(L, JsonTag::number);
-        } else if constexpr (std::is_same_v<T, Json::Array>) {
+        else if constexpr (std::is_same_v<T, Number>) {
+          std::visit(
+              [&](const auto &n) {
+                using N = std::decay_t<decltype(n)>;
+                if constexpr (std::is_same_v<N, std::int64_t>)
+                  lua_pushinteger(L, n);
+                else if constexpr (std::is_same_v<N, double>)
+                  lua_pushnumber(L, n);
+                else if constexpr (std::is_same_v<N, std::uint64_t>) {
+                  if (n <= static_cast<std::uint64_t>(INT64_MAX))
+                    lua_pushinteger(L, static_cast<lua_Integer>(n));
+                  else {
+                    lua_createtable(L, 3, 0);
+                    lua_pushinteger(L, 0);
+                    lua_rawseti(L, -2, 1);
+                    lua_pushinteger(L, static_cast<lua_Integer>(n & 0xffffffff));
+                    lua_rawseti(L, -2, 2);
+                    lua_pushinteger(L, static_cast<lua_Integer>(n >> 32));
+                    lua_rawseti(L, -2, 3);
+                    tag(L, ValueTag::number);
+                  }
+                } else {
+                  lua_createtable(L, 4, 0);
+                  lua_pushinteger(L, 1);
+                  lua_rawseti(L, -2, 1);
+                  lua_pushboolean(L, n.negative);
+                  lua_rawseti(L, -2, 2);
+                  lua_pushinteger(L, n.exponent);
+                  lua_rawseti(L, -2, 3);
+                  lua_createtable(
+                      L,
+                      static_cast<int>(std::min<std::size_t>(n.limbs.size(), INT_MAX)),
+                      0);
+                  for (std::size_t i = 0; i < n.limbs.size(); ++i) {
+                    lua_pushinteger(L, n.limbs[i]);
+                    lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+                  }
+                  lua_rawseti(L, -2, 4);
+                  tag(L, ValueTag::number);
+                }
+              },
+              v.storage());
+        } else if constexpr (std::is_same_v<T, Value::Array>) {
           lua_newtable(L);
           for (std::size_t i = 0; i < v.size(); ++i) {
-            push_json(L, v[i]);
+            push_value(L, v[i]);
             lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
           }
-          tag(L, JsonTag::array);
+          tag(L, ValueTag::array);
         } else {
           lua_newtable(L);
           for (const auto &[key, value] : v) {
             lua_pushlstring(L, key.data(), key.size());
-            push_json(L, value);
+            push_value(L, value);
             lua_rawset(L, -3);
           }
-          tag(L, JsonTag::object);
+          tag(L, ValueTag::object);
         }
       },
       j.value());
@@ -77,11 +116,11 @@ std::string lua_string(lua_State *L, int index) {
 }
 // Caller reserves the full traversal stack first. Only raw, nonallocating Lua
 // reads occur while C++ owners exist; no metamethods/string-key interning here.
-struct JsonRead {
+struct ValueRead {
   std::size_t depth;
   std::size_t *nodes;
 };
-Json read_json(lua_State *L, int index, JsonRead budget) {
+Value read_value(lua_State *L, int index, ValueRead budget) {
   const auto depth = budget.depth;
   auto &nodes = *budget.nodes;
   if (depth > 128 || ++nodes > 500000)
@@ -89,34 +128,64 @@ Json read_json(lua_State *L, int index, JsonRead budget) {
   index = lua_absindex(L, index);
   switch (lua_type(L, index)) {
   case LUA_TNIL:
-    return Json{};
+    return Value{};
   case LUA_TBOOLEAN:
-    return Json{lua_toboolean(L, index) != 0};
+    return Value{lua_toboolean(L, index) != 0};
   case LUA_TSTRING:
-    return Json{lua_string(L, index)};
-  case LUA_TNUMBER: {
-    char buffer[128];
-    std::to_chars_result result;
-    if (lua_isinteger(L, index))
-      result = std::to_chars(buffer, buffer + sizeof(buffer), lua_tointeger(L, index));
-    else
-      result = std::to_chars(buffer, buffer + sizeof(buffer), lua_tonumber(L, index));
-    if (result.ec != std::errc{})
-      throw Error{ErrorCode::invalid_range};
-    return Json{JsonNumber{std::string{buffer, result.ptr}}};
-  }
+    return Value{lua_string(L, index)};
+  case LUA_TNUMBER:
+    return lua_isinteger(L, index) ? Value{Number{lua_tointeger(L, index)}}
+                                   : Value{Number{lua_tonumber(L, index)}};
   case LUA_TTABLE: {
-    if (tagged(L, index, JsonTag::null))
-      return Json{};
-    if (tagged(L, index, JsonTag::number)) {
-      lua_rawgeti(L, index, 1);
-      auto number = lua_string(L, -1);
+    if (tagged(L, index, ValueTag::null))
+      return Value{};
+    if (tagged(L, index, ValueTag::number)) {
+      auto integer = [&](lua_Integer field) {
+        lua_rawgeti(L, index, field);
+        if (!lua_isinteger(L, -1))
+          throw Error{ErrorCode::invalid_range};
+        const auto n = lua_tointeger(L, -1);
+        lua_pop(L, 1);
+        return n;
+      };
+      const auto kind = integer(1);
+      if (kind == 0) {
+        const auto low = integer(2), high = integer(3);
+        if (low < 0 || high < 0 || low > UINT32_MAX || high > UINT32_MAX)
+          throw Error{ErrorCode::invalid_range};
+        return Value{Number{static_cast<std::uint64_t>(low) |
+                            (static_cast<std::uint64_t>(high) << 32)}};
+      }
+      if (kind != 1)
+        throw Error{ErrorCode::invalid_range};
+      lua_rawgeti(L, index, 2);
+      if (lua_type(L, -1) != LUA_TBOOLEAN)
+        throw Error{ErrorCode::invalid_range};
+      const bool negative = lua_toboolean(L, -1) != 0;
       lua_pop(L, 1);
-      return Json{JsonNumber{std::move(number)}};
+      Decimal n{negative, integer(3), {}};
+      lua_rawgeti(L, index, 4);
+      if (lua_type(L, -1) != LUA_TTABLE)
+        throw Error{ErrorCode::invalid_range};
+      const auto count = lua_rawlen(L, -1);
+      if (!count || count > 500000 - nodes)
+        throw Error{ErrorCode::capacity};
+      nodes += count;
+      n.limbs.reserve(count);
+      for (std::size_t i = 1; i <= count; ++i) {
+        lua_rawgeti(L, -1, static_cast<lua_Integer>(i));
+        const auto limb = lua_tointeger(L, -1);
+        if (!lua_isinteger(L, -1) || limb < 0 || limb >= 1000000000)
+          throw Error{ErrorCode::invalid_range};
+        n.limbs.push_back(static_cast<std::uint32_t>(limb));
+        lua_pop(L, 1);
+      }
+      lua_pop(L, 1);
+      return Value{Number{std::move(n)}};
     }
     const auto length = lua_rawlen(L, index);
-    const bool array = tagged(L, index, JsonTag::array) ||
-                       (!tagged(L, index, JsonTag::object) && length != 0);
+    const bool array = tagged(L, index, ValueTag::array) ||
+                       (!tagged(L, index, ValueTag::object) && length != 0);
     if (array) {
       std::size_t count = 0;
       lua_pushnil(L);
@@ -129,34 +198,34 @@ Json read_json(lua_State *L, int index, JsonRead budget) {
       }
       if (count != length)
         throw Error{ErrorCode::invalid_range};
-      Json::Array values;
+      Value::Array values;
       values.reserve(length);
       for (std::size_t i = 0; i < length; ++i) {
         lua_rawgeti(L, index, static_cast<lua_Integer>(i + 1));
-        values.push_back(read_json(L, -1, {depth + 1, &nodes}));
+        values.push_back(read_value(L, -1, {depth + 1, &nodes}));
         lua_pop(L, 1);
       }
-      return Json{std::move(values)};
+      return Value{std::move(values)};
     }
-    Json::Object fields;
+    Value::Object fields;
     lua_pushnil(L);
     while (lua_next(L, index)) {
       auto key = lua_string(L, -2);
-      auto value = read_json(L, -1, {depth + 1, &nodes});
+      auto value = read_value(L, -1, {depth + 1, &nodes});
       fields.emplace_back(std::move(key), std::move(value));
       lua_pop(L, 1);
     }
     std::sort(fields.begin(), fields.end(),
               [](const auto &a, const auto &b) { return a.first < b.first; });
-    return Json::object(std::move(fields));
+    return Value::object(std::move(fields));
   }
   default:
     throw Error{ErrorCode::unsupported};
   }
 }
-Json error_json(Error e) {
-  return Json::object({{"error", Json{error_name(e.code)}},
-                       {"detail", Json{JsonNumber{std::to_string(e.detail)}}}});
+Value error_value(Error e) {
+  return Value::object(
+      {{"error", Value{error_name(e.code)}}, {"detail", Value{Number{e.detail}}}});
 }
 template <class T> T parse_id(std::string_view s) {
   if (s.size() != 32)
@@ -171,7 +240,7 @@ template <class T> T parse_id(std::string_view s) {
   }
   return unwrap(T::from_bytes(out));
 }
-void validate_protocol(const Json::Array &items) {
+void validate_protocol(const Value::Array &items) {
   std::set<std::string> seen, pending;
   for (const auto &item : items) {
     const auto *type = item.find("type");
@@ -193,8 +262,8 @@ void validate_protocol(const Json::Array &items) {
     throw Error{ErrorCode::conflict};
 }
 } // namespace
-Json OpenAiCodingProvider::respond(
-    const Json &request, const std::function<void(std::string_view)> &capture) {
+Value OpenAiCodingProvider::respond(
+    const Value &request, const std::function<void(std::string_view)> &capture) {
   auto config = config_;
   config.response_observer = capture;
   config.cancelled = cancelled;
@@ -205,7 +274,7 @@ Json OpenAiCodingProvider::respond(
 struct CodingEngine::Runtime {
   CodingEngine &engine;
   lua_State *state = nullptr;
-  Json scratch;
+  Value scratch;
   std::string error;
   std::optional<Error> failure;
   std::array<char, 512> bridge_error{};
@@ -251,7 +320,10 @@ struct CodingEngine::Runtime {
     restarting_op,
     stats_op,
     manage_op,
-    inspect_op
+    inspect_op,
+    packet_decode_op,
+    packet_encode_op,
+    format_op
   };
   static int install(lua_State *L) {
     auto *self = static_cast<Runtime *>(lua_touserdata(L, 1));
@@ -276,11 +348,12 @@ struct CodingEngine::Runtime {
       lua_rawsetp(L, LUA_REGISTRYINDEX, &markers[i]);
     }
     lua_newtable(L);
-    constexpr const char *names[] = {"request",    "call",    "context", "edit",
-                                     "originals",  "restore", "append",  "decode",
-                                     "encode",     "display", "array",   "present",
-                                     "restarting", "stats",   "manage",  "inspect"};
-    for (int i = 0; i < 16; ++i) {
+    constexpr const char *names[] = {
+        "request", "call",          "context",       "edit",   "originals",
+        "restore", "append",        "decode",        "encode", "display",
+        "array",   "present",       "restarting",    "stats",  "manage",
+        "inspect", "decode_packet", "encode_packet", "format"};
+    for (int i = 0; i < 19; ++i) {
       lua_pushlightuserdata(L, self);
       lua_pushinteger(L, i);
       lua_pushcclosure(L, bridge, 2);
@@ -292,6 +365,12 @@ struct CodingEngine::Runtime {
     lua_getfield(L, -2, "encode");
     lua_setfield(L, -2, "encode");
     lua_setfield(L, -2, "json");
+    lua_newtable(L);
+    lua_getfield(L, -2, "decode_packet");
+    lua_setfield(L, -2, "decode");
+    lua_getfield(L, -2, "encode_packet");
+    lua_setfield(L, -2, "encode");
+    lua_setfield(L, -2, "binary");
     lua_pushvalue(L, -1);
     lua_setglobal(L, "blackbird");
     lua_setglobal(L, "arco"); // Compatibility alias for retained programs.
@@ -339,7 +418,7 @@ struct CodingEngine::Runtime {
     if (op == array_op) {
       luaL_checktype(L, 1, LUA_TTABLE);
       lua_pushvalue(L, 1);
-      tag(L, JsonTag::array);
+      tag(L, ValueTag::array);
       return 1;
     }
     if (!lua_checkstack(L, 1024))
@@ -350,36 +429,45 @@ struct CodingEngine::Runtime {
       try {
         std::size_t nodes = 0;
         switch (op) {
+        case packet_decode_op:
+          self->scratch = unwrap(decode_packet_value(read_value(L, 1, {0, &nodes})));
+          break;
+        case packet_encode_op:
+          self->scratch =
+              Value{unwrap(encode_packet_string(read_value(L, 1, {0, &nodes})))};
+          break;
+        case format_op:
+          self->scratch = Value{unwrap(format_value(read_value(L, 1, {0, &nodes})))};
+          break;
         case stats_op:
           self->scratch = self->engine.stats();
           break;
         case restarting_op:
-          self->scratch = Json{self->engine.restart_note_.has_value()};
+          self->scratch = Value{self->engine.restart_note_.has_value()};
           break;
         case request_op:
-          self->scratch = self->engine.request(
-              lua_isnoneornil(L, 1) ? Json::object({}) : read_json(L, 1, {0, &nodes}));
+          self->scratch = self->engine.request(lua_isnoneornil(L, 1)
+                                                   ? Value::object({})
+                                                   : read_value(L, 1, {0, &nodes}));
           break;
         case call_op: {
           auto name = lua_string(L, 1);
-          auto args = lua_type(L, 2) == LUA_TSTRING
-                          ? unwrap(parse_json(lua_string(L, 2)))
-                          : read_json(L, 2, {0, &nodes});
+          auto args = read_value(L, 2, {0, &nodes});
           self->scratch = self->engine.call(std::move(name), std::move(args));
           break;
         }
         case manage_op:
-          self->scratch = self->engine.context_.manage(read_json(L, 1, {0, &nodes}));
+          self->scratch = self->engine.context_.manage(read_value(L, 1, {0, &nodes}));
           break;
         case inspect_op:
-          self->scratch = self->engine.context_.inspect(read_json(L, 1, {0, &nodes}));
+          self->scratch = self->engine.context_.inspect(read_value(L, 1, {0, &nodes}));
           break;
         case context_op:
 
           self->scratch = self->engine.context_.view();
           break;
         case edit_op:
-          self->scratch = self->engine.context_.edit(read_json(L, 1, {0, &nodes}));
+          self->scratch = self->engine.context_.edit(read_value(L, 1, {0, &nodes}));
           break;
         case originals_op:
           self->scratch = self->engine.context_.originals();
@@ -389,7 +477,7 @@ struct CodingEngine::Runtime {
           self->scratch = self->engine.context_.view();
           break;
         case append_op: {
-          auto items = read_json(L, 1, {0, &nodes});
+          auto items = read_value(L, 1, {0, &nodes});
           self->engine.context_.append(items.array(), "lua.synthetic");
           self->scratch = self->engine.context_.view();
           break;
@@ -398,19 +486,19 @@ struct CodingEngine::Runtime {
           self->scratch = unwrap(parse_json(lua_string(L, 1)));
           break;
         case encode_op:
-          self->scratch = Json{unwrap(dump_json(read_json(L, 1, {0, &nodes})))};
+          self->scratch = Value{unwrap(dump_json(read_value(L, 1, {0, &nodes})))};
           break;
         case display_op: {
           auto s = lua_string(L, 1);
-          self->engine.log_.original({"display", s, Json{}});
+          self->engine.log_.original({"display", s, Value{}});
           if (self->engine.display)
             self->engine.display(s);
-          self->scratch = Json{};
+          self->scratch = Value{};
           break;
         }
         case present_op:
-          self->engine.present(read_json(L, 1, {0, &nodes}));
-          self->scratch = Json{};
+          self->engine.present(read_value(L, 1, {0, &nodes}));
+          self->scratch = Value{};
           break;
         case array_op:
           break;
@@ -431,7 +519,7 @@ struct CodingEngine::Runtime {
       lua_pushstring(L, self->bridge_error.data());
       return lua_error(L);
     }
-    push_json(L, self->scratch);
+    push_value(L, self->scratch);
     return 1;
   }
   static void interrupt_hook(lua_State *L, lua_Debug *) {
@@ -456,25 +544,26 @@ struct CodingEngine::Runtime {
     lua_settop(state, base);
     return valid;
   }
-  Json invoke_tool(const Json &definition, const Json &arguments) {
-    // The body is compiled as a function; args is a JSON round-trip, not Lua code.
-    const auto encoded = unwrap(dump_json(arguments));
-    // JSON string escapes aren't all Lua escapes (e.g. \/ and \u); use a byte
-    // literal with decimal escapes, avoiding interpolation of untrusted values.
-    std::string literal = "\"";
-    for (char ch : encoded) {
-      const auto c = static_cast<unsigned char>(ch);
-      literal += "\\";
-      literal += static_cast<char>('0' + c / 100);
-      literal += static_cast<char>('0' + (c / 10) % 10);
-      literal += static_cast<char>('0' + c % 10);
-    }
-    literal += "\"";
+  Value invoke_tool(const Value &definition, const Value &arguments) {
     return eval("local fn = function(args)\n" + string_field(definition, "source") +
-                "\nend\nreturn fn(blackbird.json.decode(" + literal + "))");
+                    "\nend\nreturn fn(_native_args)",
+                &arguments);
   }
-  Json eval(std::string_view source) {
+  Value eval(std::string_view source, const Value *arguments = nullptr) {
     const int base = lua_gettop(state);
+    if (arguments) {
+      if (!lua_checkstack(state, 1024))
+        throw Error{ErrorCode::allocation};
+      lua_getglobal(state, "_native_args");
+      push_value(state, *arguments);
+      lua_setglobal(state, "_native_args");
+    }
+    auto restore_arguments = [&] {
+      if (arguments) {
+        lua_pushvalue(state, base + 1);
+        lua_setglobal(state, "_native_args");
+      }
+    };
     if (luaL_loadbufferx(state, source.data(), source.size(), "arco-program", "t") !=
             LUA_OK ||
         lua_pcall(state, 0, 1, 0) != LUA_OK) {
@@ -485,19 +574,22 @@ struct CodingEngine::Runtime {
       RetainedState::MaintenanceScope maintenance{engine.log_.root()};
       engine.log_.original(
           {"lua.error", error,
-           Json::object(
-               {{"generation", Json{hex_identity(engine.generation_.bytes())}},
-                {"unretained_bytes", Json{JsonNumber{std::to_string(lost)}}}})});
+           Value::object(
+               {{"generation", Value{hex_identity(engine.generation_.bytes())}},
+                {"unretained_bytes", Value{Number{lost}}}})});
+      restore_arguments();
       lua_settop(state, base);
       throw failure.value_or(Error{ErrorCode::external_unknown});
     }
     if (!lua_checkstack(state, 1024)) {
+      restore_arguments();
       lua_settop(state, base);
       throw Error{ErrorCode::allocation};
     }
     std::size_t nodes = 0;
     try {
-      auto result = read_json(state, -1, {0, &nodes});
+      restore_arguments();
+      auto result = read_value(state, -1, {0, &nodes});
       lua_settop(state, base);
       return result;
     } catch (...) {
@@ -509,7 +601,7 @@ struct CodingEngine::Runtime {
 namespace {
 // Intentionally small supported schema: a flat object of scalar JSON types.
 // Unsupported schema keywords reject rather than pretending to enforce them.
-void validate_tool_schema(const Json &schema) {
+void validate_tool_schema(const Value &schema) {
   if (string_field(schema, "type") != "object")
     throw Error{ErrorCode::invalid_range};
   for (const auto &[k, v] : schema.object()) {
@@ -544,7 +636,7 @@ void validate_tool_schema(const Json &schema) {
   if (std::get<bool>(field(schema, "additionalProperties").value()))
     throw Error{ErrorCode::invalid_range};
 }
-void validate_tool_arguments(const Json &schema, const Json &args) {
+void validate_tool_arguments(const Value &schema, const Value &args) {
   for (const auto &key : field(schema, "required").array())
     if (!args.find(key.string()))
       throw Error{ErrorCode::invalid_range};
@@ -556,26 +648,26 @@ void validate_tool_arguments(const Json &schema, const Json &args) {
     bool ok =
         (type == "string" && std::holds_alternative<std::string>(value.value())) ||
         (type == "boolean" && std::holds_alternative<bool>(value.value())) ||
-        (type == "null" && value == Json{}) ||
-        (type == "number" && std::holds_alternative<JsonNumber>(value.value()));
-    if (type == "integer" && std::holds_alternative<JsonNumber>(value.value())) {
-      const auto &text = value.number().text;
+        (type == "null" && value == Value{}) ||
+        (type == "number" && std::holds_alternative<Number>(value.value()));
+    if (type == "integer" && std::holds_alternative<Number>(value.value())) {
+      const auto &text = value.number().text();
       ok = text.find_first_of(".eE") == std::string::npos;
     }
     if (!ok)
       throw Error{ErrorCode::invalid_range};
   }
 }
-Json default_context_budget() {
+Value default_context_budget() {
 
-  return Json::object(
-      {{"enabled", Json{false}},
-       {"trigger_bytes", Json{JsonNumber{"262144"}}},
-       {"target_bytes", Json{JsonNumber{"131072"}}},
-       {"reason", Json{"opt-in; byte policy is not a provider token limit"}}});
+  return Value::object(
+      {{"enabled", Value{false}},
+       {"trigger_bytes", Value{Number{"262144"}}},
+       {"target_bytes", Value{Number{"131072"}}},
+       {"reason", Value{"opt-in; byte policy is not a provider token limit"}}});
 }
-std::size_t budget_number(const Json &value, std::string_view key) {
-  const auto &text = field(value, key).number().text;
+std::size_t budget_number(const Value &value, std::string_view key) {
+  const auto &text = field(value, key).number().text();
   std::size_t n = 0;
   auto parsed = std::from_chars(text.data(), text.data() + text.size(), n);
   if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() || n == 0 ||
@@ -583,8 +675,8 @@ std::size_t budget_number(const Json &value, std::string_view key) {
     throw Error{ErrorCode::invalid_range};
   return n;
 }
-void validate_context_budget(const Json &value) {
-  if (!std::holds_alternative<Json::Object>(value.value()))
+void validate_context_budget(const Value &value) {
+  if (!std::holds_alternative<Value::Object>(value.value()))
     throw Error{ErrorCode::invalid_range};
   for (const auto &[key, v] : value.object()) {
     (void)v;
@@ -599,7 +691,7 @@ void validate_context_budget(const Json &value) {
     throw Error{ErrorCode::invalid_range};
 }
 } // namespace
-Json CodingEngine::program_config(const Json &arguments) {
+Value CodingEngine::program_config(const Value &arguments) {
   if (const auto *proposal = arguments.find("proposal")) {
     if (const auto *base = arguments.find("base");
         base && base->string() != program_revision_)
@@ -617,7 +709,7 @@ Json CodingEngine::program_config(const Json &arguments) {
          effort != "xhigh"))
       throw Error{ErrorCode::invalid_range};
     const auto &modules = field(*proposal, "modules").array();
-    if (modules.size() > 32 || unwrap(dump_json(*proposal)).size() > 65536)
+    if (modules.size() > 32 || unwrap(encode_packet_string(*proposal)).size() > 65536)
       throw Error{ErrorCode::capacity};
     std::set<std::string> names;
     for (const auto &module : modules) {
@@ -647,64 +739,65 @@ Json CodingEngine::program_config(const Json &arguments) {
     pending_program_config_ = std::move(next);
     pending_program_revision_ = std::move(revision);
   }
-  return Json::object(
-      {{"revision", Json{program_revision_}},
+  return Value::object(
+      {{"revision", Value{program_revision_}},
        {"effective", program_config_},
        {"pending", pending_program_config_},
        {"launch_defaults",
-        Json::object({{"model", Json{model_}}, {"effort", Json{effort_}}})},
+        Value::object({{"model", Value{model_}}, {"effort", Value{effort_}}})},
        {"tools", tool_registry()},
        {"request_defaults",
-        Json::object(
-            {{"model", Json{string_field(program_config_, "model").empty()
-                                ? model_
-                                : string_field(program_config_, "model")}},
-             {"effort", Json{string_field(program_config_, "effort").empty()
-                                 ? effort_
-                                 : string_field(program_config_, "effort")}}})},
+        Value::object(
+            {{"model", Value{string_field(program_config_, "model").empty()
+                                 ? model_
+                                 : string_field(program_config_, "model")}},
+             {"effort", Value{string_field(program_config_, "effort").empty()
+                                  ? effort_
+                                  : string_field(program_config_, "effort")}}})},
        {"context_policy", budget_view(string_field(program_config_, "model").empty()
                                           ? model_
                                           : string_field(program_config_, "model"),
                                       0)},
        {"governing_workflow",
-        Json::object(
-            {{"generation", Json{hex_identity(generation_.bytes())}},
-             {"source", Json{"retained program.source; selected workflow file is read "
-                             "at turn admission"}},
+        Value::object(
+            {{"generation", Value{hex_identity(generation_.bytes())}},
+             {"source", Value{"retained program.source; selected workflow file is read "
+                              "at turn admission"}},
              {"selection",
-              Json{"--workflow or /workflow; no staged selector in this API"}}})},
-       {"pending_revision",
-        pending_program_config_ == Json{} ? Json{} : Json{pending_program_revision_}},
-       {"staged", Json{arguments.find("proposal") != nullptr}},
-       {"activation", Json{"successful-workflow-boundary"}}});
+              Value{"--workflow or /workflow; no staged selector in this API"}}})},
+       {"pending_revision", pending_program_config_ == Value{}
+                                ? Value{}
+                                : Value{pending_program_revision_}},
+       {"staged", Value{arguments.find("proposal") != nullptr}},
+       {"activation", Value{"successful-workflow-boundary"}}});
 }
-Json CodingEngine::module_source(const Json &arguments) {
+Value CodingEngine::module_source(const Value &arguments) {
   const auto &name = string_field(arguments, "name");
   for (const auto &module : field(program_config_, "modules").array())
     if (string_field(module, "name") == name)
-      return Json::object({{"name", Json{name}},
-                           {"source", field(module, "source")},
-                           {"revision", Json{program_revision_}}});
+      return Value::object({{"name", Value{name}},
+                            {"source", field(module, "source")},
+                            {"revision", Value{program_revision_}}});
   throw Error{ErrorCode::invalid_range};
 }
-Json CodingEngine::tool_registry() const {
-  return Json::object(
-      {{"revision", Json{tools_revision_}},
+Value CodingEngine::tool_registry() const {
+  return Value::object(
+      {{"revision", Value{tools_revision_}},
        {"effective", lua_tools_},
        {"pending", pending_lua_tools_},
        {"pending_revision",
-        pending_lua_tools_ == Json{} ? Json{} : Json{pending_tools_revision_}}});
+        pending_lua_tools_ == Value{} ? Value{} : Value{pending_tools_revision_}}});
 }
-Json CodingEngine::request_tools() const {
+Value CodingEngine::request_tools() const {
   auto result = tool_definitions();
   for (const auto &d : lua_tools_.array())
-    result.array().push_back(Json::object({{"type", Json{"function"}},
-                                           {"name", field(d, "name")},
-                                           {"description", field(d, "description")},
-                                           {"parameters", field(d, "parameters")}}));
+    result.array().push_back(Value::object({{"type", Value{"function"}},
+                                            {"name", field(d, "name")},
+                                            {"description", field(d, "description")},
+                                            {"parameters", field(d, "parameters")}}));
   return result;
 }
-Json CodingEngine::define_tool(const Json &arguments) {
+Value CodingEngine::define_tool(const Value &arguments) {
   if (const auto *base = arguments.find("base");
       base && base->string() != tools_revision_)
     throw Error{ErrorCode::conflict};
@@ -733,60 +826,60 @@ Json CodingEngine::define_tool(const Json &arguments) {
   validate_tool_schema(field(definition, "parameters"));
   if (!runtime_->valid_tool_source(source))
     throw Error{ErrorCode::invalid_range};
-  auto next = pending_lua_tools_ == Json{} ? lua_tools_ : pending_lua_tools_;
+  auto next = pending_lua_tools_ == Value{} ? lua_tools_ : pending_lua_tools_;
   auto found =
       std::find_if(next.array().begin(), next.array().end(),
-                   [&](const Json &d) { return string_field(d, "name") == name; });
+                   [&](const Value &d) { return string_field(d, "name") == name; });
   if (found == next.array().end())
     next.array().push_back(definition);
   else
     *found = definition;
-  if (next.array().size() > 32 || unwrap(dump_json(next)).size() > 65536)
+  if (next.array().size() > 32 || unwrap(encode_packet_string(next)).size() > 65536)
     throw Error{ErrorCode::capacity};
   auto revision =
       hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
   pending_lua_tools_ = std::move(next);
   pending_tools_revision_ = std::move(revision);
   auto result = tool_registry();
-  result.object().emplace_back("staged", Json{true});
+  result.object().emplace_back("staged", Value{true});
   return result;
 }
-Json CodingEngine::budget_view(std::string_view model, std::size_t input_bytes) const {
+Value CodingEngine::budget_view(std::string_view model, std::size_t input_bytes) const {
   const bool triggered = std::get<bool>(field(budget_, "enabled").value()) &&
                          input_bytes >= budget_number(budget_, "trigger_bytes");
-  return Json::object(
-      {{"revision", Json{budget_revision_}},
+  return Value::object(
+      {{"revision", Value{budget_revision_}},
        {"effective", budget_},
        {"pending", pending_budget_},
        {"pending_revision",
-        pending_budget_ == Json{} ? Json{} : Json{pending_budget_revision_}},
-       {"triggered", Json{triggered}},
-       {"input_bytes", Json{JsonNumber{std::to_string(input_bytes)}}},
+        pending_budget_ == Value{} ? Value{} : Value{pending_budget_revision_}},
+       {"triggered", Value{triggered}},
+       {"input_bytes", Value{Number{input_bytes}}},
        {"units",
-        Json{"serialized input UTF-8 JSON bytes; not tokens or total wire bytes"}},
+        Value{"native binary input packet bytes; not tokens or total wire bytes"}},
        {"capability",
-        Json::object(
-            {{"provider", Json{std::string{provider_.provider_identity()}}},
+        Value::object(
+            {{"provider", Value{std::string{provider_.provider_identity()}}},
              {"provider_source",
-              Json{"native adapter identity; unavailable for unspecified adapters"}},
-             {"model", Json{std::string{model}}},
+              Value{"native adapter identity; unavailable for unspecified adapters"}},
+             {"model", Value{std::string{model}}},
              {"model_source",
-              Json{"effective request model; stats uses engine default"}},
-             {"context_window_tokens", Json{}},
+              Value{"effective request model; stats uses engine default"}},
+             {"context_window_tokens", Value{}},
              {"context_window_source",
-              Json{"unavailable; no qualified model capability catalog"}}})}});
+              Value{"unavailable; no qualified model capability catalog"}}})}});
 }
-Json CodingEngine::context_budget(const Json &arguments) {
+Value CodingEngine::context_budget(const Value &arguments) {
   if (!arguments.find("proposal"))
     return budget_view(string_field(program_config_, "model").empty()
                            ? model_
                            : string_field(program_config_, "model"),
-                       unwrap(dump_json(Json{context_.items()})).size());
+                       unwrap(encode_packet_string(Value{context_.items()})).size());
   auto proposal = field(arguments, "proposal");
   const auto *base = proposal.find("base");
   if (base && base->string() != budget_revision_)
-    return Json::object(
-        {{"staged", Json{false}}, {"reason", Json{"stale-policy-revision"}}});
+    return Value::object(
+        {{"staged", Value{false}}, {"reason", Value{"stale-policy-revision"}}});
   if (base) {
     auto &fields = proposal.object();
     fields.erase(std::remove_if(fields.begin(), fields.end(),
@@ -798,11 +891,12 @@ Json CodingEngine::context_budget(const Json &arguments) {
       hex_identity(unwrap(log_.root().issue<DefinitionGenerationId>()).bytes());
   pending_budget_ = std::move(proposal);
   pending_budget_revision_ = std::move(revision);
-  auto result = budget_view(string_field(program_config_, "model").empty()
-                                ? model_
-                                : string_field(program_config_, "model"),
-                            unwrap(dump_json(Json{context_.items()})).size());
-  result.object().emplace_back("staged", Json{true});
+  auto result =
+      budget_view(string_field(program_config_, "model").empty()
+                      ? model_
+                      : string_field(program_config_, "model"),
+                  unwrap(encode_packet_string(Value{context_.items()})).size());
+  result.object().emplace_back("staged", Value{true});
   return result;
 }
 CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
@@ -814,7 +908,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
   observations_ = std::make_unique<Observations>(log_);
   program_config_.object().emplace_back("workflows", default_workflows());
-  program_config_.object().emplace_back("workflow_prefix", Json{""});
+  program_config_.object().emplace_back("workflow_prefix", Value{""});
   program_revision_ = "builtin-ultracode-v1";
   budget_ = default_context_budget();
   for (const auto &packet : log_.root().current_programs()) {
@@ -836,17 +930,19 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
     budget_ = std::move(policy);
     budget_revision_ = string_field(packet, "revision");
   }
-  Json participants_saved;
+  Value participants_saved;
   for (const auto &packet : log_.root().current_programs())
     if (string_field(packet, "label") == "participants-state-v1")
       participants_saved = packet;
   participants_ = std::make_unique<Participants>(
       participants_saved,
-      [&](std::string_view label, std::string_view raw, const Json &metadata) {
+      [&](std::string_view label, std::string_view raw, const Value &metadata) {
         log_.original({label, raw, metadata});
       },
-      [&](const Json &snapshot) { log_.record(ApplicationChannel::program, snapshot); },
-      [&](const Json &activity) {
+      [&](const Value &snapshot) {
+        log_.record(ApplicationChannel::program, snapshot);
+      },
+      [&](const Value &activity) {
         if (task_activity)
           task_activity(activity);
       });
@@ -901,16 +997,16 @@ void recover_coding_session(RetainedState &root) {
         bool input_bound = false;
         if (const auto *binding = metadata.value().find("input_binding")) {
           const auto *invocation_id = metadata.value().find("invocation");
-          const auto parsed_input = parse_json(admitted_input);
+          const auto parsed_input = decode_packet_string(admitted_input);
           input_bound =
               parsed_input.has_value() &&
-              std::holds_alternative<Json::Object>(parsed_input.value().value()) &&
-              !input && *binding == Json{"invocation-v1"} && invocation_id &&
-              *invocation_id == Json{hex_identity(invocation.invocation.bytes())} &&
+              std::holds_alternative<Value::Object>(parsed_input.value().value()) &&
+              !input && *binding == Value{"invocation-v1"} && invocation_id &&
+              *invocation_id == Value{hex_identity(invocation.invocation.bytes())} &&
               decision->planned_invocations.size() == 1 &&
               decision->planned_invocations.front() == invocation.invocation;
         } else if (input) {
-          const auto encoded_input = dump_json(*input);
+          const auto encoded_input = encode_packet_string(*input);
           input_bound =
               encoded_input.has_value() && encoded_input.value() == admitted_input;
         }
@@ -947,7 +1043,8 @@ void recover_coding_session(RetainedState &root) {
   }
 }
 
-void CodingEngine::protect_workflow(const Json::Array &entries, const Json &proposal) {
+void CodingEngine::protect_workflow(const Value::Array &entries,
+                                    const Value &proposal) {
   if (capacity_stopped_)
     throw Error{ErrorCode::capacity};
   try {
@@ -967,8 +1064,8 @@ void CodingEngine::protect_workflow(const Json::Array &entries, const Json &prop
     throw;
   }
 }
-Json CodingEngine::operation(std::string_view name, const Json &input,
-                             const std::function<Json(OperationAttemptId)> &body) {
+Value CodingEngine::operation(std::string_view name, const Value &input,
+                              const std::function<Value(OperationAttemptId)> &body) {
   std::string task_id;
   if (const auto *binding = input.find("task_id"); name == "exec" && binding) {
     task_id = binding->string();
@@ -1000,7 +1097,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     for (const auto key : {"path", "command", "argv"}) {
       const auto *value = input.find(key);
       if (value) {
-        description += " · " + unwrap(dump_json(*value));
+        description += " · " + unwrap(format_value(*value));
         break;
       }
     }
@@ -1011,17 +1108,18 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   const auto decision = unwrap(root.issue<DecisionId>());
   const auto invocation = unwrap(root.issue<InvocationId>());
   const auto attempt = unwrap(root.issue<OperationAttemptId>());
-  const auto serialized = unwrap(dump_json(input));
+  const auto serialized = unwrap(encode_packet_string(input));
   const auto raw = std::as_bytes(std::span{serialized.data(), serialized.size()});
   const ImmutableBytes bytes{raw.begin(), raw.end()};
   const auto context = parse_id<ContextRevisionId>(context_.head());
   const auto meta =
-      Json::object({{"operation", Json{std::string{name}}},
-                    {"input_binding", Json{"invocation-v1"}},
-                    {"invocation", Json{hex_identity(invocation.bytes())}},
-                    {"revision", Json{context_.head()}},
-                    {"time", began_time},
-                    {"generation", Json{hex_identity(generation_.bytes())}}});
+      Value::object({{"operation", Value{std::string{name}}},
+                     {"input_binding", Value{"invocation-v1"}},
+                     {"input_encoding", Value{"bbm2"}},
+                     {"invocation", Value{hex_identity(invocation.bytes())}},
+                     {"revision", Value{context_.head()}},
+                     {"time", began_time},
+                     {"generation", Value{hex_identity(generation_.bytes())}}});
   const auto continuation_bytes = unwrap(encode_packet(meta));
   // Fresh identities: one ordered batch, no authoritative partial admission.
   const std::array<RetainedEvent, 3> admitted{
@@ -1043,17 +1141,17 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   admission.outcome("admitted");
   admission.finish();
   struct TaskRun {
-    std::function<void(const Json &)> &observer;
+    std::function<void(const Value &)> &observer;
     std::string id, attempt, operation;
     bool ended = false;
     void emit(std::string_view phase) noexcept {
       if (id.empty() || !observer)
         return;
       try {
-        observer(Json::object({{"task_id", Json{id}},
-                               {"attempt", Json{attempt}},
-                               {"operation", Json{operation}},
-                               {"phase", Json{std::string{phase}}}}));
+        observer(Value::object({{"task_id", Value{id}},
+                                {"attempt", Value{attempt}},
+                                {"operation", Value{operation}},
+                                {"phase", Value{std::string{phase}}}}));
       } catch (...) {
       } // Derived presentation cannot undo a retained operation.
     }
@@ -1065,10 +1163,10 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
              hex_identity(attempt.bytes()), std::string{name}};
   task_run.emit("running");
   struct Boundary final : EffectBoundary {
-    const std::function<Json(OperationAttemptId)> &fn;
-    Json result;
+    const std::function<Value(OperationAttemptId)> &fn;
+    Value result;
     std::optional<Error> error;
-    explicit Boundary(const std::function<Json(OperationAttemptId)> &f) : fn(f) {}
+    explicit Boundary(const std::function<Value(OperationAttemptId)> &f) : fn(f) {}
     Result<void> dispatch(const EffectIntent &intent) override {
       try {
         result = fn(intent.attempt);
@@ -1089,58 +1187,59 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   unwrap(report.recording);
   if (!report.dispatched)
     throw Error{ErrorCode::conflict};
-  Json result =
-      boundary.error ? error_json(*boundary.error) : std::move(boundary.result);
+  Value result =
+      boundary.error ? error_value(*boundary.error) : std::move(boundary.result);
   if (name == "program_config" && boundary.error) {
     result.object().emplace_back(
         "message",
-        Json{boundary.error->code == ErrorCode::conflict
-                 ? "Registration conflict: duplicate workflow name, alias, bare name "
-                   "or powerword, built-in command collision, or stale base revision. "
-                   "No candidate was staged."
-                 : "Invalid program configuration: require modules/model/effort and "
-                   "optional workflows/workflow_prefix. Workflow definitions require "
-                   "name, description, source (Lua body with args), aliases, bare and "
-                   "powerwords. No candidate was staged."});
+        Value{boundary.error->code == ErrorCode::conflict
+                  ? "Registration conflict: duplicate workflow name, alias, bare name "
+                    "or powerword, built-in command collision, or stale base revision. "
+                    "No candidate was staged."
+                  : "Invalid program configuration: require modules/model/effort and "
+                    "optional workflows/workflow_prefix. Workflow definitions require "
+                    "name, description, source (Lua body with args), aliases, bare and "
+                    "powerwords. No candidate was staged."});
   }
   if (name == "read_file" && boundary.error &&
       boundary.error->code == ErrorCode::invalid_range) {
     result.object().emplace_back(
-        "message", Json{"Use one range object with mode lines or bytes and optional "
-                        "start/end; omit range for the whole file. Lines are one-based "
-                        "inclusive, bytes zero-based half-open. Do not combine range "
-                        "with legacy byte_/line_ fields. Endpoints must be nonnegative "
-                        "integers, line start >=1, end >=start."});
+        "message",
+        Value{"Use one range object with mode lines or bytes and optional "
+              "start/end; omit range for the whole file. Lines are one-based "
+              "inclusive, bytes zero-based half-open. Do not combine range "
+              "with legacy byte_/line_ fields. Endpoints must be nonnegative "
+              "integers, line start >=1, end >=start."});
     const auto *path = input.find("path");
     result.object().emplace_back(
         "example",
-        Json::object({{"path", path ? *path : Json{"file"}},
-                      {"range", Json::object({{"mode", Json{"lines"}},
-                                              {"start", Json{JsonNumber{"1"}}},
-                                              {"end", Json{JsonNumber{"20"}}}})}}));
+        Value::object({{"path", path ? *path : Value{"file"}},
+                       {"range", Value::object({{"mode", Value{"lines"}},
+                                                {"start", Value{Number{"1"}}},
+                                                {"end", Value{Number{"20"}}}})}}));
   }
   if ((name == "tasks_read" || name == "tasks_edit") && boundary.error)
     result.object().emplace_back(
         "message",
-        Json{"Require an object query or edit {op_id,ops}. add/move/archive/list need "
-             "current list base; set/move/archive need the read item version. Exactly "
-             "tasks and one level of subtasks. States "
-             "queued/active/blocked/done/dropped. "
-             "Read tasks_read for current IDs and versions. Batch limit64, page "
-             "limit64; "
-             "titles512 bytes, notes2048 bytes. No changes accepted for an invalid "
-             "batch."});
+        Value{"Require an object query or edit {op_id,ops}. add/move/archive/list need "
+              "current list base; set/move/archive need the read item version. Exactly "
+              "tasks and one level of subtasks. States "
+              "queued/active/blocked/done/dropped. "
+              "Read tasks_read for current IDs and versions. Batch limit64, page "
+              "limit64; "
+              "titles512 bytes, notes2048 bytes. No changes accepted for an invalid "
+              "batch."});
 
   const bool timed_out = boundary.error && boundary.error->code == ErrorCode::io &&
                          boundary.error->detail == ETIMEDOUT;
   if (name == "exec") {
-    result.object().emplace_back("output_ref", Json{hex_identity(attempt.bytes())});
+    result.object().emplace_back("output_ref", Value{hex_identity(attempt.bytes())});
     if (timed_out) {
-      result.object().emplace_back("timed_out", Json{true});
-      result.object().emplace_back("effect_outcome", Json{"unknown"});
+      result.object().emplace_back("timed_out", Value{true});
+      result.object().emplace_back("effect_outcome", Value{"unknown"});
     }
   }
-  auto output = unwrap(dump_json(result));
+  auto output = unwrap(encode_packet_string(result));
   const auto observed_time = observations_->time();
   const auto duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
                                std::chrono::steady_clock::now() - began)
@@ -1148,12 +1247,13 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   std::string result_id;
   std::size_t result_record = 0;
   try {
-    result_id = log_.original(
-        {"operation.result", output,
-         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                       {"time", observed_time},
-                       {"duration_ns", Json{JsonNumber{std::to_string(duration_ns)}}},
-                       {"operation", Json{std::string{name}}}})});
+    result_id =
+        log_.original({"operation.result", output,
+                       Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
+                                      {"time", observed_time},
+                                      {"source_encoding", Value{"bbm2"}},
+                                      {"duration_ns", Value{Number{duration_ns}}},
+                                      {"operation", Value{std::string{name}}}})});
     result_record = root.fact_count() - 1;
   } catch (const Error &e) {
     if (e.code != ErrorCode::capacity)
@@ -1161,8 +1261,8 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
     capacity_stopped_ = true;
     unretained_bytes_ += output.size();
     boundary.error = e;
-    result = error_json(e);
-    output = unwrap(dump_json(result));
+    result = error_value(e);
+    output = unwrap(encode_packet_string(result));
   }
   if (boundary.error && boundary.error->code == ErrorCode::capacity) {
     capacity_stopped_ = true;
@@ -1171,15 +1271,16 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
         {"capacity.stop",
          "effect outcome unknown; no replay; earlier originals retained, rejected "
          "bytes not retained",
-         Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                       {"unretained_bytes",
-                        Json{JsonNumber{std::to_string(unretained_bytes_)}}}})});
+         Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
+                        {"unretained_bytes", Value{Number{unretained_bytes_}}}})});
   }
   // The result original is already retained. Settlement carries its locator,
   // not another complete response. On capture refusal retain the bounded error.
-  const auto observed = unwrap(encode_packet(result_id.empty() ? result :
-      Json::object({{"result_id", Json{result_id}},
-                    {"result_record", Json{JsonNumber{std::to_string(result_record)}}}})));
+  const auto observed = unwrap(encode_packet(
+      result_id.empty()
+          ? result
+          : Value::object({{"result_id", Value{result_id}},
+                           {"result_record", Value{Number{result_record}}}})));
   auto disposition =
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
   if (boundary.error &&
@@ -1196,7 +1297,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   if (boundary.error && name == "beads" && beads_.mutation_may_have_started())
     disposition = AttemptDisposition::unknown;
   if (!boundary.error && name == "exec" &&
-      field(result, "exit_code").number().text != "0")
+      field(result, "exit_code").number().text() != "0")
     disposition = AttemptDisposition::failure;
   if (!boundary.error && name == "beads") {
     const auto state = string_field(result, "status");
@@ -1222,7 +1323,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   if (!recorded.has_value() && recorded.error().code == ErrorCode::capacity) {
     capacity_stopped_ = true;
     boundary.error = recorded.error();
-    result = error_json(*boundary.error);
+    result = error_value(*boundary.error);
     const std::string bounded =
         "capacity stop after dispatch; outcome unknown; no replay";
     const auto bounded_raw = std::as_bytes(std::span{bounded.data(), bounded.size()});
@@ -1240,8 +1341,9 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                            : disposition == AttemptDisposition::failure ? "failed"
                                                                         : "finished";
   if (name == "exec" && !boundary.error)
-    if (const auto *exit = result.find("exit_code"); exit && exit->number().text != "0")
-      task_phase = "failed (exit " + exit->number().text + ")";
+    if (const auto *exit = result.find("exit_code");
+        exit && exit->number().text() != "0")
+      task_phase = "failed (exit " + exit->number().text() + ")";
   task_run.ended = true;
   task_run.emit(task_phase);
   if (operation_completed || operation_outcome) {
@@ -1277,20 +1379,20 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   }
   return result;
 }
-Json CodingEngine::execute_workflow(const WorkflowContinuation &invocation) {
+Value CodingEngine::execute_workflow(const WorkflowContinuation &invocation) {
   try {
     if (workflow_depth_ >= 8 || ++workflow_invocations_ > 64)
       throw Error{ErrorCode::capacity};
     return operation(
         "workflow_execute", invocation.arguments, [&](OperationAttemptId attempt) {
-          const auto metadata =
-              Json::object({{"name", field(invocation.definition, "name")},
-                            {"revision", Json{invocation.revision}},
-                            {"definition", invocation.definition},
-                            {"invocation", invocation.arguments},
-                            {"generation", Json{hex_identity(generation_.bytes())}},
-                            {"attempt", Json{hex_identity(attempt.bytes())}},
-                            {"selection_attempt", Json{invocation.selection_attempt}}});
+          const auto metadata = Value::object(
+              {{"name", field(invocation.definition, "name")},
+               {"revision", Value{invocation.revision}},
+               {"definition", invocation.definition},
+               {"invocation", invocation.arguments},
+               {"generation", Value{hex_identity(generation_.bytes())}},
+               {"attempt", Value{hex_identity(attempt.bytes())}},
+               {"selection_attempt", Value{invocation.selection_attempt}}});
           log_.original({"workflow.source",
                          string_field(invocation.definition, "source"), metadata});
           log_.record(ApplicationChannel::program, metadata);
@@ -1325,15 +1427,15 @@ void CodingEngine::drain_workflows() {
     workflow_continuations_.erase(workflow_continuations_.begin());
     const auto result = execute_workflow(next);
     context_.append(
-        {Json::object(
-            {{"role", Json{"developer"}},
+        {Value::object(
+            {{"role", Value{"developer"}},
              {"content",
-              Json{"Registered workflow " + string_field(next.definition, "name") +
-                   " completed in this turn: " + unwrap(dump_json(result))}}})},
+              Value{"Registered workflow " + string_field(next.definition, "name") +
+                    " completed in this turn: " + unwrap(format_value(result))}}})},
         "workflow-continuation");
   }
 }
-Json CodingEngine::request(Json options) {
+Value CodingEngine::request(Value options) {
   LocalSpan preparation{"provider.prepare", "src/coding.cpp:request"};
   if (restart_note_)
     throw Error{ErrorCode::busy};
@@ -1341,57 +1443,58 @@ Json CodingEngine::request(Json options) {
   drain_workflows();
   auto items = context_.items();
   validate_protocol(items);
-  auto request = Json::object(
-      {{"model", Json{string_field(program_config_, "model").empty()
-                          ? model_
-                          : string_field(program_config_, "model")}},
+  auto request = Value::object(
+      {{"model", Value{string_field(program_config_, "model").empty()
+                           ? model_
+                           : string_field(program_config_, "model")}},
        {"instructions",
-        Json{"You are Blackbird, a programmable coding colleague for an expert "
-             "operator. Use local file/process tools without approval ceremony. "
-             "Context is ordinary editable data: inspect it, transform it with Lua, "
-             "repair it from originals. A timed-out tool returns a result: inspect "
-             "its "
-             "retained output and choose a new attempt or another approach; never "
-             "blindly repeat an effect with unknown outcome. Keep tool call/result "
-             "linkage valid. Governing "
-             "Lua workflow changes activate next turn. For compiled changes, build "
-             "build/release/blackbird and request restart with a note listing changes, "
-             "checks and next steps; the same session will resume with continue. "
-             "Bound hardening before starting: list concrete remediation tasks, "
-             "direct checks and a time/resource allowance. Layer one: remediate "
-             "and fix. Layer two: one recheck and fix its findings within that "
-             "allowance. Never a third assurance layer: no reviews of reviews, "
-             "certifying rechecks, unrelated full-suite reruns or silent budget "
-             "resets. Settled checks stay settled absent relevant change or new "
-             "defect evidence. If blocked at the bound, retain the unsafe candidate "
-             "inactive and continue independent useful work; do not call it safe. "
-             "Work carefully and verify "
-             "actual results. Host cwd: " +
-             std::filesystem::current_path().string()}},
+        Value{
+            "You are Blackbird, a programmable coding colleague for an expert "
+            "operator. Use local file/process tools without approval ceremony. "
+            "Context is ordinary editable data: inspect it, transform it with Lua, "
+            "repair it from originals. A timed-out tool returns a result: inspect "
+            "its "
+            "retained output and choose a new attempt or another approach; never "
+            "blindly repeat an effect with unknown outcome. Keep tool call/result "
+            "linkage valid. Governing "
+            "Lua workflow changes activate next turn. For compiled changes, build "
+            "build/release/blackbird and request restart with a note listing changes, "
+            "checks and next steps; the same session will resume with continue. "
+            "Bound hardening before starting: list concrete remediation tasks, "
+            "direct checks and a time/resource allowance. Layer one: remediate "
+            "and fix. Layer two: one recheck and fix its findings within that "
+            "allowance. Never a third assurance layer: no reviews of reviews, "
+            "certifying rechecks, unrelated full-suite reruns or silent budget "
+            "resets. Settled checks stay settled absent relevant change or new "
+            "defect evidence. If blocked at the bound, retain the unsafe candidate "
+            "inactive and continue independent useful work; do not call it safe. "
+            "Work carefully and verify "
+            "actual results. Host cwd: " +
+            std::filesystem::current_path().string()}},
        {"reasoning",
-        Json::object(
-            {{"effort", Json{string_field(program_config_, "effort").empty()
-                                 ? effort_
-                                 : string_field(program_config_, "effort")}}})},
-       {"input", Json{std::move(items)}},
+        Value::object(
+            {{"effort", Value{string_field(program_config_, "effort").empty()
+                                  ? effort_
+                                  : string_field(program_config_, "effort")}}})},
+       {"input", Value{std::move(items)}},
        {"tools", request_tools()},
-       {"parallel_tool_calls", Json{false}},
-       {"include", Json{Json::Array{Json{"reasoning.encrypted_content"}}}},
-       {"store", Json{false}},
-       {"stream", Json{true}}});
-  if (!std::holds_alternative<Json::Object>(options.value()))
+       {"parallel_tool_calls", Value{false}},
+       {"include", Value{Value::Array{Value{"reasoning.encrypted_content"}}}},
+       {"store", Value{false}},
+       {"stream", Value{true}}});
+  if (!std::holds_alternative<Value::Object>(options.value()))
     throw Error{ErrorCode::invalid_range};
   unsigned max_attempts = 5;
   unsigned base_ms = 1000;
   unsigned cap_ms = 16000;
   if (const auto *policy = options.find("retry_policy")) {
-    if (!std::holds_alternative<Json::Object>(policy->value()))
+    if (!std::holds_alternative<Value::Object>(policy->value()))
       throw Error{ErrorCode::invalid_range};
     for (const auto &[key, value] : policy->object()) {
-      if (!std::holds_alternative<JsonNumber>(value.value()))
+      if (!std::holds_alternative<Number>(value.value()))
         throw Error{ErrorCode::invalid_range};
       unsigned n = 0;
-      const auto &text = value.number().text;
+      const auto &text = value.number().text();
       const auto parsed = std::from_chars(text.data(), text.data() + text.size(), n);
       if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size())
         throw Error{ErrorCode::invalid_range};
@@ -1422,11 +1525,11 @@ Json CodingEngine::request(Json options) {
         std::find_if(request.object().begin(), request.object().end(),
                      [](const auto &f) { return f.first == "instructions"; })
             ->second;
-    instructions = Json{
+    instructions = Value{
         instructions.string() + "\nCURRENT_TASKS " +
-        unwrap(dump_json(tasks_.read(Json::object({{"status", Json{"open"}},
-                                                   {"limit", Json{JsonNumber{"16"}}},
-                                                   {"compact", Json{true}}})))) +
+        unwrap(format_value(tasks_.read(Value::object({{"status", Value{"open"}},
+                                                       {"limit", Value{Number{"16"}}},
+                                                       {"compact", Value{true}}})))) +
         "\nTasks are durable session working state. Read more with tasks_read; use "
         "tasks_edit for small atomic batches at real work transitions. Keep stable "
         "IDs through renames. Exactly tasks and subtasks, no deeper nesting. Multiple "
@@ -1440,42 +1543,43 @@ Json CodingEngine::request(Json options) {
   if (store == nullptr || *store || stream == nullptr || !*stream)
     throw Error{ErrorCode::unsupported};
   validate_protocol(field(request, "input").array());
-  const auto budget = budget_view(string_field(request, "model"),
-                                  unwrap(dump_json(field(request, "input"))).size());
+  const auto budget =
+      budget_view(string_field(request, "model"),
+                  unwrap(encode_packet_string(field(request, "input"))).size());
   if (std::get<bool>(field(budget, "triggered").value())) {
     auto &instructions =
         std::find_if(request.object().begin(), request.object().end(),
                      [](const auto &f) { return f.first == "instructions"; })
             ->second;
-    instructions =
-        Json{instructions.string() + "\nCONTEXT_BUDGET " + unwrap(dump_json(budget)) +
-             "\nThe configured advisory trigger is reached. Inspect the working map "
-             "and propose managed context "
-             "with context_manage or Lua toward target_bytes, or revise/defer policy "
-             "with context_budget and a reason. "
-             "Do not discard live instructions or incomplete tool groups. Destructive "
-             "proposals remain model-authored; "
-             "native acceptance checks structure, not summary quality. Managed "
-             "proposals and policy changes activate only "
-             "after successful workflow completion: finish this workflow to use them "
-             "on the next turn. "
-             "Repair may exceed the target; retrieve bounded originals and restore "
-             "when useful. "
-             "Neither target nor trigger is a token estimate, hard provider limit, or "
-             "audit reclamation."};
+    instructions = Value{
+        instructions.string() + "\nCONTEXT_BUDGET " + unwrap(format_value(budget)) +
+        "\nThe configured advisory trigger is reached. Inspect the working map "
+        "and propose managed context "
+        "with context_manage or Lua toward target_bytes, or revise/defer policy "
+        "with context_budget and a reason. "
+        "Do not discard live instructions or incomplete tool groups. Destructive "
+        "proposals remain model-authored; "
+        "native acceptance checks structure, not summary quality. Managed "
+        "proposals and policy changes activate only "
+        "after successful workflow completion: finish this workflow to use them "
+        "on the next turn. "
+        "Repair may exceed the target; retrieve bounded originals and restore "
+        "when useful. "
+        "Neither target nor trigger is a token estimate, hard provider limit, or "
+        "audit reclamation."};
   }
-  last_request_bytes_ =
-      Json{JsonNumber{std::to_string(unwrap(dump_json(request)).size())}};
-  usage_ = Json{};
+  last_request_bytes_ = Value{Number{unwrap(encode_packet_string(request)).size()}};
+  usage_ = Value{};
   if (diagnostic || display)
-    (diagnostic ? diagnostic : display)(
-        "\n[request " + last_request_bytes_.number().text + " JSON bytes]\n");
+    (diagnostic ? diagnostic : display)("\n[request " +
+                                        last_request_bytes_.number().text() +
+                                        " native request bytes]\n");
   const auto origin = context_.head();
   if (preparation.enabled()) {
     preparation.linkage(origin);
     preparation.observe(
         log_.root().cursor().sequence,
-        static_cast<std::uint64_t>(std::stoull(last_request_bytes_.number().text)));
+        static_cast<std::uint64_t>(std::stoull(last_request_bytes_.number().text())));
     preparation.outcome("success");
   }
   preparation.finish();
@@ -1483,7 +1587,7 @@ Json CodingEngine::request(Json options) {
   const auto retry_group =
       hex_identity(unwrap(log_.root().issue<OperationAttemptId>()).bytes());
   provider_.cancelled = cancelled;
-  Json response;
+  Value response;
   unsigned delay_ms = std::min(base_ms, cap_ms);
   for (unsigned ordinal = 1;; ++ordinal) {
     if (cancelled && cancelled())
@@ -1511,18 +1615,17 @@ Json CodingEngine::request(Json options) {
         if (instructions && std::holds_alternative<std::string>(instructions->value()))
           observations_->doctrine(instructions->string(),
                                   admission.admission.invocation, attempt);
-        log_.record(
-            ApplicationChannel::log,
-            Json::object(
-                {{"label", Json{"provider.request"}},
-                 {"metadata",
-                  Json::object(
-                      {{"attempt", Json{hex_identity(attempt.bytes())}},
-                       {"revision", Json{origin}},
-                       {"generation", Json{hex_identity(generation_.bytes())}},
-                       {"input_binding", Json{"attempt-invocation-v1"}},
-                       {"retry_group", Json{retry_group}},
-                       {"ordinal", Json{JsonNumber{std::to_string(ordinal)}}}})}}));
+        log_.record(ApplicationChannel::log,
+                    Value::object(
+                        {{"label", Value{"provider.request"}},
+                         {"metadata",
+                          Value::object(
+                              {{"attempt", Value{hex_identity(attempt.bytes())}},
+                               {"revision", Value{origin}},
+                               {"generation", Value{hex_identity(generation_.bytes())}},
+                               {"input_binding", Value{"attempt-invocation-v1"}},
+                               {"retry_group", Value{retry_group}},
+                               {"ordinal", Value{Number{ordinal}}}})}}));
         LocalSpan transport{"provider.transport", "src/coding.cpp:provider.respond",
                             false};
         if (transport.enabled())
@@ -1532,16 +1635,16 @@ Json CodingEngine::request(Json options) {
           try {
             log_.original(
                 {"provider.stream", block,
-                 Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                               {"revision", Json{origin}},
-                               {"capture_policy", Json{"bounded-blocks-v1"}}})});
+                 Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
+                                {"revision", Value{origin}},
+                                {"capture_policy", Value{"bounded-blocks-v1"}}})});
           } catch (const Error &e) {
             if (e.code == ErrorCode::capacity)
               unretained_bytes_ += block.size();
             throw;
           }
         }};
-        Json result;
+        Value result;
         try {
           result = provider_.respond(request, [&](std::string_view raw) {
             capture.append(raw);
@@ -1559,7 +1662,7 @@ Json CodingEngine::request(Json options) {
         }
         capture.flush();
         transport.outcome("returned");
-        return result;
+        return import_provider_response(std::move(result));
       });
       break;
     } catch (const Error &e) {
@@ -1581,7 +1684,7 @@ Json CodingEngine::request(Json options) {
           "); partial output not accepted; retry " + std::to_string(ordinal + 1) + "/" +
           std::to_string(max_attempts) + " in " + std::to_string(delay_ms) + "ms";
       log_.original({"provider.retry", message,
-                     Json::object({{"retry_group", Json{retry_group}}})});
+                     Value::object({{"retry_group", Value{retry_group}}})});
       if (status)
         status(message);
       if (notice || display)
@@ -1597,13 +1700,13 @@ Json CodingEngine::request(Json options) {
     }
   }
   if (const auto *usage = response.find("usage");
-      usage && std::holds_alternative<Json::Object>(usage->value())) {
-    Json::Object selected;
-    auto select = [](const Json &source, std::string_view key, Json::Object &dest) {
+      usage && std::holds_alternative<Value::Object>(usage->value())) {
+    Value::Object selected;
+    auto select = [](const Value &source, std::string_view key, Value::Object &dest) {
       const auto *v = source.find(key);
-      if (!v || !std::holds_alternative<JsonNumber>(v->value()))
+      if (!v || !std::holds_alternative<Number>(v->value()))
         return;
-      const auto &n = v->number().text;
+      const auto &n = v->number().text();
       if (!n.empty() &&
           std::all_of(n.begin(), n.end(), [](char c) { return c >= '0' && c <= '9'; }))
         dest.emplace_back(std::string{key}, *v);
@@ -1614,19 +1717,19 @@ Json CodingEngine::request(Json options) {
          {std::pair{"input_tokens_details", "cached_tokens"},
           std::pair{"output_tokens_details", "reasoning_tokens"}}) {
       if (const auto *details = usage->find(group)) {
-        Json::Object kept;
+        Value::Object kept;
         select(*details, key, kept);
         if (!kept.empty())
-          selected.emplace_back(group, Json::object(std::move(kept)));
+          selected.emplace_back(group, Value::object(std::move(kept)));
       }
     }
     if (!selected.empty()) {
-      usage_ = Json::object(std::move(selected));
+      usage_ = Value::object(std::move(selected));
       if (observed_usage)
         observed_usage(usage_);
       if (diagnostic || display)
         (diagnostic ? diagnostic : display)("\n[provider usage " +
-                                            unwrap(dump_json(usage_)) + "]\n");
+                                            unwrap(format_value(usage_)) + "]\n");
     }
   }
   if (context_.head() != origin)
@@ -1634,7 +1737,7 @@ Json CodingEngine::request(Json options) {
   context_.append(field(response, "output").array(), "provider.branch:" + origin);
   return response;
 }
-Json CodingEngine::call(std::string name, Json arguments) {
+Value CodingEngine::call(std::string name, Value arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
@@ -1643,10 +1746,10 @@ Json CodingEngine::call(std::string name, Json arguments) {
       decision_models_.observer = [&](std::string_view label, std::string_view raw) {
         log_.original(
             {label, raw,
-             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+             Value::object({{"attempt", Value{hex_identity(attempt.bytes())}}})});
       };
       auto result = decision_models_.evaluate(arguments);
-      result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
+      result.object().emplace_back("audit_ref", Value{hex_identity(attempt.bytes())});
       return result;
     }
     if (name == "beads") {
@@ -1654,10 +1757,10 @@ Json CodingEngine::call(std::string name, Json arguments) {
       beads_.observer = [&](std::string_view label, std::string_view raw) {
         log_.original(
             {label, raw,
-             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+             Value::object({{"attempt", Value{hex_identity(attempt.bytes())}}})});
       };
       auto result = beads_.run(arguments);
-      result.object().emplace_back("audit_ref", Json{hex_identity(attempt.bytes())});
+      result.object().emplace_back("audit_ref", Value{hex_identity(attempt.bytes())});
       return result;
     }
 
@@ -1668,11 +1771,11 @@ Json CodingEngine::call(std::string name, Json arguments) {
       WorkflowContinuation invocation{definition, arguments, workflows_->revision(),
                                       hex_identity(attempt.bytes())};
       const auto selection =
-          Json::object({{"name", field(definition, "name")},
-                        {"revision", Json{workflows_->revision()}},
-                        {"definition", definition},
-                        {"invocation", arguments},
-                        {"selection_attempt", Json{invocation.selection_attempt}}});
+          Value::object({{"name", field(definition, "name")},
+                         {"revision", Value{workflows_->revision()}},
+                         {"definition", definition},
+                         {"invocation", arguments},
+                         {"selection_attempt", Value{invocation.selection_attempt}}});
       log_.original(
           {"workflow.selection", string_field(definition, "source"), selection});
       log_.record(ApplicationChannel::program, selection);
@@ -1682,12 +1785,12 @@ Json CodingEngine::call(std::string name, Json arguments) {
         if (workflow_continuations_.size() >= 8)
           throw Error{ErrorCode::capacity};
         workflow_continuations_.push_back(std::move(invocation));
-        return Json::object(
-            {{"status", Json{"accepted"}},
+        return Value::object(
+            {{"status", Value{"accepted"}},
              {"name", field(definition, "name")},
-             {"revision", Json{workflows_->revision()}},
-             {"execution", Json{"same-turn after tool outputs, before next request or "
-                                "successful boundary"}}});
+             {"revision", Value{workflows_->revision()}},
+             {"execution", Value{"same-turn after tool outputs, before next request or "
+                                 "successful boundary"}}});
       }
       return execute_workflow(invocation);
     }
@@ -1703,10 +1806,11 @@ Json CodingEngine::call(std::string name, Json arguments) {
       if (string_field(definition, "name") != name)
         continue;
       validate_tool_arguments(field(definition, "parameters"), arguments);
-      log_.original({"tool.source", string_field(definition, "source"),
-                     Json::object({{"name", Json{name}},
-                                   {"revision", Json{tools_revision_}},
-                                   {"attempt", Json{hex_identity(attempt.bytes())}}})});
+      log_.original(
+          {"tool.source", string_field(definition, "source"),
+           Value::object({{"name", Value{name}},
+                          {"revision", Value{tools_revision_}},
+                          {"attempt", Value{hex_identity(attempt.bytes())}}})});
       return runtime_->invoke_tool(definition, arguments);
     }
     if (name == "restart") {
@@ -1715,7 +1819,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
       if (note.empty() || note.size() > 65536)
         throw Error{ErrorCode::invalid_range};
       restart_note_ = std::move(note);
-      return Json::object({{"scheduled", Json{true}}});
+      return Value::object({{"scheduled", Value{true}}});
     }
     if (name == "read_process_output") {
       const auto &reference = string_field(arguments, "output_ref");
@@ -1767,15 +1871,20 @@ Json CodingEngine::call(std::string name, Json arguments) {
           throw Error{ErrorCode::conflict};
         const auto eligible = std::any_of(
             repairable_outputs_.begin(), repairable_outputs_.end(),
-            [&](const Json &old) { return string_field(old, "call_id") == id; });
+            [&](const Value &old) { return string_field(old, "call_id") == id; });
         if (!eligible)
           throw Error{ErrorCode::conflict};
-        output = Json::object(
-            {{"type", Json{"function_call_output"}},
-             {"call_id", Json{id}},
+        output = Value::object(
+            {{"type", Value{"function_call_output"}},
+             {"call_id", Value{id}},
              {"output",
-              Json{
-                  R"({"error":"workflow_result_missing","effect_outcome":"unknown","replayed":false,"detail":"Protocol placeholder only. Inspect retained program, tool results and audit for actual effects; no automatic retry."})"}}});
+              Value::object(
+                  {{"error", Value{"workflow_result_missing"}},
+                   {"effect_outcome", Value{"unknown"}},
+                   {"replayed", Value{false}},
+                   {"detail", Value{"Protocol placeholder only. Inspect retained "
+                                    "program, tool results and audit for actual "
+                                    "effects; no automatic retry."}}})}});
       }
       auto candidate = context_.items();
       candidate.insert(candidate.end(), outputs.begin(), outputs.end());
@@ -1784,10 +1893,10 @@ Json CodingEngine::call(std::string name, Json arguments) {
       const auto count = outputs.size();
       if (!outputs.empty())
         context_.append(std::move(outputs), "workflow.protocol-repair");
-      return Json::object({{"repaired", Json{JsonNumber{std::to_string(count)}}},
-                           {"base", Json{context_.head()}},
-                           {"effect_outcome", Json{"unknown"}},
-                           {"replayed", Json{false}}});
+      return Value::object({{"repaired", Value{Number{count}}},
+                            {"base", Value{context_.head()}},
+                            {"effect_outcome", Value{"unknown"}},
+                            {"replayed", Value{false}}});
     }
     if (name == "context_budget")
       return context_budget(arguments);
@@ -1795,9 +1904,9 @@ Json CodingEngine::call(std::string name, Json arguments) {
       auto proposal = field(arguments, "proposal");
       // Explicit invocation-time snapshot convenience. Supplied bases remain strict
       // CAS.
-      if (std::holds_alternative<Json::Object>(proposal.value()) &&
+      if (std::holds_alternative<Value::Object>(proposal.value()) &&
           !proposal.find("base"))
-        proposal.object().emplace_back("base", Json{context_.head()});
+        proposal.object().emplace_back("base", Value{context_.head()});
       return context_.manage(proposal);
     }
     if (name == "rageshake") {
@@ -1806,64 +1915,64 @@ Json CodingEngine::call(std::string name, Json arguments) {
         throw Error{ErrorCode::invalid_range};
       const auto references = arguments.find("references")
                                   ? field(arguments, "references")
-                                  : Json::object({});
-      if (!std::holds_alternative<Json::Object>(references.value()) ||
-          unwrap(dump_json(references)).size() > 65536)
+                                  : Value::object({});
+      if (!std::holds_alternative<Value::Object>(references.value()) ||
+          unwrap(encode_packet_string(references)).size() > 65536)
         throw Error{ErrorCode::invalid_range};
       std::set<std::string> active;
       for (const auto &unresolved : unwrap(log_.root().unresolved_attempts()))
         active.insert(hex_identity(unresolved.admission.attempt.bytes()));
-      Json::Array active_ids;
+      Value::Array active_ids;
       for (const auto &id : active) {
         if (active_ids.size() == 64)
           break;
-        active_ids.push_back(Json{id});
+        active_ids.push_back(Value{id});
       }
-      auto detail = Json::object(
-          {{"observation", Json{observation}},
+      auto detail = Value::object(
+          {{"observation", Value{observation}},
            {"references", references},
-           {"active_attempts", Json{std::move(active_ids)}},
-           {"active_attempt_count", Json{JsonNumber{std::to_string(active.size())}}},
-           {"revision", Json{context_.head()}},
-           {"generation", Json{hex_identity(generation_.bytes())}},
-           {"actor", Json{hex_identity(identity_.actor.bytes())}},
-           {"conversation", Json{hex_identity(identity_.conversation.bytes())}},
-           {"workflow", Json{hex_identity(identity_.workflow.bytes())}},
-           {"model", Json{model_}},
-           {"effort", Json{effort_}},
-           {"audit_end", Json{JsonNumber{std::to_string(log_.root().fact_count())}}},
-           {"reporting_attempt", Json{hex_identity(attempt.bytes())}},
-           {"repair_required_now", Json{false}}});
+           {"active_attempts", Value{std::move(active_ids)}},
+           {"active_attempt_count", Value{Number{active.size()}}},
+           {"revision", Value{context_.head()}},
+           {"generation", Value{hex_identity(generation_.bytes())}},
+           {"actor", Value{hex_identity(identity_.actor.bytes())}},
+           {"conversation", Value{hex_identity(identity_.conversation.bytes())}},
+           {"workflow", Value{hex_identity(identity_.workflow.bytes())}},
+           {"model", Value{model_}},
+           {"effort", Value{effort_}},
+           {"audit_end", Value{Number{log_.root().fact_count()}}},
+           {"reporting_attempt", Value{hex_identity(attempt.bytes())}},
+           {"repair_required_now", Value{false}}});
       const auto complaint = log_.original(
-          {"complaint.detail", unwrap(dump_json(detail)),
-           Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+          {"complaint.detail", unwrap(encode_packet_string(detail)),
+           Value::object({{"attempt", Value{hex_identity(attempt.bytes())}}})});
       // Only a non-sensitive locator goes to beads (and hence issue backups).
       // The observation and provider/context history remain in the local audit.
-      auto delivery =
-          call("exec",
-               Json::object(
-                   {{"argv",
-                     Json{Json::Array{
-                         Json{"bd"}, Json{"create"},
-                         Json{"Blackbird model complaint " + complaint}, Json{"--type"},
-                         Json{"bug"}, Json{"--description"},
-                         Json{"Local audit complaint " + complaint + "; conversation " +
-                              hex_identity(identity_.conversation.bytes()) +
-                              ". Inspect complaint.detail locally. Advisory; no "
-                              "immediate repair required."},
-                         Json{"--json"}}}},
-                    {"timeout_seconds", Json{JsonNumber{"20"}}},
-                    {"output_max_bytes", Json{JsonNumber{"4096"}}}}));
+      auto delivery = call(
+          "exec",
+          Value::object(
+              {{"argv",
+                Value{Value::Array{
+                    Value{"bd"}, Value{"create"},
+                    Value{"Blackbird model complaint " + complaint}, Value{"--type"},
+                    Value{"bug"}, Value{"--description"},
+                    Value{"Local audit complaint " + complaint + "; conversation " +
+                          hex_identity(identity_.conversation.bytes()) +
+                          ". Inspect complaint.detail locally. Advisory; no "
+                          "immediate repair required."},
+                    Value{"--json"}}}},
+               {"timeout_seconds", Value{Number{"20"}}},
+               {"output_max_bytes", Value{Number{"4096"}}}}));
       const auto *exit = delivery.find("exit_code");
-      const bool delivered = exit && exit->number().text == "0";
-      auto result = Json::object({{"complaint", Json{complaint}},
-                                  {"retained_locally", Json{true}},
-                                  {"bead_created", Json{delivered}},
-                                  {"delivery", delivery},
-                                  {"sink", Json{"external consumer not configured"}},
-                                  {"repair_required_now", Json{false}}});
-      log_.original({"complaint.delivery", unwrap(dump_json(result)),
-                     Json::object({{"complaint", Json{complaint}}})});
+      const bool delivered = exit && exit->number().text() == "0";
+      auto result = Value::object({{"complaint", Value{complaint}},
+                                   {"retained_locally", Value{true}},
+                                   {"bead_created", Value{delivered}},
+                                   {"delivery", delivery},
+                                   {"sink", Value{"external consumer not configured"}},
+                                   {"repair_required_now", Value{false}}});
+      log_.original({"complaint.delivery", unwrap(encode_packet_string(result)),
+                     Value::object({{"complaint", Value{complaint}}})});
       return result;
     }
     if (name == "audit_inspect")
@@ -1874,7 +1983,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
       auto query = field(arguments, "query");
       if (query.find("variables"))
         throw Error{ErrorCode::invalid_range};
-      query.object().emplace_back("variables", Json{true});
+      query.object().emplace_back("variables", Value{true});
       return log_.trajectory(query);
     }
     if (name == "git_observe")
@@ -1895,12 +2004,12 @@ Json CodingEngine::call(std::string name, Json arguments) {
       return participants_->archive(arguments);
     if (name == "participant_start") {
       if (const auto *task = arguments.find("task_id"); task && !task->string().empty())
-        if (field(tasks_.read(Json::object({{"id", *task}})), "items").array().empty())
+        if (field(tasks_.read(Value::object({{"id", *task}})), "items").array().empty())
           throw Error{ErrorCode::invalid_range};
       const auto transport =
           participant_transport
               ? participant_transport
-              : ParticipantTransport{[&](const Json &prepared,
+              : ParticipantTransport{[&](const Value &prepared,
                                          const ColleagueCapture &capture,
                                          const std::function<bool()> &stop) {
                   return native_colleague_transport(prepared, capture, stop);
@@ -1913,24 +2022,25 @@ Json CodingEngine::call(std::string name, Json arguments) {
       return colleague_catalog();
     if (name == "colleague") {
       const auto capture = [&](std::string_view label, std::string_view raw) {
-        log_.original({"colleague." + std::string{label}, raw,
-                       Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
-                                     {"request_id", arguments.find("request_id")
-                                                        ? field(arguments, "request_id")
-                                                        : Json{}}})});
+        log_.original(
+            {"colleague." + std::string{label}, raw,
+             Value::object({{"attempt", Value{hex_identity(attempt.bytes())}},
+                            {"request_id", arguments.find("request_id")
+                                               ? field(arguments, "request_id")
+                                               : Value{}}})});
       };
       const auto transport =
           colleague_transport
               ? colleague_transport
               : ColleagueTransport{
-                    [&](const Json &prepared, const ColleagueCapture &retain) {
+                    [&](const Value &prepared, const ColleagueCapture &retain) {
                       return native_colleague_transport(prepared, retain, cancelled);
                     }};
       return call_colleague(arguments, capture, transport);
     }
     if (name == "tasks_read")
       return tasks_.read(arguments.find("query") ? field(arguments, "query")
-                                                 : Json::object({}));
+                                                 : Value::object({}));
     if (name == "tasks_edit")
       return tasks_.edit(arguments);
     if (name == "context_inspect")
@@ -1954,7 +2064,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
       try {
         log_.original(
             {label, raw,
-             Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+             Value::object({{"attempt", Value{hex_identity(attempt.bytes())}}})});
       } catch (const Error &e) {
         if (e.code == ErrorCode::capacity)
           unretained_bytes_ += raw.size();
@@ -1966,55 +2076,55 @@ Json CodingEngine::call(std::string name, Json arguments) {
     tools.cancelled = cancelled;
     auto result = tools.run(name, arguments);
     if (name == "exec" && process_output)
-      process_output("\n[exit " + field(result, "exit_code").number().text + "]\n");
+      process_output("\n[exit " + field(result, "exit_code").number().text() + "]\n");
     return result;
   });
 }
-Json CodingEngine::stats() const {
+Value CodingEngine::stats() const {
   auto result = context_.stats();
   const auto journal = log_.root().journal_usage();
   const auto maintenance_error = log_.root().maintenance_error();
   result.object().emplace_back(
       "maintenance_error", maintenance_error
-                               ? Json{std::string{error_name(maintenance_error->code)}}
-                               : Json{});
-  result.object().emplace_back(
-      "resident_tail_records",
-      Json{JsonNumber{std::to_string(log_.root().tail_facts().size())}});
-  auto number = [](std::uint64_t n) { return Json{JsonNumber{std::to_string(n)}}; };
+                               ? Value{std::string{error_name(maintenance_error->code)}}
+                               : Value{});
+  result.object().emplace_back("resident_tail_records",
+                               Value{Number{log_.root().tail_facts().size()}});
+  auto number = [](std::uint64_t n) { return Value{Number{n}}; };
   result.object().emplace_back(
       "audit",
-      Json::object(
-          {{"scope", Json{"physical observation; not admission permission or "
-                          "reserved headroom"}},
-           {"journal", Json{hex_identity(journal.prefix.journal.bytes())}},
+      Value::object(
+          {{"scope", Value{"physical observation; not admission permission or "
+                           "reserved headroom"}},
+           {"journal", Value{hex_identity(journal.prefix.journal.bytes())}},
            {"prefix_end", number(journal.prefix.end_offset)},
            {"observed_extent",
-            journal.observed_extent ? number(*journal.observed_extent) : Json{}},
+            journal.observed_extent ? number(*journal.observed_extent) : Value{}},
            {"max_file_bytes", number(journal.limit.max_file_bytes)},
            {"remaining_bytes",
-            journal.remaining_bytes() ? number(*journal.remaining_bytes()) : Json{}},
+            journal.remaining_bytes() ? number(*journal.remaining_bytes()) : Value{}},
            {"max_records", number(journal.limit.max_records)},
            {"indexed_records", number(journal.indexed_records)},
            {"remaining_records", number(journal.remaining_records())},
            {"writer_state", number(static_cast<unsigned>(journal.state))},
-           {"approaching", Json{journal.approaching()}},
+           {"approaching", Value{journal.approaching()}},
            {"extent_error",
             journal.extent_error
-                ? Json::object({{"code", Json{std::string{
-                                             error_name(journal.extent_error->code)}}},
-                                {"detail", Json{JsonNumber{std::to_string(
-                                               journal.extent_error->detail)}}}})
-                : Json{}}}));
+                ? Value::object(
+                      {{"code",
+                        Value{std::string{error_name(journal.extent_error->code)}}},
+                       {"detail", Value{Number{journal.extent_error->detail}}}})
+                : Value{}}}));
   result.object().emplace_back(
-      "context_budget", budget_view(string_field(program_config_, "model").empty()
-                                        ? model_
-                                        : string_field(program_config_, "model"),
-                                    unwrap(dump_json(Json{context_.items()})).size()));
+      "context_budget",
+      budget_view(string_field(program_config_, "model").empty()
+                      ? model_
+                      : string_field(program_config_, "model"),
+                  unwrap(encode_packet_string(Value{context_.items()})).size()));
   result.object().emplace_back("last_request_bytes", last_request_bytes_);
   result.object().emplace_back("usage", usage_);
   result.object().emplace_back(
-      "request_scope", Json{"last request in this process; null if unavailable"});
+      "request_scope", Value{"last request in this process; null if unavailable"});
   return result;
 }
 void CodingEngine::validate_session_switch() const {
@@ -2030,7 +2140,7 @@ void CodingEngine::effort(std::string value) {
     throw Error{ErrorCode::invalid_range};
   effort_ = std::move(value);
 }
-void CodingEngine::present(const Json &item) {
+void CodingEngine::present(const Value &item) {
   std::string text;
   for (const auto &part : field(item, "content").array())
     if (string_field(part, "type") == "output_text")
@@ -2047,7 +2157,7 @@ void CodingEngine::present(const Json &item) {
     previewed_.erase(found);
   }
   if (!text.empty()) {
-    log_.original({"display", text, Json{}});
+    log_.original({"display", text, Value{}});
     if (display)
       display(text);
   }
@@ -2060,8 +2170,8 @@ Error CodingEngine::claim_backstop() {
   backstop_claimed_ = true;
   return *failed_turn_;
 }
-Json CodingEngine::operator_call(std::string_view name, const Json &arguments) {
-  // Encode both values as decimal Lua bytes; no operator text becomes Lua source.
+Value CodingEngine::operator_call(std::string_view name, const Value &arguments) {
+  // Quote only the operation name; arguments transfer as native values.
   auto literal = [](std::string_view value) {
     std::string out = "\"";
     for (const char ch : value) {
@@ -2073,9 +2183,8 @@ Json CodingEngine::operator_call(std::string_view name, const Json &arguments) {
     }
     return out + "\"";
   };
-  const auto encoded = unwrap(dump_json(arguments));
-  const auto program = "return blackbird.call(" + literal(name) +
-                       ",blackbird.json.decode(" + literal(encoded) + "))";
+  operator_arguments_ = arguments;
+  const auto program = "return blackbird.call(" + literal(name) + ",_native_args)";
   turn({"", program});
   return workflow_result_;
 }
@@ -2089,24 +2198,13 @@ bool CodingEngine::operator_turn(std::string_view prompt, std::string_view fallb
     turn({prompt, fallback});
     return true;
   }
-  const auto invocation = Json::object({{"name", field(selected->definition, "name")},
-                                        {"arguments", Json{selected->arguments}},
-                                        {"prompt", Json{std::string{prompt}}},
-                                        {"trigger", Json{selected->trigger}},
-                                        {"origin", Json{"operator"}}});
-  // Use the established decimal-byte JSON literal encoder, without interpolation.
-  const auto encoded = unwrap(dump_json(invocation));
-  std::string literal = "\"";
-  for (char ch : encoded) {
-    const auto c = static_cast<unsigned char>(ch);
-    literal += "\\";
-    literal += static_cast<char>('0' + c / 100);
-    literal += static_cast<char>('0' + (c / 10) % 10);
-    literal += static_cast<char>('0' + c % 10);
-  }
-  literal += "\"";
-  const auto program =
-      "return blackbird.call('workflow_invoke',blackbird.json.decode(" + literal + "))";
+  const auto invocation = Value::object({{"name", field(selected->definition, "name")},
+                                         {"arguments", Value{selected->arguments}},
+                                         {"prompt", Value{std::string{prompt}}},
+                                         {"trigger", Value{selected->trigger}},
+                                         {"origin", Value{"operator"}}});
+  operator_arguments_ = invocation;
+  const auto program = "return blackbird.call('workflow_invoke',_native_args)";
   turn({prompt, program});
   return true;
 }
@@ -2117,21 +2215,23 @@ void CodingEngine::turn(TurnInput input) {
   struct Running {
     bool &value;
     std::vector<WorkflowContinuation> &continuations;
+    std::optional<Value> &arguments;
     ~Running() {
       value = false;
       continuations.clear();
+      arguments.reset();
     }
-  } running{turn_running_, workflow_continuations_};
+  } running{turn_running_, workflow_continuations_, operator_arguments_};
   failed_turn_.reset();
-  workflow_result_ = Json{};
+  workflow_result_ = Value{};
   workflow_continuations_.clear();
   workflow_invocations_ = 0;
   workflow_failure_.reset();
-  pending_budget_ = Json{};
+  pending_budget_ = Value{};
   pending_workflows_.reset();
-  pending_program_config_ = Json{};
+  pending_program_config_ = Value{};
   pending_program_revision_.clear();
-  pending_lua_tools_ = Json{};
+  pending_lua_tools_ = Value{};
   pending_tools_revision_.clear();
   pending_budget_revision_.clear();
   repairable_outputs_ =
@@ -2141,11 +2241,11 @@ void CodingEngine::turn(TurnInput input) {
   unretained_bytes_ = 0;
   auto &root = log_.root();
   auto credit =
-      context_.cancellation_budget(field(context_.view(), "entries").array(), Json{});
+      context_.cancellation_budget(field(context_.view(), "entries").array(), Value{});
   credit.max_file_bytes += 8192;
   credit.max_records += 16;
   auto protected_workflow = unwrap(root.protect_settlement(credit));
-  context_.protect = [this](const Json::Array &entries, const Json &proposal) {
+  context_.protect = [this](const Value::Array &entries, const Value &proposal) {
     protect_workflow(entries, proposal);
   };
   struct Reset {
@@ -2159,11 +2259,13 @@ void CodingEngine::turn(TurnInput input) {
     generation_ = unwrap(log_.root().issue<DefinitionGenerationId>());
     log_.retain_program(workflow, generation_);
     if (!prompt.empty())
-      context_.append({Json::object({{"role", Json{"user"}},
-                                     {"content", Json{std::string{prompt}}}})},
+      context_.append({Value::object({{"role", Value{"user"}},
+                                      {"content", Value{std::string{prompt}}}})},
                       "operator");
     runtime_ = std::make_unique<Runtime>(*this);
-    workflow_result_ = runtime_->eval(workflow);
+    workflow_result_ =
+        runtime_->eval(workflow, operator_arguments_ ? &*operator_arguments_ : nullptr);
+    operator_arguments_.reset();
     drain_workflows();
     if (workflow_failure_)
       throw *workflow_failure_;
@@ -2174,64 +2276,64 @@ void CodingEngine::turn(TurnInput input) {
     if (restart_note_)
       validate_protocol(context_.items());
     const auto boundary_program =
-        pending_budget_ == Json{} && pending_lua_tools_ == Json{} &&
-                pending_program_config_ == Json{}
-            ? Json{}
-            : Json::object(
-                  {{"label", Json{"workflow-config-effective-v1"}},
-                   {"program_config", pending_program_config_ == Json{}
+        pending_budget_ == Value{} && pending_lua_tools_ == Value{} &&
+                pending_program_config_ == Value{}
+            ? Value{}
+            : Value::object(
+                  {{"label", Value{"workflow-config-effective-v1"}},
+                   {"program_config", pending_program_config_ == Value{}
                                           ? program_config_
                                           : pending_program_config_},
-                   {"program_revision", Json{pending_program_config_ == Json{}
-                                                 ? program_revision_
-                                                 : pending_program_revision_}},
-                   {"policy", pending_budget_ == Json{} ? budget_ : pending_budget_},
+                   {"program_revision", Value{pending_program_config_ == Value{}
+                                                  ? program_revision_
+                                                  : pending_program_revision_}},
+                   {"policy", pending_budget_ == Value{} ? budget_ : pending_budget_},
                    {"revision",
-                    Json{pending_budget_ == Json{} ? budget_revision_
-                                                   : pending_budget_revision_}},
+                    Value{pending_budget_ == Value{} ? budget_revision_
+                                                     : pending_budget_revision_}},
                    {"tools",
-                    pending_lua_tools_ == Json{} ? lua_tools_ : pending_lua_tools_},
+                    pending_lua_tools_ == Value{} ? lua_tools_ : pending_lua_tools_},
                    {"tools_revision",
-                    Json{pending_lua_tools_ == Json{} ? tools_revision_
-                                                      : pending_tools_revision_}},
-                   {"activation", Json{"successful-workflow-boundary"}}});
+                    Value{pending_lua_tools_ == Value{} ? tools_revision_
+                                                        : pending_tools_revision_}},
+                   {"activation", Value{"successful-workflow-boundary"}}});
     // Context + policy share one durable append. Everything fallible precedes
     // publication; afterward only noexcept moves and best-effort notification.
     auto settlement = context_.finish_workflow(true, boundary_program);
-    if (pending_program_config_ != Json{}) {
+    if (pending_program_config_ != Value{}) {
       std::swap(program_config_, pending_program_config_);
       program_revision_.swap(pending_program_revision_);
       workflows_.swap(pending_workflows_);
       pending_workflows_.reset();
-      pending_program_config_ = Json{};
+      pending_program_config_ = Value{};
       pending_program_revision_.clear();
     }
-    if (pending_lua_tools_ != Json{}) {
+    if (pending_lua_tools_ != Value{}) {
       std::swap(lua_tools_, pending_lua_tools_);
       tools_revision_.swap(pending_tools_revision_);
-      pending_lua_tools_ = Json{};
+      pending_lua_tools_ = Value{};
       pending_tools_revision_.clear();
     }
-    if (pending_budget_ != Json{}) {
+    if (pending_budget_ != Value{}) {
 
       std::swap(budget_, pending_budget_);
       budget_revision_.swap(pending_budget_revision_);
-      pending_budget_ = Json{};
+      pending_budget_ = Value{};
       pending_budget_revision_.clear();
     }
-    if (settlement != Json{} && display) {
+    if (settlement != Value{} && display) {
       try {
-        display("Managed context: " + unwrap(dump_json(settlement)) + "\n");
+        display("Managed context: " + unwrap(format_value(settlement)) + "\n");
       } catch (...) { /* Notification cannot undo committed workflow work. */
       }
     }
   } catch (const Error &e) {
     failed_turn_ = e;
-    pending_budget_ = Json{};
+    pending_budget_ = Value{};
     pending_workflows_.reset();
-    pending_program_config_ = Json{};
+    pending_program_config_ = Value{};
     pending_program_revision_.clear();
-    pending_lua_tools_ = Json{};
+    pending_lua_tools_ = Value{};
     pending_tools_revision_.clear();
     pending_budget_revision_.clear();
     context_.protect = {};
@@ -2248,11 +2350,11 @@ void CodingEngine::turn(TurnInput input) {
     throw;
   } catch (...) {
     failed_turn_ = Error{ErrorCode::external_unknown};
-    pending_budget_ = Json{};
+    pending_budget_ = Value{};
     pending_workflows_.reset();
-    pending_program_config_ = Json{};
+    pending_program_config_ = Value{};
     pending_program_revision_.clear();
-    pending_lua_tools_ = Json{};
+    pending_lua_tools_ = Value{};
     pending_tools_revision_.clear();
     pending_budget_revision_.clear();
     context_.protect = {};

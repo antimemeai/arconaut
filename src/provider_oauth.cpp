@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 #include "blackbird/provider_auth.hpp"
 #include "blackbird/tools.hpp"
 #include "native_process.hpp"
@@ -41,17 +42,17 @@ struct AuthSignals {
     (void)::sigaction(SIGTERM, &before_term, nullptr);
   }
 };
-std::string text(const Json &v, std::string_view k, std::string fallback = {}) {
+std::string text(const Value &v, std::string_view k, std::string fallback = {}) {
   const auto *p = v.find(k);
   if (!p)
     return fallback;
   return p->string();
 }
-std::int64_t number(const Json &v, std::string_view k) {
+std::int64_t number(const Value &v, std::string_view k) {
   const auto *p = v.find(k);
   if (!p)
     throw Error{ErrorCode::corrupt};
-  const auto &s = p->number().text;
+  const auto &s = p->number().text();
   std::int64_t n = 0;
   auto r = std::from_chars(s.data(), s.data() + s.size(), n);
   if (r.ec != std::errc{} || r.ptr != s.data() + s.size())
@@ -398,9 +399,9 @@ std::string auth_pkce_challenge(std::string_view verifier,
     throw Error{ErrorCode::corrupt};
   return b64(digest);
 }
-Json auth_validate_openai_identity(std::string_view token, std::string_view client,
-                                   std::string_view nonce, const Json &jwks,
-                                   std::int64_t clock, const ProviderAuthConfig &c) {
+Value auth_validate_openai_identity(std::string_view token, std::string_view client,
+                                    std::string_view nonce, const Value &jwks,
+                                    std::int64_t clock, const ProviderAuthConfig &c) {
   const auto first = token.find('.'),
              second = token.find('.', first == std::string_view::npos ? 0 : first + 1);
   if (first == std::string_view::npos || second == std::string_view::npos ||
@@ -409,7 +410,7 @@ Json auth_validate_openai_identity(std::string_view token, std::string_view clie
   const auto header = unwrap(parse_json(unb64(token.substr(0, first))));
   if (text(header, "alg") != "RS256" || text(header, "kid").empty())
     throw Error{ErrorCode::provider_auth};
-  const Json *key = nullptr;
+  const Value *key = nullptr;
   const auto *keys = jwks.find("keys");
   if (!keys || keys->array().size() > 32)
     throw Error{ErrorCode::corrupt};
@@ -444,9 +445,9 @@ Json auth_validate_openai_identity(std::string_view token, std::string_view clie
   bool audience = false;
   if (aud && std::holds_alternative<std::string>(aud->value()))
     audience = aud->string() == client;
-  else if (aud && std::holds_alternative<Json::Array>(aud->value())) {
+  else if (aud && std::holds_alternative<Value::Array>(aud->value())) {
     for (const auto &a : aud->array())
-      if (a == Json{std::string{client}})
+      if (a == Value{std::string{client}})
         audience = true;
     if (aud->array().size() > 1 && text(claims, "azp") != client)
       audience = false;
@@ -486,7 +487,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
                     "&scope=" + form(text(d, "scope")) + "&state=" + form(state) +
                     "&code_challenge_method=S256&code_challenge=" +
                     auth_pkce_challenge(verifier, config_);
-  Json metadata = Json::object({});
+  Value metadata = Value::object({});
   if (p == "openai") {
     // Stable host identity is separate from account credentials; no provider cache.
     std::filesystem::create_directories(directory().parent_path());
@@ -528,7 +529,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
                              : "&ext_agent_host_id=") +
            form(host) + "&nonce=" + form(nonce) +
            "&resource=https%3A%2F%2Fapi.openai.com%2Fv1";
-    metadata.object().emplace_back("host_id", Json{host});
+    metadata.object().emplace_back("host_id", Value{host});
   }
   notice("Open this sign-in URL in your browser:\n" + url + "\n");
   std::map<std::string, std::string> values;
@@ -572,12 +573,13 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
     r.body += "&resource=https%3A%2F%2Fapi.openai.com%2Fv1";
   if (p == "anthropic") {
     r.headers = {{"Content-Type", "application/json"}};
-    r.body = unwrap(dump_json(Json::object({{"grant_type", Json{"authorization_code"}},
-                                            {"client_id", Json{client}},
-                                            {"code", Json{values["code"]}},
-                                            {"state", Json{state}},
-                                            {"redirect_uri", Json{callback}},
-                                            {"code_verifier", Json{verifier}}})));
+    r.body =
+        unwrap(dump_json(Value::object({{"grant_type", Value{"authorization_code"}},
+                                        {"client_id", Value{client}},
+                                        {"code", Value{values["code"]}},
+                                        {"state", Value{state}},
+                                        {"redirect_uri", Value{callback}},
+                                        {"code_verifier", Value{verifier}}})));
   }
   auto reply = http(config_, r);
   require_provider_success(reply.status);
@@ -606,7 +608,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
     for (const auto k : {"sub", "email"})
       if (const auto *v = claims.find(k))
         metadata.object().emplace_back(k, *v);
-    metadata.object().emplace_back("id_token", Json{text(tokens, "id_token")});
+    metadata.object().emplace_back("id_token", Value{text(tokens, "id_token")});
   }
   save_oauth(p, account, tokens, client, text(d, "token_url"), std::move(metadata),
              expected);

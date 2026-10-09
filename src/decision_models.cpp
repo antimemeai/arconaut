@@ -1,4 +1,5 @@
 #include "blackbird/decision_models.hpp"
+#include "blackbird/json.hpp"
 #include "native_process.hpp"
 #include <cmath>
 #include <set>
@@ -11,26 +12,26 @@ template <class T> T take(Result<T> value) {
     throw value.error();
   return std::move(value).value();
 }
-bool object(const Json &v) { return std::holds_alternative<Json::Object>(v.value()); }
-bool array(const Json &v) { return std::holds_alternative<Json::Array>(v.value()); }
-bool text(const Json &v) { return std::holds_alternative<std::string>(v.value()); }
-bool description(const Json &v, bool nullable = false) {
+bool object(const Value &v) { return std::holds_alternative<Value::Object>(v.value()); }
+bool array(const Value &v) { return std::holds_alternative<Value::Array>(v.value()); }
+bool text(const Value &v) { return std::holds_alternative<std::string>(v.value()); }
+bool description(const Value &v, bool nullable = false) {
   return text(v) || object(v) || array(v) ||
          (nullable && std::holds_alternative<std::nullptr_t>(v.value()));
 }
-const Json &need(const Json &v, std::string_view key, ErrorCode code) {
+const Value &need(const Value &v, std::string_view key, ErrorCode code) {
   const auto *p = v.find(key);
   if (!p)
     fail(code);
   return *p;
 }
-std::string str(const Json &v, std::string_view key, ErrorCode code) {
+std::string str(const Value &v, std::string_view key, ErrorCode code) {
   const auto &p = need(v, key, code);
   if (!text(p) || p.string().empty() || p.string().find('\0') != std::string::npos)
     fail(code);
   return p.string();
 }
-void unique(const Json &v, ErrorCode code) {
+void unique(const Value &v, ErrorCode code) {
   if (!object(v))
     fail(code);
   std::set<std::string> seen;
@@ -40,39 +41,39 @@ void unique(const Json &v, ErrorCode code) {
       fail(code);
   }
 }
-double number(const Json &v) {
-  if (!std::holds_alternative<JsonNumber>(v.value()))
+double number(const Value &v) {
+  if (!std::holds_alternative<Number>(v.value()))
     fail(ErrorCode::corrupt);
   double result = 0;
-  const auto &s = v.number().text;
+  const auto &s = v.number().text();
   const auto p = std::from_chars(s.data(), s.data() + s.size(), result);
   if (p.ec != std::errc{} || p.ptr != s.data() + s.size() || !std::isfinite(result))
     fail(ErrorCode::corrupt);
   return result;
 }
-double probability(const Json &v) {
+double probability(const Value &v) {
   const auto n = number(v);
   if (n < 0 || n > 1)
     fail(ErrorCode::corrupt);
   return n;
 }
-void tokens(const Json &v) {
-  if (!std::holds_alternative<JsonNumber>(v.value()))
+void tokens(const Value &v) {
+  if (!std::holds_alternative<Number>(v.value()))
     fail(ErrorCode::corrupt);
   std::uint64_t n = 0;
-  const auto &s = v.number().text;
+  const auto &s = v.number().text();
   auto p = std::from_chars(s.data(), s.data() + s.size(), n);
   if (p.ec != std::errc{} || p.ptr != s.data() + s.size())
     fail(ErrorCode::corrupt);
 }
-int timeout(const Json &args) {
+int timeout(const Value &args) {
   const auto *v = args.find("timeout_seconds");
   if (!v)
     return 30;
-  if (!std::holds_alternative<JsonNumber>(v->value()))
+  if (!std::holds_alternative<Number>(v->value()))
     fail(ErrorCode::invalid_range);
   int n = 0;
-  const auto &s = v->number().text;
+  const auto &s = v->number().text();
   auto p = std::from_chars(s.data(), s.data() + s.size(), n);
   if (p.ec != std::errc{} || p.ptr != s.data() + s.size() || n < 1 || n > 3600)
     fail(ErrorCode::invalid_range);
@@ -167,7 +168,7 @@ std::string credential(const DecisionModelConfig &config) {
 }
 } // namespace
 
-Json jev_request(const Json &args) {
+Value jev_request(const Value &args) {
   unique(args, ErrorCode::invalid_range);
   for (const auto &[k, v] : args.object()) {
     (void)v;
@@ -229,11 +230,11 @@ Json jev_request(const Json &args) {
     } else
       fail(ErrorCode::invalid_range);
   }
-  return Json::object(
-      {{"model", Json{model}}, {"state", state}, {"questions", questions}});
+  return Value::object(
+      {{"model", Value{model}}, {"state", state}, {"questions", questions}});
 }
 
-void validate_jev_response(const Json &request, const Json &response) {
+void validate_jev_response(const Value &request, const Value &response) {
   unique(response, ErrorCode::corrupt);
   const auto model = str(response, "model", ErrorCode::corrupt);
   const auto requested = str(request, "model", ErrorCode::corrupt);
@@ -301,7 +302,7 @@ void validate_jev_response(const Json &request, const Json &response) {
   }
 }
 
-Json DecisionModels::evaluate(const Json &args) {
+Value DecisionModels::evaluate(const Value &args) {
   const auto started = detail::Clock::now();
   const auto request = jev_request(args);
   const auto encoded = take(dump_json(request, {config_.request_limit, 500000, 128}));
@@ -345,14 +346,14 @@ Json DecisionModels::evaluate(const Json &args) {
   raw.resize(split);
   auto response = take(parse_json(raw, {config_.response_limit, 500000, 128}));
   validate_jev_response(request, response);
-  return Json::object(
-      {{"status", Json{"ok"}},
-       {"provider", Json{"jev"}},
+  return Value::object(
+      {{"status", Value{"ok"}},
+       {"provider", Value{"jev"}},
        {"requested_model", need(request, "model", ErrorCode::corrupt)},
        {"response", std::move(response)},
-       {"elapsed_us", Json{JsonNumber{std::to_string(
-                          std::chrono::duration_cast<std::chrono::microseconds>(
-                              detail::Clock::now() - started)
-                              .count())}}}});
+       {"elapsed_us",
+        Value{Number{std::chrono::duration_cast<std::chrono::microseconds>(
+                         detail::Clock::now() - started)
+                         .count()}}}});
 }
 } // namespace blackbird

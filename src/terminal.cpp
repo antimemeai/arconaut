@@ -1,5 +1,6 @@
 #include "blackbird/terminal.hpp"
 #include "blackbird/local_timing.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/sprite.hpp"
 #include "blackbird/task_view.hpp"
 #include "blackbird/tools.hpp"
@@ -595,12 +596,12 @@ void trim_terminal_transcript(std::string &text) {
 TerminalState load_terminal_state(const std::filesystem::path &path) {
   if (!std::filesystem::exists(path))
     return {};
-  const auto packet = unwrap(parse_json(read_file(path, 7 * ui_limit)));
+  const auto packet = unwrap(decode_packet_string(read_file(path, 7 * ui_limit)));
   if (string_field(packet, "encoding") != "hex-v1")
     throw Error{ErrorCode::corrupt};
   TerminalState state;
   state.draft = ui_hex(string_field(packet, "draft"), true);
-  const auto &cursor = field(packet, "cursor").number().text;
+  const auto &cursor = field(packet, "cursor").number().text();
   auto r = std::from_chars(cursor.data(), cursor.data() + cursor.size(), state.cursor);
   if (r.ec != std::errc{} || r.ptr != cursor.data() + cursor.size())
     throw Error{ErrorCode::corrupt};
@@ -618,17 +619,17 @@ void save_terminal_state(const std::filesystem::path &path,
                          const TerminalState &state) {
   validate_state(state);
   auto encode = [](const auto &values) {
-    Json::Array out;
+    Value::Array out;
     for (const auto &v : values)
       out.emplace_back(ui_hex(v));
-    return Json{std::move(out)};
+    return Value{std::move(out)};
   };
-  write_file(path, unwrap(dump_json(Json::object(
-                       {{"encoding", Json{"hex-v1"}},
-                        {"draft", Json{ui_hex(state.draft)}},
-                        {"cursor", Json{JsonNumber{std::to_string(state.cursor)}}},
-                        {"history", encode(state.history)},
-                        {"queued", encode(state.queued)}}))));
+  write_file(path, unwrap(encode_packet_string(
+                       Value::object({{"encoding", Value{"hex-v1"}},
+                                      {"draft", Value{ui_hex(state.draft)}},
+                                      {"cursor", Value{Number{state.cursor}}},
+                                      {"history", encode(state.history)},
+                                      {"queued", encode(state.queued)}}))));
 }
 void Composer::restore(const TerminalState &state) {
   validate_state(state);
@@ -1115,14 +1116,19 @@ void TerminalUI::post(Kind kind, std::string_view text) {
       (kind == Kind::text || kind == Kind::process))
     messages_.back().text.append(text);
   else
-    messages_.push_back({kind, std::string{text}});
+    messages_.push_back({kind, std::string{text}, Ink::muted, Value{}});
   if (notification_ >= 0) {
     const char byte = 1;
     (void)::write(notification_, &byte, 1);
   }
 }
-void TerminalUI::sessions(const Json &listing) {
-  post(Kind::sessions, unwrap(dump_json(listing)));
+void TerminalUI::sessions(const Value &listing) {
+  const std::lock_guard lock{mutex_};
+  messages_.push_back({Kind::sessions, "", Ink::muted, listing});
+  if (notification_ >= 0) {
+    const char byte = 1;
+    (void)::write(notification_, &byte, 1);
+  }
 }
 void TerminalUI::text(std::string_view value) { post(Kind::text, value); }
 void TerminalUI::notice(std::string_view value) { post(Kind::notice, value); }
@@ -1137,7 +1143,7 @@ void TerminalUI::operation_started(bool provider) {
 void TerminalUI::status(std::string_view value) { post(Kind::status, value); }
 void TerminalUI::operation_completed(std::string_view value, Ink outcome) {
   const std::lock_guard lock{mutex_};
-  messages_.push_back({Kind::operation_complete, std::string{value}, outcome});
+  messages_.push_back({Kind::operation_complete, std::string{value}, outcome, Value{}});
   if (notification_ >= 0) {
     const char byte = 1;
     (void)::write(notification_, &byte, 1);
@@ -1145,7 +1151,7 @@ void TerminalUI::operation_completed(std::string_view value, Ink outcome) {
 }
 void TerminalUI::failed() { post(Kind::failure, {}); }
 void TerminalUI::title(std::string_view value) { post(Kind::title, value); }
-void TerminalUI::tasks(const Json &publication) {
+void TerminalUI::tasks(const Value &publication) {
   const std::lock_guard lock{mutex_};
   if (string_field(publication, "label") == "task-state-v1")
     task_state_.restore(publication);
@@ -1167,7 +1173,7 @@ void TerminalUI::tasks(const Json &publication) {
     (void)::write(notification_, &byte, 1);
   }
 }
-void TerminalUI::task_activity(const Json &event) {
+void TerminalUI::task_activity(const Value &event) {
   const std::lock_guard lock{mutex_};
   const auto &id = string_field(event, "task_id");
   if (!task_state_.item(id))
@@ -1273,8 +1279,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   ChatGrid grid;
   ChatPainter painter;
   std::string activity = "Ready", observed_usage, small_frame;
-  Json task_page;
-  std::map<std::string, Json> task_activity;
+  Value task_page;
+  std::map<std::string, Value> task_activity;
   std::vector<ChatRow> task_rows;
   bool task_rows_dirty = true, tasks_hidden = false, tasks_expanded = false;
   std::size_t task_render_width = 0;
@@ -1396,17 +1402,17 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       const std::lock_guard lock{mutex_};
       incoming.swap(messages_);
       if (tasks_dirty_) {
-        Json::Array folded;
+        Value::Array folded;
         for (const auto &id : task_folded_)
-          folded.push_back(Json{id});
+          folded.push_back(Value{id});
         const auto count = task_state_.size();
         if (count)
           welcoming = false;
         task_offset_ = std::min(task_offset_, count ? count - 1 : 0);
-        task_page = task_state_.read(
-            Json::object({{"offset", Json{JsonNumber{std::to_string(task_offset_)}}},
-                          {"limit", Json{JsonNumber{"64"}}},
-                          {"collapsed", Json{std::move(folded)}}}));
+        task_page =
+            task_state_.read(Value::object({{"offset", Value{Number{task_offset_}}},
+                                            {"limit", Value{Number{"64"}}},
+                                            {"collapsed", Value{std::move(folded)}}}));
         const auto &visible_tasks = field(task_page, "items").array();
         task_anchor_ =
             visible_tasks.empty() ? "" : string_field(visible_tasks.front(), "id");
@@ -1419,7 +1425,7 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     for (const auto &message : incoming) {
       if (message.kind == Kind::sessions) {
         std::vector<ComposerChoice> entries;
-        const auto listing = unwrap(parse_json(message.text));
+        const auto &listing = message.data;
         for (const auto &entry : field(listing, "sessions").array()) {
           const auto &path = string_field(entry, "path");
           if (path.find_first_of("\r\n") != std::string::npos)

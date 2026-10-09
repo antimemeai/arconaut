@@ -74,9 +74,9 @@ void LocalTools::capture(std::string label, std::string raw) {
   captured_.push_back({std::move(label), std::move(raw)});
 }
 namespace {
-Json display_bytes(const std::string &raw) {
-  if (dump_json(Json{raw}).has_value())
-    return Json{raw};
+Value display_bytes(const std::string &raw) {
+  if (valid_utf8(raw))
+    return Value{raw};
   constexpr char hex[] = "0123456789abcdef";
   std::string encoded;
   for (const char ch : raw) {
@@ -84,15 +84,16 @@ Json display_bytes(const std::string &raw) {
     encoded += hex[c >> 4U];
     encoded += hex[c & 15U];
   }
-  return Json::object({{"encoding", Json{"hex"}}, {"bytes", Json{std::move(encoded)}}});
+  return Value::object(
+      {{"encoding", Value{"hex"}}, {"bytes", Value{std::move(encoded)}}});
 }
-std::size_t range_index(const Json &args, std::string_view key, std::size_t fallback) {
+std::size_t range_index(const Value &args, std::string_view key, std::size_t fallback) {
   const auto *value = args.find(key);
   if (!value)
     return fallback;
-  if (!std::holds_alternative<JsonNumber>(value->value()))
+  if (!std::holds_alternative<Number>(value->value()))
     throw Error{ErrorCode::invalid_range};
-  const auto &text = value->number().text;
+  const auto &text = value->number().text();
   std::size_t index = 0;
   const auto parsed = std::from_chars(text.data(), text.data() + text.size(), index);
   if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size())
@@ -101,12 +102,12 @@ std::size_t range_index(const Json &args, std::string_view key, std::size_t fall
 }
 // Normalize the single advertised selector into the existing slice machinery.
 // Historical Lua programs may still use one legacy range family.
-Json file_range(const Json &args) {
+Value file_range(const Value &args) {
   const auto *range = args.find("range");
   if (!range)
     return args;
   if (args.find("byte_start") || args.find("byte_end") || args.find("line_start") ||
-      args.find("line_end") || !std::holds_alternative<Json::Object>(range->value()))
+      args.find("line_end") || !std::holds_alternative<Value::Object>(range->value()))
     throw Error{ErrorCode::invalid_range};
   for (const auto &[key, value] : range->object()) {
     (void)value;
@@ -122,17 +123,17 @@ Json file_range(const Json &args) {
   const auto end = range_index(*range, "end", SIZE_MAX);
   if ((lines && start == 0) || end < start)
     throw Error{ErrorCode::invalid_range};
-  Json::Object normalized;
+  Value::Object normalized;
   for (const auto key : {"start", "end"})
     if (const auto *value = range->find(key))
       normalized.emplace_back(std::string{lines ? "line_" : "byte_"} + key, *value);
   // Retain mode even when both endpoints are omitted.
   if (!range->find("start"))
     normalized.emplace_back(lines ? "line_start" : "byte_start",
-                            Json{JsonNumber{lines ? "1" : "0"}});
-  return Json::object(std::move(normalized));
+                            Value{Number{lines ? "1" : "0"}});
+  return Value::object(std::move(normalized));
 }
-std::string file_presentation(const std::string &raw, const Json &args) {
+std::string file_presentation(const std::string &raw, const Value &args) {
   const bool bytes = args.find("byte_start") || args.find("byte_end");
   const bool lines = args.find("line_start") || args.find("line_end");
   if (bytes && lines)
@@ -168,22 +169,21 @@ std::string file_presentation(const std::string &raw, const Json &args) {
   return raw;
 }
 } // namespace
-Json process_output_presentation(const std::string &raw, const Json &args) {
+Value process_output_presentation(const std::string &raw, const Value &args) {
   const auto shown = file_presentation(raw, args);
-  return Json::object(
-      {{"output", display_bytes(shown)},
-       {"output_bytes", Json{JsonNumber{std::to_string(raw.size())}}},
-       {"returned_bytes", Json{JsonNumber{std::to_string(shown.size())}}},
-       {"omitted_bytes", Json{JsonNumber{std::to_string(raw.size() - shown.size())}}}});
+  return Value::object({{"output", display_bytes(shown)},
+                        {"output_bytes", Value{Number{raw.size()}}},
+                        {"returned_bytes", Value{Number{shown.size()}}},
+                        {"omitted_bytes", Value{Number{raw.size() - shown.size()}}}});
 }
-Json LocalTools::run(std::string_view name, const Json &args) {
+Value LocalTools::run(std::string_view name, const Value &args) {
   captured_.clear();
   if (name == "read_file") {
     const auto range = file_range(args);
     auto raw = read_file(string_field(args, "path"));
     capture("file.read", raw);
     auto shown = display_bytes(file_presentation(raw, range));
-    return Json::object({{"content", std::move(shown)}});
+    return Value::object({{"content", std::move(shown)}});
   }
   if (name == "write_file" || name == "edit_file") {
     const auto &path = string_field(args, "path");
@@ -209,15 +209,15 @@ Json LocalTools::run(std::string_view name, const Json &args) {
     }
     capture("file.proposed", next);
     write_file(path, next);
-    return Json::object({{"written", Json{true}}, {"path", Json{path}}});
+    return Value::object({{"written", Value{true}}, {"path", Value{path}}});
   }
   if (name == "exec") {
     const auto budget = range_index(args, "output_max_bytes", SIZE_MAX);
     int seconds = 120;
     if (const auto *n = args.find("timeout_seconds")) {
-      if (!std::holds_alternative<JsonNumber>(n->value()))
+      if (!std::holds_alternative<Number>(n->value()))
         throw Error{ErrorCode::invalid_range};
-      const auto &s = n->number().text;
+      const auto &s = n->number().text();
       auto r = std::from_chars(s.data(), s.data() + s.size(), seconds);
       if (r.ec != std::errc{} || r.ptr != s.data() + s.size() || seconds < 1 ||
           seconds > 3600)
@@ -233,7 +233,7 @@ Json LocalTools::run(std::string_view name, const Json &args) {
     };
     std::vector<std::string> argv;
     if (const auto *array = args.find("argv")) {
-      if (!std::holds_alternative<Json::Array>(array->value()))
+      if (!std::holds_alternative<Value::Array>(array->value()))
         throw Error{ErrorCode::invalid_range};
       for (const auto &value : array->array()) {
         if (!std::holds_alternative<std::string>(value.value()) ||
@@ -262,65 +262,886 @@ Json LocalTools::run(std::string_view name, const Json &args) {
     auto shown = display_bytes(output.substr(0, budget));
     const auto total = output.size();
     captured_.push_back({"process.combined", std::move(output)});
-    auto result =
-        Json::object({{"output", std::move(shown)},
-                      {"exit_code", Json{JsonNumber{std::to_string(status)}}}});
+    auto result = Value::object(
+        {{"output", std::move(shown)}, {"exit_code", Value{Number{status}}}});
     if (args.find("output_max_bytes")) {
-      result.object().emplace_back("output_bytes",
-                                   Json{JsonNumber{std::to_string(total)}});
-      result.object().emplace_back(
-          "omitted_bytes",
-          Json{JsonNumber{std::to_string(total - std::min(total, budget))}});
+      result.object().emplace_back("output_bytes", Value{Number{total}});
+      result.object().emplace_back("omitted_bytes",
+                                   Value{Number{total - std::min(total, budget)}});
     }
     return result;
   }
   throw Error{ErrorCode::unsupported};
 }
-Json tool_definitions() {
-  return unwrap(parse_json(R"([
-{"type":"function","name":"participant_read","description":"Read bounded observed runs; optional run_id returns its result. States running/waiting/completed/cancelled/failed/unknown. Waiting means available for addressed direction, not completed.","parameters":{"type":"object","properties":{"run_id":{"type":"string"}},"required":[]}},
-{"type":"function","name":"participant_configure","description":"Set concurrency1..16 only while all runs are settled. Default2; max32 resident runs.","parameters":{"type":"object","properties":{"concurrency":{"type":"integer"}},"required":["concurrency"]}},
-{"type":"function","name":"participant_start","description":"Start a bounded context-only participant from explicit colleague request; optional existing task_id publishes observed badges. No task completion. Selected request retained before dispatch. Returns run_id; scheduling success is not remote completion.","parameters":{"type":"object","properties":{"request":{"type":"object"},"task_id":{"type":"string"}},"required":["request"]}},
-{"type":"function","name":"participant_send","description":"Send addressed direction at next request boundary. Exact duplicate message_id deduplicates during this process; conflicting reuse rejects. Inbox16, deliveries64/run, text2048B. Current prior answer selected at acceptance if available.","parameters":{"type":"object","properties":{"run_id":{"type":"string"},"message_id":{"type":"string"},"from":{"type":"string"},"text":{"type":"string"}},"required":["run_id", "message_id", "from", "text"]}},
-{"type":"function","name":"participant_cancel","description":"Request cancellation; cancellation_requested differs from observed settlement and remote disposition. Does not automatically cancel other runs.","parameters":{"type":"object","properties":{"run_id":{"type":"string"}},"required":["run_id"]}},
-{"type":"function","name":"participant_await","description":"Wait for current run_id and already accepted directions to settle into waiting/finished without sealing message admission. Optional timeout_ms1..3600000 default30000. await_timed_out does not cancel the worker; interruption stops waiting only.","parameters":{"type":"object","properties":{"run_id":{"type":"string"},"timeout_ms":{"type":"integer"}},"required":["run_id"]}},
-{"type":"function","name":"participant_join","description":"Seal addressed runs against new messages, drain accepted directions and join in declared order. Cooperative interruption stops waiting; it does not cancel workers. Inspect states/results/remote disposition.","parameters":{"type":"object","properties":{"run_ids":{"type":"array","items":{"type":"string"}}},"required":["run_ids"]}},
-{"type":"function","name":"participant_archive","description":"Remove a settled run from current resident view to free capacity; retained originals remain. No replay on process reopen.","parameters":{"type":"object","properties":{"run_id":{"type":"string"}},"required":["run_id"]}},
-{"type":"function","name":"provider_auth_status","description":"Read provider account labels, credential kind and expiry state. No tokens, refresh or network probes. Sign-in/key entry only through standalone operator auth CLI.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"colleague_catalog","description":"Discover supported colleague providers and installed transports. Authentication and model availability stay not_checked until an actual call. No network probe.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"colleague","description":"Call one selected-context colleague, no tools, continuation or retries. Same request/result as Lua blackbird.colleague and /colleague. Explicit from/to/request_id addresses; context is [{id,text}], no automatic transcript. Request max64KiB. profile tools=none,requests=1,timeout_seconds1..3600. Requested model differs from observed actual_model. Noncompleted status must be inspected; remote_disposition unknown never permits implicit redispatch.","parameters":{"type":"object","properties":{"request_id":{"type":"string"},"from":{"type":"string"},"to":{"type":"string"},"provider":{"type":"string","minLength":1},"model":{"type":"string"},"task":{"type":"string"},"context":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"text":{"type":"string"}},"required":["id","text"]}},"profile":{"type":"object","properties":{"name":{"type":"string"},"provenance":{"type":"string"},"timeout_seconds":{"type":"integer"},"tools":{"type":"string","enum":["none"]},"requests":{"type":"integer","enum":[1]}},"required":["name","provenance","timeout_seconds","tools","requests"]}},"required":["request_id","from","to","provider","model","task","context","profile"]}},
-{"type":"function","name":"tasks_read","description":"Read current durable session task/subtask state. query: id, status (open|queued|active|blocked|done|dropped), offset (default0), limit1..64 (default32), revision to guard pages. Returns stable IDs, item versions, list revision, parent counts, child rollups, and next cursor. Exactly two levels. Empty state is explicit; unfinished work survives compaction/reopen.","parameters":{"type":"object","properties":{"query":{"type":"object"}}}},
-{"type":"function","name":"tasks_edit","description":"Atomically edit shared session tasks. op_id is a short unique batch key; identical retries return the same result for the last16 edits; older stale guarded retries conflict. ops1..64: add(title,parent? top-level ID,status?,owner?,note?,blocker?,after? sibling ID), set(id,version,title?/status?/owner?/note?/blocker?), move(id,version,parent? empty=root,after?), archive(id,version; includes children), list(title?/bead?). Structural add/move/archive/list require current list base. set requires current item version and may omit base. One edit per existing row per batch. States queued/active/blocked/done/dropped; no automatic completion or single-active limit. At most2048 resident items; title512B,note2048B. Rejection leaves state unchanged; conflicts return current affected rows. Changed rows and added IDs returned, no full-list echo.","parameters":{"type":"object","properties":{"op_id":{"type":"string"},"base":{"type":"integer"},"ops":{"type":"array","items":{"type":"object","properties":{"op":{"type":"string","enum":["add","set","move","archive","list"]},"id":{"type":"string"},"version":{"type":"integer"},"title":{"type":"string"},"parent":{"type":"string"},"after":{"type":"string"},"status":{"type":"string","enum":["queued","active","blocked","done","dropped"]},"owner":{"type":"string"},"note":{"type":"string"},"blocker":{"type":"string"},"bead":{"type":"string"}},"required":["op"]}}},"required":["op_id","ops"]}},
-{"type":"function","name":"workflow_registry","description":"Discover effective registered Lua workflows, full retained definitions, slash prefix and configuration revision. Same registry as operator help/completion and invocation; pending edits are not callable.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"workflow_invoke","description":"Invoke an effective registered Lua workflow in this audited turn. With unanswered provider calls, returns accepted and executes after tool outputs before next request or boundary; completion is appended to context. Otherwise synchronous. Source is a function body with args containing this invocation object. Bound nesting 8; no durable or parallel scheduler. Edits activate only after successful outer turn.","parameters":{"type":"object","properties":{"name":{"type":"string"},"arguments":{"type":"string"},"prompt":{"type":"string"}},"required":["name"]}},
-{"type":"function","name":"program_config","description":"Inspect or stage retained named Lua modules and request defaults (model/effort; empty uses launch defaults). Proposal is complete {modules:[{name,source}],model,effort}, with optional workflow_prefix and workflows:[{name,description,source,aliases:[string],bare:boolean,powerwords:[{token,color}]}]. Workflows source is a Lua function body with args. Omitted workflow fields disable registered workflows. Compile-only validation; successful workflow boundary activation; failure/cancel preserves effective. Optional base binds revision.","parameters":{"type":"object","properties":{"proposal":{"type":"object"},"base":{"type":"string"}}}},
-{"type":"function","name":"module_source","description":"Read an effective named module's retained source and revision. Pending sources cannot resolve; blackbird.module(name) loads with a per-workflow cache and private environment. Top-level effects are not rollbackable.","parameters":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}},
-{"type":"function","name":"tool_define","description":"Stage a Lua tool definition (name, description, flat scalar-object parameters, source function body with args). Activates only on successful workflow boundary; failed/invalid definitions preserve effective registry. No native name replacement. Optional base binds effective registry revision.","parameters":{"type":"object","properties":{"definition":{"type":"object"},"base":{"type":"string"}},"required":["definition"]}},
-{"type":"function","name":"tool_registry","description":"Inspect effective and pending session Lua tool definitions and revisions. Source is retained; pending definitions cannot dispatch until a successful workflow boundary.","parameters":{"type":"object","properties":{}}},
-
-{"type":"function","name":"read_file","description":"Read a local file, retaining full original bytes. Omit range for whole file, or supply ONE range object: {mode:lines,start:1,end:20} (one-based inclusive) or {mode:bytes,start:0,end:256} (zero-based half-open). Missing start means first byte/line; missing end means EOF. Beyond EOF clips/returns empty. LF retained; no phantom trailing line.","parameters":{"type":"object","properties":{"path":{"type":"string"},"range":{"type":"object","properties":{"mode":{"type":"string","enum":["lines","bytes"]},"start":{"type":"integer","minimum":0},"end":{"type":"integer","minimum":0}},"required":["mode"],"additionalProperties":false}},"required":["path"],"additionalProperties":false}},
-{"type":"function","name":"write_file","description":"Write a complete local file. No command approval is required.","parameters":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}},
-{"type":"function","name":"edit_file","description":"Replace exactly one occurrence; refuses missing or ambiguous old text.","parameters":{"type":"object","properties":{"path":{"type":"string"},"old":{"type":"string"},"new":{"type":"string"}},"required":["path","old","new"]}},
-{"type":"function","name":"decision_model","description":"Native decision-model evaluation; Jev is the first adapter. Batch independent Choice/Score/Noul questions over shared state. Returns response.model, answers, raw probabilities/confidence and usage with audit_ref. Choice criteria: map (up to255 options); Score:2–10 structured levels; Noul criteria optional true/false. Instructions may be string/object/array. No automatic thresholds, retries or cache; compose judgments in code. Auth is host-configured, not an argument.","parameters":{"type":"object","properties":{"provider":{"type":"string","enum":["jev"]},"model":{"type":"string"},"state":{},"questions":{"type":"object"},"timeout_seconds":{"type":"integer"}},"required":["state","questions"]}},
-{"type":"function","name":"beads","description":"Native external bd 0.58.0 adapter. Configure explicit canonical project, absolute executable and exact actor lazily first. ready uses blocker-aware upstream semantics. Cached data never polls. Single exact ID show/update/close/claim; claim alone is assignment, not ready CAS/lease: recheck task/dependencies. Spawned uncertain writes report and retain UNKNOWN: never blindly replay. No combined dependencies, explicit-ID create, or exactly-once promise. Raw stdout/stderr retained under audit_ref.","parameters":{"type":"object","properties":{"op":{"type":"string","enum":["configure","cached","ready","list","show","create","update","close","claim"]},"project":{"type":"string"},"executable":{"type":"string"},"actor":{"type":"string"},"id":{"type":"string"},"limit":{"type":"integer"},"title":{"type":"string"},"body":{"type":"string"},"type":{"type":"string"},"priority":{"type":"string"},"status":{"type":"string"},"reason":{"type":"string"}},"required":["op"]}},
-{"type":"function","name":"exec","description":"Execute a shell command or nonempty argv on the host. Nonempty argv takes precedence; empty argv uses command. Captures combined stdout/stderr and exit code. timeout_seconds defaults to 120. A deadline returns timed_out=true and effect_outcome=unknown after local child-group cleanup, with output_ref for partial output; inspect it and choose a distinct retry or another approach. Operator cancellation stops the turn. Optional output_max_bytes bounds raw prefix bytes shown to model; full original chunks remain audited. output_ref can retrieve omitted output using read_process_output.","parameters":{"type":"object","properties":{"task_id":{"type":"string","description":"Optional existing task/subtask ID; displays observed runtime activity without completing it."},"command":{"type":"string"},"argv":{"type":"array","items":{"type":"string"}},"timeout_seconds":{"type":"integer"},"output_max_bytes":{"type":"integer","minimum":0}}}},
-{"type":"function","name":"read_process_output","description":"Read retained combined process output without rerunning effects. output_ref from exec identifies audited attempt. Optional byte_start/byte_end zero-based half-open, beyond EOF clips; missing end means EOF. Binary slices return hex.","parameters":{"type":"object","properties":{"output_ref":{"type":"string"},"byte_start":{"type":"integer","minimum":0},"byte_end":{"type":"integer","minimum":0}},"required":["output_ref"]}},
-{"type":"function","name":"variables_read","description":"Read retained time-indexed central-variable observations. query uses trajectory_read paging plus optional variable name. Starts at0; next advances examined facts (scan cap256) even with no matches; pin end. Includes value, source, observation_status and UTC/monotonic clock mapping with synchronization unknown. Point observations never establish effective intervals or causality.","parameters":{"type":"object","properties":{"query":{"type":"object"}},"required":["query"]}},
-{"type":"function","name":"git_observe","description":"Observe requested local Git repository HEAD and optional history0..64. Records git.head/git.commit point samples with provenance. Commit author/committer times are metadata, not when code became active; HEAD is not loaded executable identity. Read-only Git calls; no commit, push, file restoration or implicit retries. Missing/unborn repository recorded unavailable. Observe explicitly when useful, no background polling.","parameters":{"type":"object","properties":{"path":{"type":"string"},"history":{"type":"integer","minimum":0,"maximum":64}},"required":["path"]}},
-{"type":"function","name":"trajectory_read","description":"Read bounded trajectory metadata in recorded order. query: cursor, end pinned prefix, count1..64(default32), scan1..256(default128), optional attempt32 lowercase hex, variables boolean, variable name filter. Default latest128 facts; attempt filter starts at0. next advances by examined facts even without matches; caught_up refers only to pinned end. Follow existing causal IDs; missing settlement is not success. No originals copied; drill down with audit_inspect record/source. No automatic replay or network.","parameters":{"type":"object","properties":{"query":{"type":"object","properties":{"cursor":{"type":"integer","minimum":0},"end":{"type":"integer","minimum":0},"count":{"type":"integer","minimum":1,"maximum":64},"scan":{"type":"integer","minimum":1,"maximum":256},"attempt":{"type":"string","pattern":"^[0-9a-f]{32}$"},"variables":{"type":"boolean"},"variable":{"type":"string","maxLength":64}},"additionalProperties":false}},"required":["query"]}},
-{"type":"function","name":"audit_inspect","description":"Bounded local audit explorer. query: cursor (fact index), count 1..64 default32, end (pin returned append-only prefix). For exact bytes: record index, optional source dependency index, offset, limit 1..65536. Optional record+packet=true returns decoded metadata (log/program, operation continuation or terminal attempt); limit bounds both stored and expanded bytes, no source/diagnostic/offset. Returns causal IDs, source references, explicit observed outcomes and hex original payload/source pages. Committed facts only; no replay. Source pages copy one existing document under its document bound, not full history. Raw private audit stays local.","parameters":{"type":"object","properties":{"query":{"type":"object"}},"required":["query"]}},
-{"type":"function","name":"rageshake","description":"Advisory model complaint: observation and optional evidence references captured immutably with current context/program/model/audit identities; attempt bead delivery with only local locator, retain locally on failure/unknown. Does not compel immediate repair or replay delivery. External sink is not configured.","parameters":{"type":"object","properties":{"observation":{"type":"string"},"references":{"type":"object"}},"required":["observation"]}},
-{"type":"function","name":"context_budget","description":"Inspect effective/pending opt-in context byte policy and native provider/model capability provenance. A valid proposal stages until successful workflow completion; failure cancels it. Trigger invites model-authored managed compaction, never forces shrink. Target is advisory; original repair can grow context. Omitted base binds current policy revision. No token estimates or physical audit reclamation.","parameters":{"type":"object","properties":{"proposal":{"type":"object","properties":{"base":{"type":"string"},"enabled":{"type":"boolean"},"trigger_bytes":{"type":"integer","minimum":1,"maximum":67108864},"target_bytes":{"type":"integer","minimum":1,"maximum":67108864},"reason":{"type":"string"}},"required":["enabled","trigger_bytes","target_bytes","reason"],"additionalProperties":false}},"additionalProperties":false}},
-{"type":"function","name":"context_stats","description":"Report context entry counts and serialized JSON byte sizes, last request bytes and actual provider usage in this process (null if unavailable). No token estimates.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"context_view","description":"Inspect current editable context, base revision and stable entry IDs.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"context_edit","description":"Publish candidate {base,entries:[{id,item}]} with CAS. Reorder, replace or remove entries. Retained originals are immutable. Keep active tool call/result pairs in context.","parameters":{"type":"object","properties":{"candidate":{"type":"object"}},"required":["candidate"]}},
-{"type":"function","name":"context_manage","description":"Explicit managed summarize/select/archive/restore. Proposal: optional base (omitted explicitly binds invocation snapshot; supplied is strict CAS), mode, ids (complete tool groups), reason, source; summarize also summary {role:assistant or developer,content}. Preserves all live user/system/developer instructions. Stages until successful workflow completion; appended current tool exchange is retained. One pending; failed/interrupted workflows cancel. Structural acceptance does not certify accuracy.","parameters":{"type":"object","properties":{"proposal":{"type":"object"}},"required":["proposal"]}},
-{"type":"function","name":"context_inspect","description":"Bounded recoverable original/history/index serialized JSON inspection. query: kind originals|history|index, optional entry (original ID), revision (strict per-kind snapshot guard; stale returns conflict, restart pagination), offset byte index, limit 1..65536 (default 4096). Returns hex-json-utf8 bytes, total_bytes, next, revision (bind subsequent pages) and context_revision. No token estimates.","parameters":{"type":"object","properties":{"query":{"type":"object"}},"required":["query"]}},
-{"type":"function","name":"context_originals","description":"Retrieve retained original context entries, including entries removed from presentation.","parameters":{"type":"object","properties":{}}},
-{"type":"function","name":"context_repair","description":"Explicit protocol repair for calls already unanswered when this workflow began. Requires current context base. Appends unknown-result placeholders without dispatch/replay or settling actual effects; preserves originals and existing outputs. Refuses active-workflow calls, malformed linkage and live owned children. Use from an explicit recovery Lua workflow before the next provider request.","parameters":{"type":"object","properties":{"base":{"type":"string"}},"required":["base"]}},
-{"type":"function","name":"context_restore","description":"Restore an original context entry by stable entry ID.","parameters":{"type":"object","properties":{"entry":{"type":"string"}},"required":["entry"]}},
-{"type":"function","name":"restart","description":"Request restart/resume/continue after the current tool batch and turn complete. Build the release executable first. Include changes, checks, and next steps in the note. Failed or interrupted turns do not restart.","parameters":{"type":"object","properties":{"note":{"type":"string"}},"required":["note"]}},
-{"type":"function","name":"lua","description":"Run a Lua transformation or experiment in the current workflow. blackbird.context(), blackbird.stats(), blackbird.edit(candidate), blackbird.originals(), blackbird.restore(id), blackbird.append(items), blackbird.json.encode/decode, blackbird.call(name,args) are available. Return a JSON-encodable result. Governing workflow file changes activate next turn.","parameters":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}}
-])"));
+Value tool_definitions() {
+  return Value{Value::Array{
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_read"}},
+           {"description",
+            Value{"Read bounded observed runs; optional run_id returns its result. "
+                  "States running/waiting/completed/cancelled/failed/unknown. Waiting "
+                  "means available for addressed direction, not completed."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_id", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_configure"}},
+           {"description", Value{"Set concurrency1..16 only while all runs are "
+                                 "settled. Default2; max32 resident runs."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"concurrency", Value::object({{"type", Value{"integer"}}})}})},
+                 {"required", Value{Value::Array{Value{"concurrency"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_start"}},
+           {"description",
+            Value{"Start a bounded context-only participant from explicit colleague "
+                  "request; optional existing task_id publishes observed badges. No "
+                  "task completion. Selected request retained before dispatch. Returns "
+                  "run_id; scheduling success is not remote completion."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"request", Value::object({{"type", Value{"object"}}})},
+                       {"task_id", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"request"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_send"}},
+           {"description",
+            Value{"Send addressed direction at next request boundary. Exact duplicate "
+                  "message_id deduplicates during this process; conflicting reuse "
+                  "rejects. Inbox16, deliveries64/run, text2048B. Current prior answer "
+                  "selected at acceptance if available."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_id", Value::object({{"type", Value{"string"}}})},
+                       {"message_id", Value::object({{"type", Value{"string"}}})},
+                       {"from", Value::object({{"type", Value{"string"}}})},
+                       {"text", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"run_id"}, Value{"message_id"},
+                                                 Value{"from"}, Value{"text"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_cancel"}},
+           {"description", Value{"Request cancellation; cancellation_requested differs "
+                                 "from observed settlement and remote disposition. "
+                                 "Does not automatically cancel other runs."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_id", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"run_id"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_await"}},
+           {"description",
+            Value{"Wait for current run_id and already accepted directions to settle "
+                  "into waiting/finished without sealing message admission. Optional "
+                  "timeout_ms1..3600000 default30000. await_timed_out does not cancel "
+                  "the worker; interruption stops waiting only."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_id", Value::object({{"type", Value{"string"}}})},
+                       {"timeout_ms", Value::object({{"type", Value{"integer"}}})}})},
+                 {"required", Value{Value::Array{Value{"run_id"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_join"}},
+           {"description",
+            Value{"Seal addressed runs against new messages, drain accepted directions "
+                  "and join in declared order. Cooperative interruption stops waiting; "
+                  "it does not cancel workers. Inspect states/results/remote "
+                  "disposition."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_ids",
+                        Value::object(
+                            {{"type", Value{"array"}},
+                             {"items",
+                              Value::object({{"type", Value{"string"}}})}})}})},
+                 {"required", Value{Value::Array{Value{"run_ids"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"participant_archive"}},
+           {"description",
+            Value{"Remove a settled run from current resident view to free capacity; "
+                  "retained originals remain. No replay on process reopen."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"run_id", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"run_id"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"provider_auth_status"}},
+           {"description",
+            Value{"Read provider account labels, credential kind and expiry state. No "
+                  "tokens, refresh or network probes. Sign-in/key entry only through "
+                  "standalone operator auth CLI."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"colleague_catalog"}},
+           {"description",
+            Value{"Discover supported colleague providers and installed transports. "
+                  "Authentication and model availability stay not_checked until an "
+                  "actual call. No network probe."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"colleague"}},
+           {"description",
+            Value{
+                "Call one selected-context colleague, no tools, continuation or "
+                "retries. Same request/result as Lua blackbird.colleague and "
+                "/colleague. Explicit from/to/request_id addresses; context is "
+                "[{id,text}], no automatic transcript. Request max64KiB. profile "
+                "tools=none,requests=1,timeout_seconds1..3600. Requested model differs "
+                "from observed actual_model. Noncompleted status must be inspected; "
+                "remote_disposition unknown never permits implicit redispatch."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"request_id", Value::object({{"type", Value{"string"}}})},
+                       {"from", Value::object({{"type", Value{"string"}}})},
+                       {"to", Value::object({{"type", Value{"string"}}})},
+                       {"provider", Value::object({{"type", Value{"string"}},
+                                                   {"minLength", Value{Number{1}}}})},
+                       {"model", Value::object({{"type", Value{"string"}}})},
+                       {"task", Value::object({{"type", Value{"string"}}})},
+                       {"context",
+                        Value::object(
+                            {{"type", Value{"array"}},
+                             {"items",
+                              Value::object(
+                                  {{"type", Value{"object"}},
+                                   {"properties",
+                                    Value::object(
+                                        {{"id",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"text", Value::object(
+                                                      {{"type", Value{"string"}}})}})},
+                                   {"required", Value{Value::Array{
+                                                    Value{"id"}, Value{"text"}}}}})}})},
+                       {"profile",
+                        Value::object(
+                            {{"type", Value{"object"}},
+                             {"properties",
+                              Value::object(
+                                  {{"name", Value::object({{"type", Value{"string"}}})},
+                                   {"provenance",
+                                    Value::object({{"type", Value{"string"}}})},
+                                   {"timeout_seconds",
+                                    Value::object({{"type", Value{"integer"}}})},
+                                   {"tools",
+                                    Value::object({{"type", Value{"string"}},
+                                                   {"enum", Value{Value::Array{
+                                                                Value{"none"}}}}})},
+                                   {"requests",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"enum", Value{Value::Array{Value{
+                                                                Number{1}}}}}})}})},
+                             {"required",
+                              Value{Value::Array{Value{"name"}, Value{"provenance"},
+                                                 Value{"timeout_seconds"},
+                                                 Value{"tools"},
+                                                 Value{"requests"}}}}})}})},
+                 {"required",
+                  Value{Value::Array{Value{"request_id"}, Value{"from"}, Value{"to"},
+                                     Value{"provider"}, Value{"model"}, Value{"task"},
+                                     Value{"context"}, Value{"profile"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"tasks_read"}},
+           {"description",
+            Value{"Read current durable session task/subtask state. query: id, status "
+                  "(open|queued|active|blocked|done|dropped), offset (default0), "
+                  "limit1..64 (default32), revision to guard pages. Returns stable "
+                  "IDs, item versions, list revision, parent counts, child rollups, "
+                  "and next cursor. Exactly two levels. Empty state is explicit; "
+                  "unfinished work survives compaction/reopen."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"query", Value::object({{"type", Value{"object"}}})}})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"tasks_edit"}},
+           {"description",
+            Value{
+                "Atomically edit shared session tasks. op_id is a short unique batch "
+                "key; identical retries return the same result for the last16 edits; "
+                "older stale guarded retries conflict. ops1..64: add(title,parent? "
+                "top-level ID,status?,owner?,note?,blocker?,after? sibling ID), "
+                "set(id,version,title?/status?/owner?/note?/blocker?), "
+                "move(id,version,parent? empty=root,after?), archive(id,version; "
+                "includes children), list(title?/bead?). Structural "
+                "add/move/archive/list require current list base. set requires current "
+                "item version and may omit base. One edit per existing row per batch. "
+                "States queued/active/blocked/done/dropped; no automatic completion or "
+                "single-active limit. At most2048 resident items; title512B,note2048B. "
+                "Rejection leaves state unchanged; conflicts return current affected "
+                "rows. Changed rows and added IDs returned, no full-list echo."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"op_id", Value::object({{"type", Value{"string"}}})},
+                       {"base", Value::object({{"type", Value{"integer"}}})},
+                       {"ops",
+                        Value::object(
+                            {{"type", Value{"array"}},
+                             {"items",
+                              Value::object(
+                                  {{"type", Value{"object"}},
+                                   {"properties",
+                                    Value::object(
+                                        {{"op",
+                                          Value::object(
+                                              {{"type", Value{"string"}},
+                                               {"enum", Value{Value::Array{
+                                                            Value{"add"}, Value{"set"},
+                                                            Value{"move"},
+                                                            Value{"archive"},
+                                                            Value{"list"}}}}})},
+                                         {"id",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"version",
+                                          Value::object({{"type", Value{"integer"}}})},
+                                         {"title",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"parent",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"after",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"status",
+                                          Value::object(
+                                              {{"type", Value{"string"}},
+                                               {"enum",
+                                                Value{Value::Array{
+                                                    Value{"queued"}, Value{"active"},
+                                                    Value{"blocked"}, Value{"done"},
+                                                    Value{"dropped"}}}}})},
+                                         {"owner",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"note",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"blocker",
+                                          Value::object({{"type", Value{"string"}}})},
+                                         {"bead", Value::object(
+                                                      {{"type", Value{"string"}}})}})},
+                                   {"required",
+                                    Value{Value::Array{Value{"op"}}}}})}})}})},
+                 {"required", Value{Value::Array{Value{"op_id"}, Value{"ops"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"workflow_registry"}},
+           {"description", Value{"Discover effective registered Lua workflows, full "
+                                 "retained definitions, slash prefix and configuration "
+                                 "revision. Same registry as operator help/completion "
+                                 "and invocation; pending edits are not callable."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"workflow_invoke"}},
+           {"description",
+            Value{"Invoke an effective registered Lua workflow in this audited turn. "
+                  "With unanswered provider calls, returns accepted and executes after "
+                  "tool outputs before next request or boundary; completion is "
+                  "appended to context. Otherwise synchronous. Source is a function "
+                  "body with args containing this invocation object. Bound nesting 8; "
+                  "no durable or parallel scheduler. Edits activate only after "
+                  "successful outer turn."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"name", Value::object({{"type", Value{"string"}}})},
+                       {"arguments", Value::object({{"type", Value{"string"}}})},
+                       {"prompt", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"name"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"program_config"}},
+           {"description",
+            Value{
+                "Inspect or stage retained named Lua modules and request defaults "
+                "(model/effort; empty uses launch defaults). Proposal is complete "
+                "{modules:[{name,source}],model,effort}, with optional workflow_prefix "
+                "and "
+                "workflows:[{name,description,source,aliases:[string],bare:boolean,"
+                "powerwords:[{token,color}]}]. Workflows source is a Lua function body "
+                "with args. Omitted workflow fields disable registered workflows. "
+                "Compile-only validation; successful workflow boundary activation; "
+                "failure/cancel preserves effective. Optional base binds revision."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"proposal", Value::object({{"type", Value{"object"}}})},
+                       {"base", Value::object({{"type", Value{"string"}}})}})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"module_source"}},
+           {"description",
+            Value{"Read an effective named module's retained source and revision. "
+                  "Pending sources cannot resolve; blackbird.module(name) loads with a "
+                  "per-workflow cache and private environment. Top-level effects are "
+                  "not rollbackable."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"name", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"name"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"tool_define"}},
+           {"description",
+            Value{"Stage a Lua tool definition (name, description, flat scalar-object "
+                  "parameters, source function body with args). Activates only on "
+                  "successful workflow boundary; failed/invalid definitions preserve "
+                  "effective registry. No native name replacement. Optional base binds "
+                  "effective registry revision."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"definition", Value::object({{"type", Value{"object"}}})},
+                       {"base", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"definition"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"tool_registry"}},
+           {"description",
+            Value{"Inspect effective and pending session Lua tool definitions and "
+                  "revisions. Source is retained; pending definitions cannot dispatch "
+                  "until a successful workflow boundary."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"read_file"}},
+           {"description",
+            Value{"Read a local file, retaining full original bytes. Omit range for "
+                  "whole file, or supply ONE range object: {mode:lines,start:1,end:20} "
+                  "(one-based inclusive) or {mode:bytes,start:0,end:256} (zero-based "
+                  "half-open). Missing start means first byte/line; missing end means "
+                  "EOF. Beyond EOF clips/returns empty. LF retained; no phantom "
+                  "trailing line."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"path", Value::object({{"type", Value{"string"}}})},
+                       {"range",
+                        Value::object(
+                            {{"type", Value{"object"}},
+                             {"properties",
+                              Value::object(
+                                  {{"mode",
+                                    Value::object({{"type", Value{"string"}},
+                                                   {"enum", Value{Value::Array{
+                                                                Value{"lines"},
+                                                                Value{"bytes"}}}}})},
+                                   {"start",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{0}}}})},
+                                   {"end",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{0}}}})}})},
+                             {"required", Value{Value::Array{Value{"mode"}}}},
+                             {"additionalProperties", Value{false}}})}})},
+                 {"required", Value{Value::Array{Value{"path"}}}},
+                 {"additionalProperties", Value{false}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"write_file"}},
+           {"description",
+            Value{"Write a complete local file. No command approval is required."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"path", Value::object({{"type", Value{"string"}}})},
+                       {"content", Value::object({{"type", Value{"string"}}})}})},
+                 {"required",
+                  Value{Value::Array{Value{"path"}, Value{"content"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"edit_file"}},
+           {"description", Value{"Replace exactly one occurrence; refuses missing or "
+                                 "ambiguous old text."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object({{"path", Value::object({{"type", Value{"string"}}})},
+                                 {"old", Value::object({{"type", Value{"string"}}})},
+                                 {"new", Value::object({{"type", Value{"string"}}})}})},
+                 {"required",
+                  Value{Value::Array{Value{"path"}, Value{"old"}, Value{"new"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"decision_model"}},
+           {"description",
+            Value{"Native decision-model evaluation; Jev is the first adapter. Batch "
+                  "independent Choice/Score/Noul questions over shared state. Returns "
+                  "response.model, answers, raw probabilities/confidence and usage "
+                  "with audit_ref. Choice criteria: map (up to255 options); Score:2–10 "
+                  "structured levels; Noul criteria optional true/false. Instructions "
+                  "may be string/object/array. No automatic thresholds, retries or "
+                  "cache; compose judgments in code. Auth is host-configured, not an "
+                  "argument."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"provider",
+                        Value::object({{"type", Value{"string"}},
+                                       {"enum", Value{Value::Array{Value{"jev"}}}}})},
+                       {"model", Value::object({{"type", Value{"string"}}})},
+                       {"state", Value::object({})},
+                       {"questions", Value::object({{"type", Value{"object"}}})},
+                       {"timeout_seconds",
+                        Value::object({{"type", Value{"integer"}}})}})},
+                 {"required",
+                  Value{Value::Array{Value{"state"}, Value{"questions"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"beads"}},
+           {"description",
+            Value{"Native external bd 0.58.0 adapter. Configure explicit canonical "
+                  "project, absolute executable and exact actor lazily first. ready "
+                  "uses blocker-aware upstream semantics. Cached data never polls. "
+                  "Single exact ID show/update/close/claim; claim alone is assignment, "
+                  "not ready CAS/lease: recheck task/dependencies. Spawned uncertain "
+                  "writes report and retain UNKNOWN: never blindly replay. No combined "
+                  "dependencies, explicit-ID create, or exactly-once promise. Raw "
+                  "stdout/stderr retained under audit_ref."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"op",
+                        Value::object({{"type", Value{"string"}},
+                                       {"enum", Value{Value::Array{
+                                                    Value{"configure"}, Value{"cached"},
+                                                    Value{"ready"}, Value{"list"},
+                                                    Value{"show"}, Value{"create"},
+                                                    Value{"update"}, Value{"close"},
+                                                    Value{"claim"}}}}})},
+                       {"project", Value::object({{"type", Value{"string"}}})},
+                       {"executable", Value::object({{"type", Value{"string"}}})},
+                       {"actor", Value::object({{"type", Value{"string"}}})},
+                       {"id", Value::object({{"type", Value{"string"}}})},
+                       {"limit", Value::object({{"type", Value{"integer"}}})},
+                       {"title", Value::object({{"type", Value{"string"}}})},
+                       {"body", Value::object({{"type", Value{"string"}}})},
+                       {"type", Value::object({{"type", Value{"string"}}})},
+                       {"priority", Value::object({{"type", Value{"string"}}})},
+                       {"status", Value::object({{"type", Value{"string"}}})},
+                       {"reason", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"op"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"exec"}},
+           {"description",
+            Value{
+                "Execute a shell command or nonempty argv on the host. Nonempty argv "
+                "takes precedence; empty argv uses command. Captures combined "
+                "stdout/stderr and exit code. timeout_seconds defaults to 120. A "
+                "deadline returns timed_out=true and effect_outcome=unknown after "
+                "local child-group cleanup, with output_ref for partial output; "
+                "inspect it and choose a distinct retry or another approach. Operator "
+                "cancellation stops the turn. Optional output_max_bytes bounds raw "
+                "prefix bytes shown to model; full original chunks remain audited. "
+                "output_ref can retrieve omitted output using read_process_output."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"task_id",
+                        Value::object(
+                            {{"type", Value{"string"}},
+                             {"description", Value{"Optional existing task/subtask ID; "
+                                                   "displays observed runtime activity "
+                                                   "without completing it."}}})},
+                       {"command", Value::object({{"type", Value{"string"}}})},
+                       {"argv",
+                        Value::object(
+                            {{"type", Value{"array"}},
+                             {"items", Value::object({{"type", Value{"string"}}})}})},
+                       {"timeout_seconds", Value::object({{"type", Value{"integer"}}})},
+                       {"output_max_bytes",
+                        Value::object({{"type", Value{"integer"}},
+                                       {"minimum", Value{Number{0}}}})}})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"read_process_output"}},
+           {"description",
+            Value{"Read retained combined process output without rerunning effects. "
+                  "output_ref from exec identifies audited attempt. Optional "
+                  "byte_start/byte_end zero-based half-open, beyond EOF clips; missing "
+                  "end means EOF. Binary slices return hex."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"output_ref", Value::object({{"type", Value{"string"}}})},
+                       {"byte_start", Value::object({{"type", Value{"integer"}},
+                                                     {"minimum", Value{Number{0}}}})},
+                       {"byte_end", Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{0}}}})}})},
+                 {"required", Value{Value::Array{Value{"output_ref"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"variables_read"}},
+           {"description",
+            Value{"Read retained time-indexed central-variable observations. query "
+                  "uses trajectory_read paging plus optional variable name. Starts "
+                  "at0; next advances examined facts (scan cap256) even with no "
+                  "matches; pin end. Includes value, source, observation_status and "
+                  "UTC/monotonic clock mapping with synchronization unknown. Point "
+                  "observations never establish effective intervals or causality."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"query", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"query"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"git_observe"}},
+           {"description",
+            Value{"Observe requested local Git repository HEAD and optional "
+                  "history0..64. Records git.head/git.commit point samples with "
+                  "provenance. Commit author/committer times are metadata, not when "
+                  "code became active; HEAD is not loaded executable identity. "
+                  "Read-only Git calls; no commit, push, file restoration or implicit "
+                  "retries. Missing/unborn repository recorded unavailable. Observe "
+                  "explicitly when useful, no background polling."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"path", Value::object({{"type", Value{"string"}}})},
+                       {"history", Value::object({{"type", Value{"integer"}},
+                                                  {"minimum", Value{Number{0}}},
+                                                  {"maximum", Value{Number{64}}}})}})},
+                 {"required", Value{Value::Array{Value{"path"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"trajectory_read"}},
+           {"description",
+            Value{"Read bounded trajectory metadata in recorded order. query: cursor, "
+                  "end pinned prefix, count1..64(default32), scan1..256(default128), "
+                  "optional attempt32 lowercase hex, variables boolean, variable name "
+                  "filter. Default latest128 facts; attempt filter starts at0. next "
+                  "advances by examined facts even without matches; caught_up refers "
+                  "only to pinned end. Follow existing causal IDs; missing settlement "
+                  "is not success. No originals copied; drill down with audit_inspect "
+                  "record/source. No automatic replay or network."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"query",
+                        Value::object(
+                            {{"type", Value{"object"}},
+                             {"properties",
+                              Value::object(
+                                  {{"cursor",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{0}}}})},
+                                   {"end",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{0}}}})},
+                                   {"count",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{1}}},
+                                                   {"maximum", Value{Number{64}}}})},
+                                   {"scan",
+                                    Value::object({{"type", Value{"integer"}},
+                                                   {"minimum", Value{Number{1}}},
+                                                   {"maximum", Value{Number{256}}}})},
+                                   {"attempt",
+                                    Value::object(
+                                        {{"type", Value{"string"}},
+                                         {"pattern", Value{"^[0-9a-f]{32}$"}}})},
+                                   {"variables",
+                                    Value::object({{"type", Value{"boolean"}}})},
+                                   {"variable",
+                                    Value::object(
+                                        {{"type", Value{"string"}},
+                                         {"maxLength", Value{Number{64}}}})}})},
+                             {"additionalProperties", Value{false}}})}})},
+                 {"required", Value{Value::Array{Value{"query"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"audit_inspect"}},
+           {"description",
+            Value{
+                "Bounded local audit explorer. query: cursor (fact index), count 1..64 "
+                "default32, end (pin returned append-only prefix). For exact bytes: "
+                "record index, optional source dependency index, offset, limit "
+                "1..65536. Optional record+packet=true returns decoded metadata "
+                "(log/program, operation continuation or terminal attempt); limit "
+                "bounds both stored and expanded bytes, no source/diagnostic/offset. "
+                "Returns causal IDs, source references, explicit observed outcomes and "
+                "hex original payload/source pages. Committed facts only; no replay. "
+                "Source pages copy one existing document under its document bound, not "
+                "full history. Raw private audit stays local."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"query", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"query"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"rageshake"}},
+           {"description", Value{"Advisory model complaint: observation and optional "
+                                 "evidence references captured immutably with current "
+                                 "context/program/model/audit identities; attempt bead "
+                                 "delivery with only local locator, retain locally on "
+                                 "failure/unknown. Does not compel immediate repair or "
+                                 "replay delivery. External sink is not configured."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"observation", Value::object({{"type", Value{"string"}}})},
+                       {"references", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"observation"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_budget"}},
+           {"description",
+            Value{"Inspect effective/pending opt-in context byte policy and native "
+                  "provider/model capability provenance. A valid proposal stages until "
+                  "successful workflow completion; failure cancels it. Trigger invites "
+                  "model-authored managed compaction, never forces shrink. Target is "
+                  "advisory; original repair can grow context. Omitted base binds "
+                  "current policy revision. No token estimates or physical audit "
+                  "reclamation."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"proposal",
+                        Value::object(
+                            {{"type", Value{"object"}},
+                             {"properties",
+                              Value::object(
+                                  {{"base", Value::object({{"type", Value{"string"}}})},
+                                   {"enabled",
+                                    Value::object({{"type", Value{"boolean"}}})},
+                                   {"trigger_bytes",
+                                    Value::object(
+                                        {{"type", Value{"integer"}},
+                                         {"minimum", Value{Number{1}}},
+                                         {"maximum", Value{Number{67108864}}}})},
+                                   {"target_bytes",
+                                    Value::object(
+                                        {{"type", Value{"integer"}},
+                                         {"minimum", Value{Number{1}}},
+                                         {"maximum", Value{Number{67108864}}}})},
+                                   {"reason",
+                                    Value::object({{"type", Value{"string"}}})}})},
+                             {"required", Value{Value::Array{
+                                              Value{"enabled"}, Value{"trigger_bytes"},
+                                              Value{"target_bytes"}, Value{"reason"}}}},
+                             {"additionalProperties", Value{false}}})}})},
+                 {"additionalProperties", Value{false}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_stats"}},
+           {"description",
+            Value{"Report context entry counts and native binary packet byte sizes, "
+                  "last request bytes and actual provider usage in this process (null "
+                  "if unavailable). No token estimates."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_view"}},
+           {"description", Value{"Inspect current editable context, base revision and "
+                                 "stable entry IDs."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_edit"}},
+           {"description",
+            Value{"Publish candidate {base,entries:[{id,item}]} with CAS. Reorder, "
+                  "replace or remove entries. Retained originals are immutable. Keep "
+                  "active tool call/result pairs in context."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"candidate", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"candidate"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_manage"}},
+           {"description",
+            Value{
+                "Explicit managed summarize/select/archive/restore. Proposal: optional "
+                "base (omitted explicitly binds invocation snapshot; supplied is "
+                "strict CAS), mode, ids (complete tool groups), reason, source; "
+                "summarize also summary {role:assistant or developer,content}. "
+                "Preserves all live user/system/developer instructions. Stages until "
+                "successful workflow completion; appended current tool exchange is "
+                "retained. One pending; failed/interrupted workflows cancel. "
+                "Structural acceptance does not certify accuracy."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"proposal", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"proposal"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_inspect"}},
+           {"description",
+            Value{"Bounded recoverable original/history/index inspection. Native BBM2 "
+                  "stream by default; format=json explicitly exports JSON. query: kind "
+                  "originals|history|index, optional entry (original ID), revision "
+                  "(strict per-kind snapshot guard; stale returns conflict, restart "
+                  "pagination), offset byte index, limit 1..65536 (default 4096). "
+                  "Returns hex-bbm2-stream bytes (or hex-json-utf8 for explicit "
+                  "export), total_bytes, next, revision (bind subsequent pages) and "
+                  "context_revision. No token estimates."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"query", Value::object({{"type", Value{"object"}}})}})},
+                 {"required", Value{Value::Array{Value{"query"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_originals"}},
+           {"description", Value{"Retrieve retained original context entries, "
+                                 "including entries removed from presentation."}},
+           {"parameters", Value::object({{"type", Value{"object"}},
+                                         {"properties", Value::object({})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_repair"}},
+           {"description",
+            Value{
+                "Explicit protocol repair for calls already unanswered when this "
+                "workflow began. Requires current context base. Appends unknown-result "
+                "placeholders without dispatch/replay or settling actual effects; "
+                "preserves originals and existing outputs. Refuses active-workflow "
+                "calls, malformed linkage and live owned children. Use from an "
+                "explicit recovery Lua workflow before the next provider request."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"base", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"base"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"context_restore"}},
+           {"description",
+            Value{"Restore an original context entry by stable entry ID."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"entry", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"entry"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"restart"}},
+           {"description",
+            Value{"Request restart/resume/continue after the current tool batch and "
+                  "turn complete. Build the release executable first. Include changes, "
+                  "checks, and next steps in the note. Failed or interrupted turns do "
+                  "not restart."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"note", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"note"}}}}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"lua"}},
+           {"description",
+            Value{"Run a Lua transformation or experiment in the current workflow. "
+                  "blackbird.context(), blackbird.stats(), blackbird.edit(candidate), "
+                  "blackbird.originals(), blackbird.restore(id), "
+                  "blackbird.append(items), blackbird.json.encode/decode, "
+                  "blackbird.call(name,args) are available. Return a native value. "
+                  "JSON encode/decode is explicit interchange only. Governing workflow "
+                  "file changes activate next turn."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"code", Value::object({{"type", Value{"string"}}})}})},
+                 {"required", Value{Value::Array{Value{"code"}}}}})}})}};
 }
 } // namespace blackbird

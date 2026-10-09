@@ -1,38 +1,22 @@
 #include "blackbird/sprite.hpp"
 #include <array>
 #include <cstdlib>
-#include <unistd.h>
 #include <string_view>
+#include <unistd.h>
 
 namespace blackbird {
 namespace {
 // Front three-quarter view traced from the operator's SR-71 reference.
 // 24x24 bits occupy 12x6 Braille cells: square in a typical 1:2 terminal font.
 constexpr std::array<std::string_view, 24> silhouette{
-    "........................",
-    "........................",
-    "........................",
-    "........................",
-    "........................",
-    "........##..............",
-    "........##..............",
-    "........##..............",
-    "......##..#......#......",
-    "......#####.##...#......",
-    ".....##########.##......",
-    ".......######..##.#.....",
-    ".....##.#.#....####.....",
-    "....#.##.#....#####.....",
-    "...######.#####.#####...",
-    "..##.##..#..#####.......",
-    "..#.##.#####............",
-    ".##...#.................",
-    "######..................",
-    "........................",
-    "........................",
-    "........................",
-    "........................",
-    "........................"};
+    "........................", "........................", "........................",
+    "........................", "........................", "........##..............",
+    "........##..............", "........##..............", "......##..#......#......",
+    "......#####.##...#......", ".....##########.##......", ".......######..##.#.....",
+    ".....##.#.#....####.....", "....#.##.#....#####.....", "...######.#####.#####...",
+    "..##.##..#..#####.......", "..#.##.#####............", ".##...#.................",
+    "######..................", "........................", "........................",
+    "........................", "........................", "........................"};
 static_assert([] {
   for (const auto row : silhouette)
     if (row.size() != blackbird_sprite_width * 2)
@@ -50,9 +34,9 @@ std::array<std::string, blackbird_sprite_height> encode(unsigned flame) {
         for (std::size_t dx = 0; dx < 2; ++dx) {
           const auto px = x * 2 + dx, py = y * 4 + dy;
           // Both jets trail up/right. No exhaust pixels or timer at idle.
-          const bool exhaust = flame &&
-                               ((px >= 10 && px < 10 + flame && py == 17 - px) ||
-                                (px >= 18 && px < 18 + flame && py == 30 - px));
+          const bool exhaust =
+              flame && ((px >= 10 && px < 10 + flame && py == 17 - px) ||
+                        (px >= 18 && px < 18 + flame && py == 30 - px));
           if (silhouette[py][px] == '#' || exhaust)
             mask |= 1U << dots[dy][dx];
         }
@@ -98,7 +82,7 @@ static_assert([] {
 }());
 } // namespace
 std::vector<std::string> blackbird_startup(std::size_t columns, std::size_t rows,
-                                          bool mascot) {
+                                           bool mascot) {
   std::vector<std::string> result;
   if (!columns || !rows)
     return result;
@@ -121,7 +105,8 @@ std::string_view setting(const char *name) {
 }
 std::string_view image_path() {
   const auto override_path = setting("BLACKBIRD_SPRITE_ASSET");
-  return override_path.empty() ? std::string_view{BLACKBIRD_SPRITE_ASSET} : override_path;
+  return override_path.empty() ? std::string_view{BLACKBIRD_SPRITE_ASSET}
+                               : override_path;
 }
 std::string base64_path(std::string_view path) {
   constexpr std::string_view alphabet =
@@ -167,8 +152,12 @@ std::string blackbird_graphics_place(std::size_t row, std::size_t column,
                                      std::size_t columns, std::size_t rows) {
   if (!columns || !rows)
     return {};
-  return "\x1b" "7\x1b[" + std::to_string(row + 1) + ";" +
-         std::to_string(column + 1) + "H\x1b_Ga=p,i=72171,p=1,q=2,C=1,c=" +
-         std::to_string(columns) + ",r=" + std::to_string(rows) + ";\x1b\\\x1b" "8";
+  return "\x1b"
+         "7\x1b[" +
+         std::to_string(row + 1) + ";" + std::to_string(column + 1) +
+         "H\x1b_Ga=p,i=72171,p=1,q=2,C=1,c=" + std::to_string(columns) +
+         ",r=" + std::to_string(rows) +
+         ";\x1b\\\x1b"
+         "8";
 }
 } // namespace blackbird

@@ -1,4 +1,6 @@
 #include "blackbird/provider_auth.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/tools.hpp"
 #include "native_process.hpp"
 #include <algorithm>
@@ -15,7 +17,7 @@
 
 namespace blackbird {
 namespace {
-const Json &required_field(const Json &v, std::string_view k) {
+const Value &required_field(const Value &v, std::string_view k) {
   const auto *p = v.find(k);
   if (!p)
     throw Error{ErrorCode::corrupt};
@@ -23,7 +25,7 @@ const Json &required_field(const Json &v, std::string_view k) {
 }
 std::mutex store_mutex;
 constexpr std::size_t store_limit = 1024 * 1024;
-std::string str(const Json &v, std::string_view k, std::string fallback = {}) {
+std::string str(const Value &v, std::string_view k, std::string fallback = {}) {
   const auto *p = v.find(k);
   if (!p)
     return fallback;
@@ -31,21 +33,21 @@ std::string str(const Json &v, std::string_view k, std::string fallback = {}) {
     throw Error{ErrorCode::corrupt};
   return p->string();
 }
-std::int64_t number(const Json &v, std::string_view k, std::int64_t fallback = 0) {
+std::int64_t number(const Value &v, std::string_view k, std::int64_t fallback = 0) {
   const auto *p = v.find(k);
   if (!p)
     return fallback;
-  if (!std::holds_alternative<JsonNumber>(p->value()))
+  if (!std::holds_alternative<Number>(p->value()))
     throw Error{ErrorCode::corrupt};
-  const auto &s = p->number().text;
+  const auto &s = p->number().text();
   std::int64_t n = 0;
   const auto r = std::from_chars(s.data(), s.data() + s.size(), n);
   if (r.ec != std::errc{} || r.ptr != s.data() + s.size())
     throw Error{ErrorCode::corrupt};
   return n;
 }
-Json integer(std::int64_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-void put(Json &v, std::string_view k, Json val) {
+Value integer(std::int64_t n) { return Value{Number{n}}; }
+void put(Value &v, std::string_view k, Value val) {
   for (auto &[name, value] : v.object())
     if (name == k) {
       value = std::move(val);
@@ -131,12 +133,12 @@ class Store {
 public:
   std::unique_lock<std::mutex> thread_lock{store_mutex};
   Fd dir{-1}, lock{-1};
-  Json data = Json::object({{"version", integer(1)},
-                            {"providers", Json::object({})},
-                            {"accounts", Json{Json::Array{}}},
-                            {"active", Json::object({})},
-                            {"selection_revision", Json::object({})},
-                            {"pending", Json{Json::Array{}}}});
+  Value data = Value::object({{"version", integer(1)},
+                              {"providers", Value::object({})},
+                              {"accounts", Value{Value::Array{}}},
+                              {"active", Value::object({})},
+                              {"selection_revision", Value::object({})},
+                              {"pending", Value{Value::Array{}}}});
   Store(const ProviderAuthConfig &c, bool create) {
     const auto p = c.directory;
     if (create) {
@@ -161,7 +163,7 @@ public:
         throw Error{ErrorCode::busy};
       std::this_thread::sleep_for(std::chrono::milliseconds{25});
     }
-    Fd file{::openat(dir.value, "credentials.json", O_RDONLY | O_NOFOLLOW | O_CLOEXEC)};
+    Fd file{::openat(dir.value, "credentials.bbm", O_RDONLY | O_NOFOLLOW | O_CLOEXEC)};
     if (file.value < 0 && errno == ENOENT)
       return;
     check_file(file.value);
@@ -179,9 +181,9 @@ public:
         throw Error{ErrorCode::capacity};
       bytes.append(chunk, static_cast<std::size_t>(n));
     }
-    data = unwrap(parse_json(bytes, {store_limit, 32768, 32}));
+    data = unwrap(decode_packet_string(bytes, {store_limit, 32768, 32}));
     if (!data.find("selection_revision"))
-      data.object().emplace_back("selection_revision", Json::object({}));
+      data.object().emplace_back("selection_revision", Value::object({}));
     if (number(data, "version") != 1)
       throw Error{ErrorCode::unsupported};
     for (const auto k : {"providers", "active"})
@@ -189,20 +191,20 @@ public:
     for (const auto k : {"accounts", "pending"})
       (void)required_field(data, k).array();
   }
-  Json &field(std::string_view name) {
+  Value &field(std::string_view name) {
     for (auto &[k, v] : data.object())
       if (k == name)
         return v;
     throw Error{ErrorCode::corrupt};
   }
-  Json *account(std::string_view provider, std::string_view account) {
+  Value *account(std::string_view provider, std::string_view account) {
     for (auto &v : field("accounts").array())
       if (str(v, "provider") == provider && str(v, "account") == account)
         return &v;
     return nullptr;
   }
   void save() {
-    auto bytes = unwrap(dump_json(data));
+    auto bytes = unwrap(encode_packet_string(data));
     if (bytes.size() > store_limit)
       throw Error{ErrorCode::capacity};
     std::array<unsigned char, 16> random{};
@@ -230,7 +232,7 @@ public:
       }
       if (::fsync(file.value) != 0)
         throw Error{ErrorCode::io, errno};
-      if (::renameat(dir.value, name.c_str(), dir.value, "credentials.json") != 0)
+      if (::renameat(dir.value, name.c_str(), dir.value, "credentials.bbm") != 0)
         throw Error{ErrorCode::io, errno};
       if (::fsync(dir.value) != 0)
         throw Error{ErrorCode::io, errno};
@@ -240,20 +242,20 @@ public:
     }
   }
 };
-Json builtin(std::string_view id) {
+Value builtin(std::string_view id) {
   const auto make = [&](const char *base, const char *protocol, const char *env,
                         const char *flow = "none", const char *client = "",
                         const char *device = "", const char *token = "",
                         const char *scope = "") {
-    return Json::object({{"id", Json{std::string{id}}},
-                         {"base_url", Json{base}},
-                         {"protocol", Json{protocol}},
-                         {"environment", Json{env}},
-                         {"login", Json{flow}},
-                         {"client_id", Json{client}},
-                         {"device_url", Json{device}},
-                         {"token_url", Json{token}},
-                         {"scope", Json{scope}}});
+    return Value::object({{"id", Value{std::string{id}}},
+                          {"base_url", Value{base}},
+                          {"protocol", Value{protocol}},
+                          {"environment", Value{env}},
+                          {"login", Value{flow}},
+                          {"client_id", Value{client}},
+                          {"device_url", Value{device}},
+                          {"token_url", Value{token}},
+                          {"scope", Value{scope}}});
   };
   if (id == "openai")
     return make("https://api.openai.com/v1", "responses", "OPENAI_API_KEY", "browser",
@@ -285,7 +287,7 @@ Json builtin(std::string_view id) {
     return make("https://openrouter.ai/api/v1", "chat", "OPENROUTER_API_KEY");
   throw Error{ErrorCode::unsupported};
 }
-Json descriptor(Store &s, std::string_view id) {
+Value descriptor(Store &s, std::string_view id) {
   identifier(id);
   try {
     return builtin(id);
@@ -301,8 +303,8 @@ Json descriptor(Store &s, std::string_view id) {
 ProviderHttpResponse http(const ProviderAuthConfig &c, const ProviderHttpRequest &r) {
   return c.http ? c.http(r) : provider_http(r, c);
 }
-Json token_record(const Json &tokens, std::int64_t clock,
-                  std::string_view prior_refresh = {}) {
+Value token_record(const Value &tokens, std::int64_t clock,
+                   std::string_view prior_refresh = {}) {
   const auto access = str(tokens, "access_token"),
              refresh = str(tokens, "refresh_token", std::string{prior_refresh});
   secret(access);
@@ -313,19 +315,19 @@ Json token_record(const Json &tokens, std::int64_t clock,
   const auto expiry = number(tokens, "expires_in");
   if (expiry <= 0 || expiry > 31 * 86400)
     throw Error{ErrorCode::corrupt};
-  return Json::object({{"kind", Json{"oauth"}},
-                       {"access", Json{access}},
-                       {"refresh", Json{refresh}},
-                       {"expires_at", integer(clock + expiry)},
-                       {"scope", Json{str(tokens, "scope")}},
-                       {"state", Json{"ready"}}});
+  return Value::object({{"kind", Value{"oauth"}},
+                        {"access", Value{access}},
+                        {"refresh", Value{refresh}},
+                        {"expires_at", integer(clock + expiry)},
+                        {"scope", Value{str(tokens, "scope")}},
+                        {"state", Value{"ready"}}});
 }
 void save_account(Store &s, std::string_view provider, std::string_view account,
-                  Json value) {
+                  Value value) {
   identifier(provider);
   identifier(account);
-  put(value, "provider", Json{std::string{provider}});
-  put(value, "account", Json{std::string{account}});
+  put(value, "provider", Value{std::string{provider}});
+  put(value, "account", Value{std::string{account}});
   if (auto *p = s.account(provider, account)) {
     put(value, "revision", integer(number(*p, "revision") + 1));
     *p = std::move(value);
@@ -335,7 +337,7 @@ void save_account(Store &s, std::string_view provider, std::string_view account,
     put(value, "revision", integer(1));
     s.field("accounts").array().push_back(std::move(value));
   }
-  put(s.field("active"), provider, Json{std::string{account}});
+  put(s.field("active"), provider, Value{std::string{account}});
   put(s.field("selection_revision"), provider,
       integer(number(s.field("selection_revision"), provider) + 1));
 }
@@ -413,13 +415,13 @@ ProviderAuth::ProviderAuth(ProviderAuthConfig config) : config_(std::move(config
   }
 }
 std::filesystem::path ProviderAuth::directory() const { return config_.directory; }
-Json ProviderAuth::descriptor(std::string_view p) const {
+Value ProviderAuth::descriptor(std::string_view p) const {
   Store s{config_, false};
   return blackbird::descriptor(s, p);
 }
-Json ProviderAuth::catalog() const {
+Value ProviderAuth::catalog() const {
   Store s{config_, false};
-  Json::Array out;
+  Value::Array out;
   for (const auto id :
        {"kimi", "mimo", "openai", "anthropic", "grok", "moonshot", "openrouter"})
     out.push_back(builtin(id));
@@ -427,35 +429,36 @@ Json ProviderAuth::catalog() const {
     (void)k;
     out.push_back(v);
   }
-  return Json::object({{"providers", Json{std::move(out)}}});
+  return Value::object({{"providers", Value{std::move(out)}}});
 }
-Json ProviderAuth::status() const {
+Value ProviderAuth::status() const {
   Store s{config_, false};
-  Json::Array out;
+  Value::Array out;
   for (const auto &a : s.field("accounts").array()) {
     auto state = str(a, "state", "ready");
     if (state == "ready" && str(a, "kind") == "oauth" &&
         number(a, "expires_at") <= now(config_))
       state = "expired";
-    out.push_back(Json::object(
-        {{"provider", Json{str(a, "provider")}},
-         {"account", Json{str(a, "account")}},
-         {"kind", Json{str(a, "kind")}},
-         {"state", Json{state}},
-         {"expires_at", a.find("expires_at") ? *a.find("expires_at") : Json{}},
+    out.push_back(Value::object(
+        {{"provider", Value{str(a, "provider")}},
+         {"account", Value{str(a, "account")}},
+         {"kind", Value{str(a, "kind")}},
+         {"state", Value{state}},
+         {"expires_at", a.find("expires_at") ? *a.find("expires_at") : Value{}},
          {"active",
-          Json{str(s.field("active"), str(a, "provider")) == str(a, "account")}}}));
+          Value{str(s.field("active"), str(a, "provider")) == str(a, "account")}}}));
   }
-  return Json::object(
-      {{"accounts", Json{std::move(out)}},
-       {"environment", Json{"available only without an owned selection; not probed"}}});
+  return Value::object(
+      {{"accounts", Value{std::move(out)}},
+       {"environment",
+        Value{"available only without an owned selection; not probed"}}});
 }
-Json ProviderAuth::registration(std::string_view p, std::string_view a) const {
+Value ProviderAuth::registration(std::string_view p, std::string_view a) const {
   identifier(p);
   identifier(a);
   Store s{config_, false};
   auto *v = s.account(p, a);
-  Json out = Json::object(
+  Value out = Value::object(
       {{"revision", integer(v ? number(*v, "revision") : -1)},
        {"selection_revision", integer(number(s.field("selection_revision"), p))}});
   if (v) {
@@ -470,19 +473,19 @@ Json ProviderAuth::registration(std::string_view p, std::string_view a) const {
   }
   return out;
 }
-Json ProviderAuth::binding(std::string_view p) const {
+Value ProviderAuth::binding(std::string_view p) const {
   Store s{config_, false};
   const auto d = blackbird::descriptor(s, p);
   const auto active = str(s.field("active"), p);
   const auto *a = s.account(p, active);
-  return Json::object({{"provider", Json{std::string{p}}},
-                       {"account", Json{active}},
-                       {"revision", integer(a ? number(*a, "revision") : -1)},
-                       {"kind", Json{a                ? str(*a, "kind")
-                                     : active.empty() ? "environment"
-                                                      : "logged_out"}},
-                       {"base_url", Json{str(d, "base_url")}},
-                       {"protocol", Json{str(d, "protocol")}}});
+  return Value::object({{"provider", Value{std::string{p}}},
+                        {"account", Value{active}},
+                        {"revision", integer(a ? number(*a, "revision") : -1)},
+                        {"kind", Value{a                ? str(*a, "kind")
+                                       : active.empty() ? "environment"
+                                                        : "logged_out"}},
+                        {"base_url", Value{str(d, "base_url")}},
+                        {"protocol", Value{str(d, "protocol")}}});
 }
 bool ProviderAuth::selected(std::string_view p) const {
   Store s{config_, false};
@@ -493,9 +496,9 @@ void ProviderAuth::set_key(std::string_view p, std::string_view a, std::string k
   Store s{config_, true};
   (void)blackbird::descriptor(s, p);
   save_account(s, p, a,
-               Json::object({{"kind", Json{"api_key"}},
-                             {"access", Json{std::move(key)}},
-                             {"state", Json{"ready"}}}));
+               Value::object({{"kind", Value{"api_key"}},
+                              {"access", Value{std::move(key)}},
+                              {"state", Value{"ready"}}}));
   s.save();
 }
 void ProviderAuth::use(std::string_view p, std::string_view a) {
@@ -504,7 +507,7 @@ void ProviderAuth::use(std::string_view p, std::string_view a) {
   Store s{config_, true};
   if (!s.account(p, a))
     throw Error{ErrorCode::invalid_range};
-  put(s.field("active"), p, Json{std::string{a}});
+  put(s.field("active"), p, Value{std::string{a}});
   put(s.field("selection_revision"), p,
       integer(number(s.field("selection_revision"), p) + 1));
   s.save();
@@ -518,16 +521,16 @@ void ProviderAuth::logout(std::string_view p, std::string_view a) {
       throw Error{ErrorCode::capacity};
     s.field("accounts")
         .array()
-        .push_back(Json::object({{"provider", Json{std::string{p}}},
-                                 {"account", Json{std::string{a}}},
-                                 {"kind", Json{"none"}},
-                                 {"state", Json{"logged_out"}},
-                                 {"revision", integer(0)}}));
+        .push_back(Value::object({{"provider", Value{std::string{p}}},
+                                  {"account", Value{std::string{a}}},
+                                  {"kind", Value{"none"}},
+                                  {"state", Value{"logged_out"}},
+                                  {"revision", integer(0)}}));
   }
   if (auto *record = s.account(p, a)) {
-    put(*record, "access", Json{});
-    put(*record, "refresh", Json{});
-    put(*record, "state", Json{"logged_out"});
+    put(*record, "access", Value{});
+    put(*record, "refresh", Value{});
+    put(*record, "state", Value{"logged_out"});
     put(*record, "revision", integer(number(*record, "revision") + 1));
     if (auto *metadata = record->find("metadata")) {
       auto cleaned = *metadata;
@@ -537,7 +540,7 @@ void ProviderAuth::logout(std::string_view p, std::string_view a) {
     }
   }
   auto &pending = s.field("pending").array();
-  std::erase_if(pending, [&](const Json &v) {
+  std::erase_if(pending, [&](const Value &v) {
     return str(v, "provider") == p && str(v, "account") == a;
   });
   put(s.field("selection_revision"), p,
@@ -568,16 +571,16 @@ void ProviderAuth::add_provider(std::string id, std::string base, std::string pr
   while (base.ends_with('/'))
     base.pop_back();
   put(s.field("providers"), id,
-      Json::object({{"id", Json{id}},
-                    {"base_url", Json{base}},
-                    {"protocol", Json{protocol}},
-                    {"environment", Json{env}},
-                    {"login", Json{"none"}}}));
+      Value::object({{"id", Value{id}},
+                     {"base_url", Value{base}},
+                     {"protocol", Value{protocol}},
+                     {"environment", Value{env}},
+                     {"login", Value{"none"}}}));
   s.save();
 }
 void ProviderAuth::save_oauth(std::string_view p, std::string_view a,
-                              const Json &tokens, std::string client,
-                              std::string token_url, Json metadata,
+                              const Value &tokens, std::string client,
+                              std::string token_url, Value metadata,
                               std::int64_t expected_revision,
                               std::int64_t expected_selection) {
   identifier(p);
@@ -596,16 +599,16 @@ void ProviderAuth::save_oauth(std::string_view p, std::string_view a,
       (prior ? number(*prior, "revision") : -1) != expected_revision)
     throw Error{ErrorCode::conflict};
   auto record = token_record(tokens, now(config_));
-  put(record, "client_id", Json{std::move(client)});
-  put(record, "token_url", Json{std::move(token_url)});
+  put(record, "client_id", Value{std::move(client)});
+  put(record, "token_url", Value{std::move(token_url)});
   put(record, "metadata", std::move(metadata));
   save_account(s, p, a, std::move(record));
-  std::erase_if(s.field("pending").array(), [&](const Json &v) {
+  std::erase_if(s.field("pending").array(), [&](const Value &v) {
     return str(v, "provider") == p && str(v, "account") == a;
   });
   s.save();
 }
-Json ProviderAuth::device_begin(std::string_view p, std::string_view a) {
+Value ProviderAuth::device_begin(std::string_view p, std::string_view a) {
   identifier(p);
   identifier(a);
   Store s{config_, true};
@@ -628,35 +631,35 @@ Json ProviderAuth::device_begin(std::string_view p, std::string_view a) {
   const auto complete = str(v, "verification_uri_complete");
   if (!complete.empty() && !complete.starts_with(str(v, "verification_uri")))
     throw Error{ErrorCode::corrupt};
-  auto record = Json::object(
-      {{"provider", Json{std::string{p}}},
-       {"account", Json{std::string{a}}},
-       {"device_code", Json{str(v, "device_code")}},
+  auto record = Value::object(
+      {{"provider", Value{std::string{p}}},
+       {"account", Value{std::string{a}}},
+       {"device_code", Value{str(v, "device_code")}},
        {"selection_revision", integer(number(s.field("selection_revision"), p))},
        {"expires_at", integer(now(config_) + expiry)},
        {"interval", integer(interval)},
        {"next_poll", integer(now(config_) + interval)}});
   auto &pending = s.field("pending").array();
-  std::erase_if(pending, [&](const Json &x) {
+  std::erase_if(pending, [&](const Value &x) {
     return str(x, "provider") == p && str(x, "account") == a;
   });
   if (pending.size() >= 16)
     throw Error{ErrorCode::capacity};
   pending.push_back(std::move(record));
   s.save();
-  return Json::object({{"verification_uri", Json{str(v, "verification_uri")}},
-                       {"verification_uri_complete", Json{complete}},
-                       {"user_code", Json{str(v, "user_code")}},
-                       {"expires_in", integer(expiry)},
-                       {"interval", integer(interval)}});
+  return Value::object({{"verification_uri", Value{str(v, "verification_uri")}},
+                        {"verification_uri_complete", Value{complete}},
+                        {"user_code", Value{str(v, "user_code")}},
+                        {"expires_in", integer(expiry)},
+                        {"interval", integer(interval)}});
 }
-Json ProviderAuth::device_poll(std::string_view p, std::string_view a) {
+Value ProviderAuth::device_poll(std::string_view p, std::string_view a) {
   identifier(p);
   identifier(a);
   Store s{config_, true};
   const auto d = blackbird::descriptor(s, p);
   auto &pending = s.field("pending").array();
-  auto it = std::find_if(pending.begin(), pending.end(), [&](const Json &v) {
+  auto it = std::find_if(pending.begin(), pending.end(), [&](const Value &v) {
     return str(v, "provider") == p && str(v, "account") == a;
   });
   if (it == pending.end())
@@ -670,11 +673,11 @@ Json ProviderAuth::device_poll(std::string_view p, std::string_view a) {
   if (number(*it, "expires_at") <= clock) {
     pending.erase(it);
     s.save();
-    return Json::object({{"state", Json{"expired"}}});
+    return Value::object({{"state", Value{"expired"}}});
   }
   if (number(*it, "next_poll") > clock)
-    return Json::object({{"state", Json{"pending"}},
-                         {"wait_seconds", integer(number(*it, "next_poll") - clock)}});
+    return Value::object({{"state", Value{"pending"}},
+                          {"wait_seconds", integer(number(*it, "next_poll") - clock)}});
   ProviderHttpRequest r{
       str(d, "token_url"), "POST",
       "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=" +
@@ -686,7 +689,7 @@ Json ProviderAuth::device_poll(std::string_view p, std::string_view a) {
   if (reply.status == 429 || reply.status >= 500) {
     put(*it, "next_poll", integer(now(config_) + 30));
     s.save();
-    return Json::object({{"state", Json{"pending"}}, {"wait_seconds", integer(30)}});
+    return Value::object({{"state", Value{"pending"}}, {"wait_seconds", integer(30)}});
   }
   auto tokens = unwrap(parse_json(reply.body));
   const auto error = str(tokens, "error");
@@ -698,33 +701,33 @@ Json ProviderAuth::device_poll(std::string_view p, std::string_view a) {
     put(*it, "interval", integer(interval));
     put(*it, "next_poll", integer(now(config_) + interval));
     s.save();
-    return Json::object(
-        {{"state", Json{"pending"}}, {"wait_seconds", integer(interval)}});
+    return Value::object(
+        {{"state", Value{"pending"}}, {"wait_seconds", integer(interval)}});
   }
   if (!error.empty()) {
     pending.erase(it);
     s.save();
-    return Json::object({{"state", Json{"denied"}}});
+    return Value::object({{"state", Value{"denied"}}});
   }
   require_provider_success(reply.status);
   auto record = token_record(tokens, now(config_));
-  put(record, "client_id", Json{str(d, "client_id")});
-  put(record, "token_url", Json{str(d, "token_url")});
+  put(record, "client_id", Value{str(d, "client_id")});
+  put(record, "token_url", Value{str(d, "token_url")});
   save_account(s, p, a, std::move(record));
   pending.erase(it);
   s.save();
-  return Json::object({{"state", Json{"ready"}}});
+  return Value::object({{"state", Value{"ready"}}});
 }
 ProviderHttpResponse
-ProviderAuth::request(std::string_view p, std::string_view route, const Json &body,
+ProviderAuth::request(std::string_view p, std::string_view route, const Value &body,
                       int timeout_seconds,
                       const std::function<void(std::string_view)> &observer,
-                      const Json *expected_binding) {
+                      const Value *expected_binding) {
   if (route != "responses" && route != "chat/completions" && route != "messages" &&
       route != "models")
     throw Error{ErrorCode::invalid_range};
   std::string token, kind, base;
-  Json metadata;
+  Value metadata;
   {
     Store s{config_, false};
     const auto d = blackbird::descriptor(s, p);
@@ -763,15 +766,15 @@ ProviderAuth::request(std::string_view p, std::string_view route, const Json &bo
         if (p == "anthropic") {
           r.headers = {{"Content-Type", "application/json"}};
           r.body = unwrap(
-              dump_json(Json::object({{"grant_type", Json{"refresh_token"}},
-                                      {"client_id", Json{str(*a, "client_id")}},
-                                      {"refresh_token", Json{str(*a, "refresh")}}})));
+              dump_json(Value::object({{"grant_type", Value{"refresh_token"}},
+                                       {"client_id", Value{str(*a, "client_id")}},
+                                       {"refresh_token", Value{str(*a, "refresh")}}})));
         }
         ProviderHttpResponse reply;
         try {
           reply = http(config_, r);
         } catch (...) {
-          put(*a, "state", Json{"refresh_unknown"});
+          put(*a, "state", Value{"refresh_unknown"});
           s.save();
           throw;
         }
@@ -781,7 +784,7 @@ ProviderAuth::request(std::string_view p, std::string_view route, const Json &bo
           require_provider_success(reply.status);
         }
         if (reply.status < 200 || reply.status >= 300) {
-          put(*a, "state", Json{"reauthorize"});
+          put(*a, "state", Value{"reauthorize"});
           s.save();
           throw Error{ErrorCode::provider_auth, -reply.status};
         }
@@ -789,7 +792,7 @@ ProviderAuth::request(std::string_view p, std::string_view route, const Json &bo
           const auto tokens = unwrap(parse_json(reply.body));
           auto updated = token_record(tokens, now(config_), str(*a, "refresh"));
           if (!tokens.find("scope"))
-            put(updated, "scope", Json{str(*a, "scope")});
+            put(updated, "scope", Value{str(*a, "scope")});
           for (const auto k : {"provider", "account", "revision", "client_id",
                                "token_url", "metadata"})
             if (const auto *v = a->find(k))
@@ -797,7 +800,7 @@ ProviderAuth::request(std::string_view p, std::string_view route, const Json &bo
           *a = std::move(updated);
           s.save();
         } catch (...) {
-          put(*a, "state", Json{"refresh_unknown"});
+          put(*a, "state", Value{"refresh_unknown"});
           s.save();
           throw;
         }

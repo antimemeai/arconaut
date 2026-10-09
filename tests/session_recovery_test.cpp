@@ -1,6 +1,8 @@
 #include "blackbird/coding.hpp"
-#include <iostream>
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <algorithm>
+#include <iostream>
 #include <sys/stat.h>
 #include <unistd.h>
 using namespace blackbird;
@@ -35,7 +37,8 @@ int main() {
     for (const std::string operation :
          {"provider", "unopened", "capacity", "badinput", "exec", "write_file",
           "unrecognized", "mixed", "bound-provider", "bound-unopened",
-          "bound-wrong-invocation", "bound-wrong-tag", "bound-extra-input", "bound-bad-input"}) {
+          "bound-wrong-invocation", "bound-wrong-tag", "bound-extra-input",
+          "bound-bad-input"}) {
       const auto directory = std::filesystem::path{path} / operation;
       std::filesystem::create_directory(directory);
       check(::chmod(directory.c_str(), 0700) == 0);
@@ -46,30 +49,40 @@ int main() {
       AuditLog log{*root};
       ContextStore context{log};
       context.append(
-          {Json::object({{"role", Json{"user"}}, {"content", Json{"KEEP_ME"}}})},
+          {Value::object({{"role", Value{"user"}}, {"content", Value{"KEEP_ME"}}})},
           "fixture");
       const auto before = context.items();
       const bool provider_kind = operation == "provider" || operation == "mixed" ||
                                  operation == "unopened" || operation == "capacity" ||
-                                 operation == "badinput" || operation.starts_with("bound-");
-      auto metadata_packet = Json::object(
-          {{"operation", Json{provider_kind ? "provider" : operation}},
-           {"input", operation == "badinput" ? Json{Json::Array{}} : Json::object({})},
-           {"revision", Json{hex_identity(id<ContextRevisionId>(10).bytes())}},
-           {"generation",
-            Json{hex_identity(id<DefinitionGenerationId>(7).bytes())}}});
+                                 operation == "badinput" ||
+                                 operation.starts_with("bound-");
+      auto metadata_packet = Value::object(
+          {{"operation", Value{provider_kind ? "provider" : operation}},
+           {"input",
+            operation == "badinput" ? Value{Value::Array{}} : Value::object({})},
+           {"revision", Value{hex_identity(id<ContextRevisionId>(10).bytes())}},
+           {"generation", Value{hex_identity(id<DefinitionGenerationId>(7).bytes())}}});
       if (operation.starts_with("bound-")) {
         auto &fields = metadata_packet.object();
         if (operation != "bound-extra-input")
-          fields.erase(std::remove_if(fields.begin(), fields.end(),
-              [](const auto &entry) { return entry.first == "input"; }), fields.end());
-        fields.emplace_back("input_binding", Json{operation == "bound-wrong-tag" ? "unknown-v1" : "invocation-v1"});
-        fields.emplace_back("invocation", Json{hex_identity(id<InvocationId>(operation == "bound-wrong-invocation" ? 20 : 9).bytes())});
+          fields.erase(
+              std::remove_if(fields.begin(), fields.end(),
+                             [](const auto &entry) { return entry.first == "input"; }),
+              fields.end());
+        fields.emplace_back(
+            "input_binding",
+            Value{operation == "bound-wrong-tag" ? "unknown-v1" : "invocation-v1"});
+        fields.emplace_back(
+            "invocation",
+            Value{hex_identity(
+                id<InvocationId>(operation == "bound-wrong-invocation" ? 20 : 9)
+                    .bytes())});
       }
-      const auto metadata = unwrap(dump_json(metadata_packet));
-      const std::vector<std::byte> input_bytes = operation == "bound-bad-input"
-          ? std::vector<std::byte>{std::byte{0x5b}, std::byte{0x5d}}
-          : std::vector<std::byte>{std::byte{0x7b}, std::byte{0x7d}};
+      const auto metadata = unwrap(encode_packet_string(metadata_packet));
+      const std::vector<std::byte> input_bytes =
+          operation == "bound-bad-input"
+              ? std::vector<std::byte>{std::byte{0x5b}, std::byte{0x5d}}
+              : unwrap(encode_packet(Value::object({})));
       const auto raw = std::as_bytes(std::span{metadata.data(), metadata.size()});
       (void)unwrap(root->submit({{},
                                  DecisionEvent{id<DecisionId>(8),

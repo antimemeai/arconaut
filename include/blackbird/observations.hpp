@@ -12,10 +12,10 @@ class Observations {
 public:
   explicit Observations(AuditLog &log,
                         std::function<ObservationTime()> clock = observation_time);
-  Json time() const;
-  Json sample(std::string_view name, const Json &value, const Json &source,
-              std::string_view status = "observed");
-  Json git(const Json &query, const std::function<bool()> &cancelled = {});
+  Value time() const;
+  Value sample(std::string_view name, const Value &value, const Value &source,
+               std::string_view status = "observed");
+  Value git(const Value &query, const std::function<bool()> &cancelled = {});
   void doctrine(std::string_view content, InvocationId invocation,
                 OperationAttemptId attempt);
 
@@ -25,5 +25,5 @@ private:
   std::string clock_id_, doctrine_id_, doctrine_content_;
 };
 // A point plot over a finite observed page. Never fills intervals between samples.
-std::string correlation_plot(const Json &page);
+std::string correlation_plot(const Value &page);
 } // namespace blackbird

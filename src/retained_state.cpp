@@ -272,8 +272,8 @@ RetainedState::open(std::unique_ptr<JournalDirectory> directory, std::string_vie
         const auto *physical = owner->saved_->context.find("physical_records");
         if (coverage && std::holds_alternative<std::string>(coverage->value()) &&
             coverage->string() == "settled-no-station-v1" && physical &&
-            std::holds_alternative<JsonNumber>(physical->value())) {
-          const auto &text = physical->number().text;
+            std::holds_alternative<Number>(physical->value())) {
+          const auto &text = physical->number().text();
           std::uint64_t records = 0;
           const auto parsed =
               std::from_chars(text.data(), text.data() + text.size(), records);
@@ -1938,14 +1938,14 @@ Result<IdentityBytes> RetainedState::reserve_identity() {
 }
 // Reduce native effective program packets, not staged proposals. The workflow
 // record may omit unchanged program_config; fold that field rather than losing it.
-Json::Array RetainedState::current_programs() const {
-  std::map<std::string, Json> latest;
+Value::Array RetainedState::current_programs() const {
+  std::map<std::string, Value> latest;
   TaskState tasks;
   bool have_tasks = false;
-  Json config;
-  Json budget;
+  Value config;
+  Value budget;
   std::uint64_t boundary = 0;
-  if (saved_ && std::holds_alternative<Json::Array>(saved_->programs.value())) {
+  if (saved_ && std::holds_alternative<Value::Array>(saved_->programs.value())) {
     boundary = saved_->boundary.sequence;
     for (const auto &packet : saved_->programs.array()) {
       const auto &label = string_field(packet, "label");
@@ -1984,7 +1984,7 @@ Json::Array RetainedState::current_programs() const {
     else if (name == "workflow-config-effective-v1") {
       if (const auto *value = packet.find("program_config"))
         config = *value;
-      if (config != Json{} && !packet.find("program_config")) {
+      if (config != Value{} && !packet.find("program_config")) {
         packet.object().emplace_back("program_config", config);
         const auto prior = latest.find(name);
         if (prior != latest.end())
@@ -1992,13 +1992,13 @@ Json::Array RetainedState::current_programs() const {
                                        field(prior->second, "program_revision"));
       }
       latest[name] = packet;
-      budget = Json::object({{"label", Json{"context-budget-effective-v1"}},
-                             {"policy", field(packet, "policy")},
-                             {"revision", field(packet, "revision")}});
+      budget = Value::object({{"label", Value{"context-budget-effective-v1"}},
+                              {"policy", field(packet, "policy")},
+                              {"revision", field(packet, "revision")}});
     } else if (name == "context-budget-effective-v1")
       budget = packet;
   }
-  Json::Array packets;
+  Value::Array packets;
   for (const auto &[name, packet] : latest) {
     if (name != "context-budget-effective-v1" && name != "task-state-v1")
       packets.push_back(packet);
@@ -2006,11 +2006,11 @@ Json::Array RetainedState::current_programs() const {
   if (have_tasks)
     packets.push_back(tasks.snapshot());
   // Policy chronology is independent of the workflow/tool generation.
-  if (budget != Json{})
+  if (budget != Value{})
     packets.push_back(std::move(budget));
   return packets;
 }
-Result<void> RetainedState::save_current_state(const Json &context) {
+Result<void> RetainedState::save_current_state(const Value &context) {
   if (state() != JournalWriterState::live || in_transaction_ || prepared_ ||
       !reconciled_ || !historical_.empty())
     return Result<void>::failure({ErrorCode::audit_unavailable});
@@ -2020,7 +2020,7 @@ Result<void> RetainedState::save_current_state(const Json &context) {
                     fact_count(),
                     issuer_counter(),
                     context,
-                    Json{current_programs()},
+                    Value{current_programs()},
                     {},
                     saved_ ? saved_->slot ^ 1U : 0U};
     std::set<IdentityBytes> attempts, decisions, invocations;
@@ -2107,10 +2107,9 @@ Result<void> RetainedState::save_current_state(const Json &context) {
     if (!indexed.has_value())
       return Result<void>::failure(indexed.error());
     next.context.object().emplace_back(
-        "physical_records",
-        Json{JsonNumber{std::to_string(journal_->usage().indexed_records)}});
-    next.context.object().emplace_back(
-        "archive_entries", Json{JsonNumber{std::to_string(indexed.value())}});
+        "physical_records", Value{Number{journal_->usage().indexed_records}});
+    next.context.object().emplace_back("archive_entries",
+                                       Value{Number{indexed.value()}});
     bool supported = next.unresolved.empty();
     bool identity_saved = false;
     for (const auto &packet : next.programs.array()) {
@@ -2124,7 +2123,7 @@ Result<void> RetainedState::save_current_state(const Json &context) {
     }
     if (supported && identity_saved)
       next.context.object().emplace_back("semantic_coverage",
-                                         Json{"settled-no-station-v1"});
+                                         Value{"settled-no-station-v1"});
     auto opened = ArchiveCatalog::open(
         *directory_, catalog_name, journal_->header(), next.boundary,
         static_cast<std::uint64_t>(capacity_.max_records) * 6);

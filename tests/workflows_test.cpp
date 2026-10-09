@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/terminal.hpp"
 #include "blackbird/tools.hpp"
 #include <clocale>
@@ -15,7 +16,7 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
-void set(Json &j, std::string_view key, Json value) {
+void set(Value &j, std::string_view key, Value value) {
   for (auto &[k, v] : j.object())
     if (k == key) {
       v = std::move(value);
@@ -23,55 +24,55 @@ void set(Json &j, std::string_view key, Json value) {
     }
   j.object().emplace_back(key, std::move(value));
 }
-Json definition(std::string name = "research", std::string token = "ultracode",
-                std::string source = "return args") {
-  return Json::object(
-      {{"name", Json{name}},
-       {"description", Json{"Research procedure"}},
-       {"source", Json{source}},
-       {"aliases", Json{Json::Array{Json{name}, Json{name + "-alias"}}}},
-       {"bare", Json{true}},
-       {"powerwords", Json{Json::Array{Json::object(
-                          {{"token", Json{token}}, {"color", Json{"keyword"}}})}}}});
+Value definition(std::string name = "research", std::string token = "ultracode",
+                 std::string source = "return args") {
+  return Value::object(
+      {{"name", Value{name}},
+       {"description", Value{"Research procedure"}},
+       {"source", Value{source}},
+       {"aliases", Value{Value::Array{Value{name}, Value{name + "-alias"}}}},
+       {"bare", Value{true}},
+       {"powerwords", Value{Value::Array{Value::object(
+                          {{"token", Value{token}}, {"color", Value{"keyword"}}})}}}});
 }
-Json config(Json::Array defs, std::string prefix = "wf-") {
-  return Json::object({{"modules", Json{Json::Array{}}},
-                       {"model", Json{""}},
-                       {"effort", Json{""}},
-                       {"workflows", Json{std::move(defs)}},
-                       {"workflow_prefix", Json{prefix}}});
+Value config(Value::Array defs, std::string prefix = "wf-") {
+  return Value::object({{"modules", Value{Value::Array{}}},
+                        {"model", Value{""}},
+                        {"effort", Value{""}},
+                        {"workflows", Value{std::move(defs)}},
+                        {"workflow_prefix", Value{prefix}}});
 }
-std::string literal(const Json &j) {
+std::string literal(const Value &j) {
   const auto json = unwrap(dump_json(j));
   std::string delimiter = "==";
   while (json.find("]" + delimiter + "]") != std::string::npos)
     delimiter += "=";
   return "blackbird.json.decode([" + delimiter + "[" + json + "]" + delimiter + "])";
 }
-Json eval(CodingEngine &engine, std::string code) {
+Value eval(CodingEngine &engine, std::string code) {
   engine.turn({"", code});
   return engine.workflow_result();
 }
 struct FakeProvider : CodingProvider {
   unsigned calls = 0;
   bool model_invoke = false, fail = false;
-  Json last_request;
-  Json respond(const Json &r,
-               const std::function<void(std::string_view)> &capture) override {
+  Value last_request;
+  Value respond(const Value &r,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
     last_request = r;
     if (fail)
       throw Error{ErrorCode::interrupted};
-    Json::Array output;
+    Value::Array output;
     if (model_invoke && calls == 1)
-      output.push_back(Json::object(
-          {{"type", Json{"function_call"}},
-           {"call_id", Json{"choose-workflow"}},
-           {"name", Json{"workflow_invoke"}},
+      output.push_back(Value::object(
+          {{"type", Value{"function_call"}},
+           {"call_id", Value{"choose-workflow"}},
+           {"name", Value{"workflow_invoke"}},
            {"arguments",
-            Json{
+            Value{
                 R"({"name":"ultracode","prompt":"model selected; not operator trigger"})"}}}));
-    auto response = Json::object({{"output", Json{std::move(output)}}});
+    auto response = Value::object({{"output", Value{std::move(output)}}});
     capture(unwrap(dump_json(response)));
     return response;
   }
@@ -95,7 +96,7 @@ int main() {
   check(WorkflowRegistry{config({definition()}, ""), "r0"}
             .select("/research")
             .has_value());
-  auto reject = [](const Json &candidate) {
+  auto reject = [](const Value &candidate) {
     try {
       WorkflowRegistry bad{candidate, "bad"};
       (void)bad;
@@ -105,7 +106,7 @@ int main() {
     return false;
   };
   auto collision = definition();
-  set(collision, "aliases", Json{Json::Array{Json{"help"}}});
+  set(collision, "aliases", Value{Value::Array{Value{"help"}}});
   check(reject(config({collision}, "")));
   check(reject(config({collision}, "wf-"))); // bare collides too
   check(reject(config({definition(), definition("other", "another")}, "")) == false);
@@ -138,7 +139,7 @@ int main() {
   check(terminal_command_hint("/wf-research x").find("Research procedure") !=
         std::string::npos);
   // Hot publication may shrink the catalog while a menu has a retained selection.
-  Json::Array many;
+  Value::Array many;
   for (unsigned i = 0; i < 24; ++i)
     many.push_back(definition("menu" + std::to_string(i), "word" + std::to_string(i)));
   for (unsigned mode = 0; mode < 4; ++mode) {
@@ -146,10 +147,12 @@ int main() {
     Composer menu;
     menu.feed(mode == 0 || mode == 3 ? char{20} : '/');
     for (unsigned i = 0; i < 128; ++i)
-      for (char byte : std::string{"\x1b[B"}) menu.feed(byte);
+      for (char byte : std::string{"\x1b[B"})
+        menu.feed(byte);
     publish_workflows({});
     if (mode == 3)
-      for (char byte : std::string{"\x1b[A"}) menu.feed(byte);
+      for (char byte : std::string{"\x1b[A"})
+        menu.feed(byte);
     bool selected_visible = false;
     for (const auto &row : menu.palette_lines(8))
       selected_visible |= row.starts_with("> /");
@@ -210,7 +213,7 @@ int main() {
   CodingEngine engine{log, context, provider, "fake"};
   check(engine.workflows()->named("ultracode").find("source") != nullptr);
   const auto initial = engine.workflows();
-  auto proposal = Json::object({{"proposal", c}});
+  auto proposal = Value::object({{"proposal", c}});
   eval(engine,
        "local r=blackbird.call('program_config'," + literal(proposal) +
            "); assert(r.staged); local d=blackbird.call('workflow_registry',{}); "
@@ -232,28 +235,29 @@ int main() {
   bool failed = false;
   try {
     eval(engine, "blackbird.call('program_config'," +
-                     literal(Json::object({{"proposal", changed}})) +
+                     literal(Value::object({{"proposal", changed}})) +
                      "); error('stop')");
   } catch (const Error &) {
     failed = true;
   }
   check(failed);
   check(engine.workflows() == effective);
-  result = eval(
-      engine, "return blackbird.call('program_config'," +
-                  literal(Json::object({{"proposal", config({collision}, "")}})) + ")");
+  result =
+      eval(engine, "return blackbird.call('program_config'," +
+                       literal(Value::object({{"proposal", config({collision}, "")}})) +
+                       ")");
   check(string_field(result, "error") == "conflict");
   check(engine.workflows() == effective);
   auto invalid = definition();
-  set(invalid, "source", Json{"this is invalid Lua!"});
+  set(invalid, "source", Value{"this is invalid Lua!"});
   result =
       eval(engine, "return blackbird.call('program_config'," +
-                       literal(Json::object({{"proposal", config({invalid})}})) + ")");
+                       literal(Value::object({{"proposal", config({invalid})}})) + ")");
   check(string_field(result, "error") == "invalid_range");
   check(engine.workflows() == effective);
   // Successful registration and provider use of the same useful ultracode definition.
   eval(engine, "return blackbird.call('program_config'," +
-                   literal(Json::object(
+                   literal(Value::object(
                        {{"proposal", config(default_workflows().array(), "")}})) +
                    ")");
   provider.calls = 0;
@@ -291,10 +295,10 @@ int main() {
   // Recheck findings: raw control escaping does not alter color/matching;
   // malformed scalar types reject clearly; no cross-domain alias ambiguity.
   auto malformed = definition();
-  set(malformed, "bare", Json{"not boolean"});
+  set(malformed, "bare", Value{"not boolean"});
   check(reject(config({malformed})));
   auto first = definition();
-  set(first, "bare", Json{false});
+  set(first, "bare", Value{false});
   auto second = definition("wf-research", "secondword");
   check(!reject(config({first, second})));
   auto escaped = terminal_powerword_lines(std::string{"\x1b"} + "ultracode", 40);
@@ -305,10 +309,10 @@ int main() {
   const auto before_failure = engine.workflows();
   auto doomed = definition("doomed", "doomedword",
                            "blackbird.call('program_config'," +
-                               literal(Json::object({{"proposal", changed}})) +
+                               literal(Value::object({{"proposal", changed}})) +
                                "); error('child failure')");
   eval(engine, "return blackbird.call('program_config'," +
-                   literal(Json::object({{"proposal", config({doomed})}})) + ")");
+                   literal(Value::object({{"proposal", config({doomed})}})) + ")");
   const auto doomed_effective = engine.workflows();
   failed = false;
   try {
@@ -320,14 +324,18 @@ int main() {
   check(failed);
   check(engine.workflows() == doomed_effective);
   check(engine.workflows() != before_failure);
-  // Catching the invocation limit and making another host call cannot publish staged config.
-  eval(engine, "return blackbird.call('program_config'," +
-       literal(Json::object({{"proposal", config({definition("trivial", "trivialword")})}})) + ")");
+  // Catching the invocation limit and making another host call cannot publish staged
+  // config.
+  eval(engine,
+       "return blackbird.call('program_config'," +
+           literal(Value::object(
+               {{"proposal", config({definition("trivial", "trivialword")})}})) +
+           ")");
   const auto limit_effective = engine.workflows();
   failed = false;
   try {
     eval(engine, "blackbird.call('program_config'," +
-         literal(Json::object({{"proposal", changed}})) + R"lua();
+                     literal(Value::object({{"proposal", changed}})) + R"lua();
          for i=1,64 do blackbird.call('workflow_invoke',{name='trivial'}) end
          local ok=pcall(function() blackbird.call('workflow_invoke',{name='trivial'}) end)
          assert(not ok)
@@ -341,7 +349,7 @@ int main() {
   check(engine.workflows() == limit_effective);
   // Restore the previous effective definition for the cancellation case below.
   eval(engine, "return blackbird.call('program_config'," +
-       literal(Json::object({{"proposal", config({doomed})}})) + ")");
+                   literal(Value::object({{"proposal", config({doomed})}})) + ")");
   const auto cancellation_effective = engine.workflows();
   // Cancellation similarly preserves the effective definition, never queued replay.
   engine.cancelled = [] { return true; };

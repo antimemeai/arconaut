@@ -1,5 +1,5 @@
 #pragma once
-#include "blackbird/json.hpp"
+#include "blackbird/value.hpp"
 #include <filesystem>
 #include <functional>
 
@@ -17,12 +17,12 @@ public:
       : config_(std::move(config)) {}
   std::function<bool()> cancelled;
   std::function<void(std::string_view, std::string_view)> observer;
-  Json evaluate(const Json &arguments);
+  Value evaluate(const Value &arguments);
 
 private:
   DecisionModelConfig config_;
 };
 // Pure validators also serve native callers and deterministic service fixtures.
-Json jev_request(const Json &arguments);
-void validate_jev_response(const Json &request, const Json &response);
+Value jev_request(const Value &arguments);
+void validate_jev_response(const Value &request, const Value &response);
 } // namespace blackbird

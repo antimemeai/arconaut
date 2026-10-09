@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <iostream>
 #include <unistd.h>
 using namespace blackbird;
@@ -10,12 +11,12 @@ template <class T> T id(unsigned char n) {
 class Observer final : public CodingProvider {
 public:
   std::string model = "test", effort = "medium";
-  Json respond(const Json &r,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &r,
+                const std::function<void(std::string_view)> &capture) override {
     if (string_field(r, "model") != model ||
         string_field(field(r, "reasoning"), "effort") != effort)
       throw Error{ErrorCode::corrupt};
-    auto out = Json::object({{"output", Json{Json::Array{}}}});
+    auto out = Value::object({{"output", Value{Value::Array{}}}});
     capture(unwrap(dump_json(out)));
     return out;
   }
@@ -96,19 +97,19 @@ int main() {
       const auto effect_source = "arco.call('write_file',{path='" +
                                  (path / "effect").string() +
                                  "',content='observed'}); error('not rollback')";
-      auto proposal = Json::object(
+      auto proposal = Value::object(
           {{"modules",
-            Json{Json::Array{
-                Json::object(
-                    {{"name", Json{"calc"}}, {"source", Json{"return {answer=99}"}}}),
-                Json::object({{"name", Json{"cycle"}},
-                              {"source", Json{"return arco.module('cycle')"}}}),
-                Json::object(
-                    {{"name", Json{"effects"}}, {"source", Json{effect_source}}})}}},
-           {"model", Json{""}},
-           {"effort", Json{""}}});
+            Value{Value::Array{
+                Value::object(
+                    {{"name", Value{"calc"}}, {"source", Value{"return {answer=99}"}}}),
+                Value::object({{"name", Value{"cycle"}},
+                               {"source", Value{"return arco.module('cycle')"}}}),
+                Value::object(
+                    {{"name", Value{"effects"}}, {"source", Value{effect_source}}})}}},
+           {"model", Value{""}},
+           {"effort", Value{""}}});
       engine.turn({"", "assert(arco.call('program_config',arco.json.decode([==[" +
-                           unwrap(dump_json(Json::object({{"proposal", proposal}}))) +
+                           unwrap(dump_json(Value::object({{"proposal", proposal}}))) +
                            "]==])).staged)"});
       if (std::filesystem::exists(path / "effect"))
         throw Error{ErrorCode::corrupt};

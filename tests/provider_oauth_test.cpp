@@ -1,4 +1,5 @@
 #include "../src/native_process.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/provider_auth.hpp"
 #include "blackbird/tools.hpp"
 #include <arpa/inet.h>
@@ -111,20 +112,20 @@ int main() {
       check(r.ec == std::errc{}, "modulus hex");
       n += static_cast<char>(v);
     }
-    const auto jwks = Json::object(
-        {{"keys", Json{Json::Array{Json::object({{"kid", Json{"test"}},
-                                                 {"kty", Json{"RSA"}},
-                                                 {"n", Json{encode(n)}},
-                                                 {"e", Json{"AQAB"}}})}}}});
+    const auto jwks = Value::object(
+        {{"keys", Value{Value::Array{Value::object({{"kid", Value{"test"}},
+                                                    {"kty", Value{"RSA"}},
+                                                    {"n", Value{encode(n)}},
+                                                    {"e", Value{"AQAB"}}})}}}});
     auto sign = [&](std::string nonce = "nonce", std::string client = "issued",
                     int expires = 2000) {
       const auto header = encode(R"({"alg":"RS256","kid":"test"})");
-      const auto claims = unwrap(dump_json(
-          Json::object({{"iss", Json{"https://auth.openai.com"}},
-                        {"aud", Json{client}},
-                        {"nonce", Json{nonce}},
-                        {"sub", Json{"subject"}},
-                        {"exp", Json{JsonNumber{std::to_string(expires)}}}})));
+      const auto claims = unwrap(
+          dump_json(Value::object({{"iss", Value{"https://auth.openai.com"}},
+                                   {"aud", Value{client}},
+                                   {"nonce", Value{nonce}},
+                                   {"sub", Value{"subject"}},
+                                   {"exp", Value{Number{std::to_string(expires)}}}})));
       const auto body = header + "." + encode(claims);
       return body + "." +
              encode(run({"/usr/bin/openssl", "dgst", "-sha256", "-sign",
@@ -166,13 +167,13 @@ int main() {
                 authorization["code_challenge"],
             "PKCE linkage");
       return ProviderHttpResponse{
-          200,
-          unwrap(dump_json(Json::object(
-              {{"access_token", Json{"fixture-access"}},
-               {"refresh_token", Json{"fixture-refresh"}},
-               {"expires_in", Json{JsonNumber{"3600"}}},
-               {"id_token", Json{sign(authorization["nonce"])}},
-               {"scope", Json{"openid resource.invoke chatgpt.tokens.use.direct"}}})))};
+          200, unwrap(dump_json(Value::object(
+                   {{"access_token", Value{"fixture-access"}},
+                    {"refresh_token", Value{"fixture-refresh"}},
+                    {"expires_in", Value{Number{"3600"}}},
+                    {"id_token", Value{sign(authorization["nonce"])}},
+                    {"scope",
+                     Value{"openid resource.invoke chatgpt.tokens.use.direct"}}})))};
     };
     ProviderAuth auth{config};
     std::thread browser;
@@ -236,7 +237,7 @@ int main() {
           unwrap(parse_json(
               R"({"access_token":"a","refresh_token":"r","expires_in":3600})")),
           "issued", auth.descriptor("openai").find("token_url")->string(),
-          Json::object({}), std::stoll(saved.find("revision")->number().text));
+          Value::object({}), std::stoll(saved.find("revision")->number().text()));
     });
     config.http = [&](const ProviderHttpRequest &r) {
       const auto fields = unwrap(parse_json(r.body));

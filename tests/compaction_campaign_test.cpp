@@ -1,4 +1,5 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -17,9 +18,9 @@ template <class T> T identity(unsigned char n) {
   bytes[0] = std::byte{n};
   return unwrap(T::from_bytes(bytes));
 }
-bool accepted(const Json &result) { return field(result, "accepted") == Json{true}; }
-Json numeric(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-std::string decode_hex(const Json &page) {
+bool accepted(const Value &result) { return field(result, "accepted") == Value{true}; }
+Value numeric(std::size_t n) { return Value{Number{std::to_string(n)}}; }
+std::string decode_hex(const Value &page) {
   const auto &hex = string_field(page, "bytes");
   require(hex.size() % 2 == 0, "hex parity");
   auto digit = [](char c) -> unsigned {
@@ -34,17 +35,17 @@ std::string decode_hex(const Json &page) {
 class MockProvider final : public CodingProvider {
 public:
   std::size_t calls = 0, bytes = 0;
-  Json::Array expected_input;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value::Array expected_input;
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
-    require(field(request, "input") == Json{expected_input},
+    require(field(request, "input") == Value{expected_input},
             "actual assembled provider input");
     require(unwrap(dump_json(field(request, "input"))).find("needle-") ==
                 std::string::npos,
             "archived scale bytes excluded at provider boundary");
     bytes = unwrap(dump_json(request)).size();
-    const auto response = Json::object({{"output", Json{Json::Array{}}}});
+    const auto response = Value::object({{"output", Value{Value::Array{}}}});
     capture(unwrap(dump_json(response)));
     return response;
   }
@@ -68,23 +69,23 @@ struct Custody final : CustodyVerifier {
 // presentation.
 struct Model {
   std::vector<std::string> ids;
-  std::vector<Json> originals;
+  std::vector<Value> originals;
   std::vector<std::vector<std::size_t>> ancestors;
   std::vector<std::size_t> visible;
-  void capture(std::string id, Json value, std::vector<std::size_t> ancestry = {}) {
+  void capture(std::string id, Value value, std::vector<std::size_t> ancestry = {}) {
     ids.push_back(std::move(id));
     originals.push_back(std::move(value));
     ancestors.push_back(std::move(ancestry));
     visible.push_back(ids.size() - 1);
   }
-  Json::Array identifiers(const std::vector<std::size_t> &selected) const {
-    Json::Array out;
+  Value::Array identifiers(const std::vector<std::size_t> &selected) const {
+    Value::Array out;
     for (const auto i : selected)
-      out.push_back(Json{ids[i]});
+      out.push_back(Value{ids[i]});
     return out;
   }
-  Json::Array items() const {
-    Json::Array out;
+  Value::Array items() const {
+    Value::Array out;
     for (const auto i : visible)
       out.push_back(originals[i]);
     return out;
@@ -113,15 +114,15 @@ struct Model {
       require(string_field(entries[p], "id") == ids[i],
               "independent selected identities/order");
       if (!ancestors[i].empty())
-        require(field(entries[p], "ancestry") == Json{identifiers(ancestors[i])},
+        require(field(entries[p], "ancestry") == Value{identifiers(ancestors[i])},
                 "summary ancestry model");
     }
     const auto actual = context.originals().array();
     require(actual.size() == originals.size(), "immutable source count");
     for (std::size_t i = 0; i < ids.size(); ++i) {
-      const auto found = std::find_if(actual.begin(), actual.end(), [&](const Json &e) {
-        return string_field(e, "id") == ids[i];
-      });
+      const auto found =
+          std::find_if(actual.begin(), actual.end(),
+                       [&](const Value &e) { return string_field(e, "id") == ids[i]; });
       require(found != actual.end() && field(*found, "item") == originals[i],
               "independent immutable source bytes");
     }
@@ -147,17 +148,17 @@ int main() {
                                      "audit", header, capacity));
     auto log = std::make_unique<AuditLog>(*root);
     auto context = std::make_unique<ContextStore>(*log);
-    auto proposal = [&](std::string mode, Json::Array ids) {
-      return Json::object({{"base", Json{context->head()}},
-                           {"mode", Json{std::move(mode)}},
-                           {"ids", Json{std::move(ids)}},
-                           {"reason", Json{"source-inspired independent model"}},
-                           {"source", Json{"explicit deterministic input"}}});
+    auto proposal = [&](std::string mode, Value::Array ids) {
+      return Value::object({{"base", Value{context->head()}},
+                            {"mode", Value{std::move(mode)}},
+                            {"ids", Value{std::move(ids)}},
+                            {"reason", Value{"source-inspired independent model"}},
+                            {"source", Value{"explicit deterministic input"}}});
     };
     // Direct red: managed publication must not admit malformed supported
     // representation.
     context->append(
-        {Json::object({{"type", numeric(7)}, {"opaque", Json{"untouched"}}})},
+        {Value::object({{"type", numeric(7)}, {"opaque", Value{"untouched"}}})},
         "malformed-type");
     require(!accepted(context->manage(proposal("archive", {}))),
             "RED malformed type accepted by managed publication");
@@ -200,19 +201,19 @@ int main() {
     context = std::make_unique<ContextStore>(*log);
     phase = "seed-model";
     Model expected;
-    auto append = [&](Json item) {
+    auto append = [&](Value item) {
       context->append({item}, "modeled input");
       expected.capture(context->head() + ".0", std::move(item));
     };
-    append(Json::object(
-        {{"role", Json{"user"}},
+    append(Value::object(
+        {{"role", Value{"user"}},
          {"content",
-          Json{"MISSION: no effects replay, exact repair, no automatic threshold"}}}));
+          Value{"MISSION: no effects replay, exact repair, no automatic threshold"}}}));
     for (unsigned i = 0; i < 12; ++i)
-      append(Json::object({{"role", Json{"assistant"}},
-                           {"content", Json{"fact-é-" + std::to_string(i)}},
-                           {"extension", Json{JsonNumber{"9007199254740993"}}}}));
-    Json rejected_candidate;
+      append(Value::object({{"role", Value{"assistant"}},
+                            {"content", Value{"fact-é-" + std::to_string(i)}},
+                            {"extension", Value{Number{"9007199254740993"}}}}));
+    Value rejected_candidate;
     std::size_t transitions = 0;
     std::string stale = context->head();
     for (std::size_t step = 0; step < 160; ++step) {
@@ -225,9 +226,9 @@ int main() {
       if (action == 0 ||
           (chosen.empty() && (action == 1 || action == 2 || action == 3))) {
         stale = context->head();
-        append(Json::object(
-            {{"type", Json{"reasoning"}},
-             {"encrypted_content", Json{"OPAQUE==" + std::to_string(step)}}}));
+        append(Value::object(
+            {{"type", Value{"reasoning"}},
+             {"encrypted_content", Value{"OPAQUE==" + std::to_string(step)}}}));
       } else if (action == 1) {
         require(accepted(
                     context->manage(proposal("archive", expected.identifiers(chosen)))),
@@ -243,9 +244,9 @@ int main() {
             "selection accepted");
         expected.filter(keep, true);
       } else if (action == 3) {
-        const auto summary = Json::object(
-            {{"role", Json{"assistant"}},
-             {"content", Json{"explicit summary-" + std::to_string(step)}}});
+        const auto summary = Value::object(
+            {{"role", Value{"assistant"}},
+             {"content", Value{"explicit summary-" + std::to_string(step)}}});
         auto p = proposal("summarize", expected.identifiers(chosen));
         p.object().emplace_back("summary", summary);
         const auto position =
@@ -270,7 +271,7 @@ int main() {
         expected.restore(chosen);
       } else if (action == 5) {
         auto p = proposal("archive", {});
-        p.object()[0].second = Json{stale};
+        p.object()[0].second = Value{stale};
         rejected_candidate = p;
         const auto before = context->view();
         require(!accepted(context->manage(p)), "stale rejected");
@@ -279,7 +280,7 @@ int main() {
         context->begin_workflow();
         const auto staged =
             context->manage(proposal("archive", expected.identifiers(chosen)));
-        require(field(staged, "staged") == Json{true}, "stage status");
+        require(field(staged, "staged") == Value{true}, "stage status");
         expected.check(*context);
         require(!accepted(context->finish_workflow(false)),
                 "cancel accepted no publication");
@@ -321,18 +322,20 @@ int main() {
           static_cast<std::size_t>(std::find(expected.ids.begin(), expected.ids.end(),
                                              string_field(entry, "id")) -
                                    expected.ids.begin());
-      auto exact_entry = Json::object({{"id", Json{expected.ids[original_index]}},
-                                       {"item", expected.originals[original_index]}});
+      auto exact_entry = Value::object({{"id", Value{expected.ids[original_index]}},
+                                        {"item", expected.originals[original_index]}});
       if (!expected.ancestors[original_index].empty())
         exact_entry.object().emplace_back(
-            "ancestry", Json{expected.identifiers(expected.ancestors[original_index])});
+            "ancestry",
+            Value{expected.identifiers(expected.ancestors[original_index])});
       const auto expected_bytes = unwrap(dump_json(exact_entry));
       std::string recovered;
       for (std::size_t offset = 0; offset < expected_bytes.size(); offset += 7) {
-        auto page = context->inspect(Json::object({{"kind", Json{"originals"}},
-                                                   {"entry", field(entry, "id")},
-                                                   {"offset", numeric(offset)},
-                                                   {"limit", numeric(7)}}));
+        auto page = context->inspect(Value::object({{"kind", Value{"originals"}},
+                                                    {"format", Value{"json"}},
+                                                    {"entry", field(entry, "id")},
+                                                    {"offset", numeric(offset)},
+                                                    {"limit", numeric(7)}}));
         require(field(page, "total_bytes") == numeric(expected_bytes.size()),
                 "independent paged source length");
         require(field(page, "next") ==
@@ -342,33 +345,35 @@ int main() {
       }
       // Inspector captures summary ancestry in addition to original item/id.
       require(recovered == expected_bytes, "paged exact capture serialization");
-      const auto eof =
-          context->inspect(Json::object({{"kind", Json{"originals"}},
-                                         {"entry", Json{expected.ids[original_index]}},
-                                         {"offset", numeric(expected_bytes.size())}}));
+      const auto eof = context->inspect(
+          Value::object({{"kind", Value{"originals"}},
+                         {"format", Value{"json"}},
+                         {"entry", Value{expected.ids[original_index]}},
+                         {"offset", numeric(expected_bytes.size())}}));
       require(decode_hex(eof).empty() &&
                   field(eof, "next") == numeric(expected_bytes.size()),
               "source EOF page");
       const auto parsed = unwrap(parse_json(recovered));
-      require(field(parsed, "id") == Json{expected.ids[original_index]} &&
+      require(field(parsed, "id") == Value{expected.ids[original_index]} &&
                   field(parsed, "item") == expected.originals[original_index],
               "paged exact source roundtrip");
     }
     for (const auto limit : {0U, 65537U}) {
       bool rejected = false;
       try {
-        (void)context->inspect(
-            Json::object({{"kind", Json{"index"}}, {"limit", numeric(limit)}}));
+        (void)context->inspect(Value::object({{"kind", Value{"index"}},
+                                              {"format", Value{"json"}},
+                                              {"limit", numeric(limit)}}));
       } catch (const Error &e) {
         rejected = e.code == ErrorCode::invalid_range;
       }
       require(rejected, "invalid bounded inspection limit");
     }
-    for (const auto &offset : {Json{JsonNumber{"-1"}}, Json{"nonnumeric"}}) {
+    for (const auto &offset : {Value{Number{"-1"}}, Value{"nonnumeric"}}) {
       bool rejected = false;
       try {
-        (void)context->inspect(
-            Json::object({{"kind", Json{"index"}}, {"offset", offset}}));
+        (void)context->inspect(Value::object(
+            {{"kind", Value{"index"}}, {"format", Value{"json"}}, {"offset", offset}}));
       } catch (const Error &e) {
         rejected = e.code == ErrorCode::invalid_range;
       }
@@ -379,59 +384,61 @@ int main() {
     std::size_t history_offset = 0;
     for (;;) {
       const auto page =
-          context->inspect(Json::object({{"kind", Json{"history"}},
-                                         {"offset", numeric(history_offset)},
-                                         {"limit", numeric(65536)}}));
+          context->inspect(Value::object({{"kind", Value{"history"}},
+                                          {"format", Value{"json"}},
+                                          {"offset", numeric(history_offset)},
+                                          {"limit", numeric(65536)}}));
       history_bytes += decode_hex(page);
       history_offset =
-          static_cast<std::size_t>(std::stoull(field(page, "next").number().text));
+          static_cast<std::size_t>(std::stoull(field(page, "next").number().text()));
       if (field(page, "next") == field(page, "total_bytes"))
         break;
     }
     const auto history = unwrap(parse_json(history_bytes));
     require(std::any_of(history.array().begin(), history.array().end(),
-                        [&](const Json &packet) {
+                        [&](const Value &packet) {
                           const auto *candidate = packet.find("candidate"),
                                      *outcome = packet.find("outcome");
                           return candidate && outcome &&
                                  *candidate == rejected_candidate &&
-                                 field(packet, "accepted") == Json{false} &&
+                                 field(packet, "accepted") == Value{false} &&
                                  string_field(*outcome, "reason") == "stale-base";
                         }),
             "exact stale candidate recoverable from bounded native history");
     for (const auto &kind : {"history", "originals", "index"}) {
       const auto page = context->inspect(
-          Json::object({{"kind", Json{kind}}, {"offset", numeric(SIZE_MAX)}}));
+          Value::object({{"kind", Value{kind}}, {"offset", numeric(SIZE_MAX)}}));
       require(decode_hex(page).empty() &&
                   field(page, "next") == field(page, "total_bytes"),
               "beyond EOF defined as clamped empty page");
     }
     bool unknown = false;
     try {
-      (void)context->inspect(
-          Json::object({{"kind", Json{"originals"}}, {"entry", Json{"unknown"}}}));
+      (void)context->inspect(Value::object({{"kind", Value{"originals"}},
+                                            {"format", Value{"json"}},
+                                            {"entry", Value{"unknown"}}}));
     } catch (const Error &e) {
       unknown = e.code == ErrorCode::invalid_identity;
     }
     require(unknown, "unknown original inspection");
     // Additional ordering/repair cases attack protocol faults, not transition counts.
     const auto good = context->view();
-    const auto call_item = Json::object(
-        {{"type", Json{"function_call"}}, {"call_id", Json{"parallel-A"}}});
-    const auto other_call = Json::object(
-        {{"type", Json{"function_call"}}, {"call_id", Json{"parallel-B"}}});
-    const auto result_item = Json::object({{"type", Json{"function_call_output"}},
-                                           {"call_id", Json{"parallel-A"}},
-                                           {"output", Json{"α exact output"}}});
-    const auto other_result = Json::object({{"type", Json{"function_call_output"}},
-                                            {"call_id", Json{"parallel-B"}},
-                                            {"output", Json{"β exact output"}}});
+    const auto call_item = Value::object(
+        {{"type", Value{"function_call"}}, {"call_id", Value{"parallel-A"}}});
+    const auto other_call = Value::object(
+        {{"type", Value{"function_call"}}, {"call_id", Value{"parallel-B"}}});
+    const auto result_item = Value::object({{"type", Value{"function_call_output"}},
+                                            {"call_id", Value{"parallel-A"}},
+                                            {"output", Value{"α exact output"}}});
+    const auto other_result = Value::object({{"type", Value{"function_call_output"}},
+                                             {"call_id", Value{"parallel-B"}},
+                                             {"output", Value{"β exact output"}}});
     context->append({call_item, other_call, result_item, other_result},
                     "parallel fixture");
     const auto parallel_base = context->head();
-    Json::Array group_ids;
+    Value::Array group_ids;
     for (unsigned i = 0; i < 4; ++i)
-      group_ids.push_back(Json{parallel_base + "." + std::to_string(i)});
+      group_ids.push_back(Value{parallel_base + "." + std::to_string(i)});
     require(
         !accepted(context->manage(proposal("archive", {group_ids[0], group_ids[2]}))),
         "parallel interval partial rejected");
@@ -444,9 +451,9 @@ int main() {
     const auto start = bad_entries.size() - 4;
     std::swap(bad_entries[start], bad_entries[start + 2]);
     bad_entries[start + 3].object()[1].second =
-        Json::object({{"type", Json{"function_call_output"}},
-                      {"call_id", Json{"parallel-B"}},
-                      {"output", Json{"CORRUPTED"}}});
+        Value::object({{"type", Value{"function_call_output"}},
+                       {"call_id", Value{"parallel-B"}},
+                       {"output", Value{"CORRUPTED"}}});
     require(accepted(context->edit(bad_order)), "generic invalid order fixture");
     require(!accepted(context->manage(proposal("archive", {}))),
             "invalid ordering cannot publish managed view");
@@ -477,12 +484,12 @@ int main() {
     require(!accepted(context->manage(proposal("archive", {}))),
             "duplicate protocol IDs rejected");
     auto reset = good;
-    reset.object()[0].second = Json{context->head()};
+    reset.object()[0].second = Value{context->head()};
     require(accepted(context->edit(reset)), "protocol fixture reset");
     std::cout << "modeled_transitions=" << transitions
               << " immutable_originals=" << expected.ids.size()
               << " native_reopens=16 input_bytes="
-              << field(context->stats(), "input_bytes").number().text << '\n';
+              << field(context->stats(), "input_bytes").number().text() << '\n';
     phase = "scale";
     context.reset();
     log.reset();
@@ -497,58 +504,61 @@ int main() {
     log = std::make_unique<AuditLog>(*root);
     context = std::make_unique<ContextStore>(*log);
     context->append(
-        {Json::object(
-            {{"role", Json{"user"}},
+        {Value::object(
+            {{"role", Value{"user"}},
              {"content",
-              Json{"SCALE MISSION: compact explicitly, exact original repair"}}})},
+              Value{"SCALE MISSION: compact explicitly, exact original repair"}}})},
         "scale mission");
-    Json::Array scale_originals;
+    Value::Array scale_originals;
     std::string scale_needle_id;
-    Json scale_needle_expected;
+    Value scale_needle_expected;
     for (unsigned turn = 0; turn < 64; ++turn) {
       const auto call_id = "scale-call-" + std::to_string(turn);
-      const auto output = "needle-" + std::to_string(turn) +
-                          ":é:" + std::string(8192, static_cast<char>('a' + turn % 26));
-      Json::Array batch{
-          Json::object(
-              {{"type", Json{"reasoning"}},
-               {"encrypted_content", Json{"OPAQUE==" + std::string(128, 'x')}}}),
-          Json::object({{"type", Json{"function_call"}},
-                        {"call_id", Json{call_id}},
-                        {"name", Json{"exec"}},
-                        {"arguments", Json{"{}"}}}),
-          Json::object({{"type", Json{"function_call_output"}},
-                        {"call_id", Json{call_id}},
-                        {"output", Json{output}}}),
-          Json::object({{"role", Json{"assistant"}},
-                        {"content", Json{"result-" + std::to_string(turn)}}})};
+      const auto output = "needle-" + std::to_string(turn) + ":é:" +
+                          std::string(8192, static_cast<char>('a' + turn % 26)) +
+                          std::string(49152, '\0');
+      Value::Array batch{
+          Value::object(
+              {{"type", Value{"reasoning"}},
+               {"encrypted_content", Value{"OPAQUE==" + std::string(128, 'x')}}}),
+          Value::object({{"type", Value{"function_call"}},
+                         {"call_id", Value{call_id}},
+                         {"name", Value{"exec"}},
+                         {"arguments", Value{"{}"}}}),
+          Value::object({{"type", Value{"function_call_output"}},
+                         {"call_id", Value{call_id}},
+                         {"output", Value{output}}}),
+          Value::object({{"role", Value{"assistant"}},
+                         {"content", Value{"result-" + std::to_string(turn)}}})};
       context->append(batch, "scale completed turn");
       if (turn == 17) {
         scale_needle_id = context->head() + ".2";
         scale_needle_expected =
-            Json::object({{"id", Json{scale_needle_id}}, {"item", batch[2]}});
+            Value::object({{"id", Value{scale_needle_id}}, {"item", batch[2]}});
       }
       scale_originals.insert(scale_originals.end(), batch.begin(), batch.end());
     }
-    const auto scale_before = unwrap(dump_json(Json{context->items()})).size();
+    const auto scale_before =
+        unwrap(encode_packet_string(Value{context->items()})).size();
     const auto audit_before = disk_bytes(scale_path);
-    Json::Array covered;
+    Value::Array covered;
     const auto scale_view = context->view();
     for (std::size_t i = 1; i < field(scale_view, "entries").array().size(); ++i)
       covered.push_back(field(field(scale_view, "entries").array()[i], "id"));
     auto scale_proposal = proposal("summarize", covered);
     scale_proposal.object().emplace_back(
         "summary",
-        Json::object(
-            {{"role", Json{"assistant"}},
-             {"content", Json{"64 completed tool turns; sources retained by ancestry. "
+        Value::object({{"role", Value{"assistant"}},
+                       {"content",
+                        Value{"64 completed tool turns; sources retained by ancestry. "
                               "No semantic-fidelity claim for this scale fixture."}}}));
     using Clock = std::chrono::steady_clock;
     auto begin = Clock::now();
     require(accepted(context->manage(scale_proposal)), "scale summary publish");
     const auto publish_ms =
         std::chrono::duration<double, std::milli>(Clock::now() - begin).count();
-    const auto scale_after = unwrap(dump_json(Json{context->items()})).size();
+    const auto scale_after =
+        unwrap(encode_packet_string(Value{context->items()})).size();
     const auto audit_after = disk_bytes(scale_path);
     const auto scale_head = context->head();
     context.reset();
@@ -570,7 +580,7 @@ int main() {
     const auto immutable_scale = context->originals().array();
     for (const auto &item : scale_originals)
       require(std::any_of(immutable_scale.begin(), immutable_scale.end(),
-                          [&](const Json &e) { return field(e, "item") == item; }),
+                          [&](const Value &e) { return field(e, "item") == item; }),
               "scale original exact after native replay");
     require(immutable_scale.size() == scale_originals.size() + 2,
             "scale exact capture count incl mission and summary");
@@ -578,12 +588,13 @@ int main() {
     const auto expected_needle = unwrap(dump_json(scale_needle_expected));
     for (std::size_t offset = 0; offset < expected_needle.size(); offset += 4096)
       recovered_needle +=
-          decode_hex(context->inspect(Json::object({{"kind", Json{"originals"}},
-                                                    {"entry", Json{scale_needle_id}},
-                                                    {"offset", numeric(offset)},
-                                                    {"limit", numeric(4096)}})));
+          decode_hex(context->inspect(Value::object({{"kind", Value{"originals"}},
+                                                     {"format", Value{"json"}},
+                                                     {"entry", Value{scale_needle_id}},
+                                                     {"offset", numeric(offset)},
+                                                     {"limit", numeric(4096)}})));
     require(recovered_needle == expected_needle,
-            "bounded exact 8KiB omitted source after scale native reopen");
+            "bounded exact binary source after scale native reopen");
     // Independent native packet bytes: aggregate history exceeds one JSON document.
     std::string expected_large_history = "[";
     bool first_packet = true;
@@ -594,19 +605,18 @@ int main() {
       if (!first_packet)
         expected_large_history += ',';
       first_packet = false;
-      expected_large_history.append(
-          reinterpret_cast<const char *>(record->payload.data()),
-          record->payload.size());
+      expected_large_history += unwrap(dump_json(unwrap(read_packet(record->payload))));
     }
     expected_large_history += ']';
-    require(expected_large_history.size() > JsonLimits{}.bytes,
-            "large history really exceeds default aggregate JSON ceiling");
+    require(expected_large_history.size() > ValueLimits{}.bytes,
+            "large explicit export exceeds the aggregate JSON ceiling");
     for (const auto offset :
-         {std::size_t{0}, expected_large_history.size() / 2, JsonLimits{}.bytes - 3,
+         {std::size_t{0}, expected_large_history.size() / 2, ValueLimits{}.bytes - 3,
           expected_large_history.size() - 8, expected_large_history.size() + 1}) {
-      const auto page = context->inspect(Json::object({{"kind", Json{"history"}},
-                                                       {"offset", numeric(offset)},
-                                                       {"limit", numeric(7)}}));
+      const auto page = context->inspect(Value::object({{"kind", Value{"history"}},
+                                                        {"format", Value{"json"}},
+                                                        {"offset", numeric(offset)},
+                                                        {"limit", numeric(7)}}));
       const auto clamped = std::min(offset, expected_large_history.size());
       const auto wanted = expected_large_history.substr(clamped, 7);
       require(decode_hex(page) == wanted &&

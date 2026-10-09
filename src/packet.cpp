@@ -1,6 +1,8 @@
 #include "blackbird/packet.hpp"
 #include <algorithm>
+#include <bit>
 #include <charconv>
+#include <cmath>
 #include <string_view>
 
 namespace blackbird {
@@ -67,19 +69,22 @@ constexpr std::string_view words[] = {"label",
                                       "process.output",
                                       "invocation-v1",
                                       "attempt-invocation-v1",
-    "turn-boundary", "result_id", "result_record"};
+                                      "turn-boundary",
+                                      "result_id",
+                                      "result_record"};
 enum Tag : unsigned char {
   null_value = 0,
   false_value = 1,
   true_value = 2,
   unsigned_integer = 3,
   negative_integer = 4,
-  number_text = 5,
+  decimal = 5,
   text = 6,
   identity = 7,
   word = 8,
   array = 9,
-  object = 10
+  object = 10,
+  real = 11
 };
 std::uint64_t word_id(std::string_view s) {
   for (std::size_t i = 0; i < std::size(words); ++i)
@@ -96,7 +101,7 @@ int hex_digit(char c) {
 }
 class Encoder {
 public:
-  explicit Encoder(JsonLimits limits) : limits_(limits) {}
+  explicit Encoder(ValueLimits limits) : limits_(limits) {}
   void byte(unsigned char b) {
     if (out_.size() == limits_.bytes)
       throw Error{ErrorCode::capacity};
@@ -132,7 +137,7 @@ public:
     byte(text);
     raw_text(s);
   }
-  void value(const Json &v, std::size_t depth) {
+  void value(const Value &v, std::size_t depth) {
     if (depth > limits_.depth || ++nodes_ > limits_.nodes)
       throw Error{ErrorCode::capacity};
     std::visit(
@@ -144,28 +149,36 @@ public:
             byte(x ? true_value : false_value);
           else if constexpr (std::is_same_v<T, std::string>)
             string(x);
-          else if constexpr (std::is_same_v<T, JsonNumber>) {
-            const bool neg = x.text.starts_with('-');
-            const auto digits = std::string_view{x.text}.substr(neg ? 1 : 0);
-            std::uint64_t n = 0;
-            const auto r =
-                std::from_chars(digits.data(), digits.data() + digits.size(), n);
-            if (!digits.empty() && r.ec == std::errc{} &&
-                r.ptr == digits.data() + digits.size() && std::to_string(n) == digits &&
-                (!neg || n != 0)) {
-              byte(neg ? negative_integer : unsigned_integer);
-              varint(n);
-            } else {
-              // Preserve exact lexical form for decimals, exponents and negative zero.
-              const auto valid = parse_json(x.text, limits_);
-              if (!valid.has_value() ||
-                  !std::holds_alternative<JsonNumber>(valid.value().value()) ||
-                  valid.value().number().text != x.text)
-                throw Error{ErrorCode::invalid_range};
-              byte(number_text);
-              raw_text(x.text);
-            }
-          } else if constexpr (std::is_same_v<T, Json::Array>) {
+          else if constexpr (std::is_same_v<T, Number>) {
+            std::visit(
+                [&](const auto &n) {
+                  using N = std::decay_t<decltype(n)>;
+                  if constexpr (std::is_same_v<N, std::uint64_t>) {
+                    byte(unsigned_integer);
+                    varint(n);
+                  } else if constexpr (std::is_same_v<N, std::int64_t>) {
+                    byte(n < 0 ? negative_integer : unsigned_integer);
+                    varint(n < 0 ? static_cast<std::uint64_t>(-(n + 1)) + 1
+                                 : static_cast<std::uint64_t>(n));
+                  } else if constexpr (std::is_same_v<N, double>) {
+                    byte(real);
+                    const auto bits = std::bit_cast<std::uint64_t>(n);
+                    for (unsigned i = 0; i < 8; ++i)
+                      byte(static_cast<unsigned char>(bits >> (i * 8)));
+                  } else {
+                    byte(decimal);
+                    byte(n.negative ? 1 : 0);
+                    varint(n.exponent < 0
+                               ? (static_cast<std::uint64_t>(-(n.exponent + 1)) * 2 + 1)
+                               : static_cast<std::uint64_t>(n.exponent) * 2);
+                    varint(n.limbs.size());
+                    for (const auto limb : n.limbs)
+                      for (unsigned i = 0; i < 4; ++i)
+                        byte(static_cast<unsigned char>(limb >> (i * 8)));
+                  }
+                },
+                x.storage());
+          } else if constexpr (std::is_same_v<T, Value::Array>) {
             byte(array);
             varint(x.size());
             for (const auto &child : x)
@@ -184,13 +197,15 @@ public:
   std::vector<std::byte> finish() { return std::move(out_); }
 
 private:
-  JsonLimits limits_;
+  ValueLimits limits_;
   std::vector<std::byte> out_;
   std::size_t nodes_ = 0;
 };
 class Decoder {
 public:
-  Decoder(ByteView data, JsonLimits limits) : data_(data), limits_(limits) {}
+  Decoder(ByteView data, ValueLimits limits,
+          std::span<const std::string_view> omitted = {})
+      : data_(data), limits_(limits), omitted_(omitted) {}
   unsigned char byte() {
     if (at_ == data_.size())
       throw Error{ErrorCode::corrupt};
@@ -211,23 +226,25 @@ public:
     }
     throw Error{ErrorCode::corrupt};
   }
-  std::string raw_text() {
+  std::string raw_text(bool retain = true) {
     const auto n = varint();
     if (n > data_.size() - at_)
       throw Error{ErrorCode::corrupt};
     const auto size = static_cast<std::size_t>(n);
-    std::string s{reinterpret_cast<const char *>(data_.data() + at_), size};
+    std::string s;
+    if (retain)
+      s.assign(reinterpret_cast<const char *>(data_.data() + at_), size);
     at_ += size;
     return s;
   }
-  std::string string(unsigned char tag) {
+  std::string string(unsigned char tag, bool retain = true) {
     if (tag == text)
-      return raw_text();
+      return raw_text(retain);
     if (tag == word) {
       const auto n = varint();
       if (!n || n > std::size(words))
         throw Error{ErrorCode::corrupt};
-      return std::string{words[n - 1]};
+      return retain ? std::string{words[n - 1]} : std::string{};
     }
     if (tag == identity) {
       constexpr char hex[] = "0123456789abcdef";
@@ -235,45 +252,76 @@ public:
       s.reserve(32);
       for (unsigned i = 0; i < 16; ++i) {
         const auto b = byte();
-        s += hex[b >> 4];
-        s += hex[b & 15];
+        if (retain) {
+          s += hex[b >> 4];
+          s += hex[b & 15];
+        }
       }
       return s;
     }
     throw Error{ErrorCode::corrupt};
   }
-  Json value(std::size_t depth) {
+  Value value(std::size_t depth, bool retain = true) {
     if (depth > limits_.depth || ++nodes_ > limits_.nodes)
       throw Error{ErrorCode::capacity};
     const auto tag = byte();
     switch (tag) {
     case null_value:
-      return Json{};
+      return Value{};
     case false_value:
-      return Json{false};
+      return Value{false};
     case true_value:
-      return Json{true};
+      return Value{true};
     case unsigned_integer:
-      return Json{JsonNumber{std::to_string(varint())}};
+      return Value{Number{varint()}};
     case negative_integer: {
       const auto n = varint();
-      if (!n)
+      if (!n || n > (std::uint64_t{1} << 63))
         throw Error{ErrorCode::corrupt};
-      return Json{JsonNumber{"-" + std::to_string(n)}};
+      const auto signed_value =
+          n == (std::uint64_t{1} << 63) ? INT64_MIN : -static_cast<std::int64_t>(n);
+      return Value{Number{signed_value}};
     }
-    case number_text: {
-      const auto s = raw_text();
-      const auto valid = parse_json(s, limits_);
-      if (!valid.has_value() ||
-          !std::holds_alternative<JsonNumber>(valid.value().value()) ||
-          valid.value().number().text != s)
+    case real: {
+      std::uint64_t bits = 0;
+      for (unsigned i = 0; i < 8; ++i)
+        bits |= static_cast<std::uint64_t>(byte()) << (i * 8);
+      return Value{Number{std::bit_cast<double>(bits)}};
+    }
+    case decimal: {
+      const auto sign = byte();
+      if (sign > 1)
         throw Error{ErrorCode::corrupt};
-      return Json{JsonNumber{s}};
+      const auto zigzag = varint();
+      const auto exponent = zigzag & 1 ? -static_cast<std::int64_t>(zigzag >> 1) - 1
+                                       : static_cast<std::int64_t>(zigzag >> 1);
+      const auto count = varint();
+      if (!count || count > (data_.size() - at_) / 4)
+        throw Error{ErrorCode::corrupt};
+      Decimal n{sign != 0, exponent, {}};
+      if (retain)
+        n.limbs.reserve(static_cast<std::size_t>(count));
+      std::uint32_t last = 0;
+      for (std::uint64_t at = 0; at < count; ++at) {
+        std::uint32_t limb = 0;
+        for (unsigned i = 0; i < 4; ++i)
+          limb |= static_cast<std::uint32_t>(byte()) << (i * 8);
+        if (limb >= 1000000000)
+          throw Error{ErrorCode::corrupt};
+        last = limb;
+        if (retain)
+          n.limbs.push_back(limb);
+      }
+      if (count > 1 && last == 0)
+        throw Error{ErrorCode::corrupt};
+      if (!retain)
+        return Value{};
+      return Value{Number{std::move(n)}};
     }
     case text:
     case word:
     case identity:
-      return Json{string(tag)};
+      return retain ? Value{string(tag)} : (void(string(tag, false)), Value{});
     case array:
     case object: {
       const auto count = varint();
@@ -283,19 +331,29 @@ public:
       if (count > (data_.size() - at_) / (tag == object ? 2 : 1))
         throw Error{ErrorCode::corrupt};
       if (tag == array) {
-        Json::Array out;
-        out.reserve(static_cast<std::size_t>(count));
-        for (std::uint64_t i = 0; i < count; ++i)
-          out.push_back(value(depth + 1));
-        return Json{std::move(out)};
+        Value::Array out;
+        if (retain)
+          out.reserve(static_cast<std::size_t>(count));
+        for (std::uint64_t i = 0; i < count; ++i) {
+          auto child = value(depth + 1, retain);
+          if (retain)
+            out.push_back(std::move(child));
+        }
+        return Value{std::move(out)};
       }
-      Json::Object out;
-      out.reserve(static_cast<std::size_t>(count));
+      Value::Object out;
+      if (retain)
+        out.reserve(static_cast<std::size_t>(count));
       for (std::uint64_t i = 0; i < count; ++i) {
         auto key = string(byte());
-        out.emplace_back(std::move(key), value(depth + 1));
+        const bool keep =
+            retain && !(depth == 0 && std::find(omitted_.begin(), omitted_.end(),
+                                                key) != omitted_.end());
+        auto child = value(depth + 1, keep);
+        if (retain)
+          out.emplace_back(std::move(key), keep ? std::move(child) : Value{});
       }
-      return Json::object(std::move(out));
+      return Value::object(std::move(out));
     }
     default:
       throw Error{ErrorCode::corrupt};
@@ -305,14 +363,15 @@ public:
 
 private:
   ByteView data_;
-  JsonLimits limits_;
+  ValueLimits limits_;
+  std::span<const std::string_view> omitted_;
   std::size_t at_ = 0, nodes_ = 0;
 };
 } // namespace
-Result<std::vector<std::byte>> encode_packet(const Json &value, JsonLimits limits) {
+Result<std::vector<std::byte>> encode_packet(const Value &value, ValueLimits limits) {
   try {
     Encoder e{limits};
-    for (const auto b : {'B', 'B', 'M', '\1'})
+    for (const auto b : {'B', 'B', 'M', '\2'})
       e.byte(static_cast<unsigned char>(b));
     e.value(value, 0);
     return Result<std::vector<std::byte>>::success(e.finish());
@@ -322,29 +381,69 @@ Result<std::vector<std::byte>> encode_packet(const Json &value, JsonLimits limit
     return Result<std::vector<std::byte>>::failure({ErrorCode::allocation});
   }
 }
-Result<Json> decode_packet(ByteView bytes, JsonLimits limits) {
+Result<Value> decode_packet_projection(ByteView bytes,
+                                       std::span<const std::string_view> omitted,
+                                       ValueLimits limits) {
   try {
     if (bytes.size() > limits.bytes)
-      return Result<Json>::failure({ErrorCode::capacity});
-    if (bytes.size() >= 3 && bytes[0] == std::byte{'B'} && bytes[1] == std::byte{'B'} &&
-        bytes[2] == std::byte{'M'}) {
-      if (bytes.size() < 4)
-        return Result<Json>::failure({ErrorCode::corrupt});
-      if (bytes[3] != std::byte{1})
-        return Result<Json>::failure({ErrorCode::unsupported});
-      Decoder d{bytes.subspan(4), limits};
-      auto value = d.value(0);
-      if (!d.complete())
-        return Result<Json>::failure({ErrorCode::corrupt});
-      return Result<Json>::success(std::move(value));
-    }
-    return parse_json(
-        std::string_view{reinterpret_cast<const char *>(bytes.data()), bytes.size()},
-        limits);
+      return Result<Value>::failure({ErrorCode::capacity});
+    if (bytes.size() < 4 || bytes[0] != std::byte{'B'} || bytes[1] != std::byte{'B'} ||
+        bytes[2] != std::byte{'M'})
+      return Result<Value>::failure({ErrorCode::corrupt});
+    if (bytes[3] != std::byte{2})
+      return Result<Value>::failure({ErrorCode::unsupported});
+    Decoder d{bytes.subspan(4), limits, omitted};
+    auto value = d.value(0);
+    if (!d.complete())
+      return Result<Value>::failure({ErrorCode::corrupt});
+    return Result<Value>::success(std::move(value));
   } catch (const Error &e) {
-    return Result<Json>::failure(e);
+    return Result<Value>::failure(e);
   } catch (const std::bad_alloc &) {
-    return Result<Json>::failure({ErrorCode::allocation});
+    return Result<Value>::failure({ErrorCode::allocation});
   }
+}
+Result<Value> decode_packet(ByteView bytes, ValueLimits limits) {
+  return decode_packet_projection(bytes, {}, limits);
+}
+Result<std::string> encode_packet_string(const Value &value, ValueLimits limits) {
+  auto bytes = encode_packet(value, limits);
+  if (!bytes.has_value())
+    return Result<std::string>::failure(bytes.error());
+  try {
+    return Result<std::string>::success(std::string{
+        reinterpret_cast<const char *>(bytes.value().data()), bytes.value().size()});
+  } catch (const std::bad_alloc &) {
+    return Result<std::string>::failure({ErrorCode::allocation});
+  }
+}
+Result<Value> decode_packet_value(const Value &bytes, ValueLimits limits) {
+  try {
+    if (std::holds_alternative<std::string>(bytes.value()))
+      return decode_packet_string(bytes.string(), limits);
+    const auto *encoding = bytes.find("encoding"), *data = bytes.find("bytes");
+    if (!encoding || *encoding != Value{"hex"} || !data ||
+        !std::holds_alternative<std::string>(data->value()))
+      return Result<Value>::failure({ErrorCode::invalid_range});
+    const auto &text = data->string();
+    if (text.size() % 2 || text.size() / 2 > limits.bytes)
+      return Result<Value>::failure({ErrorCode::capacity});
+    std::vector<std::byte> raw;
+    raw.reserve(text.size() / 2);
+    for (std::size_t i = 0; i < text.size(); i += 2) {
+      unsigned number = 0;
+      const auto parsed =
+          std::from_chars(text.data() + i, text.data() + i + 2, number, 16);
+      if (parsed.ec != std::errc{} || parsed.ptr != text.data() + i + 2)
+        return Result<Value>::failure({ErrorCode::corrupt});
+      raw.push_back(static_cast<std::byte>(number));
+    }
+    return decode_packet(raw, limits);
+  } catch (const std::bad_alloc &) {
+    return Result<Value>::failure({ErrorCode::allocation});
+  }
+}
+Result<Value> decode_packet_string(std::string_view bytes, ValueLimits limits) {
+  return decode_packet(std::as_bytes(std::span{bytes.data(), bytes.size()}), limits);
 }
 } // namespace blackbird

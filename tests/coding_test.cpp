@@ -1,4 +1,6 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <cerrno>
 #include <chrono>
 #include <iostream>
@@ -10,7 +12,7 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
-std::vector<std::byte> diagnostic_bytes(RetainedState &root, const Json &packet) {
+std::vector<std::byte> diagnostic_bytes(RetainedState &root, const Value &packet) {
   const auto now = static_cast<std::uint64_t>(
       std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::system_clock::now().time_since_epoch())
@@ -20,27 +22,27 @@ std::vector<std::byte> diagnostic_bytes(RetainedState &root, const Json &packet)
 }
 class ManagedToolProvider final : public CodingProvider {
 public:
-  Json proposal;
-  Json::Array last_input;
+  Value proposal;
+  Value::Array last_input;
   int calls = 0;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     last_input = field(request, "input").array();
     ++calls;
-    Json::Array output;
+    Value::Array output;
     if (calls == 1)
-      output.push_back(Json::object(
-          {{"type", Json{"function_call"}},
-           {"call_id", Json{"managed-real"}},
-           {"name", Json{"context_manage"}},
+      output.push_back(Value::object(
+          {{"type", Value{"function_call"}},
+           {"call_id", Value{"managed-real"}},
+           {"name", Value{"context_manage"}},
            {"arguments",
-            Json{unwrap(dump_json(Json::object({{"proposal", proposal}})))}}}));
+            Value{unwrap(dump_json(Value::object({{"proposal", proposal}})))}}}));
     if (calls == 2)
-      output.push_back(Json::object({{"type", Json{"function_call"}},
-                                     {"call_id", Json{"managed-second"}},
-                                     {"name", Json{"context_stats"}},
-                                     {"arguments", Json{"{}"}}}));
-    auto response = Json::object({{"output", Json{std::move(output)}}});
+      output.push_back(Value::object({{"type", Value{"function_call"}},
+                                      {"call_id", Value{"managed-second"}},
+                                      {"name", Value{"context_stats"}},
+                                      {"arguments", Value{"{}"}}}));
+    auto response = Value::object({{"output", Value{std::move(output)}}});
     capture(unwrap(dump_json(response)));
     return response;
   }
@@ -51,8 +53,8 @@ public:
   int calls = 0;
   bool interrupt = false;
   std::function<void()> check_preview;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
     if (interrupt) {
       capture("data: "
@@ -64,35 +66,35 @@ public:
     if (string_field(field(request, "reasoning"), "effort") != "medium")
       throw Error{ErrorCode::corrupt};
     const auto &input = field(request, "input").array();
-    Json response;
+    Value response;
     if (calls == 1) {
-      response = Json::object(
+      response = Value::object(
           {{"output",
-            Json{Json::Array{
-                Json::object({{"type", Json{"reasoning"}},
-                              {"encrypted_content", Json{"opaque=="}}}),
-                Json::object(
-                    {{"type", Json{"function_call"}},
-                     {"call_id", Json{"write-1"}},
-                     {"name", Json{"write_file"}},
+            Value{Value::Array{
+                Value::object({{"type", Value{"reasoning"}},
+                               {"encrypted_content", Value{"opaque=="}}}),
+                Value::object(
+                    {{"type", Value{"function_call"}},
+                     {"call_id", Value{"write-1"}},
+                     {"name", Value{"write_file"}},
                      {"arguments",
-                      Json{unwrap(dump_json(Json::object(
-                          {{"path", Json{path}},
-                           {"content", Json{"int answer = 42;\n"}}})))}}})}}}});
+                      Value{unwrap(dump_json(Value::object(
+                          {{"path", Value{path}},
+                           {"content", Value{"int answer = 42;\n"}}})))}}})}}}});
     } else {
       if (input.size() != 4 ||
           string_field(input[1], "encrypted_content") != "opaque==" ||
           string_field(input[3], "call_id") != "write-1" ||
           string_field(input[3], "type") != "function_call_output")
         throw Error{ErrorCode::corrupt};
-      response = Json::object(
-          {{"output", Json{Json::Array{Json::object(
-                          {{"type", Json{"message"}},
-                           {"id", Json{"m1"}},
-                           {"role", Json{"assistant"}},
-                           {"content", Json{Json::Array{Json::object(
-                                           {{"type", Json{"output_text"}},
-                                            {"text", Json{"done"}}})}}}})}}}});
+      response = Value::object(
+          {{"output", Value{Value::Array{Value::object(
+                          {{"type", Value{"message"}},
+                           {"id", Value{"m1"}},
+                           {"role", Value{"assistant"}},
+                           {"content", Value{Value::Array{Value::object(
+                                           {{"type", Value{"output_text"}},
+                                            {"text", Value{"done"}}})}}}})}}}});
     }
     if (calls == 2) {
       capture("data: "
@@ -108,17 +110,17 @@ public:
 class StoppedTool final : public CodingProvider {
 public:
   int calls = 0;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
-    Json item;
+    Value item;
     if (calls == 1)
-      item = Json::object(
-          {{"type", Json{"function_call"}},
-           {"call_id", Json{"stop-tool"}},
-           {"name", Json{"exec"}},
+      item = Value::object(
+          {{"type", Value{"function_call"}},
+           {"call_id", Value{"stop-tool"}},
+           {"name", Value{"exec"}},
            {"arguments",
-            Json{"{\"command\":\"printf BEFORE_; printf STOP; sleep 30\"}"}}});
+            Value{"{\"command\":\"printf BEFORE_; printf STOP; sleep 30\"}"}}});
     else {
       const auto &input = field(request, "input").array();
       std::size_t matched = 0;
@@ -126,20 +128,22 @@ public:
         const auto *type = old.find("type");
         if (type && type->string() == "function_call_output" &&
             string_field(old, "call_id") == "stop-tool") {
-          if (string_field(old, "output").find("turn_interrupted") == std::string::npos)
+          if (field(old, "output").find("error") == nullptr ||
+              string_field(field(old, "output"), "error") != "turn_interrupted")
             throw Error{ErrorCode::corrupt};
           ++matched;
         }
       }
       if (matched != 1)
         throw Error{ErrorCode::corrupt};
-      item = Json::object(
-          {{"type", Json{"message"}},
+      item = Value::object(
+          {{"type", Value{"message"}},
            {"content",
-            Json{Json::Array{Json::object(
-                {{"type", Json{"output_text"}}, {"text", Json{"CONTINUED"}}})}}}});
+            Value{Value::Array{Value::object(
+                {{"type", Value{"output_text"}}, {"text", Value{"CONTINUED"}}})}}}});
     }
-    const auto result = Json::object({{"output", Json{Json::Array{std::move(item)}}}});
+    const auto result =
+        Value::object({{"output", Value{Value::Array{std::move(item)}}}});
     capture(unwrap(dump_json(result)));
     return result;
   }
@@ -148,42 +152,42 @@ class TimeoutRecoveryProvider final : public CodingProvider {
 public:
   std::string marker;
   int calls = 0;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
-    Json::Array output;
+    Value::Array output;
     if (calls == 1) {
       const auto args =
-          Json::object({{"command", Json{"printf X >> '" + marker +
-                                         "'; printf PARTIAL; exec sleep 10"}},
-                        {"timeout_seconds", Json{JsonNumber{"1"}}}});
-      output.push_back(Json::object({{"type", Json{"function_call"}},
-                                     {"call_id", Json{"deadline-first"}},
-                                     {"name", Json{"exec"}},
-                                     {"arguments", Json{unwrap(dump_json(args))}}}));
+          Value::object({{"command", Value{"printf X >> '" + marker +
+                                           "'; printf PARTIAL; exec sleep 10"}},
+                         {"timeout_seconds", Value{Number{"1"}}}});
+      output.push_back(Value::object({{"type", Value{"function_call"}},
+                                      {"call_id", Value{"deadline-first"}},
+                                      {"name", Value{"exec"}},
+                                      {"arguments", Value{unwrap(dump_json(args))}}}));
     } else if (calls == 2) {
       const auto &last = field(request, "input").array().back();
-      const auto result = unwrap(parse_json(string_field(last, "output")));
+      const auto result = field(last, "output");
       if (string_field(last, "call_id") != "deadline-first" ||
           !std::get<bool>(field(result, "timed_out").value()) ||
           string_field(result, "output_ref").empty())
         throw Error{ErrorCode::corrupt};
       // A new approach, rather than automatically replaying the prior effect.
       output.push_back(
-          Json::object({{"type", Json{"function_call"}},
-                        {"call_id", Json{"deadline-next"}},
-                        {"name", Json{"exec"}},
-                        {"arguments", Json{R"({"command":"printf RECOVERED"})"}}}));
+          Value::object({{"type", Value{"function_call"}},
+                         {"call_id", Value{"deadline-next"}},
+                         {"name", Value{"exec"}},
+                         {"arguments", Value{R"({"command":"printf RECOVERED"})"}}}));
     } else if (calls == 3) {
       const auto &last = field(request, "input").array().back();
-      const auto result = unwrap(parse_json(string_field(last, "output")));
+      const auto result = field(last, "output");
       if (string_field(last, "call_id") != "deadline-next" ||
           string_field(result, "output") != "RECOVERED")
         throw Error{ErrorCode::corrupt};
     } else {
       throw Error{ErrorCode::corrupt};
     }
-    auto result = Json::object({{"output", Json{std::move(output)}}});
+    auto result = Value::object({{"output", Value{std::move(output)}}});
     capture(unwrap(dump_json(result)));
     return result;
   }
@@ -192,10 +196,10 @@ class UsageProvider final : public CodingProvider {
 public:
   std::size_t bytes = 0;
   bool usage = true;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &) override {
-    bytes = unwrap(dump_json(request)).size();
-    auto result = Json::object({{"output", Json{Json::Array{}}}});
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &) override {
+    bytes = unwrap(encode_packet_string(request)).size();
+    auto result = Value::object({{"output", Value{Value::Array{}}}});
     if (usage)
       result.object().emplace_back(
           "usage",
@@ -204,7 +208,7 @@ public:
     return result;
   }
 };
-Json invoke(CodingEngine &engine, std::string_view name, const Json &args) {
+Value invoke(CodingEngine &engine, std::string_view name, const Value &args) {
   std::string shown;
   engine.display = [&](std::string_view text) { shown += text; };
   const auto code = "local r = arco.call('" + std::string{name} +
@@ -244,8 +248,8 @@ void atomic_admission_test(const std::string &path, int mode) {
   std::array<std::size_t, 3> before{};
   const auto marker = path + "/effect";
   const auto args =
-      Json::object({{"path", Json{marker}},
-                    {"content", Json{std::string(mode == 2 ? 7000 : 2048, 'x')}}});
+      Value::object({{"path", Value{marker}},
+                     {"content", Value{std::string(mode == 2 ? 7000 : 2048, 'x')}}});
   engine.status = [&](std::string_view description) {
     if (!description.starts_with("write_file"))
       return;
@@ -261,12 +265,12 @@ void atomic_admission_test(const std::string &path, int mode) {
         if (!prior)
           throw Error{ErrorCode::corrupt};
         const auto input = unwrap(dump_json(args));
-        const auto metadata = unwrap(encode_packet(Json::object(
-            {{"operation", Json{"write_file"}},
-             {"input_binding", Json{"invocation-v1"}},
-             {"invocation", Json{hex_identity(id<InvocationId>(52).bytes())}},
-             {"revision", Json{context.head()}},
-             {"generation", Json{hex_identity(prior->definition.bytes())}}})));
+        const auto metadata = unwrap(encode_packet(Value::object(
+            {{"operation", Value{"write_file"}},
+             {"input_binding", Value{"invocation-v1"}},
+             {"invocation", Value{hex_identity(id<InvocationId>(52).bytes())}},
+             {"revision", Value{context.head()}},
+             {"generation", Value{hex_identity(prior->definition.bytes())}}})));
         const auto raw = std::as_bytes(std::span{metadata.data(), metadata.size()});
         const auto in = std::as_bytes(std::span{input.data(), input.size()});
         const auto encoded_size = [&](const RetainedEvent &event) {
@@ -288,8 +292,7 @@ void atomic_admission_test(const std::string &path, int mode) {
                                                               {in.begin(), in.end()}}});
         // Leave only the untimed decision/invocation footprint, less than the
         // complete timed three-record batch. No effect may start with a partial batch.
-        const auto room =
-            2 * (56 + journal_frame_header_size) + decision + invocation;
+        const auto room = 2 * (56 + journal_frame_header_size) + decision + invocation;
         if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
           throw Error{ErrorCode::corrupt};
         credit = {*usage.remaining_bytes() - room, 1};
@@ -300,10 +303,13 @@ void atomic_admission_test(const std::string &path, int mode) {
 
   bool refused = false;
   try {
-    const auto program = mode == 2
-        ? "local a=arco.json.decode([==[" + unwrap(dump_json(Json::object({{"path",Json{marker}}}))) +
-          "]==]); a.content=string.rep('x',7000); arco.call('write_file',a)"
-        : "arco.call('write_file', arco.json.decode([==[" + unwrap(dump_json(args)) + "]==]))";
+    const auto program =
+        mode == 2
+            ? "local a=arco.json.decode([==[" +
+                  unwrap(dump_json(Value::object({{"path", Value{marker}}}))) +
+                  "]==]); a.content=string.rep('x',7000); arco.call('write_file',a)"
+            : "arco.call('write_file', arco.json.decode([==[" +
+                  unwrap(dump_json(args)) + "]==]))";
     engine.turn({"", program});
   } catch (const Error &error) {
     refused = error.code == ErrorCode::capacity;
@@ -329,8 +335,9 @@ void atomic_admission_test(const std::string &path, int mode) {
     if (const auto *a = std::get_if<AttemptAdmissionEvent>(&fact.event.body))
       prior_ids.insert(a->attempt.bytes());
   }
-  (void)invoke(engine, "write_file",
-               Json::object({{"path", Json{marker}}, {"content", Json{"accepted"}}}));
+  (void)invoke(
+      engine, "write_file",
+      Value::object({{"path", Value{marker}}, {"content", Value{"accepted"}}}));
   for (auto &value : expected)
     ++value;
   if (counts() != expected || read_file(marker) != "accepted")
@@ -403,20 +410,20 @@ void retained_output_test(const std::string &path) {
     ContextStore context{log};
     Scripted provider;
     CodingEngine engine{log, context, provider, "test"};
-    auto result =
-        invoke(engine, "exec",
-               Json::object({{"command", Json{"printf X >> '" + marker +
-                                              "'; printf abc; printf def >&2; exit 7"}},
-                             {"output_max_bytes", Json{JsonNumber{"2"}}}}));
+    auto result = invoke(
+        engine, "exec",
+        Value::object({{"command", Value{"printf X >> '" + marker +
+                                         "'; printf abc; printf def >&2; exit 7"}},
+                       {"output_max_bytes", Value{Number{"2"}}}}));
     if (string_field(result, "output") != "ab" ||
-        field(result, "exit_code").number().text != "7")
+        field(result, "exit_code").number().text() != "7")
       throw Error{ErrorCode::corrupt};
     reference = string_field(result, "output_ref");
     const auto timed_result =
         invoke(engine, "exec",
-               Json::object({{"command", Json{"printf PARTIAL; sleep 10"}},
-                             {"timeout_seconds", Json{JsonNumber{"1"}}},
-                             {"output_max_bytes", Json{JsonNumber{"0"}}}}));
+               Value::object({{"command", Value{"printf PARTIAL; sleep 10"}},
+                              {"timeout_seconds", Value{Number{"1"}}},
+                              {"output_max_bytes", Value{Number{"0"}}}}));
     if (!std::get<bool>(field(timed_result, "timed_out").value()) ||
         string_field(timed_result, "error") != "io" ||
         string_field(timed_result, "effect_outcome") != "unknown")
@@ -442,13 +449,13 @@ void retained_output_test(const std::string &path) {
     Scripted provider;
     CodingEngine engine{log, context, provider, "test"};
     auto result = invoke(engine, "read_process_output",
-                         Json::object({{"output_ref", Json{reference}},
-                                       {"byte_start", Json{JsonNumber{"2"}}}}));
+                         Value::object({{"output_ref", Value{reference}},
+                                        {"byte_start", Value{Number{"2"}}}}));
     if (string_field(result, "output") != "cdef" || read_file(marker) != "X" ||
-        field(result, "output_bytes").number().text != "6" || provider.calls != 0)
+        field(result, "output_bytes").number().text() != "6" || provider.calls != 0)
       throw Error{ErrorCode::corrupt};
     auto partial = invoke(engine, "read_process_output",
-                          Json::object({{"output_ref", Json{timed_reference}}}));
+                          Value::object({{"output_ref", Value{timed_reference}}}));
     if (string_field(partial, "output") != "PARTIAL")
       throw Error{ErrorCode::corrupt};
     // The explorer must expose the actual unknown disposition and causal links,
@@ -456,10 +463,10 @@ void retained_output_test(const std::string &path) {
     bool unknown = false, linked = false;
     const auto end = log.root().fact_count();
     for (std::size_t cursor = 0; cursor < end; cursor += 64) {
-      auto page = log.inspect(
-          Json::object({{"cursor", Json{JsonNumber{std::to_string(cursor)}}},
-                        {"end", Json{JsonNumber{std::to_string(end)}}},
-                        {"count", Json{JsonNumber{"64"}}}}));
+      auto page =
+          log.inspect(Value::object({{"cursor", Value{Number{std::to_string(cursor)}}},
+                                     {"end", Value{Number{std::to_string(end)}}},
+                                     {"count", Value{Number{"64"}}}}));
       for (const auto &row : field(page, "records").array()) {
         const auto *a = row.find("attempt");
         if (a && a->string() == timed_reference) {
@@ -483,7 +490,7 @@ void retained_output_test(const std::string &path) {
       throw Error{ErrorCode::io};
     auto delivered =
         invoke(engine, "rageshake",
-               Json::object({{"observation", Json{"PRIVATE_SUCCESS_OBSERVATION"}}}));
+               Value::object({{"observation", Value{"PRIVATE_SUCCESS_OBSERVATION"}}}));
     if (setenv("PATH", old_path.c_str(), 1) != 0)
       throw Error{ErrorCode::io};
     if (!std::get<bool>(field(delivered, "bead_created").value()) ||
@@ -493,18 +500,18 @@ void retained_output_test(const std::string &path) {
       throw Error{ErrorCode::corrupt};
     auto oversized = invoke(
         engine, "rageshake",
-        Json::object(
-            {{"observation", Json{"bounded"}},
-             {"references", Json::object({{"blob", Json{std::string(65537, 'x')}}})}}));
+        Value::object({{"observation", Value{"bounded"}},
+                       {"references",
+                        Value::object({{"blob", Value{std::string(65537, 'x')}}})}}));
     if (string_field(oversized, "error") != "invalid_range")
       throw Error{ErrorCode::corrupt};
     if (setenv("PATH", "/arco-test-no-bd", 1) != 0)
       throw Error{ErrorCode::io};
     auto complaint =
         invoke(engine, "rageshake",
-               Json::object({{"observation", Json{"PRIVATE_TEST_OBSERVATION"}},
-                             {"references",
-                              Json::object({{"attempt", Json{timed_reference}}})}}));
+               Value::object({{"observation", Value{"PRIVATE_TEST_OBSERVATION"}},
+                              {"references",
+                               Value::object({{"attempt", Value{timed_reference}}})}}));
     if (setenv("PATH", old_path.c_str(), 1) != 0)
       throw Error{ErrorCode::io};
     if (!std::get<bool>(field(complaint, "retained_locally").value()) ||
@@ -518,8 +525,7 @@ void retained_output_test(const std::string &path) {
           e && hex_identity(e->identity.bytes()) == complaint_id) {
         for (const auto dep : fact.event.dependencies) {
           const auto raw = unwrap(root->source(dep));
-          const std::string value{reinterpret_cast<const char *>(raw.data()),
-                                  raw.size()};
+          const std::string value = unwrap(format_value(unwrap(decode_packet(raw))));
           if (value.find("PRIVATE_TEST_OBSERVATION") != std::string::npos &&
               value.find(timed_reference) != std::string::npos)
             captured = true;
@@ -536,7 +542,7 @@ void retained_output_test(const std::string &path) {
       throw Error{ErrorCode::corrupt};
     recovery_engine.validate_restart();
     auto bad = invoke(engine, "read_process_output",
-                      Json::object({{"output_ref", Json{"missing"}}}));
+                      Value::object({{"output_ref", Value{"missing"}}}));
     if (!bad.find("error"))
       throw Error{ErrorCode::corrupt};
   }
@@ -546,9 +552,9 @@ class FlakyProvider final : public CodingProvider {
 public:
   unsigned calls = 0, failures = 1;
   Error fault{ErrorCode::provider_transport, 92};
-  Json first_request;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &capture) override {
+  Value first_request;
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
     if (calls == 1)
       first_request = request;
@@ -563,11 +569,11 @@ public:
               "call\",\"name\":\"write_file\",\"arguments\":\"{}\"}}\n\n");
       throw fault;
     }
-    return Json::object(
-        {{"output", Json{Json::Array{Json::object({{"type", Json{"function_call"}},
-                                                   {"call_id", Json{"accepted"}},
-                                                   {"name", Json{"context_stats"}},
-                                                   {"arguments", Json{"{}"}}})}}}});
+    return Value::object(
+        {{"output", Value{Value::Array{Value::object({{"type", Value{"function_call"}},
+                                                      {"call_id", Value{"accepted"}},
+                                                      {"name", Value{"context_stats"}},
+                                                      {"arguments", Value{"{}"}}})}}}});
   }
 };
 void capacity_warning_test(const std::string &path) {
@@ -588,7 +594,7 @@ void capacity_warning_test(const std::string &path) {
   provider.failures = 0;
   CodingEngine engine{log, context, provider, "test"};
   const std::string filler(*root->journal_usage().remaining_bytes() - 24576, 'x');
-  log.original({"capacity diagnostic filler", filler, Json::object({})});
+  log.original({"capacity diagnostic filler", filler, Value::object({})});
   unsigned warnings = 0;
   engine.status = [&](std::string_view s) {
     if (s.starts_with("audit headroom:") &&
@@ -632,9 +638,9 @@ void retry_tests(const std::string &path) {
     CodingEngine engine{log, context, provider, "test"};
     const auto stats = engine.stats();
     const auto &audit = field(stats, "audit");
-    if (field(audit, "max_file_bytes").number().text != "67108864" ||
-        field(audit, "max_records").number().text != "10000" ||
-        field(audit, "remaining_bytes").number().text.empty())
+    if (field(audit, "max_file_bytes").number().text() != "67108864" ||
+        field(audit, "max_records").number().text() != "10000" ||
+        field(audit, "remaining_bytes").number().text().empty())
       throw Error{ErrorCode::corrupt};
   }
   {
@@ -648,7 +654,7 @@ void retry_tests(const std::string &path) {
     };
     engine.turn({"retry test", program});
     if (provider.calls != 2 || tool_count != 1 ||
-        unwrap(dump_json(Json{context.items()})).find("UNACCEPTED") !=
+        unwrap(dump_json(Value{context.items()})).find("UNACCEPTED") !=
             std::string::npos)
       throw Error{ErrorCode::corrupt};
     std::set<std::string> attempts;
@@ -669,7 +675,7 @@ void retry_tests(const std::string &path) {
         if (!group.empty() && group != current)
           throw Error{ErrorCode::corrupt};
         group = current;
-        if (field(metadata, "ordinal").number().text != std::to_string(requests))
+        if (field(metadata, "ordinal").number().text() != std::to_string(requests))
           throw Error{ErrorCode::corrupt};
       }
       if (string_field(original, "label") == "provider.stream")
@@ -775,14 +781,14 @@ public:
   int calls = 0;
   bool returned = false;
   bool records = false;
-  Json respond(const Json &,
-               const std::function<void(std::string_view)> &capture) override {
+  Value respond(const Value &,
+                const std::function<void(std::string_view)> &capture) override {
     ++calls;
     capture("retained-first-fragment");
     for (int i = 0; i < 500; ++i)
       capture(std::string(records ? 65536 : 120000, 'x'));
     returned = true;
-    return Json::object({{"output", Json{Json::Array{}}}});
+    return Value::object({{"output", Value{Value::Array{}}}});
   }
 };
 void workflow_capacity_test(const std::string &path, bool records) {
@@ -802,8 +808,8 @@ void workflow_capacity_test(const std::string &path, bool records) {
   ExhaustingProvider provider;
   provider.records = records;
   CodingEngine engine{log, context, provider, "test"};
-  context.append({Json::object({{"role", Json{"assistant"}},
-                                {"content", Json{std::string(12000, 'a')}}})},
+  context.append({Value::object({{"role", Value{"assistant"}},
+                                 {"content", Value{std::string(12000, 'a')}}})},
                  "fixture");
   // Actual staged proposal + nested outstanding Lua attempt + streamed refusal.
   bool capacity = false;
@@ -820,7 +826,7 @@ void workflow_capacity_test(const std::string &path, bool records) {
   }
   if (!capacity || provider.calls != 1 || provider.returned ||
       root->state() != JournalWriterState::live || root->protected_settlement() ||
-      context.pending_proposal() != Json{})
+      context.pending_proposal() != Value{})
     throw Error{ErrorCode::corrupt};
   std::size_t unknown = 0;
   bool first = false, lost = false, cancelled = false;
@@ -832,20 +838,20 @@ void workflow_capacity_test(const std::string &path, bool records) {
     if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
       const auto packet = unwrap(read_packet(a->payload));
       if (const auto *label = packet.find("label")) {
-        if (*label == Json{"provider.stream"}) {
+        if (*label == Value{"provider.stream"}) {
           const auto bytes = diagnostic_bytes(*root, packet);
           if (std::string_view{reinterpret_cast<const char *>(bytes.data()),
                                bytes.size()}
                   .starts_with("retained-first-fragment"))
             first = true;
         }
-        if (*label == Json{"capacity.stop"} &&
-            field(field(packet, "metadata"), "unretained_bytes").number().text != "0")
+        if (*label == Value{"capacity.stop"} &&
+            field(field(packet, "metadata"), "unretained_bytes").number().text() != "0")
           lost = true;
       }
       if (const auto *outcome = packet.find("outcome"))
         if (const auto *reason = outcome->find("reason");
-            reason && *reason == Json{"workflow-cancelled"})
+            reason && *reason == Value{"workflow-cancelled"})
           cancelled = true;
     }
   }
@@ -870,9 +876,9 @@ void workflow_process_capacity_test(const std::string &path) {
   UsageProvider provider;
   CodingEngine engine{log, context, provider, "test"};
   const auto marker = path + "/effect";
-  const auto args = Json::object(
-      {{"command", Json{"printf X > '" + marker +
-                        "'; printf FIRST; head -c 2000000 /dev/zero; sleep 20"}}});
+  const auto args = Value::object(
+      {{"command", Value{"printf X > '" + marker +
+                         "'; printf FIRST; head -c 2000000 /dev/zero; sleep 20"}}});
   const auto began = std::chrono::steady_clock::now();
   bool capacity = false;
   try {
@@ -888,9 +894,10 @@ void workflow_process_capacity_test(const std::string &path) {
   bool linked = false, partial = false, unknown = false;
   for (const auto &item : context.items())
     if (const auto *type = item.find("type");
-        type && *type == Json{"function_call_output"})
+        type && *type == Value{"function_call_output"})
       linked = string_field(item, "call_id") == "capacity-exec" &&
-               string_field(item, "output").find("turn_stopped") != std::string::npos;
+               field(item, "output").find("error") &&
+               string_field(field(item, "output"), "error") == "turn_stopped";
   for (const auto &fact : root->committed_facts()) {
     if (const auto *o = std::get_if<AttemptObservationEvent>(&fact.event.body);
         o && o->phase == AttemptPhase::terminal &&
@@ -899,7 +906,7 @@ void workflow_process_capacity_test(const std::string &path) {
     if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         a && a->channel == ApplicationChannel::log) {
       const auto p = unwrap(read_packet(a->payload));
-      if (field(p, "label") == Json{"process.output"})
+      if (field(p, "label") == Value{"process.output"})
         for (const auto ref : fact.event.dependencies) {
           const auto raw = unwrap(root->source(ref));
           partial |=
@@ -967,7 +974,7 @@ void workflow_settlement_limits_test(const std::string &path, bool batch) {
   const JournalHeader h{id<EnvironmentId>(97),
                         id<AuditStreamId>(98),
                         12,
-                        {batch ? 3762U : 3800U, batch ? 3850U : 16384U},
+                        {batch ? 3520U : 3550U, batch ? 3608U : 16384U},
                         std::nullopt};
   auto root =
       unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
@@ -978,11 +985,11 @@ void workflow_settlement_limits_test(const std::string &path, bool batch) {
   UsageProvider provider;
   CodingEngine engine{log, context, provider, "test"};
   for (int i = 0; i < 5; ++i)
-    context.append({Json::object({{"role", Json{"assistant"}},
-                                  {"content", Json{std::string(500, 'x')}}})},
+    context.append({Value::object({{"role", Value{"assistant"}},
+                                   {"content", Value{std::string(500, 'x')}}})},
                    "fixture");
-  context.append({Json::object({{"role", Json{"assistant"}},
-                                {"content", Json{std::string(100, 'y')}}})},
+  context.append({Value::object({{"role", Value{"assistant"}},
+                                 {"content", Value{std::string(100, 'y')}}})},
                  "fixture");
   const auto before = context.items();
   const auto marker = path + "/forbidden";
@@ -1057,8 +1064,9 @@ void workflow_interruption_budget_test(const std::string &path) {
   std::size_t outputs = 0;
   for (const auto &item : context.items())
     if (const auto *type = item.find("type");
-        type && *type == Json{"function_call_output"}) {
-      if (string_field(item, "output").find("turn_interrupted") == std::string::npos)
+        type && *type == Value{"function_call_output"}) {
+      if (field(item, "output").find("error") == nullptr ||
+          string_field(field(item, "output"), "error") != "turn_interrupted")
         throw Error{ErrorCode::corrupt};
       ++outputs;
     }
@@ -1115,32 +1123,45 @@ int main(int argc, char **argv) {
       workflow_capacity_test(std::string{path} + "/workflow-records", true);
       stage = "retry_tests";
       retry_tests(std::string{path} + "/retries");
-      JournalHeader h{id<EnvironmentId>(1), id<AuditStreamId>(2), 3,
-                      {4 * 1024 * 1024, 16 * 1024 * 1024}, std::nullopt};
-      auto root = unwrap(RetainedState::create(
-          std::make_unique<NativeJournalDirectory>(unwrap(NativeJournalDirectory::open(path))),
-          "audit", h, {64 * 1024 * 1024, 10000}));
-      AuditLog log{*root}; ContextStore context{log}; Scripted provider;
+      JournalHeader h{id<EnvironmentId>(1),
+                      id<AuditStreamId>(2),
+                      3,
+                      {4 * 1024 * 1024, 16 * 1024 * 1024},
+                      std::nullopt};
+      auto root =
+          unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(
+                                           unwrap(NativeJournalDirectory::open(path))),
+                                       "audit", h, {64 * 1024 * 1024, 10000}));
+      AuditLog log{*root};
+      ContextStore context{log};
+      Scripted provider;
       provider.path = std::string{path} + "/source.cpp";
       CodingEngine engine{log, context, provider, "test"};
       std::string displayed;
       engine.display = [&](std::string_view bytes) { displayed += bytes; };
       provider.check_preview = [&] {
-        if (!displayed.ends_with("do")) throw Error{ErrorCode::corrupt};
+        if (!displayed.ends_with("do"))
+          throw Error{ErrorCode::corrupt};
       };
       engine.turn({"write a source", read_file("programs/turn.lua")});
       if (provider.calls != 2 || read_file(provider.path) != "int answer = 42;\n")
         throw Error{ErrorCode::corrupt};
       provider.interrupt = true;
       bool stopped = false;
-      try { engine.turn({"cancel", read_file("programs/turn.lua")}); }
-      catch (const Error &e) { stopped = e.code == ErrorCode::interrupted; }
-      if (!stopped || !displayed.ends_with("PARTIAL")) throw Error{ErrorCode::corrupt};
+      try {
+        engine.turn({"cancel", read_file("programs/turn.lua")});
+      } catch (const Error &e) {
+        stopped = e.code == ErrorCode::interrupted;
+      }
+      if (!stopped || !displayed.ends_with("PARTIAL"))
+        throw Error{ErrorCode::corrupt};
       engine.validate_restart();
       class Fragmented final : public CodingProvider {
-        Json respond(const Json &, const std::function<void(std::string_view)> &capture) override {
-          for (unsigned i = 0; i < 100000; ++i) capture("x");
-          return Json::object({{"output", Json{Json::Array{}}}});
+        Value respond(const Value &,
+                      const std::function<void(std::string_view)> &capture) override {
+          for (unsigned i = 0; i < 100000; ++i)
+            capture("x");
+          return Value::object({{"output", Value{Value::Array{}}}});
         }
       } fragmented;
       const auto before = root->committed_facts().size();
@@ -1150,15 +1171,18 @@ int main(int argc, char **argv) {
       const auto facts = root->committed_facts();
       for (std::size_t i = before; i < facts.size(); ++i) {
         const auto *record = std::get_if<ApplicationRecordEvent>(&facts[i].event.body);
-        if (!record || record->channel != ApplicationChannel::log) continue;
+        if (!record || record->channel != ApplicationChannel::log)
+          continue;
         const auto packet = unwrap(read_packet(record->payload));
-        if (string_field(packet, "label") != "provider.stream") continue;
+        if (string_field(packet, "label") != "provider.stream")
+          continue;
         ++blocks;
         if (!facts[i].event.dependencies.empty())
           throw Error{ErrorCode::corrupt};
         captured_bytes += diagnostic_bytes(*root, packet).size();
       }
-      if (blocks != 2 || captured_bytes != 100000) throw Error{ErrorCode::corrupt};
+      if (blocks != 2 || captured_bytes != 100000)
+        throw Error{ErrorCode::corrupt};
       std::cout << "engine: 100000 callbacks -> " << blocks << " diagnostic blocks\n";
       std::filesystem::remove_all(path);
       return 0;
@@ -1311,32 +1335,32 @@ int main(int argc, char **argv) {
         summary.find("123") == std::string::npos ||
         summary.find(std::to_string(usage_provider.bytes)) == std::string::npos)
       throw Error{ErrorCode::corrupt};
-    auto stats = invoke(usage_engine, "context_stats", Json::object({}));
-    if (field(stats, "last_request_bytes").number().text !=
+    auto stats = invoke(usage_engine, "context_stats", Value::object({}));
+    if (field(stats, "last_request_bytes").number().text() !=
             std::to_string(usage_provider.bytes) ||
-        field(field(stats, "usage"), "input_tokens").number().text != "123")
+        field(field(stats, "usage"), "input_tokens").number().text() != "123")
       throw Error{ErrorCode::corrupt};
     usage_provider.usage = false;
     usage_engine.turn({"", "arco.request()"});
-    stats = invoke(usage_engine, "context_stats", Json::object({}));
+    stats = invoke(usage_engine, "context_stats", Value::object({}));
     if (!std::holds_alternative<std::nullptr_t>(field(stats, "usage").value()))
       throw Error{ErrorCode::corrupt};
 
     // Managed publication waits for workflow success, including a proposing tool
     // result.
-    context.append({Json::object({{"role", Json{"assistant"}},
-                                  {"content", Json{"old expendable fact"}}})},
+    context.append({Value::object({{"role", Value{"assistant"}},
+                                   {"content", Value{"old expendable fact"}}})},
                    "managed-engine");
     const auto old_entry =
         string_field(field(context.view(), "entries").array().back(), "id");
-    const auto args = Json::object(
-        {{"proposal", Json::object({{"base", Json{context.head()}},
-                                    {"mode", Json{"archive"}},
-                                    {"ids", Json{Json::Array{Json{old_entry}}}},
-                                    {"reason", Json{"engine direct test"}},
-                                    {"source", Json{"explicit"}}})}});
+    const auto args = Value::object(
+        {{"proposal", Value::object({{"base", Value{context.head()}},
+                                     {"mode", Value{"archive"}},
+                                     {"ids", Value{Value::Array{Value{old_entry}}}},
+                                     {"reason", Value{"engine direct test"}},
+                                     {"source", Value{"explicit"}}})}});
     const auto source = "local r=arco.call('context_manage',arco.json.decode(" +
-                        unwrap(dump_json(Json{unwrap(dump_json(args))})) +
+                        unwrap(dump_json(Value{unwrap(dump_json(args))})) +
                         ")); assert(r.staged); "
                         "local v=arco.context(); assert(v.entries[#v.entries].id=='" +
                         old_entry + "')";
@@ -1344,9 +1368,9 @@ int main(int argc, char **argv) {
     for (const auto &entry : [&] { return field(context.view(), "entries").array(); }())
       if (string_field(entry, "id") == old_entry)
         throw Error{ErrorCode::corrupt};
-    context.append(
-        {Json::object({{"role", Json{"assistant"}}, {"content", Json{"cancel fact"}}})},
-        "managed-engine");
+    context.append({Value::object({{"role", Value{"assistant"}},
+                                   {"content", Value{"cancel fact"}}})},
+                   "managed-engine");
     const auto cancel_entry =
         string_field(field(context.view(), "entries").array().back(), "id");
     const auto failure_source =
@@ -1376,22 +1400,22 @@ int main(int argc, char **argv) {
 
     // Drive actual provider response append -> tool call -> result append ->
     // settlement.
-    context.append({Json::object({{"role", Json{"assistant"}},
-                                  {"content", Json{"provider-selected-away"}}})},
+    context.append({Value::object({{"role", Value{"assistant"}},
+                                   {"content", Value{"provider-selected-away"}}})},
                    "managed-provider");
     const auto provider_discard =
         string_field(field(context.view(), "entries").array().back(), "id");
-    Json::Array selected_ids;
+    Value::Array selected_ids;
     const auto provider_view = context.view();
     for (const auto &candidate : field(provider_view, "entries").array())
       if (string_field(candidate, "id") != provider_discard)
         selected_ids.push_back(field(candidate, "id"));
     ManagedToolProvider managed_provider;
     managed_provider.proposal =
-        Json::object({{"mode", Json{"select"}},
-                      {"ids", Json{selected_ids}},
-                      {"reason", Json{"provider-order direct oracle"}},
-                      {"source", Json{"explicit selection"}}});
+        Value::object({{"mode", Value{"select"}},
+                       {"ids", Value{selected_ids}},
+                       {"reason", Value{"provider-order direct oracle"}},
+                       {"source", Value{"explicit selection"}}});
     CodingEngine managed_engine{log, context, managed_provider, "test"};
     managed_engine.turn({"", read_file("programs/turn.lua")});
     if (managed_provider.calls != 3)
@@ -1401,22 +1425,21 @@ int main(int argc, char **argv) {
       if (string_field(candidate, "id") == provider_discard)
         throw Error{ErrorCode::corrupt};
     if (string_field(context.items().back(), "call_id") != "managed-second" ||
-        string_field(context.items()[context.items().size() - 3], "output")
-                .find("staged") == std::string::npos)
+        !field(context.items()[context.items().size() - 3], "output").find("staged"))
       throw Error{ErrorCode::corrupt};
     managed_engine.validate_restart();
     if (string_field(context.items()[context.items().size() - 3], "call_id") !=
         "managed-real")
       throw Error{ErrorCode::corrupt};
     // Request2 was still in the same workflow: old bytes + proposing exchange remain.
-    if (unwrap(dump_json(Json{managed_provider.last_input}))
+    if (unwrap(dump_json(Value{managed_provider.last_input}))
                 .find("provider-selected-away") == std::string::npos ||
         string_field(managed_provider.last_input.back(), "call_id") != "managed-second")
       throw Error{ErrorCode::corrupt};
     const auto expected_compacted_input = context.items();
     managed_engine.turn({"", "arco.request()"});
     if (managed_provider.last_input != expected_compacted_input ||
-        unwrap(dump_json(Json{managed_provider.last_input}))
+        unwrap(dump_json(Value{managed_provider.last_input}))
                 .find("provider-selected-away") != std::string::npos)
       throw Error{ErrorCode::corrupt};
 

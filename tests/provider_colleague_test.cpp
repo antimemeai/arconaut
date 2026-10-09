@@ -9,22 +9,22 @@ void check(bool b, const char *why) {
   if (!b)
     throw std::runtime_error{why};
 }
-Json make(std::string provider) {
-  return Json::object(
-      {{"request_id", Json{"test"}},
-       {"from", Json{"main"}},
-       {"to", Json{"peer"}},
-       {"provider", Json{std::move(provider)}},
-       {"model", Json{"selected-model"}},
-       {"task", Json{"Review selected code"}},
+Value make(std::string provider) {
+  return Value::object(
+      {{"request_id", Value{"test"}},
+       {"from", Value{"main"}},
+       {"to", Value{"peer"}},
+       {"provider", Value{std::move(provider)}},
+       {"model", Value{"selected-model"}},
+       {"task", Value{"Review selected code"}},
        {"context",
-        Json{Json::Array{Json::object(
-            {{"id", Json{"code"}}, {"text", Json{"selected-source-only"}}})}}},
-       {"profile", Json::object({{"name", Json{"test"}},
-                                 {"provenance", Json{"test"}},
-                                 {"timeout_seconds", Json{JsonNumber{"10"}}},
-                                 {"tools", Json{"none"}},
-                                 {"requests", Json{JsonNumber{"1"}}}})}});
+        Value{Value::Array{Value::object(
+            {{"id", Value{"code"}}, {"text", Value{"selected-source-only"}}})}}},
+       {"profile", Value::object({{"name", Value{"test"}},
+                                  {"provenance", Value{"test"}},
+                                  {"timeout_seconds", Value{Number{"10"}}},
+                                  {"tools", Value{"none"}},
+                                  {"requests", Value{Number{"1"}}}})}});
 }
 int main() {
   char directory[] = "/tmp/blackbird-provider-colleague-XXXXXX";
@@ -91,7 +91,7 @@ int main() {
       };
       const auto reply = call_colleague(
           make(provider), capture,
-          [&](const Json &prepared, const ColleagueCapture &sink) {
+          [&](const Value &prepared, const ColleagueCapture &sink) {
             return native_colleague_transport(prepared, sink, {}, &config);
           });
       check(reply.find("status")->string() == "completed", "native colleague failed");
@@ -106,7 +106,7 @@ int main() {
       };
       const auto reply = call_colleague(
           make("mimo"), capture,
-          [&](const Json &prepared, const ColleagueCapture &sink) {
+          [&](const Value &prepared, const ColleagueCapture &sink) {
             return native_colleague_transport(prepared, sink, {}, &config);
           });
       check(reply.find("status")->string() == "failed", "auth rejection unknown");
@@ -127,7 +127,7 @@ int main() {
       throw Error{ErrorCode::provider_transport, 28};
     };
     const auto timeout = call_colleague(
-        make("mimo"), capture, [&](const Json &p, const ColleagueCapture &sink) {
+        make("mimo"), capture, [&](const Value &p, const ColleagueCapture &sink) {
           return native_colleague_transport(p, sink, {}, &config);
         });
     check(timeout.find("remote_disposition")->string() == "unknown",

@@ -3,28 +3,28 @@
 #include <memory>
 #include <vector>
 namespace blackbird {
-using ParticipantTransport = std::function<Json(const Json &, const ColleagueCapture &,
-                                                const std::function<bool()> &)>;
+using ParticipantTransport = std::function<Value(
+    const Value &, const ColleagueCapture &, const std::function<bool()> &)>;
 // One owner calls controls/drain. Workers only touch their guarded state and
 // bounded capture queue; admission is retained by the owner before launch/send.
 class Participants {
 public:
-  using Retain = std::function<void(std::string_view, std::string_view, const Json &)>;
-  using Save = std::function<void(const Json &)>;
-  using Publish = std::function<void(const Json &)>;
-  Participants(const Json &saved, Retain retain, Save save, Publish publish = {});
+  using Retain = std::function<void(std::string_view, std::string_view, const Value &)>;
+  using Save = std::function<void(const Value &)>;
+  using Publish = std::function<void(const Value &)>;
+  Participants(const Value &saved, Retain retain, Save save, Publish publish = {});
   ~Participants();
   Participants(const Participants &) = delete;
   Participants &operator=(const Participants &) = delete;
-  Json configure(const Json &arguments);
-  Json start(std::string id, const Json &arguments,
-             const ParticipantTransport &transport);
-  Json read(const Json &arguments = Json::object({}));
-  Json send(const Json &arguments);
-  Json cancel(const Json &arguments);
-  Json await(const Json &arguments, const std::function<bool()> &cancelled = {});
-  Json join(const Json &arguments, const std::function<bool()> &cancelled = {});
-  Json archive(const Json &arguments);
+  Value configure(const Value &arguments);
+  Value start(std::string id, const Value &arguments,
+              const ParticipantTransport &transport);
+  Value read(const Value &arguments = Value::object({}));
+  Value send(const Value &arguments);
+  Value cancel(const Value &arguments);
+  Value await(const Value &arguments, const std::function<bool()> &cancelled = {});
+  Value join(const Value &arguments, const std::function<bool()> &cancelled = {});
+  Value archive(const Value &arguments);
   void drain();
   bool active() const;
   void shutdown();

@@ -1,4 +1,5 @@
 #include "blackbird/context.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/saved_state.hpp"
 #include "blackbird/session.hpp"
 #include <filesystem>
@@ -103,8 +104,9 @@ int main() {
         unwrap(NativeJournalDirectory::open(path)));
   };
   auto directory = [&]() { return std::make_unique<FaultDirectory>(native(), fault); };
-  const auto history_query =
-      Json::object({{"kind", Json{"history"}}, {"limit", Json{JsonNumber{"65536"}}}});
+  const auto history_query = Value::object({{"kind", Value{"history"}},
+                                            {"format", Value{"json"}},
+                                            {"limit", Value{Number{"65536"}}}});
   try {
     // Missing derived state is refused before automatic replay when the caller
     // selects a bounded reopen; explicit replay still restores the audit.
@@ -112,7 +114,7 @@ int main() {
       auto root = unwrap(RetainedState::create(directory(), "bounded", h, cap));
       AuditLog log{*root};
       log.record(ApplicationChannel::program,
-                 Json::object({{"label", Json{"bounded-test"}}}));
+                 Value::object({{"label", Value{"bounded-test"}}}));
     }
     {
       const auto audit_bytes = [&]() {
@@ -130,32 +132,32 @@ int main() {
       unwrap(allowed->confirm_recovery());
       CHECK(!allowed->compact_recovery() && allowed->fact_count() > 0);
     }
-    Json view, originals, history, programs;
+    Value view, originals, history, programs;
     std::string archived;
     std::uint64_t highwater = 0;
     {
       auto root = unwrap(RetainedState::create(directory(), "audit", h, cap));
       AuditLog log{*root};
       ContextStore ctx{log};
-      ctx.append({Json::object({{"role", Json{"user"}},
-                                {"content", Json{"exact old original"}}})},
+      ctx.append({Value::object({{"role", Value{"user"}},
+                                 {"content", Value{"exact old original"}}})},
                  "test");
       archived = string_field(ctx.view().find("entries")->array().front(), "id");
-      CHECK(field(ctx.edit(Json::object(
-                      {{"base", Json{ctx.head()}}, {"entries", Json{Json::Array{}}}})),
-                  "accepted") == Json{true});
-      ctx.append(
-          {Json::object({{"role", Json{"assistant"}}, {"content", Json{"current"}}})},
-          "test");
+      CHECK(field(ctx.edit(Value::object({{"base", Value{ctx.head()}},
+                                          {"entries", Value{Value::Array{}}}})),
+                  "accepted") == Value{true});
+      ctx.append({Value::object(
+                     {{"role", Value{"assistant"}}, {"content", Value{"current"}}})},
+                 "test");
       for (unsigned i = 0; i < 45; ++i)
-        ctx.edit(Json::object(
-            {{"base", Json{"stale"}}, {"candidate", Json{std::string(1024, 'x')}}}));
+        ctx.edit(Value::object(
+            {{"base", Value{"stale"}}, {"candidate", Value{std::string(1024, 'x')}}}));
       SessionStore session{log};
       session.save({"model-test", "high", "native"});
       session.restart("exact resume note");
       CHECK(session.resume(ctx));
       CHECK(!session.resume(ctx));
-      programs = Json{root->current_programs()};
+      programs = Value{root->current_programs()};
       unwrap(ctx.checkpoint());
       CHECK(root->saved_state() && root->saved_state()->unresolved.empty());
       CHECK(std::filesystem::file_size(std::string(path) + "/audit.state." +
@@ -184,7 +186,7 @@ int main() {
       ContextStore ctx{log};
       CHECK(ctx.view() == view);
       CHECK(root->issuer_counter() == highwater);
-      CHECK(Json{root->current_programs()} == programs);
+      CHECK(Value{root->current_programs()} == programs);
       CHECK(ctx.originals() == originals && ctx.inspect(history_query) == history);
       SessionStore session{log};
       CHECK(session.settings().model == "model-test");
@@ -199,7 +201,7 @@ int main() {
             view.find("entries")->array().size() + 1);
       unwrap(ctx.checkpoint());
       // Accepted uncheckpointed suffix uses boundary-limited disk original predicates.
-      ctx.append({Json::object({{"role", Json{"user"}}, {"content", Json{"tail"}}})},
+      ctx.append({Value::object({{"role", Value{"user"}}, {"content", Value{"tail"}}})},
                  "tail");
       view = ctx.view();
       originals = ctx.originals();
@@ -250,12 +252,12 @@ int main() {
       AuditLog log{*root};
       ContextStore ctx{log};
       log.record(ApplicationChannel::program,
-                 Json::object({{"label", Json{"workflow-config-staged-v1"}},
-                               {"model", Json{"must-not-activate"}}}));
+                 Value::object({{"label", Value{"workflow-config-staged-v1"}},
+                                {"model", Value{"must-not-activate"}}}));
       log.record(ApplicationChannel::program,
-                 Json::object({{"label", Json{"workflow-config-failed-v1"}},
-                               {"model", Json{"must-not-activate"}}}));
-      CHECK(Json{root->current_programs()} == programs);
+                 Value::object({{"label", Value{"workflow-config-failed-v1"}},
+                                {"model", Value{"must-not-activate"}}}));
+      CHECK(Value{root->current_programs()} == programs);
       const ImmutableBytes input{std::byte{0}, std::byte{255}, std::byte{10}};
       const std::array events{
           RetainedEvent{{},
@@ -314,23 +316,23 @@ int main() {
             unwrap(NativeJournalDirectory::open(dirpath)));
       };
       std::string first;
-      Json expected;
+      Value expected;
       std::size_t count = 0;
       {
         auto root = unwrap(RetainedState::create(dir(), "audit", h, cap));
         AuditLog log{*root};
         ContextStore ctx{log};
         (void)session_identity(log);
-        log.record(
-            ApplicationChannel::program,
-            Json::object({{"label", Json{"station.profile"}}, {"adapter", Json{""}}}));
-        ctx.append({Json::object(
-                       {{"role", Json{"user"}}, {"content", Json{"kept original"}}})},
+        log.record(ApplicationChannel::program,
+                   Value::object(
+                       {{"label", Value{"station.profile"}}, {"adapter", Value{""}}}));
+        ctx.append({Value::object(
+                       {{"role", Value{"user"}}, {"content", Value{"kept original"}}})},
                    "compact-test");
         first = string_field(ctx.view().find("entries")->array()[0], "id");
         unwrap(ctx.checkpoint());
-        ctx.append({Json::object(
-                       {{"role", Json{"user"}}, {"content", Json{"accepted tail"}}})},
+        ctx.append({Value::object(
+                       {{"role", Value{"user"}}, {"content", Value{"accepted tail"}}})},
                    "suffix");
         expected = ctx.view();
         count = root->fact_count();
@@ -348,8 +350,8 @@ int main() {
         // Ledger-only writes advance their accelerator without a context edit.
         for (unsigned i = 0; i < 300; ++i)
           log.record(ApplicationChannel::program,
-                     Json::object({{"label", Json{"session.settings"}},
-                                   {"n", Json{JsonNumber{std::to_string(i)}}}}));
+                     Value::object({{"label", Value{"session.settings"}},
+                                    {"n", Value{Number{std::to_string(i)}}}}));
         CHECK(root->tail_facts().size() < 128);
         unwrap(ctx.checkpoint());
         // Persistent accelerator failure refuses fresh work at a finite suffix.
@@ -362,7 +364,8 @@ int main() {
           identity[0] = std::byte{0xff};
           identity[14] = static_cast<std::byte>(i >> 8);
           identity[15] = static_cast<std::byte>(i & 255);
-          const std::string payload = "{\"label\":\"session.settings\"}";
+          const std::string payload = unwrap(encode_packet_string(
+              Value::object({{"label", Value{"session.settings"}}})));
           const ByteView bytes{reinterpret_cast<const std::byte *>(payload.data()),
                                payload.size()};
           const std::array events{
@@ -386,8 +389,8 @@ int main() {
         root->set_maintenance_checkpoint([&ctx] { return ctx.checkpoint(); });
         count = root->fact_count();
         const auto old = root->history_snapshot();
-        ctx.append({Json::object({{"role", Json{"user"}},
-                                  {"content", Json{"live after reopen"}}})},
+        ctx.append({Value::object({{"role", Value{"user"}},
+                                   {"content", Value{"live after reopen"}}})},
                    "new");
         const auto last = root->fact_count() - 1;
         CHECK(unwrap(root->fact(last)).evidence == RetainedEvidence::live);
@@ -399,7 +402,7 @@ int main() {
           bool denied = false;
           try {
             log.record(ApplicationChannel::program,
-                       Json::object({{"label", Json{"ordinary-capacity-probe"}}}));
+                       Value::object({{"label", Value{"ordinary-capacity-probe"}}}));
           } catch (const Error &error) {
             denied = error.code == ErrorCode::capacity;
           }
@@ -409,8 +412,8 @@ int main() {
               RetainedEvidence::live);
         CHECK(old.count == count &&
               unwrap(old.read(count - 1)).evidence == RetainedEvidence::live);
-        const auto removed = ctx.edit(Json::object(
-            {{"base", Json{ctx.head()}}, {"entries", Json{Json::Array{}}}}));
+        const auto removed = ctx.edit(Value::object(
+            {{"base", Value{ctx.head()}}, {"entries", Value{Value::Array{}}}}));
         (void)removed;
         ctx.restore(first);
         CHECK(string_field(ctx.items()[0], "content") == "kept original");
@@ -429,8 +432,8 @@ int main() {
         CHECK(ctx.view() == expected && root->fact_count() == count);
         CHECK(unwrap(root->fact(count - 1)).evidence == RetainedEvidence::recovered);
         log.record(ApplicationChannel::program,
-                   Json::object({{"label", Json{"station.control"}},
-                                 {"command", Json{"pause"}}}));
+                   Value::object({{"label", Value{"station.control"}},
+                                  {"command", Value{"pause"}}}));
         unwrap(ctx.checkpoint());
       }
       {

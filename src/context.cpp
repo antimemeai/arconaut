@@ -1,4 +1,6 @@
 #include "blackbird/context.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/saved_state.hpp"
 #include <algorithm>
 #include <charconv>
@@ -8,11 +10,16 @@
 #include <set>
 
 namespace blackbird {
-Result<Json> read_packet(const ImmutableBytes &bytes, JsonLimits limits) {
-  if (bytes.size() > limits.bytes) return Result<Json>::failure({ErrorCode::capacity});
+Result<Value> read_packet(const ImmutableBytes &bytes, ValueLimits limits) {
+  if (bytes.size() > limits.bytes)
+    return Result<Value>::failure({ErrorCode::capacity});
   auto data = bytes.read();
-  if (!data.has_value()) return Result<Json>::failure(data.error());
+  if (!data.has_value())
+    return Result<Value>::failure(data.error());
   return decode_packet(data.value(), limits);
+}
+Result<Value> read_application_packet(const ApplicationRecordEvent &record) {
+  return read_packet(record.payload);
 }
 std::string hex_identity(const IdentityBytes &bytes) {
   constexpr char digits[] = "0123456789abcdef";
@@ -25,13 +32,13 @@ std::string hex_identity(const IdentityBytes &bytes) {
   }
   return out;
 }
-const Json &field(const Json &value, std::string_view name) {
+const Value &field(const Value &value, std::string_view name) {
   const auto *f = value.find(name);
   if (f == nullptr)
     throw Error{ErrorCode::corrupt};
   return *f;
 }
-const std::string &string_field(const Json &value, std::string_view name) {
+const std::string &string_field(const Value &value, std::string_view name) {
   const auto &f = field(value, name);
   const auto *s = std::get_if<std::string>(&f.value());
   if (s == nullptr)
@@ -39,11 +46,8 @@ const std::string &string_field(const Json &value, std::string_view name) {
   return *s;
 }
 namespace {
-std::vector<std::byte> bytes(std::string_view s) {
-  auto view = std::as_bytes(std::span{s.data(), s.size()});
-  return {view.begin(), view.end()};
-}
-bool accepted(const Json &packet) {
+
+bool accepted(const Value &packet) {
   const auto &f = field(packet, "accepted");
   const auto *b = std::get_if<bool>(&f.value());
   if (b == nullptr)
@@ -51,21 +55,21 @@ bool accepted(const Json &packet) {
   return *b;
 }
 } // namespace
-std::string AuditLog::record(ApplicationChannel channel, const Json &packet) {
+std::string AuditLog::record(ApplicationChannel channel, const Value &packet) {
   auto identity = issue();
   record(identity, channel, packet);
   return hex_identity(identity.bytes());
 }
 void AuditLog::record(ApplicationRecordId identity, ApplicationChannel channel,
-                      const Json &packet) {
-  const auto serialized = channel == ApplicationChannel::context
-      ? bytes(unwrap(dump_json(packet))) : ImmutableBytes{unwrap(encode_packet(packet))};
+                      const Value &packet) {
+  const ImmutableBytes serialized{unwrap(encode_packet(packet))};
   (void)unwrap(
       root_.submit({{}, ApplicationRecordEvent{identity, channel, serialized}}));
 }
-void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context_packet,
-                               const Json &program_packet) {
-  if (program_packet == Json{}) {
+void AuditLog::record_boundary(ApplicationRecordId identity,
+                               const Value &context_packet,
+                               const Value &program_packet) {
+  if (program_packet == Value{}) {
     record(identity, ApplicationChannel::context, context_packet);
     return;
   }
@@ -73,7 +77,7 @@ void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context
   const std::array<RetainedEvent, 2> events{
       RetainedEvent{{},
                     ApplicationRecordEvent{identity, ApplicationChannel::context,
-                                           bytes(unwrap(dump_json(context_packet)))}},
+                                           unwrap(encode_packet(context_packet))}},
       RetainedEvent{{},
                     ApplicationRecordEvent{program_identity,
                                            ApplicationChannel::program,
@@ -89,10 +93,10 @@ void AuditLog::retain_program(std::string_view source,
     throw Error{ErrorCode::overflow};
   const auto identity = hex_identity(generation.bytes());
   const auto capture =
-      Json::object({{"label", Json{"program.source"}},
-                    {"metadata", Json::object({{"generation", Json{identity}}})}});
-  const auto effective = Json::object(
-      {{"generation", Json{identity}}, {"activation", Json{"turn-boundary"}}});
+      Value::object({{"label", Value{"program.source"}},
+                     {"metadata", Value::object({{"generation", Value{identity}}})}});
+  const auto effective = Value::object(
+      {{"generation", Value{identity}}, {"activation", Value{"turn-boundary"}}});
   const auto raw = std::as_bytes(std::span{source.data(), source.size()});
   const std::array<RetainedEvent, 2> events{
       RetainedEvent{{SourceReference{cursor.journal, cursor.sequence + 1}},
@@ -108,8 +112,8 @@ std::string AuditLog::original(OriginalCapture capture) {
   const auto raw = capture.bytes;
   auto metadata = std::move(capture.metadata);
   auto identity = issue();
-  auto packet = Json::object(
-      {{"label", Json{std::string{label}}}, {"metadata", std::move(metadata)}});
+  auto packet = Value::object(
+      {{"label", Value{std::string{label}}}, {"metadata", std::move(metadata)}});
   if (label == "provider.stream") {
     const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
                              std::chrono::system_clock::now().time_since_epoch())
@@ -123,13 +127,13 @@ std::string AuditLog::original(OriginalCapture capture) {
     auto stored = root_.store_diagnostic(
         filename, std::as_bytes(std::span{raw.data(), raw.size()}), now);
     auto &details = packet.object()[1].second.object();
-    details.emplace_back("diagnostic_file", Json{filename});
-    details.emplace_back("expires_at", Json{JsonNumber{std::to_string(expires)}});
-    details.emplace_back("bytes", Json{JsonNumber{std::to_string(raw.size())}});
-    details.emplace_back("available", Json{stored.has_value()});
+    details.emplace_back("diagnostic_file", Value{filename});
+    details.emplace_back("expires_at", Value{Number{expires}});
+    details.emplace_back("bytes", Value{Number{raw.size()}});
+    details.emplace_back("available", Value{stored.has_value()});
     if (!stored.has_value())
       details.emplace_back("storage_error",
-                           Json{std::string{error_name(stored.error().code)}});
+                           Value{std::string{error_name(stored.error().code)}});
     record(identity, ApplicationChannel::log, packet);
     return hex_identity(identity.bytes());
   }
@@ -144,8 +148,8 @@ std::string AuditLog::original(OriginalCapture capture) {
   (void)unwrap(root_.append(cursor, std::span{&source, 1}, std::span{&event, 1}));
   return hex_identity(identity.bytes());
 }
-bool ContextStore::valid_entries(const Json &entries) const {
-  const auto *array = std::get_if<Json::Array>(&entries.value());
+bool ContextStore::valid_entries(const Value &entries) const {
+  const auto *array = std::get_if<Value::Array>(&entries.value());
   if (array == nullptr)
     return false;
   std::set<std::string> ids;
@@ -154,7 +158,7 @@ bool ContextStore::valid_entries(const Json &entries) const {
     const auto *item = entry.find("item");
     if (id == nullptr || item == nullptr ||
         !std::holds_alternative<std::string>(id->value()) ||
-        !std::holds_alternative<Json::Object>(item->value()))
+        !std::holds_alternative<Value::Object>(item->value()))
       return false;
     if ((!originals_.contains(id->string()) && !original_entry(id->string())) ||
         !ids.insert(id->string()).second)
@@ -166,10 +170,10 @@ std::string read_text(const ImmutableBytes &bytes) {
   const auto owned = unwrap(bytes.read());
   return std::string(reinterpret_cast<const char *>(owned.data()), owned.size());
 }
-ContextStore::Original::Original(const Json &entry)
-    : payload(bytes(unwrap(dump_json(entry)))), id(string_field(entry, "id")) {}
-Json ContextStore::Original::entry() const {
-  const auto decoded = unwrap(parse_json(read_text(payload)));
+ContextStore::Original::Original(const Value &entry)
+    : payload(unwrap(encode_packet(entry))), id(string_field(entry, "id")) {}
+Value ContextStore::Original::entry() const {
+  const auto decoded = unwrap(read_packet(payload));
   if (!packet)
     return decoded;
   const auto &fresh = field(decoded, "originals").array();
@@ -178,13 +182,14 @@ Json ContextStore::Original::entry() const {
   return fresh[index];
 }
 namespace {
-template <class T>
-void reserve_append(std::vector<T> &values, std::size_t count) {
-  if (count > values.max_size() - values.size()) throw Error{ErrorCode::capacity};
+template <class T> void reserve_append(std::vector<T> &values, std::size_t count) {
+  if (count > values.max_size() - values.size())
+    throw Error{ErrorCode::capacity};
   const auto needed = values.size() + count;
   if (needed > values.capacity()) {
     const auto growth = values.capacity() > values.max_size() / 2
-                            ? values.max_size() : values.capacity() * 2;
+                            ? values.max_size()
+                            : values.capacity() * 2;
     values.reserve(std::max(needed, growth));
   }
 }
@@ -205,9 +210,9 @@ void visit_context_records(const RetainedState::FactHistory &history, Visitor vi
   }
 }
 } // namespace
-Json::Array ContextStore::captured_entries() const {
-  Json::Array result;
-  visit_context_records(historical_, [&](const Json &packet) {
+Value::Array ContextStore::captured_entries() const {
+  Value::Array result;
+  visit_context_records(historical_, [&](const Value &packet) {
     if (!accepted(packet))
       return;
     if (const auto *fresh = packet.find("originals"))
@@ -222,7 +227,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
   if (restore_saved)
     if (const auto *saved = log.root().saved_state()) {
       try {
-        if (field(saved->context, "version").number().text != "1")
+        if (field(saved->context, "version").number().text() != "1")
           throw Error{ErrorCode::corrupt};
         head_ = string_field(saved->context, "base");
         if (head_.size() != 32)
@@ -232,7 +237,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
           if (!originals_.emplace(string_field(entry, "id"), Original{entry}).second)
             throw Error{ErrorCode::corrupt};
         }
-        if (!valid_entries(Json{entries_}))
+        if (!valid_entries(Value{entries_}))
           throw Error{ErrorCode::corrupt};
         boundary = saved->boundary.sequence;
         archive_loaded_ = false;
@@ -255,7 +260,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
       continue;
     constexpr std::array<std::string_view, 1> omitted{"candidate"};
     const auto packet =
-        unwrap(parse_json_projection(read_text(record->payload), omitted));
+        unwrap(decode_packet_projection(unwrap(record->payload.read()), omitted));
     const auto revision = hex_identity(record->identity.bytes());
     if (string_field(packet, "revision") != revision ||
         string_field(packet, "observed") != head_)
@@ -269,7 +274,7 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
         throw Error{ErrorCode::corrupt};
       if (op == "append" || op == "managed") {
         const auto &fresh = field(packet, "originals");
-        if (!std::holds_alternative<Json::Array>(fresh.value()))
+        if (!std::holds_alternative<Value::Array>(fresh.value()))
           throw Error{ErrorCode::corrupt};
         std::size_t ordinal = 0;
         for (const auto &entry : fresh.array()) {
@@ -281,16 +286,19 @@ ContextStore::ContextStore(AuditLog &log, bool restore_saved) : log_(log) {
         }
       }
       if (const auto *format = packet.find("format")) {
-        if (op != "append" || *format != Json{"append-delta-v1"} || packet.find("entries"))
+        if (op != "append" || *format != Value{"append-delta-v1"} ||
+            packet.find("entries"))
           throw Error{ErrorCode::corrupt};
         auto next = entries_;
         const auto &fresh = field(packet, "originals").array();
         next.insert(next.end(), fresh.begin(), fresh.end());
-        if (!valid_entries(Json{next})) throw Error{ErrorCode::corrupt};
+        if (!valid_entries(Value{next}))
+          throw Error{ErrorCode::corrupt};
         entries_.swap(next);
       } else {
         const auto &entries = field(packet, "entries");
-        if (!valid_entries(entries)) throw Error{ErrorCode::corrupt};
+        if (!valid_entries(entries))
+          throw Error{ErrorCode::corrupt};
         entries_ = entries.array();
       }
       head_ = revision;
@@ -306,7 +314,7 @@ ContextStore::~ContextStore() {
   if (!root_lifetime_.expired())
     log_.root().set_maintenance_checkpoint({});
 }
-std::optional<Json> ContextStore::original_entry(std::string_view id) const {
+std::optional<Value> ContextStore::original_entry(std::string_view id) const {
   if (const auto found = originals_.find(std::string{id}); found != originals_.end())
     return found->second.entry();
   if (archive_loaded_ || !log_.root().saved_state())
@@ -354,7 +362,7 @@ std::optional<Json> ContextStore::original_entry(std::string_view id) const {
 }
 Result<void> ContextStore::checkpoint() {
   try {
-    Json::Array live;
+    Value::Array live;
     for (const auto &entry : entries_) {
       const auto found = original_entry(string_field(entry, "id"));
       if (!found)
@@ -362,10 +370,10 @@ Result<void> ContextStore::checkpoint() {
       live.push_back(*found);
     }
     auto result = log_.root().save_current_state(
-        Json::object({{"version", Json{JsonNumber{"1"}}},
-                      {"base", Json{head_}},
-                      {"entries", Json{entries_}},
-                      {"live_originals", Json{std::move(live)}}}));
+        Value::object({{"version", Value{Number{"1"}}},
+                       {"base", Value{head_}},
+                       {"entries", Value{entries_}},
+                       {"live_originals", Value{std::move(live)}}}));
     if (result.has_value()) {
       historical_ = log_.root().history_snapshot();
       // Published originals are now addressable through the owned archive.
@@ -397,25 +405,27 @@ void ContextStore::maybe_checkpoint() {
        cursor.end_offset - saved->boundary.end_offset >= 4 * 1024 * 1024))
     (void)checkpoint(); // derived accelerator failure never undoes an audit commit
 }
-Json ContextStore::view() const {
-  return Json::object({{"base", Json{head_}}, {"entries", Json{entries_}}});
+Value ContextStore::view() const {
+  return Value::object({{"base", Value{head_}}, {"entries", Value{entries_}}});
 }
-Json ContextStore::stats() const {
-  auto number = [](std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; };
-  Json::Array sizes;
+Value ContextStore::stats() const {
+  auto number = [](std::size_t n) { return Value{Number{n}}; };
+  Value::Array sizes;
   for (const auto &entry : entries_)
-    sizes.push_back(Json::object(
+    sizes.push_back(Value::object(
         {{"id", field(entry, "id")},
-         {"item_bytes", number(unwrap(dump_json(field(entry, "item"))).size())}}));
-  return Json::object({{"revision", Json{head_}},
-                       {"entry_count", number(entries_.size())},
-                       {"input_bytes", number(unwrap(dump_json(Json{items()})).size())},
-                       {"view_bytes", number(unwrap(dump_json(view())).size())},
-                       {"entries", Json{std::move(sizes)}},
-                       {"units", Json{"serialized UTF-8 JSON bytes; not tokens"}}});
+         {"item_bytes",
+          number(unwrap(encode_packet_string(field(entry, "item"))).size())}}));
+  return Value::object(
+      {{"revision", Value{head_}},
+       {"entry_count", number(entries_.size())},
+       {"input_bytes", number(unwrap(encode_packet_string(Value{items()})).size())},
+       {"view_bytes", number(unwrap(encode_packet_string(view())).size())},
+       {"entries", Value{std::move(sizes)}},
+       {"units", Value{"native binary packet bytes; not tokens"}}});
 }
-Json::Array ContextStore::items() const {
-  Json::Array items;
+Value::Array ContextStore::items() const {
+  Value::Array items;
   items.reserve(entries_.size());
   for (const auto &entry : entries_)
     items.push_back(field(entry, "item"));
@@ -427,20 +437,20 @@ void seed_hex(std::string_view value) {
       value.find_first_not_of("0123456789abcdef") != std::string_view::npos)
     throw Error{ErrorCode::invalid_range};
 }
-std::uint64_t seed_number(const Json &value) {
-  const auto *n = std::get_if<JsonNumber>(&value.value());
-  if (!n || n->text.empty())
+std::uint64_t seed_number(const Value &value) {
+  const auto *n = std::get_if<Number>(&value.value());
+  if (!n || n->text().empty())
     throw Error{ErrorCode::invalid_range};
+  const auto digits = n->text();
   std::uint64_t number = 0;
-  const auto r =
-      std::from_chars(n->text.data(), n->text.data() + n->text.size(), number);
-  if (r.ec != std::errc{} || r.ptr != n->text.data() + n->text.size())
+  const auto r = std::from_chars(digits.data(), digits.data() + digits.size(), number);
+  if (r.ec != std::errc{} || r.ptr != digits.data() + digits.size())
     throw Error{ErrorCode::invalid_range};
   return number;
 }
 } // namespace
-void ContextStore::validate_successor_seed(const Json &seed) {
-  if (unwrap(dump_json(seed)).size() > 1024 * 1024 ||
+void ContextStore::validate_successor_seed(const Value &seed) {
+  if (unwrap(encode_packet_string(seed)).size() > 1024 * 1024 ||
       seed_number(field(seed, "version")) != 1)
     throw Error{ErrorCode::invalid_range};
   const auto &source = field(seed, "source");
@@ -460,7 +470,7 @@ void ContextStore::validate_successor_seed(const Json &seed) {
   if (reason.empty() || reason.size() > 65536)
     throw Error{ErrorCode::invalid_range};
   const auto &selected = field(seed, "entries");
-  if (!std::holds_alternative<Json::Array>(selected.value()))
+  if (!std::holds_alternative<Value::Array>(selected.value()))
     throw Error{ErrorCode::invalid_range};
   const auto &entries = selected.array();
   if (entries.empty() || entries.size() > 4096)
@@ -472,9 +482,9 @@ void ContextStore::validate_successor_seed(const Json &seed) {
         !locators.insert(id).second)
       throw Error{ErrorCode::invalid_range};
     seed_hex(std::string_view{id}.substr(0, 32));
-    (void)seed_number(Json{JsonNumber{id.substr(33)}});
+    (void)seed_number(Value{Number{id.substr(33)}});
     const auto &item = field(entry, "item");
-    if (!std::holds_alternative<Json::Object>(item.value()))
+    if (!std::holds_alternative<Value::Object>(item.value()))
       throw Error{ErrorCode::invalid_range};
     const auto *role = item.find("role");
     const auto *type = item.find("type");
@@ -492,7 +502,7 @@ void ContextStore::validate_successor_seed(const Json &seed) {
       if (!role)
         throw Error{ErrorCode::invalid_range};
       const auto &content = field(item, "content");
-      if (const auto *parts = std::get_if<Json::Array>(&content.value())) {
+      if (const auto *parts = std::get_if<Value::Array>(&content.value())) {
         for (const auto &part : *parts) {
           const auto &kind = string_field(part, "type");
           if (kind == "input_text" || kind == "output_text")
@@ -520,7 +530,7 @@ void ContextStore::validate_successor_seed(const Json &seed) {
       if (string_field(item, "encrypted_content").empty())
         throw Error{ErrorCode::invalid_range};
       const auto &summary = field(item, "summary");
-      if (!std::holds_alternative<Json::Array>(summary.value()))
+      if (!std::holds_alternative<Value::Array>(summary.value()))
         throw Error{ErrorCode::invalid_range};
       for (const auto &part : summary.array()) {
         if (string_field(part, "type") != "summary_text")
@@ -531,13 +541,13 @@ void ContextStore::validate_successor_seed(const Json &seed) {
     if (t == "function_call") {
       if (string_field(item, "name").empty())
         throw Error{ErrorCode::invalid_range};
-      (void)string_field(item, "arguments");
+      (void)field(item, "arguments");
       const auto &call = string_field(item, "call_id");
       if (call.empty() || !seen.insert(call).second)
         throw Error{ErrorCode::conflict};
       pending.insert(call);
     } else if (t == "function_call_output") {
-      (void)string_field(item, "output");
+      (void)field(item, "output");
       if (pending.erase(string_field(item, "call_id")) != 1)
         throw Error{ErrorCode::conflict};
     }
@@ -545,55 +555,56 @@ void ContextStore::validate_successor_seed(const Json &seed) {
   if (!pending.empty())
     throw Error{ErrorCode::conflict};
 }
-void ContextStore::seed_successor(const Json &seed) {
+void ContextStore::seed_successor(const Value &seed) {
   validate_successor_seed(seed);
   if (workflow_ || pending_ || !entries_.empty() || log_.root().fact_count() != 0 ||
       log_.root().state() != JournalWriterState::live ||
       string_field(field(seed, "source"), "journal") ==
           hex_identity(log_.root().cursor().journal.bytes()))
     throw Error{ErrorCode::conflict};
-  Json::Array items, locators;
+  Value::Array items, locators;
   for (const auto &entry : field(seed, "entries").array()) {
     items.push_back(field(entry, "item"));
-    locators.push_back(Json{string_field(entry, "id")});
+    locators.push_back(Value{string_field(entry, "id")});
   }
-  const auto lineage = Json::object(
-      {{"version", Json{JsonNumber{"1"}}},
+  const auto lineage = Value::object(
+      {{"version", Value{Number{"1"}}},
        {"scope",
-        Json{"declared source; no inherited admissions or settlement verification"}},
+        Value{"declared source; no inherited admissions or settlement verification"}},
        {"source", field(seed, "source")},
-       {"source_entries", Json{std::move(locators)}}});
+       {"source_entries", Value{std::move(locators)}}});
   append_impl(std::move(items), "session.successor", &lineage);
 }
-void ContextStore::append(Json::Array items, std::string_view origin) {
+void ContextStore::append(Value::Array items, std::string_view origin) {
   append_impl(std::move(items), origin, nullptr);
 }
-void ContextStore::append_impl(Json::Array items, std::string_view origin,
-                               const Json *lineage) {
+void ContextStore::append_impl(Value::Array items, std::string_view origin,
+                               const Value *lineage) {
   for (const auto &item : items)
-    if (!std::holds_alternative<Json::Object>(item.value()))
+    if (!std::holds_alternative<Value::Object>(item.value()))
       throw Error{ErrorCode::corrupt};
   auto identity = log_.issue();
   auto revision = hex_identity(identity.bytes());
   auto next = entries_;
   std::map<std::string, Original> originals;
-  Json::Array fresh;
+  Value::Array fresh;
   for (std::size_t i = 0; i < items.size(); ++i) {
     const auto id = revision + "." + std::to_string(i);
-    auto entry = Json::object({{"id", Json{id}}, {"item", items[i]}});
-    if (originals_.contains(id)) throw Error{ErrorCode::conflict};
+    auto entry = Value::object({{"id", Value{id}}, {"item", items[i]}});
+    if (originals_.contains(id))
+      throw Error{ErrorCode::conflict};
     originals.emplace(id, Original{entry});
     fresh.push_back(entry);
     next.push_back(std::move(entry));
   }
-  auto packet = Json::object({{"op", Json{"append"}},
-                              {"base", Json{head_}},
-                              {"observed", Json{head_}},
-                              {"revision", Json{revision}},
-                              {"accepted", Json{true}},
-                              {"origin", Json{std::string{origin}}},
-                              {"format", Json{"append-delta-v1"}},
-                              {"originals", Json{std::move(fresh)}}});
+  auto packet = Value::object({{"op", Value{"append"}},
+                               {"base", Value{head_}},
+                               {"observed", Value{head_}},
+                               {"revision", Value{revision}},
+                               {"accepted", Value{true}},
+                               {"origin", Value{std::string{origin}}},
+                               {"format", Value{"append-delta-v1"}},
+                               {"originals", Value{std::move(fresh)}}});
   if (lineage)
     packet.object().emplace_back("lineage", *lineage);
   std::vector<Original> captured;
@@ -605,7 +616,8 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
     protect(next, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
   historical_ = log_.root().history_snapshot();
-  for (auto &entry : captured) captured_.push_back(std::move(entry));
+  for (auto &entry : captured)
+    captured_.push_back(std::move(entry));
   if (pending_ && pending_->expected == head_)
     pending_->expected.swap(expected);
   entries_.swap(next);
@@ -613,7 +625,7 @@ void ContextStore::append_impl(Json::Array items, std::string_view origin,
   head_.swap(revision);
   maybe_checkpoint();
 }
-Json ContextStore::edit(const Json &candidate) {
+Value ContextStore::edit(const Value &candidate) {
   const auto *base = candidate.find("base");
   const auto *entries = candidate.find("entries");
   const bool representation = base != nullptr &&
@@ -622,28 +634,28 @@ Json ContextStore::edit(const Json &candidate) {
   const bool publishes = representation && base->string() == head_;
   auto identity = log_.issue();
   auto revision = hex_identity(identity.bytes());
-  Json::Array next;
+  Value::Array next;
   if (publishes)
     next = entries->array();
   auto outcome =
-      Json::object({{"accepted", Json{publishes}},
-                    {"revision", Json{revision}},
-                    {"current", Json{publishes ? revision : head_}},
-                    {"reason", Json{publishes        ? "published"
-                                    : representation ? "stale-base"
-                                                     : "invalid-representation"}}});
+      Value::object({{"accepted", Value{publishes}},
+                     {"revision", Value{revision}},
+                     {"current", Value{publishes ? revision : head_}},
+                     {"reason", Value{publishes        ? "published"
+                                      : representation ? "stale-base"
+                                                       : "invalid-representation"}}});
   auto details = candidate;
-  if (std::holds_alternative<Json::Object>(details.value()))
+  if (std::holds_alternative<Value::Object>(details.value()))
     std::erase_if(details.object(),
                   [](const auto &pair) { return pair.first == "entries"; });
-  auto packet = Json::object({{"op", Json{"edit"}},
-                              {"base", base == nullptr ? Json{} : *base},
-                              {"observed", Json{head_}},
-                              {"revision", Json{revision}},
-                              {"accepted", Json{publishes}},
-                              {"candidate", std::move(details)},
-                              {"entries", entries == nullptr ? Json{} : *entries},
-                              {"outcome", outcome}});
+  auto packet = Value::object({{"op", Value{"edit"}},
+                               {"base", base == nullptr ? Value{} : *base},
+                               {"observed", Value{head_}},
+                               {"revision", Value{revision}},
+                               {"accepted", Value{publishes}},
+                               {"candidate", std::move(details)},
+                               {"entries", entries == nullptr ? Value{} : *entries},
+                               {"outcome", outcome}});
   if (protect)
     protect(publishes ? next : entries_, pending_proposal());
   log_.record(identity, ApplicationChannel::context, packet);
@@ -663,28 +675,29 @@ void ContextStore::restore(std::string_view entry) {
   bool present = false;
   for (auto &value : next)
     if (string_field(value, "id") == entry) {
-      value = Json::object(
-          {{"id", Json{std::string{entry}}}, {"item", field(*original, "item")}});
+      value = Value::object(
+          {{"id", Value{std::string{entry}}}, {"item", field(*original, "item")}});
       present = true;
       break;
     }
   if (!present)
-    next.push_back(Json::object(
-        {{"id", Json{std::string{entry}}}, {"item", field(*original, "item")}}));
-  (void)edit(Json::object({{"base", Json{head_}}, {"entries", Json{std::move(next)}}}));
+    next.push_back(Value::object(
+        {{"id", Value{std::string{entry}}}, {"item", field(*original, "item")}}));
+  (void)edit(
+      Value::object({{"base", Value{head_}}, {"entries", Value{std::move(next)}}}));
 }
-Json ContextStore::originals() const {
+Value ContextStore::originals() const {
   auto out = captured_entries();
-  std::sort(out.begin(), out.end(), [](const Json &a, const Json &b) {
+  std::sort(out.begin(), out.end(), [](const Value &a, const Value &b) {
     return string_field(a, "id") < string_field(b, "id");
   });
   for (auto &entry : out)
-    entry = Json::object({{"id", field(entry, "id")}, {"item", field(entry, "item")}});
-  return Json{std::move(out)};
+    entry = Value::object({{"id", field(entry, "id")}, {"item", field(entry, "item")}});
+  return Value{std::move(out)};
 }
 // Managed transformations share the native context journal and publication owner.
 namespace {
-bool protocol_complete(const Json::Array &entries) {
+bool protocol_complete(const Value::Array &entries) {
   std::set<std::string> seen, pending;
   for (const auto &entry : entries) {
     const auto &item = field(entry, "item");
@@ -705,7 +718,7 @@ bool protocol_complete(const Json::Array &entries) {
   }
   return pending.empty();
 }
-bool whole_groups(const Json::Array &entries, const std::set<std::string> &ids) {
+bool whole_groups(const Value::Array &entries, const std::set<std::string> &ids) {
   std::set<std::string> pending;
   std::size_t start = 0;
   for (std::size_t i = 0; i < entries.size(); ++i) {
@@ -735,65 +748,65 @@ bool whole_groups(const Json::Array &entries, const std::set<std::string> &ids) 
         return false;
   return true;
 }
-Json number(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
-std::size_t index_field(const Json &q, std::string_view key, std::size_t fallback) {
+Value number(std::size_t n) { return Value{Number{n}}; }
+std::size_t index_field(const Value &q, std::string_view key, std::size_t fallback) {
   const auto *v = q.find(key);
   if (!v)
     return fallback;
-  if (!std::holds_alternative<JsonNumber>(v->value()))
+  if (!std::holds_alternative<Number>(v->value()))
     throw Error{ErrorCode::invalid_range};
   std::size_t n = 0;
-  const auto &s = v->number().text;
+  const auto &s = v->number().text();
   const auto r = std::from_chars(s.data(), s.data() + s.size(), n);
   if (r.ec != std::errc{} || r.ptr != s.data() + s.size())
     throw Error{ErrorCode::invalid_range};
   return n;
 }
 } // namespace
-Json ContextStore::reject_managed(const Json &proposal, std::string_view why) {
+Value ContextStore::reject_managed(const Value &proposal, std::string_view why) {
   auto identity = log_.issue();
   auto revision = hex_identity(identity.bytes());
-  auto outcome = Json::object({{"accepted", Json{false}},
-                               {"reason", Json{std::string{why}}},
-                               {"current", Json{head_}},
-                               {"revision", Json{revision}}});
-  auto packet = Json::object({{"op", Json{"managed"}},
-                              {"revision", Json{revision}},
-                              {"observed", Json{head_}},
-                              {"accepted", Json{false}},
-                              {"candidate", proposal},
-                              {"outcome", outcome}});
+  auto outcome = Value::object({{"accepted", Value{false}},
+                                {"reason", Value{std::string{why}}},
+                                {"current", Value{head_}},
+                                {"revision", Value{revision}}});
+  auto packet = Value::object({{"op", Value{"managed"}},
+                               {"revision", Value{revision}},
+                               {"observed", Value{head_}},
+                               {"accepted", Value{false}},
+                               {"candidate", proposal},
+                               {"outcome", outcome}});
   log_.record(identity, ApplicationChannel::context, packet);
   historical_ = log_.root().history_snapshot();
   return outcome;
 }
-Json ContextStore::pending_proposal() const {
-  return pending_ ? pending_->proposal : Json{};
+Value ContextStore::pending_proposal() const {
+  return pending_ ? pending_->proposal : Value{};
 }
-Json::Array ContextStore::stop_outputs(const Json::Array &entries, bool interrupted) {
+Value::Array ContextStore::stop_outputs(const Value::Array &entries, bool interrupted) {
   std::set<std::string> calls;
   for (const auto &entry : entries) {
     const auto &item = field(entry, "item");
     const auto *type = item.find("type");
-    if (type && *type == Json{"function_call"})
+    if (type && *type == Value{"function_call"})
       calls.insert(string_field(item, "call_id"));
-    if (type && *type == Json{"function_call_output"})
+    if (type && *type == Value{"function_call_output"})
       calls.erase(string_field(item, "call_id"));
   }
-  Json::Array outputs;
+  Value::Array outputs;
   for (const auto &call : calls)
-    outputs.push_back(Json::object(
-        {{"type", Json{"function_call_output"}},
-         {"call_id", Json{call}},
+    outputs.push_back(Value::object(
+        {{"type", Value{"function_call_output"}},
+         {"call_id", Value{call}},
          {"output",
-          Json{interrupted ? "{\"error\":\"turn_interrupted\",\"detail\":\"Consult "
-                             "audit for effect outcome; no automatic retry\"}"
-                           : "{\"error\":\"turn_stopped\",\"detail\":\"Consult audit "
-                             "for effect outcome; no automatic retry\"}"}}}));
+          Value::object(
+              {{"error", Value{interrupted ? "turn_interrupted" : "turn_stopped"}},
+               {"detail",
+                Value{"Consult audit for effect outcome; no automatic retry"}}})}}));
   return outputs;
 }
-JournalCapacity ContextStore::cancellation_budget(const Json::Array &entries,
-                                                  const Json &proposal) const {
+JournalCapacity ContextStore::cancellation_budget(const Value::Array &entries,
+                                                  const Value &proposal) const {
   const auto limits = log_.root().journal_limits();
   // Bounded receipt/diagnostic maintenance must fit too, even in custom journals.
   if (limits.max_payload < 1024 || limits.max_batch_bytes < 2048)
@@ -804,8 +817,8 @@ JournalCapacity ContextStore::cancellation_budget(const Json::Array &entries,
   const std::string revision(32, '0');
   const auto issuer = unwrap(
       encode_retained_event({{}, IssuerReservationEvent{1}}, limits.max_payload));
-  const auto packet_cost = [&](const Json &packet) {
-    const auto serialized = unwrap(dump_json(packet));
+  const auto packet_cost = [&](const Value &packet) {
+    const auto serialized = unwrap(encode_packet_string(packet));
     const auto raw = std::as_bytes(std::span{serialized.data(), serialized.size()});
     auto encoded = encode_retained_event(
         {{},
@@ -828,34 +841,34 @@ JournalCapacity ContextStore::cancellation_budget(const Json::Array &entries,
   JournalCapacity credit{8192, 16};
   auto outputs = stop_outputs(entries, true); // longer supported representation
   if (!outputs.empty()) {
-    Json::Array fresh, next = entries;
+    Value::Array fresh, next = entries;
     for (std::size_t i = 0; i < outputs.size(); ++i) {
-      auto entry = Json::object({{"id", Json{revision + "." + std::to_string(i)}},
-                                 {"item", std::move(outputs[i])}});
+      auto entry = Value::object({{"id", Value{revision + "." + std::to_string(i)}},
+                                  {"item", std::move(outputs[i])}});
       fresh.push_back(entry);
       next.push_back(std::move(entry));
     }
-    auto packet = Json::object({{"op", Json{"append"}},
-                                {"base", Json{revision}},
-                                {"observed", Json{revision}},
-                                {"revision", Json{revision}},
-                                {"accepted", Json{true}},
-                                {"origin", Json{"stop.linkage"}},
-                                {"originals", Json{std::move(fresh)}},
-                                {"entries", Json{std::move(next)}}});
+    auto packet = Value::object({{"op", Value{"append"}},
+                                 {"base", Value{revision}},
+                                 {"observed", Value{revision}},
+                                 {"revision", Value{revision}},
+                                 {"accepted", Value{true}},
+                                 {"origin", Value{"stop.linkage"}},
+                                 {"originals", Value{std::move(fresh)}},
+                                 {"entries", Value{std::move(next)}}});
     credit.max_file_bytes += packet_cost(packet);
   }
-  if (proposal != Json{}) {
-    auto outcome = Json::object({{"accepted", Json{false}},
-                                 {"reason", Json{"settlement-conflict"}},
-                                 {"current", Json{revision}},
-                                 {"revision", Json{revision}}});
-    auto packet = Json::object({{"op", Json{"managed"}},
-                                {"revision", Json{revision}},
-                                {"observed", Json{revision}},
-                                {"accepted", Json{false}},
-                                {"candidate", proposal},
-                                {"outcome", std::move(outcome)}});
+  if (proposal != Value{}) {
+    auto outcome = Value::object({{"accepted", Value{false}},
+                                  {"reason", Value{"settlement-conflict"}},
+                                  {"current", Value{revision}},
+                                  {"revision", Value{revision}}});
+    auto packet = Value::object({{"op", Value{"managed"}},
+                                 {"revision", Value{revision}},
+                                 {"observed", Value{revision}},
+                                 {"accepted", Value{false}},
+                                 {"candidate", proposal},
+                                 {"outcome", std::move(outcome)}});
     credit.max_file_bytes += packet_cost(packet);
   }
   return credit;
@@ -865,7 +878,7 @@ void ContextStore::begin_workflow() {
     throw Error{ErrorCode::conflict};
   workflow_ = true;
 }
-Json ContextStore::manage(const Json &proposal) {
+Value ContextStore::manage(const Value &proposal) {
   try {
     if (string_field(proposal, "base") != head_)
       return reject_managed(proposal, "stale-base");
@@ -879,7 +892,7 @@ Json ContextStore::manage(const Json &proposal) {
         string_field(proposal, "source").empty())
       return reject_managed(proposal, "missing-source-or-reason");
     const auto &ids = field(proposal, "ids");
-    if (!std::holds_alternative<Json::Array>(ids.value()))
+    if (!std::holds_alternative<Value::Array>(ids.value()))
       return reject_managed(proposal, "invalid-ids");
     std::set<std::string> selected;
     for (const auto &id : ids.array()) {
@@ -888,14 +901,14 @@ Json ContextStore::manage(const Json &proposal) {
           !selected.insert(id.string()).second)
         return reject_managed(proposal, "invalid-ids");
       if (mode != "restore" &&
-          std::none_of(entries_.begin(), entries_.end(), [&](const Json &e) {
+          std::none_of(entries_.begin(), entries_.end(), [&](const Value &e) {
             return string_field(e, "id") == id.string();
           }))
         return reject_managed(proposal, "absent-id");
     }
     if (mode == "summarize") {
       const auto &summary = field(proposal, "summary");
-      if (selected.empty() || !std::holds_alternative<Json::Object>(summary.value()) ||
+      if (selected.empty() || !std::holds_alternative<Value::Object>(summary.value()) ||
           summary.find("type") ||
           (string_field(summary, "role") != "developer" &&
            string_field(summary, "role") != "assistant") ||
@@ -907,8 +920,8 @@ Json ContextStore::manage(const Json &proposal) {
     for (const auto &entry : entries_) {
       const auto &id = string_field(entry, "id");
       const auto *role = field(entry, "item").find("role");
-      const bool pinned = role && (*role == Json{"user"} || *role == Json{"system"} ||
-                                   *role == Json{"developer"});
+      const bool pinned = role && (*role == Value{"user"} || *role == Value{"system"} ||
+                                   *role == Value{"developer"});
       if (pinned &&
           ((mode == "select" && !selected.contains(id)) ||
            ((mode == "archive" || mode == "summarize") && selected.contains(id))))
@@ -920,7 +933,7 @@ Json ContextStore::manage(const Json &proposal) {
       protect(entries_, proposal);
     auto result = reject_managed(proposal, "staged");
     pending_ = Pending{proposal, entries_, head_, string_field(result, "revision")};
-    result.object().emplace_back("staged", Json{true});
+    result.object().emplace_back("staged", Value{true});
     return result;
   } catch (const Error &e) {
     if (e.code != ErrorCode::corrupt && e.code != ErrorCode::invalid_range)
@@ -928,42 +941,42 @@ Json ContextStore::manage(const Json &proposal) {
     return reject_managed(proposal, "malformed-proposal");
   }
 }
-Json ContextStore::finish_workflow(bool success, const Json &boundary_program) {
+Value ContextStore::finish_workflow(bool success, const Value &boundary_program) {
   workflow_ = false;
   if (!pending_) {
-    if (success && boundary_program != Json{})
+    if (success && boundary_program != Value{})
       log_.record(ApplicationChannel::program, boundary_program);
     historical_ = log_.root().history_snapshot();
-    return Json{};
+    return Value{};
   }
   auto pending = std::move(*pending_);
   if (!success) {
     pending_.reset();
     if (log_.root().state() != JournalWriterState::live)
-      return Json::object({{"accepted", Json{false}},
-                           {"reason", Json{"workflow-cancelled-audit-unavailable"}}});
+      return Value::object({{"accepted", Value{false}},
+                            {"reason", Value{"workflow-cancelled-audit-unavailable"}}});
     return reject_managed(pending.proposal, "workflow-cancelled");
   }
   auto result = pending.expected != head_
                     ? reject_managed(pending.proposal, "settlement-conflict")
                     : publish_managed(pending.proposal, pending.snapshot, pending.stage,
                                       boundary_program);
-  if (!accepted(result) && boundary_program != Json{})
+  if (!accepted(result) && boundary_program != Value{})
     log_.record(ApplicationChannel::program, boundary_program);
   pending_.reset();
   historical_ = log_.root().history_snapshot();
   return result;
 }
-Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basis,
-                                   std::string_view stage,
-                                   const Json &boundary_program) {
+Value ContextStore::publish_managed(const Value &proposal, const Value::Array &basis,
+                                    std::string_view stage,
+                                    const Value &boundary_program) {
   const auto &mode = string_field(proposal, "mode");
   std::set<std::string> selected;
   for (const auto &id : field(proposal, "ids").array())
     selected.insert(id.string());
   auto identity = log_.issue();
   auto revision = hex_identity(identity.bytes());
-  Json::Array next, fresh;
+  Value::Array next, fresh;
   std::set<std::string> pending_calls, active_entries;
   std::size_t open_start = 0;
   for (std::size_t i = 0; i < basis.size(); ++i) {
@@ -986,9 +999,9 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
   for (const auto &entry : basis) {
     const bool chosen = selected.contains(string_field(entry, "id"));
     if (mode == "summarize" && chosen && !inserted) {
-      auto summary = Json::object({{"id", Json{revision + ".0"}},
-                                   {"item", field(proposal, "summary")},
-                                   {"ancestry", field(proposal, "ids")}});
+      auto summary = Value::object({{"id", Value{revision + ".0"}},
+                                    {"item", field(proposal, "summary")},
+                                    {"ancestry", field(proposal, "ids")}});
       next.push_back(summary);
       fresh.push_back(summary);
       inserted = true;
@@ -1010,7 +1023,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
   if (mode == "restore") {
     // Remove selected presentations first, then merge exact originals in capture order.
     // This also repairs a reordered/edited group, rather than retaining its bad order.
-    std::erase_if(next, [&](const Json &entry) {
+    std::erase_if(next, [&](const Value &entry) {
       return selected.contains(string_field(entry, "id"));
     });
     const auto capture_order = captured_entries();
@@ -1019,7 +1032,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
       const auto &id = string_field(original, "id");
       if (!selected.contains(id))
         continue;
-      auto pos = std::find_if(next.begin(), next.end(), [&](const Json &entry) {
+      auto pos = std::find_if(next.begin(), next.end(), [&](const Value &entry) {
         return string_field(entry, "id") == id;
       });
       if (pos != next.end()) {
@@ -1036,7 +1049,7 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
         if (string_field(entry, "id") == id)
           later = true;
       }
-      pos = std::find_if(next.begin(), next.end(), [&](const Json &entry) {
+      pos = std::find_if(next.begin(), next.end(), [&](const Value &entry) {
         return successors.contains(string_field(entry, "id"));
       });
       next.insert(pos, original);
@@ -1047,40 +1060,43 @@ Json ContextStore::publish_managed(const Json &proposal, const Json::Array &basi
   std::map<std::string, Original> originals;
   std::vector<Original> captured;
   for (const auto &entry : fresh) {
-    if (originals_.contains(string_field(entry, "id"))) throw Error{ErrorCode::conflict};
+    if (originals_.contains(string_field(entry, "id")))
+      throw Error{ErrorCode::conflict};
     originals.emplace(string_field(entry, "id"), Original{entry});
     captured.push_back(entry);
   }
   reserve_append(captured_, captured.size());
-  auto outcome = Json::object({{"accepted", Json{true}},
-                               {"reason", Json{"published"}},
-                               {"revision", Json{revision}},
-                               {"current", Json{revision}}});
-  auto packet = Json::object({{"op", Json{"managed"}},
-                              {"base", Json{head_}},
-                              {"observed", Json{head_}},
-                              {"revision", Json{revision}},
-                              {"accepted", Json{true}},
-                              {"candidate", proposal},
-                              {"stage", Json{std::string{stage}}},
-                              {"entries", Json{next}},
-                              {"originals", Json{fresh}},
-                              {"outcome", outcome}});
+  auto outcome = Value::object({{"accepted", Value{true}},
+                                {"reason", Value{"published"}},
+                                {"revision", Value{revision}},
+                                {"current", Value{revision}}});
+  auto packet = Value::object({{"op", Value{"managed"}},
+                               {"base", Value{head_}},
+                               {"observed", Value{head_}},
+                               {"revision", Value{revision}},
+                               {"accepted", Value{true}},
+                               {"candidate", proposal},
+                               {"stage", Value{std::string{stage}}},
+                               {"entries", Value{next}},
+                               {"originals", Value{fresh}},
+                               {"outcome", outcome}});
   if (protect)
     protect(next, proposal);
   log_.record_boundary(identity, packet, boundary_program);
+  historical_ = log_.root().history_snapshot();
   originals_.merge(originals);
-  for (auto &entry : captured) captured_.push_back(std::move(entry));
+  for (auto &entry : captured)
+    captured_.push_back(std::move(entry));
   entries_.swap(next);
   head_.swap(revision);
   maybe_checkpoint();
   return outcome;
 }
-Json ContextStore::inspect(const Json &query) const {
+Value ContextStore::inspect(const Value &query) const {
   const auto &kind = string_field(query, "kind");
   auto snapshot = head_;
   if (kind == "history")
-    visit_context_records(historical_, [&](const Json &packet) {
+    visit_context_records(historical_, [&](const Value &packet) {
       snapshot = string_field(packet, "revision");
     });
   if (query.find("revision") && string_field(query, "revision") != snapshot)
@@ -1089,8 +1105,13 @@ Json ContextStore::inspect(const Json &query) const {
   const auto limit = index_field(query, "limit", 4096);
   if (limit == 0 || limit > 65536)
     throw Error{ErrorCode::invalid_range};
-  // Virtual JSON concatenation: never materialize the aggregate retained history.
-  // Each audited record already passed the ordinary JSON document limits.
+  const auto format =
+      query.find("format") ? string_field(query, "format") : "bbm2-stream";
+  if (format != "json" && format != "bbm2-stream")
+    throw Error{ErrorCode::invalid_range};
+  const bool json_export = format == "json";
+  // Each native packet is framed with an eight-byte little-endian length.
+  // Explicit JSON export remains virtual, never materializing aggregate history.
   std::size_t total = 0;
   std::string page;
   auto emit = [&](std::string_view raw) {
@@ -1103,40 +1124,60 @@ Json ContextStore::inspect(const Json &query) const {
       page.append(raw.substr(from, std::min(limit - page.size(), raw.size() - from)));
     }
   };
+  if (!json_export)
+    emit(std::string_view{"BBMS\1", 5});
+  const auto emit_value = [&](const Value &value) {
+    if (json_export) {
+      emit(unwrap(dump_json(value)));
+      return;
+    }
+    const auto packet = unwrap(encode_packet_string(value));
+    std::array<char, 8> length{};
+    auto size = static_cast<std::uint64_t>(packet.size());
+    for (unsigned i = 0; i < 8; ++i)
+      length[i] = static_cast<char>((size >> (i * 8)) & 255U);
+    emit(std::string_view{length.data(), length.size()});
+    emit(packet);
+  };
   if (kind == "history") {
-    emit("[");
+    if (json_export)
+      emit("[");
     bool first = true;
-    visit_context_records(historical_, [&](const Json &packet) {
-      if (!first)
+    visit_context_records(historical_, [&](const Value &packet) {
+      if (json_export && !first)
         emit(",");
       first = false;
-      emit(unwrap(dump_json(packet)));
+      emit_value(packet);
     });
-    emit("]");
+    if (json_export)
+      emit("]");
   } else if (kind == "index") {
-    emit("[");
+    if (json_export)
+      emit("[");
     std::size_t capture_index = 0;
-    visit_context_records(historical_, [&](const Json &packet) {
+    visit_context_records(historical_, [&](const Value &packet) {
       if (!accepted(packet))
         return;
       const auto *fresh = packet.find("originals");
       if (!fresh)
         return;
       for (const auto &entry : fresh->array()) {
-        if (capture_index != 0)
+        if (json_export && capture_index != 0)
           emit(",");
-        auto item = Json::object(
+        auto item = Value::object(
             {{"id", field(entry, "id")},
-             {"item_bytes", number(unwrap(dump_json(field(entry, "item"))).size())}});
+             {"item_bytes",
+              number(unwrap(encode_packet(field(entry, "item"))).size())}});
         item.object().emplace_back("capture_index", number(capture_index++));
         item.object().emplace_back("capture_revision",
-                                   Json{string_field(entry, "id").substr(0, 32)});
+                                   Value{string_field(entry, "id").substr(0, 32)});
         if (const auto *a = entry.find("ancestry"))
           item.object().emplace_back("ancestry", *a);
-        emit(unwrap(dump_json(item)));
+        emit_value(item);
       }
     });
-    emit("]");
+    if (json_export)
+      emit("]");
   } else if (kind == "originals") {
     if (const auto *id = query.find("entry")) {
       if (!std::holds_alternative<std::string>(id->value()))
@@ -1144,24 +1185,26 @@ Json ContextStore::inspect(const Json &query) const {
       const auto found = original_entry(id->string());
       if (!found)
         throw Error{ErrorCode::invalid_identity};
-      emit(unwrap(dump_json(*found)));
+      emit_value(*found);
     } else {
-      emit("[");
+      if (json_export)
+        emit("[");
       bool first = true;
-      visit_context_records(historical_, [&](const Json &packet) {
+      visit_context_records(historical_, [&](const Value &packet) {
         if (!accepted(packet))
           return;
         const auto *fresh = packet.find("originals");
         if (!fresh)
           return;
         for (const auto &entry : fresh->array()) {
-          if (!first)
+          if (json_export && !first)
             emit(",");
           first = false;
-          emit(unwrap(dump_json(entry)));
+          emit_value(entry);
         }
       });
-      emit("]");
+      if (json_export)
+        emit("]");
     }
   } else
     throw Error{ErrorCode::invalid_range};
@@ -1173,13 +1216,14 @@ Json ContextStore::inspect(const Json &query) const {
     hex += digits[c & 15U];
   }
   const auto offset = std::min(requested, total);
-  return Json::object({{"encoding", Json{"hex-json-utf8"}},
-                       {"bytes", Json{std::move(hex)}},
-                       {"total_bytes", number(total)},
-                       {"offset", number(offset)},
-                       {"next", number(offset + page.size())},
-                       {"revision", Json{snapshot}},
-                       {"context_revision", Json{head_}}});
+  return Value::object(
+      {{"encoding", Value{json_export ? "hex-json-utf8" : "hex-bbm2-stream"}},
+       {"bytes", Value{std::move(hex)}},
+       {"total_bytes", number(total)},
+       {"offset", number(offset)},
+       {"next", number(offset + page.size())},
+       {"revision", Value{snapshot}},
+       {"context_revision", Value{head_}}});
 }
 
 } // namespace blackbird

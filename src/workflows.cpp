@@ -1,4 +1,5 @@
 #include "blackbird/workflows.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/tools.hpp"
 #include <algorithm>
 #include <mutex>
@@ -28,11 +29,11 @@ Ink ink(std::string_view s) {
     return Ink::failure;
   throw Error{ErrorCode::invalid_range};
 }
-const std::string &str(const Json &j, std::string_view k) {
+const std::string &str(const Value &j, std::string_view k) {
   return field(j, k).string();
 }
 } // namespace
-WorkflowRegistry::WorkflowRegistry(const Json &config, std::string revision) try
+WorkflowRegistry::WorkflowRegistry(const Value &config, std::string revision) try
     : revision_(std::move(revision)) {
   if (const auto *p = config.find("workflow_prefix"))
     prefix_ = p->string();
@@ -40,7 +41,7 @@ WorkflowRegistry::WorkflowRegistry(const Json &config, std::string revision) try
     throw Error{ErrorCode::invalid_range};
   if (const auto *d = config.find("workflows"))
     definitions_ = *d;
-  if (unwrap(dump_json(definitions_)).size() > 65536 ||
+  if (unwrap(encode_packet_string(definitions_)).size() > 65536 ||
       definitions_.array().size() > 32)
     throw Error{ErrorCode::capacity};
   std::set<std::string> names, slash_aliases, bare_aliases, tokens;
@@ -94,12 +95,12 @@ WorkflowRegistry::WorkflowRegistry(const Json &config, std::string revision) try
 } catch (const std::bad_variant_access &) {
   throw Error{ErrorCode::invalid_range};
 }
-Json WorkflowRegistry::discover() const {
-  return Json::object({{"revision", Json{revision_}},
-                       {"prefix", Json{prefix_}},
-                       {"definitions", definitions_}});
+Value WorkflowRegistry::discover() const {
+  return Value::object({{"revision", Value{revision_}},
+                        {"prefix", Value{prefix_}},
+                        {"definitions", definitions_}});
 }
-const Json &WorkflowRegistry::named(std::string_view name) const {
+const Value &WorkflowRegistry::named(std::string_view name) const {
   for (const auto &d : definitions_.array())
     if (str(d, "name") == name)
       return d;
@@ -168,23 +169,24 @@ std::shared_ptr<const WorkflowRegistry> displayed_workflows() {
   std::lock_guard lock(mutex);
   return displayed;
 }
-Json default_workflows() {
-  return Json{Json::Array{Json::object(
-      {{"name", Json{"ultracode"}},
-       {"description", Json{"Bounded source-grounded coding with direct checks"}},
-       {"aliases", Json{Json::Array{Json{"ultracode"}}}},
-       {"bare", Json{false}},
-       {"powerwords", Json{Json::Array{Json::object({{"token", Json{"ultracode"}},
-                                                     {"color", Json{"keyword"}}})}}},
+Value default_workflows() {
+  return Value{Value::Array{Value::object(
+      {{"name", Value{"ultracode"}},
+       {"description", Value{"Bounded source-grounded coding with direct checks"}},
+       {"aliases", Value{Value::Array{Value{"ultracode"}}}},
+       {"bare", Value{false}},
+       {"powerwords",
+        Value{Value::Array{Value::object(
+            {{"token", Value{"ultracode"}}, {"color", Value{"keyword"}}})}}},
        {"source",
-        Json{
+        Value{
             R"lua(blackbird.append({{role='developer',content='Ultracode: implement useful working code. Read targeted sources, state concrete tasks and a fixed allowance before hardening. Preserve the operator prompt. Use direct specification oracles and fake effects where possible. One independent review and one findings recheck within the allowance; never reset it. Report actual outcomes and gaps; no invented scheduler or performance claims.'}})
 for step=1,64 do
  local r=blackbird.request(); local calls=0
  for _,item in ipairs(r.output) do
   if item.type=='function_call' then
    calls=calls+1; local result=blackbird.call(item.name,item.arguments)
-   blackbird.append({{type='function_call_output',call_id=item.call_id,output=blackbird.json.encode(result)}})
+   blackbird.append({{type='function_call_output',call_id=item.call_id,output=result}})
   elseif item.type=='message' then blackbird.present(item) end
  end
  if blackbird.restarting() or calls==0 then return end

@@ -17,7 +17,7 @@ SessionIdentity session_identity(AuditLog &log);
 void save_session_info(const std::filesystem::path &directory,
                        const SessionSettings &settings,
                        const SessionIdentity &identity);
-Json list_sessions(const std::filesystem::path &root);
+Value list_sessions(const std::filesystem::path &root);
 class SessionStore {
 public:
   explicit SessionStore(AuditLog &log);
@@ -29,6 +29,6 @@ public:
 private:
   AuditLog &log_;
   SessionSettings settings_;
-  Json restart_;
+  Value restart_;
 };
 } // namespace blackbird

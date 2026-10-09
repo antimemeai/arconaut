@@ -124,19 +124,19 @@ int main(int argc, char **argv) {
     check(login.has_value());
     auto models = openai_http(config, login.value(), "models?client_version=0.160.0");
     check(models.has_value() && models.value() == "{\"models\":[{\"slug\":\"test\"}]}");
-    auto request = Json::object({{"opaque", Json{"A\\B\"C"}}});
+    auto request = Value::object({{"opaque", Value{"A\\B\"C"}}});
     auto stream = openai_http(config, login.value(), "responses", &request);
     check(stream.has_value() && completed_response(stream.value()).has_value());
     check(!openai_http(config, login.value(), "https://other.invalid/").has_value());
     std::string partial;
     config.response_observer = [&](std::string_view bytes) { partial += bytes; };
-    auto dropped_request = Json::object({{"trigger92", Json{true}}});
+    auto dropped_request = Value::object({{"trigger92", Value{true}}});
     auto dropped = openai_http(config, login.value(), "responses", &dropped_request);
     check(!dropped.has_value() &&
           dropped.error().code == ErrorCode::provider_transport &&
           dropped.error().detail == 92 && partial == "data: partial stream\n");
     config.timeout_seconds = 1;
-    auto deadline_request = Json::object({{"triggerTimeout", Json{true}}});
+    auto deadline_request = Value::object({{"triggerTimeout", Value{true}}});
     auto deadline_failure =
         openai_http(config, login.value(), "responses", &deadline_request);
     check(!deadline_failure.has_value() &&
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
           partial.ends_with("data: before timeout\n"));
     config.timeout_seconds = 120;
     config.response_observer = {};
-    auto failure = Json::object({{"trigger401", Json{true}}});
+    auto failure = Value::object({{"trigger401", Value{true}}});
     auto refused = openai_http(config, login.value(), "responses", &failure);
     check(!refused.has_value() &&
           refused.error() == Error{ErrorCode::external_unknown, 401});

@@ -1,4 +1,5 @@
 #include "blackbird/colleague.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/tools.hpp"
 #include <filesystem>
 #include <fstream>
@@ -28,11 +29,11 @@ int main(int argc, char **argv) {
         raw.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         raw.flush();
       } else {
-        write_file(directory / (std::string{kind} + ".json"), bytes);
+        write_file(directory / (std::string{kind} + ".bbm"), bytes);
       }
     };
     const auto result = call_colleague(
-        request, capture, [](const Json &prepared, const ColleagueCapture &retain) {
+        request, capture, [](const Value &prepared, const ColleagueCapture &retain) {
           return native_colleague_transport(prepared, retain);
         });
     std::cout << unwrap(dump_json(result)) << '\n';

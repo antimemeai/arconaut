@@ -1,4 +1,5 @@
 #include "blackbird/openai.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/provider_auth.hpp"
 #include "native_process.hpp"
 #include <algorithm>
@@ -27,10 +28,10 @@ namespace {
 }
 using detail::Child;
 using detail::Clock;
-const std::string *text(const Json *j) {
+const std::string *text(const Value *j) {
   return j == nullptr ? nullptr : std::get_if<std::string>(&j->value());
 }
-std::string required(const Json &j, std::string_view key) {
+std::string required(const Value &j, std::string_view key) {
   const auto *s = text(j.find(key));
   if (s == nullptr || s->empty())
     fail(ErrorCode::corrupt);
@@ -51,7 +52,7 @@ std::filesystem::path auth_path(const OpenAiConfig &config) {
     fail(ErrorCode::invalid_range);
   return std::filesystem::path{home} / ".codex/auth.json";
 }
-Json auth_file(const OpenAiConfig &config) {
+Value auth_file(const OpenAiConfig &config) {
   std::ifstream file{auth_path(config), std::ios::binary};
   if (!file)
     fail(ErrorCode::io);
@@ -69,7 +70,7 @@ Json auth_file(const OpenAiConfig &config) {
     throw parsed.error();
   return std::move(parsed).value();
 }
-Json rpc(Child &child, std::string_view message, Clock::time_point deadline) {
+Value rpc(Child &child, std::string_view message, Clock::time_point deadline) {
   auto request = parse_json(message);
   if (!request.has_value())
     throw request.error();
@@ -179,7 +180,7 @@ Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh) {
   }
 }
 Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &login,
-                                std::string_view route, const Json *request) {
+                                std::string_view route, const Value *request) {
   try {
     if (login.owned_auth_) {
       ProviderAuthConfig owned;
@@ -189,7 +190,7 @@ Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &l
       if (route != "responses")
         throw Error{ErrorCode::unsupported};
       const auto response =
-          auth.request("openai", route, request ? *request : Json::object({}),
+          auth.request("openai", route, request ? *request : Value::object({}),
                        config.timeout_seconds, config.response_observer);
       return Result<std::string>::success(response.body);
     }
@@ -209,7 +210,7 @@ Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &l
     input += "header = \"Content-Type: application/json\"\nheader = \"originator: "
              "blackbird\"\n";
     if (request != nullptr) {
-      auto encoded = dump_json(*request);
+      auto encoded = dump_json(export_provider_request(*request));
       if (!encoded.has_value())
         throw encoded.error();
       input += "data-binary = " + config_quote(encoded.value()) + "\n";
@@ -293,14 +294,14 @@ std::vector<TextPreview> ResponsePreview::feed(std::string_view bytes) {
   pending_.erase(0, consumed);
   return output;
 }
-Result<Json> completed_response(std::string_view stream, JsonLimits limits) {
+Result<Value> completed_response(std::string_view stream, ValueLimits limits) {
   try {
     if (stream.size() > limits.bytes)
       fail(ErrorCode::capacity);
     std::string data;
-    std::optional<Json> completed;
+    std::optional<Value> completed;
     std::size_t total_nodes = 0;
-    std::vector<std::pair<std::size_t, Json>> items;
+    std::vector<std::pair<std::size_t, Value>> items;
     auto event = [&] {
       if (data.empty())
         return;
@@ -321,9 +322,9 @@ Result<Json> completed_response(std::string_view stream, JsonLimits limits) {
         const auto *index = parsed.value().find("output_index");
         const auto *item = parsed.value().find("item");
         if (index == nullptr || item == nullptr ||
-            !std::holds_alternative<JsonNumber>(index->value()))
+            !std::holds_alternative<Number>(index->value()))
           fail(ErrorCode::corrupt);
-        const auto &number = index->number().text;
+        const auto &number = index->number().text();
         std::size_t ordinal = 0;
         const auto converted =
             std::from_chars(number.data(), number.data() + number.size(), ordinal);
@@ -342,7 +343,7 @@ Result<Json> completed_response(std::string_view stream, JsonLimits limits) {
         if (response == nullptr || required(*response, "status") != "completed")
           fail(ErrorCode::corrupt);
         const auto *output = response->find("output");
-        if (output == nullptr || !std::holds_alternative<Json::Array>(output->value()))
+        if (output == nullptr || !std::holds_alternative<Value::Array>(output->value()))
           fail(ErrorCode::corrupt);
         completed = *response;
       }
@@ -388,13 +389,13 @@ Result<Json> completed_response(std::string_view stream, JsonLimits limits) {
               fail(ErrorCode::conflict);
           }
       }
-    return Result<Json>::success(std::move(*completed));
+    return Result<Value>::success(std::move(*completed));
   } catch (const Error &e) {
-    return Result<Json>::failure(e);
+    return Result<Value>::failure(e);
   } catch (const std::bad_alloc &) {
-    return Result<Json>::failure({ErrorCode::allocation});
+    return Result<Value>::failure({ErrorCode::allocation});
   } catch (const std::length_error &) {
-    return Result<Json>::failure({ErrorCode::capacity});
+    return Result<Value>::failure({ErrorCode::capacity});
   }
 }
 } // namespace blackbird

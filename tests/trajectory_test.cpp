@@ -1,4 +1,6 @@
 #include "blackbird/coding.hpp"
+#include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include <filesystem>
 #include <iostream>
 #include <unistd.h>
@@ -8,15 +10,15 @@ template <class T> T id(unsigned char n) {
   b[0] = std::byte{n};
   return unwrap(T::from_bytes(b));
 }
-Json num(std::size_t n) { return Json{JsonNumber{std::to_string(n)}}; }
+Value num(std::size_t n) { return Value{Number{std::to_string(n)}}; }
 void check(bool good, const char *message) {
   if (!good)
     throw std::runtime_error(message);
 }
-bool same_json(const Json &a, const Json &b) {
+bool same_json(const Value &a, const Value &b) {
   if (a.value().index() != b.value().index())
     return false;
-  if (std::holds_alternative<Json::Object>(a.value())) {
+  if (std::holds_alternative<Value::Object>(a.value())) {
     if (a.object().size() != b.object().size())
       return false;
     for (const auto &[key, value] : a.object()) {
@@ -26,7 +28,7 @@ bool same_json(const Json &a, const Json &b) {
     }
     return true;
   }
-  if (std::holds_alternative<Json::Array>(a.value())) {
+  if (std::holds_alternative<Value::Array>(a.value())) {
     if (a.array().size() != b.array().size())
       return false;
     for (std::size_t i = 0; i < a.array().size(); ++i)
@@ -38,22 +40,22 @@ bool same_json(const Json &a, const Json &b) {
 }
 class Provider final : public CodingProvider {
 public:
-  Json arguments, expected;
+  Value arguments, expected;
   unsigned calls = 0;
-  Json respond(const Json &request,
-               const std::function<void(std::string_view)> &) override {
+  Value respond(const Value &request,
+                const std::function<void(std::string_view)> &) override {
     if (++calls == 1)
-      return Json::object(
-          {{"output", Json{Json::Array{Json::object(
-                          {{"type", Json{"function_call"}},
-                           {"call_id", Json{"trace-call"}},
-                           {"name", Json{"trajectory_read"}},
-                           {"arguments", Json{unwrap(dump_json(arguments))}}})}}}});
+      return Value::object(
+          {{"output", Value{Value::Array{Value::object(
+                          {{"type", Value{"function_call"}},
+                           {"call_id", Value{"trace-call"}},
+                           {"name", Value{"trajectory_read"}},
+                           {"arguments", Value{unwrap(dump_json(arguments))}}})}}}});
     bool found = false;
     for (const auto &item : field(request, "input").array())
       if (const auto *type = item.find("type");
           type && type->string() == "function_call_output") {
-        check(same_json(unwrap(parse_json(string_field(item, "output"))), expected),
+        check(same_json(field(item, "output"), expected),
               "model received a different pinned trajectory");
         found = true;
       }
@@ -74,7 +76,7 @@ int main() {
                                {1024 * 1024, 4 * 1024 * 1024},
                                std::nullopt};
     const JournalCapacity cap{32 * 1024 * 1024, 10000};
-    Json pinned, query;
+    Value pinned, query;
     {
       auto root =
           unwrap(RetainedState::create(std::make_unique<NativeJournalDirectory>(unwrap(
@@ -89,7 +91,8 @@ int main() {
       const std::string input = "PRIVATE_INPUT_NOT_IN_METADATA";
       const auto view = std::as_bytes(std::span{input.data(), input.size()});
       const ImmutableBytes bytes{view.begin(), view.end()};
-      const auto meta = std::as_bytes(std::span{"{\"operation\":\"exec\"}", 20});
+      const auto meta =
+          unwrap(encode_packet(Value::object({{"operation", Value{"exec"}}})));
       const std::array<RetainedEvent, 5> admitted{
           RetainedEvent{{},
                         DecisionEvent{decision,
@@ -111,11 +114,11 @@ int main() {
           RetainedEvent{
               {}, AttemptAdmissionEvent{sibling, sibling_invocation, decision, bytes}}};
       unwrap(root->append(root->cursor(), {}, admitted));
-      query = Json::object({{"cursor", num(0)},
-                            {"end", num(root->fact_count())},
-                            {"count", num(64)},
-                            {"scan", num(256)},
-                            {"attempt", Json{hex_identity(attempt.bytes())}}});
+      query = Value::object({{"cursor", num(0)},
+                             {"end", num(root->fact_count())},
+                             {"count", num(64)},
+                             {"scan", num(256)},
+                             {"attempt", Value{hex_identity(attempt.bytes())}}});
       pinned = log.trajectory(query);
       check(field(pinned, "events").array().size() == 3,
             "filter included sibling attempt");
@@ -126,8 +129,9 @@ int main() {
             "admission appeared successful");
       unwrap(root->submit({{}, AttemptOpenEvent{attempt}}));
       const std::string binary{"A\0Z", 3};
-      log.original({"operation.result", binary,
-                    Json::object({{"attempt", Json{hex_identity(attempt.bytes())}}})});
+      log.original(
+          {"operation.result", binary,
+           Value::object({{"attempt", Value{hex_identity(attempt.bytes())}}})});
       unwrap(
           root->submit({{},
                         AttemptObservationEvent{attempt, AttemptPhase::terminal,
@@ -144,20 +148,20 @@ int main() {
       check(unwrap(dump_json(events.back())).find(input) == std::string::npos,
             "original payload copied into metadata");
       for (unsigned i = 0; i < 40; ++i)
-        log.record(ApplicationChannel::program, Json::object({{"noise", num(i)}}));
+        log.record(ApplicationChannel::program, Value::object({{"noise", num(i)}}));
       const auto first = root->fact_count() - 40;
       const auto empty = log.trajectory(
-          Json::object({{"cursor", num(first)},
-                        {"scan", num(7)},
-                        {"attempt", Json{hex_identity(attempt.bytes())}}}));
+          Value::object({{"cursor", num(first)},
+                         {"scan", num(7)},
+                         {"attempt", Value{hex_identity(attempt.bytes())}}}));
       check(field(empty, "events").array().empty() &&
-                field(empty, "next").number().text == std::to_string(first + 7) &&
-                field(empty, "scanned").number().text == "7",
+                field(empty, "next").number().text() == std::to_string(first + 7) &&
+                field(empty, "scanned").number().text() == "7",
             "empty filter scanned beyond bound");
       const auto small =
-          log.trajectory(Json::object({{"cursor", num(first)}, {"count", num(2)}}));
+          log.trajectory(Value::object({{"cursor", num(first)}, {"count", num(2)}}));
       check(field(small, "events").array().size() == 2 &&
-                field(small, "next").number().text == std::to_string(first + 2),
+                field(small, "next").number().text() == std::to_string(first + 2),
             "page skipped records");
       for (const auto &bad : {R"({"count":0})", R"({"scan":257})", R"({"cursor":-1})",
                               R"({"attempt":"bad"})", R"({"secret":true})"}) {
@@ -182,14 +186,14 @@ int main() {
           {{}, ApplicationRecordEvent{log.issue(), ApplicationChannel::log, cold}}));
       allow_read = false;
       const auto large_page =
-          log.trajectory(Json::object({{"cursor", num(large_index)}}));
+          log.trajectory(Value::object({{"cursor", num(large_index)}}));
       check(!field(large_page, "events").array().back().find("label"),
             "oversized payload parsed");
       allow_read = true;
       ContextStore context{log};
       Provider provider;
       CodingEngine engine{log, context, provider, "fake"};
-      const auto arguments = Json::object({{"query", query}});
+      const auto arguments = Value::object({{"query", query}});
       const auto operator_result = engine.operator_call("trajectory_read", arguments);
       check(same_json(operator_result, pinned), "operator trajectory differs");
       engine.turn({"", "return blackbird.call('trajectory_read', blackbird.decode([=[" +
@@ -199,7 +203,7 @@ int main() {
       provider.expected = pinned;
       engine.turn(
           {"read trace",
-           R"(for i=1,2 do local r=blackbird.request(); for _,o in ipairs(r.output) do if o.type=="function_call" then blackbird.append({{type="function_call_output",call_id=o.call_id,output=blackbird.encode(blackbird.call(o.name,o.arguments))}}) end end end)"});
+           R"(for i=1,2 do local r=blackbird.request(); for _,o in ipairs(r.output) do if o.type=="function_call" then blackbird.append({{type="function_call_output",call_id=o.call_id,output=blackbird.call(o.name,o.arguments)}}) end end end)"});
       check(provider.calls == 2, "model tool path not exercised");
     }
     {

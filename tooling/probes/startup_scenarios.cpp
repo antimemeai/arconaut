@@ -1,3 +1,4 @@
+#include "blackbird/json.hpp"
 // Development-only synthetic sessions for actual launcher startup measurements.
 #include "blackbird/coding.hpp"
 #include "blackbird/terminal.hpp"
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
                                      "audit", header, {512ULL * 1024 * 1024, 200000}));
     AuditLog log{*root};
     ContextStore context{log};
-    Json::Array items;
+    Value::Array items;
     const std::string code = "// source evidence\nstruct Item { unsigned id; };\n"
                              "bool ready(const Item& item) { return item.id != 0; }\n";
     if (mode != "heavy" && mode != "live" && mode != "weird")
@@ -42,8 +43,8 @@ int main(int argc, char **argv) {
         content += code;
       content.resize(4096);
       live_bytes += content.size();
-      items.push_back(Json::object(
-          {{"role", Json{i % 2 ? "assistant" : "user"}}, {"content", Json{content}}}));
+      items.push_back(Value::object({{"role", Value{i % 2 ? "assistant" : "user"}},
+                                     {"content", Value{content}}}));
     }
     context.append(items, "benchmark.synthetic");
     if (mode == "heavy") {
@@ -51,18 +52,18 @@ int main(int argc, char **argv) {
       for (unsigned i = 0; i < 640; ++i) {
         const auto revision = log.issue();
         log.record(revision, ApplicationChannel::context,
-                   Json::object({{"op", Json{"edit"}},
-                                 {"revision", Json{hex_identity(revision.bytes())}},
-                                 {"observed", Json{context.head()}},
-                                 {"accepted", Json{false}},
-                                 {"candidate", Json{discarded}},
-                                 {"entries", Json{Json::Array{}}}}));
+                   Value::object({{"op", Value{"edit"}},
+                                  {"revision", Value{hex_identity(revision.bytes())}},
+                                  {"observed", Value{context.head()}},
+                                  {"accepted", Value{false}},
+                                  {"candidate", Value{discarded}},
+                                  {"entries", Value{Value::Array{}}}}));
       }
     } else if (mode == "weird") {
       for (unsigned i = 0; i < 2048; ++i)
         log.record(ApplicationChannel::log,
-                   Json::object({{"label", Json{"benchmark.historical-event"}},
-                                 {"ordinal", Json{JsonNumber{std::to_string(i)}}}}));
+                   Value::object({{"label", Value{"benchmark.historical-event"}},
+                                  {"ordinal", Value{Number{std::to_string(i)}}}}));
       SessionStore session{log};
       session.restart("benchmark pending RRC; no effect in flight");
       TerminalState state;
@@ -73,14 +74,14 @@ int main(int argc, char **argv) {
       state.queued = {"saved queued draft; must not auto-dispatch"};
       save_terminal_state(path / "ui-state.json", state);
     }
-    std::cout
-        << unwrap(dump_json(Json::object(
-               {{"scenario", Json{mode}},
-                {"archive_bytes", Json{JsonNumber{std::to_string(
-                                      std::filesystem::file_size(path / "audit"))}}},
-                {"live_content_bytes", Json{JsonNumber{std::to_string(live_bytes)}}},
-                {"facts", Json{JsonNumber{std::to_string(root->fact_count())}}}})))
-        << '\n';
+    std::cout << unwrap(dump_json(Value::object(
+                     {{"scenario", Value{mode}},
+                      {"archive_bytes",
+                       Value{Number{std::to_string(
+                           std::filesystem::file_size(path / "audit"))}}},
+                      {"live_content_bytes", Value{Number{std::to_string(live_bytes)}}},
+                      {"facts", Value{Number{std::to_string(root->fact_count())}}}})))
+              << '\n';
   } catch (const Error &e) {
     std::cerr << error_name(e.code) << '\n';
     return 1;

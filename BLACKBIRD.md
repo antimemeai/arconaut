@@ -121,3 +121,14 @@ s the gap between "I ran this code" and "I checked this code does the right thin
 2. Mutants ALWAYS RUN ON THE FLEET. NEVER RUN MUTANTS ON A LAPTOP.
 3. Do not engage in 20 minutes of tests after 3 minutes of implementation except in extreme circumstances--these are rare and will be obvious.
 4. Formal methods are amazing but they are a seductive trap. We must resist seduction and judiciously use the right tools in the right places.
+
+## Internal data formats
+
+JSON is permitted only at external protocol boundaries and for explicitly requested
+user import, export or presentation. Production internals must use owned native
+values and binary formats. Do not use JSON objects as the internal data model,
+JSON for persistence or internal IPC, or stringify/reparse JSON to move data
+between native and scripting components. External adapters parse directly into
+native values and format native values only when crossing the boundary. Retained
+original external bytes may remain opaque evidence. No legacy JSON compatibility
+or migration machinery is required.

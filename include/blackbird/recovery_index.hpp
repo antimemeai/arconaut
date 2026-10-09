@@ -1,6 +1,6 @@
 #pragma once
-#include "blackbird/journal_storage.hpp"
 #include "blackbird/journal.hpp"
+#include "blackbird/journal_storage.hpp"
 #include <functional>
 
 namespace blackbird {
@@ -23,37 +23,40 @@ struct RecoveryIndexEntry {
 class RecoveryIndex {
 public:
   static constexpr std::size_t page_size = 16384;
-  static Result<std::unique_ptr<RecoveryIndex>> open(
-      std::unique_ptr<JournalFile> file, std::uint64_t max_bytes);
+  static Result<std::unique_ptr<RecoveryIndex>> open(std::unique_ptr<JournalFile> file,
+                                                     std::uint64_t max_bytes);
   Result<std::optional<std::uint64_t>> find(RecoveryPageRef root,
-                                          const RecoveryKey &key) const;
+                                            const RecoveryKey &key) const;
   Result<RecoveryPageRef> put(RecoveryPageRef root, RecoveryKey key,
                               std::uint64_t value);
   // Inclusive lower bound; the callback can stop iteration without extra reads.
-  Result<void> range(RecoveryPageRef root, const RecoveryKey &lower,
-                    std::size_t limit,
-                    const std::function<Result<bool>(RecoveryIndexEntry)> &visit) const;
+  Result<void>
+  range(RecoveryPageRef root, const RecoveryKey &lower, std::size_t limit,
+        const std::function<Result<bool>(RecoveryIndexEntry)> &visit) const;
   Result<void> synchronize();
   std::uint64_t bytes() const noexcept { return end_; }
+
 private:
   struct Node {
     bool leaf = true;
     std::vector<RecoveryIndexEntry> entries;
     std::vector<RecoveryPageRef> children;
   };
-  struct Change { RecoveryPageRef left; std::optional<RecoveryIndexEntry> split;
-                  RecoveryPageRef right; };
+  struct Change {
+    RecoveryPageRef left;
+    std::optional<RecoveryIndexEntry> split;
+    RecoveryPageRef right;
+  };
   RecoveryIndex(std::unique_ptr<JournalFile> file, std::uint64_t end,
                 std::uint64_t max_bytes)
       : file_(std::move(file)), end_(end), max_bytes_(max_bytes) {}
   Result<Node> read(RecoveryPageRef ref) const;
   Result<RecoveryPageRef> write(const Node &node);
-  Result<Change> insert(RecoveryPageRef root, RecoveryKey key,
-                         std::uint64_t value, std::size_t depth);
-  Result<bool> walk(RecoveryPageRef root, const RecoveryKey &lower,
-                   std::size_t &left,
-                   const std::function<Result<bool>(RecoveryIndexEntry)> &visit,
-                   std::size_t depth) const;
+  Result<Change> insert(RecoveryPageRef root, RecoveryKey key, std::uint64_t value,
+                        std::size_t depth);
+  Result<bool> walk(RecoveryPageRef root, const RecoveryKey &lower, std::size_t &left,
+                    const std::function<Result<bool>(RecoveryIndexEntry)> &visit,
+                    std::size_t depth) const;
   std::unique_ptr<JournalFile> file_;
   std::uint64_t end_;
   std::uint64_t max_bytes_;

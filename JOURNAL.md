@@ -5658,3 +5658,53 @@ codec/observations/trajectory/audit/coding/request-storage/context/station/sessi
 program/colleague/participant/workflow/successor/saved-state/task paths exercise
 actual metadata consumers and recovery. Closed nls.7, backed up Beads, commit/push
 candidate to trajectories. Main integration remains an explicit subsequent action.
+
+
+## 2026-10-09 — Native internal values and binary persistence
+
+Operator expanded the compact-metadata unit: JSON is allowed for external protocols
+and chosen user import/export/presentation, never as our internal model, persistence
+or IPC. Added this policy to workspace and repo BLACKBIRD.md. The expanded plan in
+TRAJECTORIES allowed150min including20min of two-layer hardening. No dependency,
+provider inference, credential-content inspection or historical data migration.
+
+Owned Value replaces Json throughout native interfaces. Numbers hold signed and
+unsigned integers, finite binary64 or exact decimal components, not JSON tokens.
+BBM2 encodes native values with bounded bytes/nodes/depth and strict version handling;
+JSON and BBM1 have no fallback reader. Context originals/application packets,
+saved state, admissions, continuations, sidecars and owned candidate IPC use binary.
+Session/UI/auth/station/candidate state uses .bbm files; prior JSON credentials are
+left untouched and unread. Explicit external JSON adapters remain. Timing and paged
+context exports use BBMS1 framing; explicit format=json retains bounded user export.
+
+Lua calls, custom tools, operator arguments and terminal queues transfer native
+values directly. Tagged component tables preserve large unsigned integers and exact
+decimals. Native binary helpers support file-read hex byte presentation. Model/human
+presentation escapes binary bytes; JSON exports represent invalid UTF-8 bytes as hex.
+Provider adapters convert function arguments/results only at the external boundary.
+Built-in workflows retain native tool results and binary working files.
+
+Remediation fixed a managed-context historical snapshot refresh that smaller records
+exposed, and invalid UTF-8 in native input previews. Numeric writers construct native
+numbers directly. Direct oracles cover typed layouts, arbitrary byte strings, exact
+decimals, limits and malformed packets, native Lua transfer, provider boundary
+interchange, binary file decode, binary CLI status and retained history reopen/export.
+The compaction fixture retains a JSON export larger than16MiB and verifies paged
+concatenation against separately decoded native packets, rather than weakening it.
+
+Verification:80/80 Mac debug cases passed (context/native-rigor-complete.log).
+Selected24/24 passed on Mac release (context/native-release-final-checks.log) and
+Linux debug (context/linux/run-t8c7f871/checks.log). After the larger-history fixture
+change, compaction_campaign/journal_native/native_value/packet passed4/4; actual
+candidate binary CLI passed1/1. No startup trial or general performance claim.
+
+Repository-wide rigor is NOT green: format gates report unchanged files, and native
+analysis reports findings in existing recovery/auth/journal code and test fixtures.
+The parallel diagnostic run analyzed112 translation units and reported19 failing
+analysis commands plus the Lua format gate; it did not reach all later Lua gates.
+No analysis errors were reported for the new value/packet/presentation/boundary codec.
+Existing schema parameter ordering and saved-state optional guard warnings were
+confirmed in HEAD; other findings need triage. Tracked under arconaut-1qa rather
+than extending the hardening bound. Close nls.8 for the completed native migration,
+back up Beads and commit/push trajectories. No implied main merge. Operator art
+files remain untracked and untouched.

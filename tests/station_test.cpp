@@ -15,14 +15,14 @@ void check(bool ok) {
   if (!ok)
     throw Error{ErrorCode::corrupt};
 }
-Json event(std::string name) {
-  return Json::object({{"source", Json{"repo"}},
-                       {"id", Json{name}},
-                       {"cursor", Json{"commit-42"}},
-                       {"prompt", Json{"inspect actual source"}}});
+Value event(std::string name) {
+  return Value::object({{"source", Value{"repo"}},
+                        {"id", Value{name}},
+                        {"cursor", Value{"commit-42"}},
+                        {"prompt", Value{"inspect actual source"}}});
 }
-Json command(std::string name, std::string action) {
-  return Json::object({{"id", Json{name}}, {"action", Json{action}}});
+Value command(std::string name, std::string action) {
+  return Value::object({{"id", Value{name}}, {"action", Value{action}}});
 }
 int main() {
   char name[] = "/tmp/arco-station-XXXXXX";
@@ -53,7 +53,7 @@ int main() {
       check(station.control(command("r", "resume")));
       check(!station.control(command("p", "pause")) && !station.paused());
       auto steer = command("s", "steer");
-      steer.object().emplace_back("text", Json{"narrow native ownership map"});
+      steer.object().emplace_back("text", Value{"narrow native ownership map"});
       check(station.control(steer));
       check(station.prompt(event("pending")).find("narrow native ownership map") !=
             std::string::npos);

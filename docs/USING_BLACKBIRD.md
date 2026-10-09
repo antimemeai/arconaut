@@ -30,7 +30,7 @@ saved model/effort/workflow and a shell-quoted
 explicit `./scripts/blackbird --session 'PATH'` resume command. Ordinary reopen does not
 consume a pending RRC intent; use `--resume-continue` explicitly when appropriate.
 
-Listing reads bounded `session-info.json` configuration snapshots and stats audits;
+Listing reads bounded `session-info.bbm` configuration snapshots and stats audits;
 it never locks, opens for recovery, creates directories or changes session files.
 Snapshots are derived from the owning process's audited settings, not authority.
 Legacy sessions have unavailable configuration until normally opened; damaged or
@@ -79,7 +79,7 @@ Complex emoji/grapheme editing is later work. Drafts are limited to 1 MiB, scree
 history to approximately 1 MiB and prompt history to 128 entries. These presentation
 limits do not trim retained context or original audit bytes. Queued prompts remain
 UI drafts until their turn begins. Composer, cursor and submitted-prompt history
-persist in replaceable `ui-state.json` within the private locked session directory;
+persist in replaceable `ui-state.bbm` within the private locked session directory;
 this is UI state, not provider context. History and queued/recovered draft shelves
 also have aggregate 1 MiB limits and at most 128 entries. On reopen, prior queued
 prompts become **recovered drafts**, never runnable work. `/drafts` lists them;
@@ -120,7 +120,7 @@ persistent state. The model has a `lua` tool and the same APIs:
 - `blackbird.request(options)` assembles from live context, with optional model,
   instructions, input, tools, reasoning and other overrides. This transport
   currently requires `store=false` and `stream=true`.
-- `blackbird.call(name, arguments)` runs a tool with an object or JSON string.
+- `blackbird.call(name, arguments)` runs a tool with native arguments. Decode external JSON explicitly at its boundary.
   `read_file`, `write_file`, `edit_file` access files. `exec` accepts `command` or
   `argv` and a timeout in seconds. Nonempty argv takes precedence; empty argv uses
   the command. File/process effects run without command-approval prompts.
@@ -151,8 +151,8 @@ persistent state. The model has a `lua` tool and the same APIs:
   IDs produce retained rejections. Edits/removals preserve originals.
 - `blackbird.stats()` (also `/stats` and `context_stats`) reports entry count,
   per-entry item bytes, serialized input-array bytes and full view bytes. All are
-  compact UTF-8 JSON byte counts, **not tokens**. `last_request_bytes` measures the
-  exact serialized payload after request overrides; authentication headers are not
+  native binary packet byte counts, **not tokens**. `last_request_bytes` measures the
+  native packet size after request overrides; authentication headers are not
   part of it. Request size is shown before provider transport; actual returned
   token usage is shown after response. `usage` contains only numeric input/output/
   total counts and cached/reasoning details, never arbitrary extension strings.
@@ -160,7 +160,8 @@ persistent state. The model has a `lua` tool and the same APIs:
   estimates or model-limit guesses are made.
 - `blackbird.originals()` lists originals; `blackbird.restore(id)` repairs an item.
   `blackbird.append(items)` adds synthetic items with fresh original IDs.
-- `blackbird.json.decode/encode` preserve null, empty arrays and exact numeric lexemes.
+- `blackbird.json.decode/encode` import/export JSON at external boundaries; native values preserve null, arrays and exact numeric values.
+  Use `blackbird.binary.encode/decode` for BBM2 persistence, and `blackbird.format` for text.
   Use `blackbird.array({})` for a new empty array.
 - `blackbird.present(item)` displays a completed assistant message without duplicating
   matching streamed text. `blackbird.display(text)` and `print(...)` retain explicit
@@ -290,7 +291,7 @@ Managed requests during a workflow stage until successful completion, retaining 
 current tool exchange. Failed/interrupted workflows cancel. One pending request;
 o overlapping last-writer-wins. Generic CLM edit/append remain available.
 
-`/inspect {"kind":"index"}` returns bounded hex-encoded serialized UTF-8 JSON.
+`/inspect {"kind":"index"}` returns bounded hex-encoded BBM2 stream bytes. Add `"format":"json"` for a JSON export.
 Kinds: `index`, `history`, `originals`; originals may specify `entry`. Optional
 `offset` and `limit` (default4096, max65536) page exact source bytes without dumping
 old history into a request. Decode hex locally; ranges may split UTF-8 codepoints.
@@ -496,7 +497,7 @@ continues the selected path. Startup reports the session before reopening histor
 
 `--station LOCAL_ADAPTER_DIRECTORY` admits identified file source events into the
 same native participant/context/Lua workflow. Idle needs no inference. Inspect
-`SESSION/station-status.json`; atomically replace source `events.json` and boundary
+`SESSION/station-status.bbm`; atomically replace source `events.json` and boundary
 `control.json` for pause/resume/steer/stop. Repeated or unknown source/id never
 redispatches. `workflow_returned` is not effect success. Use explicit release
 selection if your interactive launcher is pinned to an older UI generation.
@@ -629,7 +630,7 @@ Do not paste a key into `/auth` or a model conversation. In chat `/auth`,
 only labels, credential kind and observed local expiry/state, without a network
 probe or refresh. `blackbird.call("provider_auth_status", "{}")` is the Lua path.
 
-Owned credentials live in `~/.local/share/blackbird/auth/credentials.json`
+Owned credentials live in `~/.local/share/blackbird/auth/credentials.bbm`
 (owner-only0600, directory0700); `BLACKBIRD_AUTH_HOME` selects an independent store.
 Writes replace the complete record atomically. Thread/process locking serializes
 rotating refresh, and login commits check account/selection revisions. Unknown
