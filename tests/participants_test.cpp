@@ -1,5 +1,6 @@
 #include "blackbird/participants.hpp"
 #include "blackbird/tools.hpp"
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -98,6 +99,9 @@ int main() {
     const auto crash_snapshot = saved;
     check(field(pool.send(send("r1", "d1")), "accepted") == Json{true});
     check(field(pool.send(send("r1", "d1")), "duplicate") == Json{true});
+    auto reordered = send("r1", "d1");
+    std::reverse(reordered.object().begin(), reordered.object().end());
+    check(field(pool.send(reordered), "duplicate") == Json{true});
     bool conflict = false;
     try {
       pool.send(send("r1", "d1", "different"));

@@ -426,6 +426,13 @@ Json Participants::read(const Json &args) {
 }
 Json Participants::send(const Json &args) {
   drain();
+  if (args.object().size() != 4)
+    throw Error{ErrorCode::unsupported};
+  for (const auto &[key, value] : args.object()) {
+    (void)value;
+    if (key != "run_id" && key != "message_id" && key != "from" && key != "text")
+      throw Error{ErrorCode::unsupported};
+  }
   const auto &message = string_field(args, "message_id");
   bounded(message, 128);
   bounded(string_field(args, "from"), 128);
@@ -438,8 +445,9 @@ Json Participants::send(const Json &args) {
     id = string_field(run.row, "run_id");
     const auto receipt = run.receipts.find(message);
     if (receipt != run.receipts.end()) {
-      if (receipt->second != args)
-        throw Error{ErrorCode::conflict};
+      for (const auto key : {"run_id", "message_id", "from", "text"})
+        if (field(receipt->second, key) != field(args, key))
+          throw Error{ErrorCode::conflict};
       return Json::object({{"message_id", Json{message}},
                            {"accepted", Json{true}},
                            {"duplicate", Json{true}}});

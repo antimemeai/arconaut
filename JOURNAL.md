@@ -5391,3 +5391,12 @@ bounded unit. A live OpenAI participant independently identified real tiny-viewp
 stale-row/cursor defects for order 4 in 21.3 seconds, requested/actual gpt-6.1-sol,
 6134 input and527 output tokens reported. Selected source and result retained in
 context/campaign-selfdev/session; Claude's earlier unknown timeout remains unknown.
+
+The final cross-interface check caught a concrete message retry issue: Json's
+vector equality treated reordered object fields as conflicting even when all
+message values matched (Lua table enumeration can vary). The four-field message
+schema is now explicit and receipt comparison uses field values. The direct case
+reverses key order and confirms one accepted delivery, with changed text still
+rejected; release participants passes. The UI-enabled flag is captured by value
+for worker callbacks through exit. These are scoped control fixes within the
+existing hardening work, no new assurance layer.

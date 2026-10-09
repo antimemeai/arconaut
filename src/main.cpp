@@ -426,7 +426,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       if (tui)
         ui.tasks(packet);
     };
-    engine.task_activity = [&](const Json &event) {
+    engine.task_activity = [&, tui](const Json &event) {
       if (tui)
         ui.task_activity(event);
     };
