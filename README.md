@@ -56,7 +56,13 @@ Detach with `Ctrl-A`, then `d`; return with `phux attach arco`. See
 
 The working directory is the tool working directory. New default sessions live at `~/.local/state/blackbird/default`; an existing `~/.local/state/arconaut/default` is reused until you select a new default. An explicit directory keeps a project's conversation where you choose. Only one process may hold a session. Model, reasoning effort, workflow path, and conversation identities persist across restart. Explicit launch options override and save the corresponding settings. See [session reopen behavior](docs/SESSION_REOPEN.md) for recovery size limits, uncertain operations and `--rebuild-session`.
 
-The current OpenAI connection uses the operator's existing **Codex ChatGPT sign-in**. Installed native Codex supplies authentication and refresh. Blackbird constructs the provider requests, processes the streams, runs tools, and maintains context. An API key is not required for this bootstrap path. Codex is currently a runtime prerequisite for authentication; removing that construction scaffolding is future work. This is not yet a general multi-provider distribution.
+Blackbird owns provider account storage, selection and refresh. Explicit OpenAI
+sign-in uses browser OAuth; Kimi and Grok use device login; Anthropic has a
+PKCE/copy-code flow; MiMo and other providers accept keys. The main coding loop
+remains OpenAI. Direct context-only colleagues can use the wider provider registry.
+Installed Codex/Claude compatibility paths remain available until owned accounts
+are selected. Live account sign-in and remote logout revocation remain follow-through.
+See [provider authentication](docs/USING_BLACKBIRD.md) for commands and limits.
 
 ### Building this checkout
 

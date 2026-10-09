@@ -1848,6 +1848,8 @@ Json CodingEngine::call(std::string name, Json arguments) {
     }
     if (name == "audit_inspect")
       return log_.inspect(field(arguments, "query"));
+    if (name == "trajectory_read")
+      return log_.trajectory(field(arguments, "query"));
     if (name == "participant_configure")
       return participants_->configure(arguments);
     if (name == "participant_read")

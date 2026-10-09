@@ -74,6 +74,14 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           identity("generation", e.definition);
           identity("revision", e.context);
           add("payload_bytes", number(e.continuation.size()));
+          if (e.continuation.size() <= 4096) {
+            const auto packet = parse_json(read_text(e.continuation));
+            if (packet.has_value())
+              if (const auto *name = packet.value().find("operation");
+                  name && std::holds_alternative<std::string>(name->value()) &&
+                  name->string().size() <= 256)
+                add("operation", *name);
+          }
         } else if constexpr (std::is_same_v<T, InvocationEvent>) {
           identity("invocation", e.invocation);
           identity("decision", e.decision);
@@ -125,6 +133,100 @@ std::vector<std::byte> payload(const RetainedBody &body) {
       body);
 }
 } // namespace
+Json AuditLog::trajectory(const Json &q) {
+  if (!std::holds_alternative<Json::Object>(q.value()))
+    throw Error{ErrorCode::invalid_range};
+  for (const auto &[key, value] : q.object()) {
+    (void)value;
+    if (key != "cursor" && key != "end" && key != "count" && key != "scan" &&
+        key != "attempt")
+      throw Error{ErrorCode::invalid_range};
+  }
+  const auto end = index(q, "end", root_.fact_count());
+  const auto count = index(q, "count", 32), scan = index(q, "scan", 128);
+  if (end > root_.fact_count() || count == 0 || count > 64 || scan == 0 || scan > 256)
+    throw Error{ErrorCode::invalid_range};
+  std::string attempt, invocation, decision;
+  if (const auto *selector = q.find("attempt")) {
+    const auto *text = std::get_if<std::string>(&selector->value());
+    if (!text || text->size() != 32)
+      throw Error{ErrorCode::invalid_range};
+    IdentityBytes bytes{};
+    auto nibble = [](char c) -> unsigned {
+      if (c >= '0' && c <= '9')
+        return static_cast<unsigned>(c - '0');
+      if (c >= 'a' && c <= 'f')
+        return static_cast<unsigned>(c - 'a') + 10U;
+      throw Error{ErrorCode::invalid_range};
+    };
+    for (std::size_t i = 0; i < bytes.size(); ++i)
+      bytes[i] = std::byte{static_cast<unsigned char>((nibble((*text)[2 * i]) << 4U) |
+                                                      nibble((*text)[2 * i + 1]))};
+    const auto state =
+        unwrap(root_.attempt(unwrap(OperationAttemptId::from_bytes(bytes))));
+    attempt = *text;
+    invocation = hex_identity(state.admission.invocation.bytes());
+    decision = hex_identity(state.admission.decision.bytes());
+  }
+  const auto cursor =
+      index(q, "cursor", attempt.empty() ? (end > 128 ? end - 128 : 0) : 0);
+  if (cursor > end)
+    throw Error{ErrorCode::invalid_range};
+  const auto stop = cursor + std::min(scan, end - cursor);
+  auto next = cursor;
+  Json::Array rows;
+  while (next < stop && rows.size() < count) {
+    auto row = summary(unwrap(root_.fact(next)), next);
+    ++next;
+    if (!attempt.empty()) {
+      auto matches = [&](std::string_view key, const std::string &value) {
+        const auto *v = row.find(key);
+        return v && v->string() == value;
+      };
+      const auto *metadata = row.find("metadata");
+      const auto *capture_attempt = metadata ? metadata->find("attempt") : nullptr;
+      if (!matches("attempt", attempt) &&
+          !(row.find("attempt") == nullptr && matches("invocation", invocation)) &&
+          !(row.find("attempt") == nullptr && row.find("invocation") == nullptr &&
+            matches("decision", decision)) &&
+          !(capture_attempt && capture_attempt->string() == attempt))
+        continue;
+    }
+    const auto kind =
+        static_cast<std::size_t>(std::stoull(field(row, "kind").number().text));
+    constexpr const char *names[] = {"",
+                                     "identity_reserved",
+                                     "decision",
+                                     "invocation",
+                                     "attempt_admitted",
+                                     "attempt_open",
+                                     "observation",
+                                     "retry",
+                                     "identity_conflict",
+                                     "complaint",
+                                     "rejected_submission",
+                                     "adapter_receipt",
+                                     "recovery_choice",
+                                     "provisional_capture",
+                                     "application"};
+    if (kind == 0 || kind >= std::size(names))
+      throw Error{ErrorCode::corrupt};
+    row.object().emplace_back("event", Json{names[kind]});
+    rows.push_back(std::move(row));
+  }
+  return Json::object(
+      {{"schema", Json{"blackbird.trajectory.v1"}},
+       {"journal", Json{hex_identity(root_.cursor().journal.bytes())}},
+       {"cursor", number(cursor)},
+       {"end", number(end)},
+       {"next", number(next)},
+       {"scanned", number(next - cursor)},
+       {"caught_up", Json{next == end}},
+       {"events", Json{std::move(rows)}},
+       {"scope",
+        Json{"committed prefix only; recorded order, not inferred causation; "
+             "missing settlement is not success; originals via audit_inspect"}}});
+}
 Json AuditLog::inspect(const Json &q) {
   if (!std::holds_alternative<Json::Object>(q.value()))
     throw Error{ErrorCode::invalid_range};

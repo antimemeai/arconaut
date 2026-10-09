@@ -19,7 +19,7 @@ The separate Giga stays paused.
 
 | Area | Current behavior | Material limit |
 | --- | --- | --- |
-| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new`, bounded retained names, searchable `/sessions` and `/resume`; independent task/draft/context restoration; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
+| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new`, bounded retained names, searchable `/sessions` and `/resume`; independent task/draft/context restoration; restart/resume/continue. | Owned OpenAI auth available; installed Codex remains a compatibility route. |
 | Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Read selector now has one lines/bytes mode; malformed calls return correction guidance. Historical Lua ranges stay compatible. |
 | Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
 | Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Callable registry/configuration staging is delivered; combined atomic interrupt/apply and live native reload remain deferred. |
@@ -39,7 +39,8 @@ The separate Giga stays paused.
 Common colleague and participant machinery is delivered, including a live Claude
 source review. Its findings need source triage. The earlier timed-out request
 remains unknown; the later answer does not resolve that earlier effect.
-Kimi/MiMo/Grok and remote tool-using colleagues are not implemented by this adapter.
+Owned direct Kimi/MiMo/Grok colleagues are implemented; remote tool-using
+colleagues remain work.
 
 G9 is a security discussion only. Its original OpenSSL/TLS proposal is not a
 selected multiplayer architecture. Transport, room/message security, peer identity,
@@ -85,9 +86,9 @@ multiplayer and standalone login. The historical Giga remains paused. The curren
 collaboration campaign is delivered. Operator prioritizes owned provider login
 and credential lifecycle beyond Codex and Claude CLI authentication.
 
-## Provider-auth candidate
+## Owned provider authentication
 
-Branch `provider-auth` implements an owned provider registry/credential store,
+Master includes an owned provider registry/credential store,
 private operator auth CLI, Kimi/Grok device login, OpenAI signed browser login,
 Anthropic PKCE/copy-code and generic key providers. Direct peer transports cover
 the priority providers plus custom Responses/chat/Messages services. Main coding
@@ -95,6 +96,16 @@ remains OpenAI and can use explicitly selected owned credentials. Existing
 Codex/Claude compatibility paths remain; operator account consent and remote
 logout revocation are follow-through. Scoped Mac debug/release and Linux debug
 checks passed; the late ambient-key guard has its direct Mac release check.
-See USING_BLACKBIRD for commands and limits. This candidate is not merged into
-master and the operator's running release is untouched. Next campaign is the
+See USING_BLACKBIRD for commands and limits. Operator authorized integration on2026-10-09; provider-auth fast-forwarded
+onto master and was pushed at59539d3. The operator's running process is untouched. Next campaign is the
 requested instrumentation/evaluation/audit/trace/trajectory/Entire-like work.
+
+## Trajectory campaign first slice
+
+Candidate branch `trajectories` adds a shared committed metadata timeline with
+readable `/trace`, model `trajectory_read` and Lua calls. It bounds both examined
+facts and returned rows, pins historical prefixes and follows causal IDs to
+existing originals. Mac debug/release and Linux debug direct checks passed.
+Operational timing/usage metadata review, integrated evaluation runs, native Git
+checkpoint links and richer inspect UI are subsequent units; none is implied
+implemented by this first reader. See [design](TRAJECTORIES.md).

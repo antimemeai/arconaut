@@ -566,6 +566,35 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
         } else if (prompt.starts_with("/auth ")) {
           emit("Use ./scripts/blackbird auth outside chat for sign-in/key/use/logout. "
                "Secret entry is excluded from session history.\n");
+        } else if (prompt == "/trace" || prompt.starts_with("/trace ")) {
+          const auto query = prompt == "/trace" ? Json::object({})
+                                                : unwrap(parse_json(prompt.substr(7)));
+          const auto result =
+              engine.operator_call("trajectory_read", Json::object({{"query", query}}));
+          if (!result.find("events")) {
+            emit(safe(unwrap(dump_json(result))) + "\n");
+          } else {
+            emit("record  event  detail  outcome  attempt\n");
+            for (const auto &row : field(result, "events").array()) {
+              auto text = [&](std::string_view key) {
+                const auto *v = row.find(key);
+                return v ? v->string() : std::string{"-"};
+              };
+              const auto *metadata = row.find("metadata");
+              const auto *capture = metadata ? metadata->find("attempt") : nullptr;
+              const auto attempt = row.find("attempt") ? text("attempt")
+                                   : capture           ? capture->string()
+                                                       : "-";
+              const auto detail = row.find("operation") ? text("operation")
+                                  : row.find("label")   ? text("label")
+                                                        : "-";
+              emit(field(row, "record").number().text + "  " + text("event") + "  " +
+                   safe(detail) + "  " + text("outcome") + "  " + safe(attempt) + "\n");
+            }
+            emit("next=" + field(result, "next").number().text +
+                 " end=" + field(result, "end").number().text +
+                 "; pin end for paging; originals via audit_inspect\n");
+          }
         } else if (prompt == "/colleagues") {
           emit(unwrap(dump_json(
                    engine.operator_call("colleague_catalog", Json::object({})))) +

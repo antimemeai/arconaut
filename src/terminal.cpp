@@ -113,6 +113,8 @@ const std::array builtin_commands{
     ChatCommand{"/colleagues", "",
                 "Show installed colleague transports; authentication observed on call",
                 "Tools"},
+    ChatCommand{"/trace", "[JSON]",
+                "Read committed trajectory; bounded pages and attempt filter", "Tools"},
     ChatCommand{"/colleague", "JSON",
                 "One selected-context colleague request; no tools or retries", "Tools"},
     ChatCommand{"/beads",

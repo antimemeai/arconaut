@@ -5503,3 +5503,38 @@ The final routing review kept ambient OPENAI_API_KEY from silently overriding
 existing Codex subscription traffic. OpenAI changes route only after explicit
 owned account/key selection; new direct providers can consume their documented
 environment key when no owned selection exists.
+
+## 2026-10-09 — Auth integration and trajectory campaign pivot
+
+Operator explicitly authorized commit/push/merge and pivot. Fast-forwarded master
+froma6ab40d to provider-auth59539d3 and pushed origin/master. Existing art files
+remain untracked and untouched. Running operator process untouched. Live account
+consent and remote revocation stay follow-through, not prerequisites invented
+for source integration. Updated README/current-state stale auth descriptions.
+
+Began `trajectories` candidate. Read current audit/capture/operation paths and
+existing audit/evaluation studies, GEPA adapter source, primary OpenTelemetry
+GenAI agent/evaluation conventions, and Entire CLI checkpoint design/source.
+Acquired intact pinned Entire source ZIP atb4d2443bf18e98ca72c21b52a44833d1f6ecedc8;
+extracted study-only with Git/detritus omitted, source/restoration in QUARANTINE.
+No reference program or real provider account used. Rhizome research watch paths
+were absent under projects and projects_old; no findings borrowed by guess.
+
+Design and implementation sequence in docs/TRAJECTORIES.md. First slice45min
+including at most15min two-layer hardening: bounded shared trajectory reader over
+existing metadata, `/trace`, model/Lua callable. No extra authoritative log or
+payload duplication. Examined facts capped256, returned rows64; pinned end/next
+expose progress; missing settlement never succeeds. Existing audit_inspect supplies
+exact source drill-down; diagnostics TTL30days unchanged.
+
+Direct Mac debug fixture/CLI passed; existing audit/terminal passed. Scoped Mac
+release and Linux debug rechecks4cases each passed. Linux capture
+context/linux/run-mtrl3_4p; release build context/trajectory-release-build.log.
+Native checks cover frozen-prefix append/reopen, unknown settlement, exact causal
+filter/siblings, empty scan bounds, original exclusion, oversized cold metadata
+no-read, malformed queries and actual model/Lua/operator equivalence. Real CLI
+checks readable table, original exclusion and repeated frozen prefix. Fixture
+fixes respected existing attempt invariants and JSON member-order independence.
+No startup trial, live provider probe, benchmark or certification. Campaign remains
+active: operational capture matrix, evaluations, Git checkpoint/explanation and
+integrated inspect/export are subsequent conceptual units.

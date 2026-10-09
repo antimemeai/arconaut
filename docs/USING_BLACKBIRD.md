@@ -664,3 +664,33 @@ ChatGPT-plan login or key. Existing Codex authentication remains the compatibili
 path when neither is selected; provider `claude` remains the explicit Claude CLI
 bridge, while `anthropic` uses owned direct authentication. The operator's current
 release process is unchanged by candidate development.
+
+## Trajectory inspection
+
+`/trace` prints a readable committed timeline. `/trace JSON` accepts the same
+query as model tool `trajectory_read` and Lua:
+
+```lua
+local page = blackbird.call("trajectory_read", {query={cursor=0,count=32,scan=128}})
+-- Keep page.end, then resume at page.next to read that same frozen prefix.
+```
+
+Query fields: `cursor` (fact index), `end` (exclusive pinned fact count), `count`
+1..64 (default32), `scan`1..256 (default128), optional `attempt` (32 lowercase
+hex characters of an existing attempt). Default unfiltered query begins within
+the latest128 facts; attempt filtering starts at0. Returned events include
+readable event names, causal IDs, observed outcomes and existing source locators.
+Decision metadata exposes operation names when available. Filtering includes the
+attempt's decision/invocation and linked captures, excluding sibling attempts.
+
+`next` advances by examined facts, including nonmatches. Empty events does not
+mean the search finished: continue until `caught_up` is true for the pinned end.
+A fresh query without end observes a newer committed prefix. Inspection calls
+are themselves audited; explicit finite pages prevent an automatic feed from
+observing its own deliveries. This first surface has no watch or automatic replay.
+
+Original payloads remain separate: use `audit_inspect` with the event's `record`
+and optional `source`, `offset`, `limit` for exact hex bytes. Timeline metadata
+does not establish success from admission or establish a missing settlement.
+It does not yet expose timing/usage aggregates, evaluations or Git checkpoints.
+See [campaign design](TRAJECTORIES.md) for the next units.

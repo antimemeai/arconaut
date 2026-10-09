@@ -252,6 +252,14 @@ request/effect linkage; do not start that second campaign during auth delivery.
 Provider-auth candidate implementation and usage are now in USING_BLACKBIRD.
 Shared credentials, priority-provider login adapters and direct peer transports
 are implemented; account consent/live subscription checks and remote revocation
-remain explicit follow-through. The active master release is not replaced by this
-candidate. Next effort is instrumentation, integrated evaluation, audit review
+remain explicit follow-through. Operator authorized integration on2026-10-09: provider-auth is merged and
+pushed on master at59539d3. Existing running processes keep their loaded binary. Next effort is instrumentation, integrated evaluation, audit review
 and upgrades, tracing/trajectories and owned Entire-like machinery.
+
+## Active trajectory campaign
+
+Auth integration is complete; live sign-in and remote revocation stay separate
+follow-through. [Trajectory design](TRAJECTORIES.md) sequences the next major
+effort. First candidate slice implements shared bounded metadata reading and
+`/trace`; following units add operational capture metadata, evaluations, Git
+checkpoint/explanation and integrated UI/export. No new dependency selected.

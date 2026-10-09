@@ -539,3 +539,17 @@ identify the acquired content, not a guarantee of future identical restoration.
 distinguishes compact current state, bounded recovery tail and on-demand archive.
 No imported builds/tests/installers executed, runtime adopted or dependency selected;
 Aeron's JVM code is mechanism reference only. Archived instructions are historical.
+
+## Trajectory campaign reference — 2026-10-09
+
+Entire CLI, https://github.com/entireio/cli, revision `b4d2443bf18e98ca72c21b52a44833d1f6ecedc8`.
+Study-only extraction: `quarantine/entire-cli-b4d2443bf18e`; no reference commands executed.
+Intact archive: `../quarantine_proj/archives/blackbird-trajectories-2026-10-09/entire-cli-b4d2443bf18e.zip`; SHA-256 `ad9354dfe989cc71fd83f6a2245e0b3467612e6131770e3b321adf016b88de59`.
+Source: https://codeload.github.com/entireio/cli/zip/b4d2443bf18e98ca72c21b52a44833d1f6ecedc8. Restoration, with destination absent:
+
+```sh
+python3 scripts/ingest_zip.py ../quarantine_proj/archives/blackbird-trajectories-2026-10-09/entire-cli-b4d2443bf18e.zip quarantine/entire-cli-b4d2443bf18e --root cli-b4d2443bf18e98ca72c21b52a44833d1f6ecedc8 --skip-symlinks
+```
+
+Importer omits nested Git metadata, `.entire`, filesystem detritus, bytecode
+caches and symlinks; archive remains intact. This is a reference, not a dependency.

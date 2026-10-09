@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Actual operator/Lua trajectory output over a private fixture; no network."""
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+binary = str(Path(sys.argv[1]).resolve())
+with tempfile.TemporaryDirectory(prefix="blackbird-trace-cli-") as tmp:
+    root = Path(tmp)
+    fixture = root / "source.txt"
+    fixture.write_text("PRIVATE_ORIGINAL_ONLY_73985\n")
+    def run(prompt):
+        return subprocess.check_output(
+            [binary, "--session", str(root / "session"), "--once", prompt],
+            stderr=subprocess.STDOUT, timeout=8).decode()
+    args = json.dumps({"path": str(fixture)})
+    run('/lua return blackbird.call("read_file", blackbird.decode([=[' + args + ']=]))')
+    first = run('/trace {"cursor":0,"count":64,"scan":256}')
+    assert "record  event  detail  outcome  attempt" in first
+    assert "decision  read_file" in first and "attempt_admitted" in first
+    assert "observation" in first and "success" in first
+    assert "PRIVATE_ORIGINAL_ONLY_73985" not in first, "raw payload in metadata display"
+    end = int(re.search(r"next=\d+ end=(\d+)", first).group(1))
+    frozen = run('/trace ' + json.dumps({"cursor": 0, "count": 64, "scan": 256, "end": end}))
+    repeated = run('/trace ' + json.dumps({"cursor": 0, "count": 64, "scan": 256, "end": end}))
+    def table(output):
+        return output[output.index("record  event"):].split("; pin end")[0]
+    assert table(first) == table(frozen) == table(repeated), "pinned CLI timeline changed"
+    bad = run('/trace {"scan":257}')
+    assert "invalid_range" in bad, "bad query accepted"
+print("Trajectory CLI checks passed")

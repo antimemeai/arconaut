@@ -36,6 +36,7 @@ public:
   std::string original(OriginalCapture capture);
   void retain_program(std::string_view source, DefinitionGenerationId generation);
   Json inspect(const Json &query);
+  Json trajectory(const Json &query);
   RetainedState &root() noexcept { return root_; }
 
 private:
