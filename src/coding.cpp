@@ -1,6 +1,7 @@
 #include "blackbird/coding.hpp"
 #include "blackbird/local_timing.hpp"
 #include "blackbird/process_lifetime.hpp"
+#include "blackbird/provider_auth.hpp"
 #include "stream_capture.hpp"
 extern "C" {
 #include <lauxlib.h>
@@ -1875,6 +1876,8 @@ Json CodingEngine::call(std::string name, Json arguments) {
                 }};
       return participants_->start(hex_identity(attempt.bytes()), arguments, transport);
     }
+    if (name == "provider_auth_status")
+      return ProviderAuth{}.status();
     if (name == "colleague_catalog")
       return colleague_catalog();
     if (name == "colleague") {

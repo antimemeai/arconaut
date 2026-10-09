@@ -25,6 +25,7 @@ private:
   OpenAiLogin(std::string token, std::string account)
       : access_token_(std::move(token)), account_id_(std::move(account)) {}
   std::string access_token_, account_id_;
+  bool owned_auth_ = false;
   friend Result<OpenAiLogin> codex_login(const OpenAiConfig &, bool);
   friend Result<std::string> openai_http(const OpenAiConfig &, const OpenAiLogin &,
                                          std::string_view, const Json *);

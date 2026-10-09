@@ -9,6 +9,9 @@ if [ -z "${BLACKBIRD_JEV_ENV_FILE:-}" ] && [ -f "$blackbird_root/../.env" ]; the
   BLACKBIRD_JEV_ENV_FILE="$blackbird_root/../.env"
   export BLACKBIRD_JEV_ENV_FILE
 fi
+if [ "${1:-}" = auth ]; then
+  exec "$blackbird_executable" "$@"
+fi
 blackbird_probe=false
 blackbird_session="$HOME/.local/state/blackbird/default"
 if [ ! -e "$blackbird_session" ] && [ -d "$HOME/.local/state/arconaut/default" ]; then

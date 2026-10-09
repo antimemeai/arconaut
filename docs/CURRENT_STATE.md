@@ -84,3 +84,17 @@ complaint follow-through, remote tool-using outposts, station attachment,
 multiplayer and standalone login. The historical Giga remains paused. The current
 collaboration campaign is delivered. Operator prioritizes owned provider login
 and credential lifecycle beyond Codex and Claude CLI authentication.
+
+## Provider-auth candidate
+
+Branch `provider-auth` implements an owned provider registry/credential store,
+private operator auth CLI, Kimi/Grok device login, OpenAI signed browser login,
+Anthropic PKCE/copy-code and generic key providers. Direct peer transports cover
+the priority providers plus custom Responses/chat/Messages services. Main coding
+remains OpenAI and can use explicitly selected owned credentials. Existing
+Codex/Claude compatibility paths remain; operator account consent and remote
+logout revocation are follow-through. Scoped Mac debug/release and Linux debug
+checks passed; the late ambient-key guard has its direct Mac release check.
+See USING_BLACKBIRD for commands and limits. This candidate is not merged into
+master and the operator's running release is untouched. Next campaign is the
+requested instrumentation/evaluation/audit/trace/trajectory/Entire-like work.

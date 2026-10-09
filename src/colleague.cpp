@@ -1,5 +1,6 @@
 #include "blackbird/colleague.hpp"
 #include "blackbird/openai.hpp"
+#include "blackbird/provider_auth.hpp"
 #include "blackbird/tools.hpp"
 #include <charconv>
 #include <cstdlib>
@@ -107,8 +108,8 @@ Json prepare_colleague(const Json &request) {
   for (const auto name : {"request_id", "from", "to", "provider", "model", "task"})
     (void)text(request, name);
   const auto &provider = text(request, "provider");
-  if (provider != "openai" && provider != "claude")
-    throw Error{ErrorCode::unsupported};
+  if (provider != "claude")
+    (void)ProviderAuth{}.descriptor(provider);
   const auto &profile = required_field(request, "profile");
   keys(profile, {"name", "provenance", "timeout_seconds", "tools", "requests"});
   (void)text(profile, "name");
@@ -146,6 +147,9 @@ Json prepare_colleague(const Json &request) {
                                 {"prompt", Json{prompt}},
                                 {"instructions", Json{instructions}}});
   if (provider == "openai") {
+    ProviderAuth auth;
+    if (auth.selected("openai"))
+      prepared.object().emplace_back("native", auth.binding("openai"));
     prepared.object().emplace_back(
         "upstream",
         Json::object(
@@ -156,6 +160,44 @@ Json prepare_colleague(const Json &request) {
              {"tools", Json{Json::Array{}}},
              {"store", Json{false}},
              {"stream", Json{true}}}));
+  } else if (provider != "claude") {
+    ProviderAuth auth;
+    const auto binding = auth.binding(provider);
+    const auto protocol = text(binding, "protocol");
+    Json upstream;
+    if (protocol == "responses") {
+      upstream = Json::object(
+          {{"model", required_field(request, "model")},
+           {"instructions", Json{instructions}},
+           {"input", Json{Json::Array{Json::object(
+                         {{"role", Json{"user"}}, {"content", Json{prompt}}})}}},
+           {"tools", Json{Json::Array{}}},
+           {"store", Json{false}},
+           {"stream", Json{true}}});
+    } else if (protocol == "messages") {
+      upstream = Json::object(
+          {{"model", required_field(request, "model")},
+           {"system", Json{instructions}},
+           {"messages", Json{Json::Array{Json::object(
+                            {{"role", Json{"user"}}, {"content", Json{prompt}}})}}},
+           {"max_tokens", Json{JsonNumber{"8192"}}},
+           {"stream", Json{false}}});
+      if (provider == "anthropic" && text(binding, "kind") == "oauth")
+        set(upstream, "system",
+            Json{"You are Claude Code, Anthropic's official CLI for Claude.\n" +
+                 instructions});
+    } else {
+      upstream = Json::object(
+          {{"model", required_field(request, "model")},
+           {"messages",
+            Json{Json::Array{
+                Json::object(
+                    {{"role", Json{"system"}}, {"content", Json{instructions}}}),
+                Json::object({{"role", Json{"user"}}, {"content", Json{prompt}}})}}},
+           {"stream", Json{false}}});
+    }
+    prepared.object().emplace_back("native", binding);
+    prepared.object().emplace_back("upstream", std::move(upstream));
   } else {
     // Existing authenticated CLI consumed as an external service. No SDK adopted.
     // Empty settings sources + MCP restriction suppress project/user extensions;
@@ -198,7 +240,7 @@ Json call_colleague(const Json &request, const ColleagueCapture &capture,
     capture("upstream_result", encoded(result));
     std::string output;
     const auto &provider = text(request, "provider");
-    if (provider == "openai") {
+    if (provider == "openai" || prepared.find("native")) {
       if (text(result, "status") != "completed")
         throw Error{ErrorCode::incomplete};
       output = openai_text(result);
@@ -263,9 +305,18 @@ Json call_colleague(const Json &request, const ColleagueCapture &capture,
         set(reply, "usage", *usage);
     }
   } catch (const Error &e) {
-    set(reply, "status", Json{"unknown"});
-    set(reply, "remote_disposition", Json{"unknown"});
-    set(reply, "error", Json{error_name(e.code)});
+    if (e.code == ErrorCode::provider_auth ||
+        e.code == ErrorCode::provider_rate_limit) {
+      set(reply, "status", Json{"failed"});
+      set(reply, "remote_disposition",
+          Json{e.detail >= 400 ? "reported_failure" : "not_dispatched"});
+      set(reply, "error", Json{error_name(e.code)});
+      set(reply, "http_status", Json{JsonNumber{std::to_string(e.detail)}});
+    } else {
+      set(reply, "status", Json{"unknown"});
+      set(reply, "remote_disposition", Json{"unknown"});
+      set(reply, "error", Json{error_name(e.code)});
+    }
   } catch (const std::bad_variant_access &) {
     set(reply, "status", Json{"unknown"});
     set(reply, "remote_disposition", Json{"unknown"});
@@ -276,8 +327,68 @@ Json call_colleague(const Json &request, const ColleagueCapture &capture,
 }
 
 Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture,
-                                const std::function<bool()> &cancelled) {
+                                const std::function<bool()> &cancelled,
+                                const ProviderAuthConfig *owned_config) {
   const auto &request = required_field(prepared, "request");
+  if (const auto *binding = prepared.find("native")) {
+    ProviderAuthConfig config = owned_config ? *owned_config : ProviderAuthConfig{};
+    config.cancelled = cancelled;
+    ProviderAuth auth{std::move(config)};
+    const auto protocol = text(*binding, "protocol");
+    const auto route = protocol == "responses"  ? "responses"
+                       : protocol == "messages" ? "messages"
+                                                : "chat/completions";
+    auto wire = auth.request(
+        text(request, "provider"), route, required_field(prepared, "upstream"),
+        timeout(request), [&](std::string_view bytes) { capture("raw", bytes); },
+        binding);
+    if (protocol == "responses")
+      return unwrap(completed_response(wire.body));
+    const auto upstream = unwrap(parse_json(wire.body));
+    Json::Array parts;
+    if (protocol == "messages") {
+      if (text(upstream, "type") != "message")
+        throw Error{ErrorCode::corrupt};
+      const auto reason = text(upstream, "stop_reason");
+      if (reason != "end_turn" && reason != "stop_sequence")
+        throw Error{ErrorCode::incomplete};
+      for (const auto &part : required_field(upstream, "content").array()) {
+        const auto type = text(part, "type");
+        if (type == "thinking" || type == "redacted_thinking")
+          continue;
+        if (type != "text")
+          throw Error{ErrorCode::unsupported};
+        parts.push_back(Json::object(
+            {{"type", Json{"output_text"}}, {"text", required_field(part, "text")}}));
+      }
+    } else {
+      const auto &choices = required_field(upstream, "choices").array();
+      if (choices.size() != 1)
+        throw Error{ErrorCode::corrupt};
+      if (text(choices[0], "finish_reason") != "stop")
+        throw Error{ErrorCode::incomplete};
+      const auto &message = required_field(choices[0], "message");
+      if (message.find("tool_calls"))
+        throw Error{ErrorCode::unsupported};
+      if (const auto *refusal = message.find("refusal");
+          refusal && std::holds_alternative<std::string>(refusal->value()) &&
+          !refusal->string().empty())
+        parts.push_back(
+            Json::object({{"type", Json{"refusal"}}, {"refusal", *refusal}}));
+      else
+        parts.push_back(Json::object({{"type", Json{"output_text"}},
+                                      {"text", required_field(message, "content")}}));
+    }
+    return Json::object(
+        {{"status", Json{"completed"}},
+         {"model", required_field(upstream, "model")},
+         {"usage", upstream.find("usage") ? *upstream.find("usage") : Json{}},
+         {"output",
+          Json{Json::Array{Json::object({{"type", Json{"message"}},
+                                         {"role", Json{"assistant"}},
+                                         {"status", Json{"completed"}},
+                                         {"content", Json{std::move(parts)}}})}}}});
+  }
   if (text(request, "provider") == "openai") {
     OpenAiConfig config;
     config.timeout_seconds = timeout(request);
@@ -311,7 +422,7 @@ Json colleague_catalog() {
     }
     return false;
   };
-  return Json::object(
+  auto result = Json::object(
       {{"providers",
         Json{Json::Array{
             Json::object(
@@ -325,5 +436,8 @@ Json colleague_catalog() {
        {"tools", Json{"none"}},
        {"models", Json{"caller selected; actual availability is observed on a call"}},
        {"retries", Json{JsonNumber{"0"}}}});
+  set(result, "owned_auth", ProviderAuth{}.status());
+  set(result, "registry", ProviderAuth{}.catalog());
+  return result;
 }
 } // namespace blackbird

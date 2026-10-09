@@ -1,5 +1,6 @@
 #pragma once
 #include "blackbird/json.hpp"
+#include "blackbird/provider_auth.hpp"
 #include <functional>
 
 namespace blackbird {
@@ -11,6 +12,7 @@ Json prepare_colleague(const Json &request);
 Json call_colleague(const Json &request, const ColleagueCapture &capture,
                     const ColleagueTransport &transport);
 Json native_colleague_transport(const Json &prepared, const ColleagueCapture &capture,
-                                const std::function<bool()> &cancelled = {});
+                                const std::function<bool()> &cancelled = {},
+                                const ProviderAuthConfig *owned_config = nullptr);
 Json colleague_catalog();
 } // namespace blackbird

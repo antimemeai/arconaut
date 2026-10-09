@@ -5457,3 +5457,49 @@ community plugin examined borrows Claude Code credentials, owns some refresh
 and direct inference, falls back to CLI. Recorded the distinction in NEXT_CAMPAIGN
 so the design does not mistake credential borrowing for independent login or
 technical feasibility for an approved application client. No auth implementation.
+
+## 2026-10-08 — Begin provider authentication upgrade
+
+Operator authorizes auth following OpenCode's lead, prioritizing Kimi, MiMo,
+OpenAI, Anthropic and Grok without limiting the registry. Next effort is
+instrumentation/evaluation/audit/tracing/trajectories and Entire-like machinery.
+Created provider-auth candidate branch; plan/direct checks/allowance recorded in
+NEXT_CAMPAIGN. Read existing quarantined OpenCode auth/xAI/OpenAI, Kimi official
+OAuth, Pi Kimi/Anthropic, current official OpenAI registration/session/inference
+and MiMo/xAI docs. No secret state read, no provider inference yet.
+
+Provider-auth implementation adds an owned C++ registry/store, CLI outside chat,
+Kimi/Grok device authorization, OpenAI dynamic registration with signed identity
+validation and Anthropic PKCE/copy-code, plus API keys/custom HTTPS providers.
+Direct Responses/chat/Messages colleague adapters preserve original captures and
+bind admitted account/origin/revision. OpenAI main requests prefer owned auth;
+legacy Codex and explicit claude CLI paths remain until operator sign-in. Reuses
+curl and installed openssl utilities; no linked SDK/library adopted.
+
+Direct debug cases passed storage/permission/symlink/atomic selection, refresh
+single-flight, device timing/expiry, real signed JWT rejection/acceptance, callback
+state, and native transport normalization for six providers. Scoped existing
+coding/terminal/colleague/OpenAI auth checks passed. Source/PTY remediation fixed
+magic logout-label collision, first-login logout resurrection, late selection
+commit, prompt-before-echo suppression and interrupted hidden input. Mac PTY
+found TCSAFLUSH restoration can block on undrained output; TCSANOW plus input
+flush fixes it and direct CLI/PTY passes. Cross-process refresh case uses two
+actual child processes and one observed rotation. Linux recheck initially found
+a missing sys/file.h include for flock; added the direct platform declaration.
+Final scoped Linux debug7-case recheck passed after the sys/file.h fix. Final
+Mac release7-case recheck passed, including the later ambient-key routing guard.
+Linux capture context/linux/run-e5emjw07; release log
+context/provider-auth-release-final.log. No ASan/global suite or live provider
+probe was added to this bounded unit. No real account
+credentials read/imported/changed, no inference calls or live-login claims.
+
+Limits: local logout only (remote revocation remains work), operator browser
+consent/live account validation pending, main loop OpenAI only; no keychain
+backend yet. Registry extensibility does not imply every provider's subscription
+contract. Next campaign remains instrumentation/evaluation/audit/traces/trajectories
+and Entire-like owned integration, as explicitly requested by the operator.
+
+The final routing review kept ambient OPENAI_API_KEY from silently overriding
+existing Codex subscription traffic. OpenAI changes route only after explicit
+owned account/key selection; new direct providers can consume their documented
+environment key when no owned selection exists.

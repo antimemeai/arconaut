@@ -1,6 +1,7 @@
 #include "blackbird/backstop.hpp"
 #include "blackbird/coding.hpp"
 #include "blackbird/local_timing.hpp"
+#include "blackbird/provider_auth.hpp"
 #include "blackbird/sprite.hpp"
 #include "blackbird/station.hpp"
 #include "blackbird/terminal.hpp"
@@ -558,6 +559,13 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
                    "participant_cancel",
                    Json::object({{"run_id", Json{std::string{prompt.substr(6)}}}})))) +
                "\n");
+        } else if (prompt == "/auth" || prompt == "/auth status") {
+          emit(safe(unwrap(dump_json(ProviderAuth{}.status()))) + "\n");
+        } else if (prompt == "/auth providers") {
+          emit(safe(unwrap(dump_json(ProviderAuth{}.catalog()))) + "\n");
+        } else if (prompt.starts_with("/auth ")) {
+          emit("Use ./scripts/blackbird auth outside chat for sign-in/key/use/logout. "
+               "Secret entry is excluded from session history.\n");
         } else if (prompt == "/colleagues") {
           emit(unwrap(dump_json(
                    engine.operator_call("colleague_catalog", Json::object({})))) +
@@ -957,6 +965,8 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
 }
 
 int main(int argc, char **argv) {
+  if (argc > 1 && std::string_view{argv[1]} == "auth")
+    return provider_auth_cli(argc - 1, argv + 1);
   std::vector<std::string> current_arguments, return_session;
   std::vector<char *> arguments;
   for (;;) {

@@ -220,3 +220,38 @@ and sends direct API requests with Claude Code identity headers/prompt transform
 That implementation still starts from another harness's credentials. Study these
 mechanisms without conflating technically independent OAuth with provider-approved
 application access, or borrowed credential refresh with independent registration.
+
+## 2026-10-08 authorized provider-auth implementation
+
+Build owned C++ registry, private atomic0600 credential records, explicit active
+account, safe metadata discovery and standalone auth CLI. Models get credential
+status, never token entry/retrieval. API keys enter outside chat/audit. Environment
+keys are available only when no explicit owned selection exists; a failed owned
+subscription never falls through to API billing. Add Kimi/Grok device grants and
+OpenAI/Anthropic PKCE login with cross-process serialized refresh. Login commits
+only a complete validated response; concurrent logout/reselection cannot be
+undone by a late refresh. HTTPS origins are pinned per adapter; no redirects.
+Direct colleagues use owned credentials for all priority providers, preserving
+selected-context admissions and response originals. Current Codex/Claude bridges
+remain explicit compatibility paths until an owned account is selected.
+
+Direct checks: permission/symlink and atomic replacement, malformed/missing token
+responses, competing refresh and logout, RFC8628 pending/slow_down/expiry/denial,
+PKCE state and callback rejection, secret exclusion from discovery/argv/audit,
+HTTP status distinction and protocol routing. Each conceptual unit90min including
+at most25min hardening/two layers. No new linked library or SDK; reuse existing
+curl process machinery. Crypto mechanisms will be owned or delegated to installed
+OS tooling without embedding a third-party auth framework. Browser consent needs
+the operator; deterministic flow tests do not imply live account validation.
+
+After auth: instrumentation and integrated evaluation interfaces; audit logging
+review/upgrades; tracing and trajectories, including an owned reimplementation of
+Entire-like functionality with better integration. Preserve originals and causal
+request/effect linkage; do not start that second campaign during auth delivery.
+
+Provider-auth candidate implementation and usage are now in USING_BLACKBIRD.
+Shared credentials, priority-provider login adapters and direct peer transports
+are implemented; account consent/live subscription checks and remote revocation
+remain explicit follow-through. The active master release is not replaced by this
+candidate. Next effort is instrumentation, integrated evaluation, audit review
+and upgrades, tracing/trajectories and owned Entire-like machinery.

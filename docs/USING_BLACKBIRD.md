@@ -593,3 +593,74 @@ Reopening also settles an interrupted colleague/participant **control admission*
 as unknown without replay. This covers a crash before its scheduling/result record
 was completed; it does not establish that remote work stopped. Unresolved general
 command/file custody keeps its existing refusal.
+
+## Owned provider authentication
+
+The provider-auth candidate adds `./scripts/blackbird auth` (or
+`build/release/blackbird-auth`) as a separate operator interface. Use it outside
+chat: keys and callback codes do not enter session prompts or operation inputs.
+
+```sh
+./scripts/blackbird auth providers
+./scripts/blackbird auth status
+./scripts/blackbird auth login kimi personal
+./scripts/blackbird auth login grok personal
+./scripts/blackbird auth login openai personal
+./scripts/blackbird auth login anthropic personal
+./scripts/blackbird auth key mimo work
+./scripts/blackbird auth use openai personal
+./scripts/blackbird auth logout openai personal
+```
+
+Kimi/Grok login prints a verification URL and code, then polls using the
+provider's interval. OpenAI prints a browser URL and receives its callback on a
+loopback listener; its signed ID token, issuer, audience, expiry, nonce and plan
+scopes are checked before storing credentials. Reauthorization reuses the issued
+client/account registration. Anthropic uses browser PKCE and a pasted code#state
+with hidden input, following the older OpenCode/Pi flow. These flows do not read
+Codex/Claude/Kimi credential caches. Browser consent is performed by the operator.
+Provider endpoint/client behavior can change; deterministic checks are not live
+subscription validation. No switch to separately billed access is automatic.
+
+`key` reads hidden terminal input or stdin, never a command-line key argument.
+This includes MiMo's dedicated Token Plan key or API key as selected by its issuer.
+Do not paste a key into `/auth` or a model conversation. In chat `/auth`,
+`/auth status`, `/auth providers` and model tool `provider_auth_status` expose
+only labels, credential kind and observed local expiry/state, without a network
+probe or refresh. `blackbird.call("provider_auth_status", "{}")` is the Lua path.
+
+Owned credentials live in `~/.local/share/blackbird/auth/credentials.json`
+(owner-only0600, directory0700); `BLACKBIRD_AUTH_HOME` selects an independent store.
+Writes replace the complete record atomically. Thread/process locking serializes
+rotating refresh, and login commits check account/selection revisions. Unknown
+refresh outcomes stop automatic reuse and require reauthorization; transient
+refresh failures keep credentials and enforce a cooldown. Local logout deletes
+tokens while retaining the registration; remote revocation is not yet implemented.
+An explicit logged-out/failed owned selection blocks environment/API fallback.
+Without an owned selection, new direct providers can use their environment key.
+OpenAI keeps the existing Codex path until an owned account/key is explicitly
+selected; an ambient OPENAI_API_KEY does not silently change its billing route.
+
+Registry IDs: kimi, mimo, openai, anthropic, grok, moonshot, openrouter. For other
+services, configure an explicit HTTPS origin and one of the three wire formats:
+
+```sh
+./scripts/blackbird auth add-provider my-provider https://example.com/v1 chat MY_PROVIDER_KEY
+./scripts/blackbird auth key my-provider work
+```
+
+Custom IDs cannot replace builtin origins. Supported protocols are `responses`,
+`chat` (chat/completions), and `messages` (Anthropic-style). Credentials are sent
+through curl's private stdin configuration, not its argv; no redirects or HTTP
+downgrade. Installed `/usr/bin/openssl` supplies PKCE SHA256 and RSA signature
+verification; no provider SDK/auth library is linked.
+
+`/colleague` and participants accept these registry IDs and use direct transports.
+Admissions retain protocol/origin/account/revision, never token material; an
+account change before dispatch refuses that admission. Requested/observed models
+and provider usage remain separate. HTTP401/403,429 and transport timeout have
+distinct outcomes. The main coding loop remains OpenAI and can use its owned
+ChatGPT-plan login or key. Existing Codex authentication remains the compatibility
+path when neither is selected; provider `claude` remains the explicit Claude CLI
+bridge, while `anthropic` uses owned direct authentication. The operator's current
+release process is unchanged by candidate development.

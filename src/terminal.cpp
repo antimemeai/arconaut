@@ -108,6 +108,8 @@ const std::array builtin_commands{
     ChatCommand{"/stop", "ID",
                 "Request participant cancellation; observe settlement separately",
                 "Participants"},
+    ChatCommand{"/auth", "status | providers",
+                "Provider account metadata; sign in outside chat", "Configuration"},
     ChatCommand{"/colleagues", "",
                 "Show installed colleague transports; authentication observed on call",
                 "Tools"},

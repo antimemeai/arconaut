@@ -1,4 +1,5 @@
 #include "blackbird/openai.hpp"
+#include "blackbird/provider_auth.hpp"
 #include "native_process.hpp"
 #include <algorithm>
 #include <cerrno>
@@ -120,6 +121,14 @@ std::string config_quote(std::string_view s) {
 } // namespace
 Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh) {
   try {
+    if (config.codex_home.empty() && config.codex_executable == "codex") {
+      ProviderAuth auth;
+      if (auth.selected("openai")) {
+        OpenAiLogin login{"", ""};
+        login.owned_auth_ = true;
+        return Result<OpenAiLogin>::success(std::move(login));
+      }
+    }
     // Pin account before requesting refresh, and refuse a concurrent account switch.
     auto before = auth_file(config);
     auto mode = required(before, "auth_mode");
@@ -136,10 +145,11 @@ Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh) {
         "model_provider=\"openai\""};
     child.start(std::move(args), config.codex_home);
     const auto deadline = Clock::now() + std::chrono::seconds{30};
-    (void)rpc(child,
-              "{\"id\":\"init\",\"method\":\"initialize\",\"params\":{\"clientInfo\":{"
-              "\"name\":\"blackbird\",\"title\":\"Blackbird\",\"version\":\"0.1.0\"}}}\n",
-              deadline);
+    (void)rpc(
+        child,
+        "{\"id\":\"init\",\"method\":\"initialize\",\"params\":{\"clientInfo\":{"
+        "\"name\":\"blackbird\",\"title\":\"Blackbird\",\"version\":\"0.1.0\"}}}\n",
+        deadline);
     child.send("{\"method\":\"initialized\",\"params\":{}}\n", deadline);
     auto status =
         rpc(child,
@@ -171,6 +181,18 @@ Result<OpenAiLogin> codex_login(const OpenAiConfig &config, bool refresh) {
 Result<std::string> openai_http(const OpenAiConfig &config, const OpenAiLogin &login,
                                 std::string_view route, const Json *request) {
   try {
+    if (login.owned_auth_) {
+      ProviderAuthConfig owned;
+      owned.curl_executable = config.curl_executable;
+      owned.cancelled = config.cancelled;
+      ProviderAuth auth{std::move(owned)};
+      if (route != "responses")
+        throw Error{ErrorCode::unsupported};
+      const auto response =
+          auth.request("openai", route, request ? *request : Json::object({}),
+                       config.timeout_seconds, config.response_observer);
+      return Result<std::string>::success(response.body);
+    }
     if (config.timeout_seconds <= 0 || config.timeout_seconds > 3600)
       fail(ErrorCode::invalid_range);
     if (route != "responses" && route != "models?client_version=0.160.0")

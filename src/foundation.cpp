@@ -38,6 +38,10 @@ const char *error_name(ErrorCode code) noexcept {
     return "interrupted";
   case ErrorCode::io:
     return "io";
+  case ErrorCode::provider_auth:
+    return "provider_auth";
+  case ErrorCode::provider_rate_limit:
+    return "provider_rate_limit";
   case ErrorCode::provider_transport:
     return "provider_transport";
   case ErrorCode::external_unknown:
