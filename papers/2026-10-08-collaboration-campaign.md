@@ -4,8 +4,9 @@ The authorized campaign shipped named session selection, a common colleague call
 and bounded native participants. A live OpenAI colleague identified two actual
 small-viewport defects; Blackbird's main model made the source edits. Direct
 physical-size PTY checks, managed compaction/original restoration and the actual
-release launcher restart completed the focused repair. The live Claude answer
-remains outstanding: its one request timed out with unknown remote disposition.
+release launcher restart completed the focused repair. A subsequent operator-
+authorized Claude review completed in337.331s with a360-second deadline; the
+earlier90-second request remains unknown.
 
 ## Delivered behavior
 
@@ -70,12 +71,13 @@ installed. No new runtime, framework, provider SDK or library was adopted.
 | Actual call | Observed result |
 | --- | --- |
 | Claude/sonnet selected-source review through `/colleague` |90-second deadline; status/remote disposition unknown, error io; no answer, actual model or usage. No retry. Native command exit0 describes completed control handling, not remote success. |
+| Claude/sonnet explicitly authorized new review |360-second deadline; completed in337.331s. Same task/source, new request ID. ModelUsage reports sonnet4.6 and haiku4.5; actual_model remains null. Sonnet reports21835 output tokens. No hi fallback needed. Findings retained separately, pending source checks. |
 | OpenAI participant viewport review | Requested/actual gpt-6.1-sol; completed in21.333s at join,6134 input/527 output tokens reported. It identified stale rows and cursor bounds from selected source. |
 | Blackbird main model repair | Configured gpt-6.1-sol; four successful provider requests, one rg command and two native edit_file calls;16.205s for the native turn. Reported20632 input/376 output tokens across those requests. |
 
-Usage above excludes the unavailable Claude consumption; it is not zero. No price
-or general coding-uplift estimate is derived. Roles used the same OpenAI model;
-this demonstrates the local working loop, not heterogeneous model cooperation.
+Usage above excludes the earlier timed-out Claude consumption; it is not zero. No price
+or general coding-uplift estimate is derived. The repair roles used the same OpenAI model. The later Claude response adds a
+live non-OpenAI source review; no repair or uplift is inferred from its findings.
 
 Operator/Codex interventions were explicit: select review source and purpose,
 brief the main model with the two concrete changes, author the independent PTY
@@ -101,9 +103,9 @@ context/campaign-colleague-live. Test sources and governing programs provide the
 repeatable deterministic cases; re-running the live artifact would be a new call,
 not recovery permission.
 
-Orders1/3/4 are delivered. Order2's interface is delivered; its live non-OpenAI
-outcome remains arconaut-3sm.2. The timeout is not an authentication diagnosis.
-No further provider probe, benchmark, review campaign or resumption of the old
-Giga was launched. Next broader scopes remain remote tool-using colleagues,
+Orders1/2/3/4 are delivered after the explicitly authorized360-second Claude
+attempt. [Claude answer](2026-10-08-claude-colleague-review.md) retains its findings
+for source triage. The original timeout is not an authentication diagnosis.
+No hi fallback, benchmark or resumption of the old Giga was launched. Next broader scopes remain remote tool-using colleagues,
 station attachment, multiplayer and independent login/distribution, as described
 in docs/NEXT_CAMPAIGN.md.

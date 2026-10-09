@@ -5425,3 +5425,21 @@ with exact cases, versions, reported usage and operator interventions. Orders1/3
 complete; order2's shared interface complete but one live Claude answer outstanding
 after90s timeout. No repeat probe, zero-usage assumption, certificate or fresh
 startup/stream-measurement campaign. Historical Giga remains paused.
+
+## 2026-10-08 — Explicit 360-second Claude attempt
+
+Operator authorized repeating the selected-source review at360s, falling back to
+hi only on failure. Fresh request ID; same source/task/model. Native /colleague
+completed at337.331s (338.011s process wall time), no fallback. ModelUsage names
+sonnet4.6 and haiku4.5; actual_model stays null. Retained original answer in
+papers/2026-10-08-claude-colleague-review.md and request/session/result under
+ignored context/campaign-colleague-360. Findings await source triage, not accepted
+merely because the reviewer called them confirmed. Earlier90s effect stays
+unknown. Updated campaign/current-state notes and completed live-response work.
+
+Operator also prioritizes independent provider authentication. Source inspection
+confirmed Codex auth.json/app-server renewal and Claude CLI authentication.
+Read official OpenAI app-owned token guidance and Claude authentication docs;
+recorded owning lifecycle design in NEXT_CAMPAIGN and existing arconaut-uaa.5.
+No auth expiry diagnosis, credential output/change, extra probe or production
+implementation in this follow-through.

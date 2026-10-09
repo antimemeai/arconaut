@@ -11,8 +11,9 @@ OpenAI colleague found a real tiny-viewport defect and Blackbird's main model
 edited it; physical PTY checks, compaction/original repair and actual launcher
 restart preserved the task/result/context. The current Release/OFF launcher is
 updated; the running operator process is left alone. [Campaign results](../papers/2026-10-08-collaboration-campaign.md).
-The single live Claude request timed out at90seconds with unknown remote outcome;
-its successful non-OpenAI answer remains outstanding. The separate Giga stays paused.
+The initial Claude request timed out at90seconds. An operator-authorized new
+attempt completed in337.331s with a360-second limit; findings await source triage.
+The separate Giga stays paused.
 
 ## What is on master
 
@@ -29,15 +30,15 @@ its successful non-OpenAI answer remains outstanding. The separate Giga stays pa
 | Decision models | Native Jev model tool, Lua `blackbird.decide`, `/decision JSON`; batched Choice/Score/Noul, lazy credentials, audited requests/results. | Jev only; workflows compose judgments and explicit retries. |
 | Callable workflows | Retained Lua definitions, configurable slash prefix/aliases and bare invocation, operator POWERWORDS and terminal colors; model/Lua discovery/invocation. | Sequential same-turn execution; no parallel or durable scheduler. |
 | Local efficiency | Saved current-state and suffix recovery for settled single-segment sessions; paged checked archive queries and original repair; checkpoint renewal prunes resident history. Earlier wrap-up heavy TUI first-frame p90 93.355ms in100runs; not a new task-pane-generation measurement. | Unresolved/station/pending-restart/multisegment states fall back to full recovery; catalog disk renewal still follows total key count. See [delivery](../papers/2026-10-08-saved-state-delivery.md) and [measurements](../papers/2026-10-08-startup-300-wrapup.md). |
-| Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. Common model tool, Lua and operator calls plus native concurrent workers. | Main coding loop remains OpenAI; workers are context-only. OpenAI live review/edit demonstration worked; one Claude call timed out unknown. |
+| Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. Common model tool, Lua and operator calls plus native concurrent workers. | Main coding loop remains OpenAI; workers are context-only. OpenAI live review/edit demonstration worked; Claude source review completed on the authorized360-second attempt. |
 | Tasks | Durable session tasks/subtasks, typed model/Lua read/edit, below-sprite right pane, blockers/counts/version guards and explicit runtime bindings. | One owner/session; no cross-session synchronization, dependency scheduler or subsubtasks. See [tasks](TASKS.md). |
 | Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link; BLACKBIRD wordmark and supplied SR-71 startup/status image. | Ghostty/Kitty image support; terminal fallback. |
 
 ## Remaining design and delivery
 
-Common colleague and participant machinery is delivered. The one Claude source
-review timed out without an answer; no account refusal or zero usage is inferred,
-and no retry was made. Live heterogeneous usefulness remains `arconaut-3sm.2`.
+Common colleague and participant machinery is delivered, including a live Claude
+source review. Its findings need source triage. The earlier timed-out request
+remains unknown; the later answer does not resolve that earlier effect.
 Kimi/MiMo/Grok and remote tool-using colleagues are not implemented by this adapter.
 
 G9 is a security discussion only. Its original OpenSSL/TLS proposal is not a
@@ -78,7 +79,8 @@ implemented by this launcher.
 
 Scoped Mac debug/release, ASan/UBSan and Linux debug checks cover the changed native,
 retained-state and real PTY paths. The tiny-window repair clears stale rows and
-uses physical cursor bounds;20x8/9x90 cases pass. Other work: the live heterogeneous
-outcome, complaint follow-through, remote tool-using outposts, station attachment,
+uses physical cursor bounds;20x8/9x90 cases pass. Other work: Claude finding triage,
+complaint follow-through, remote tool-using outposts, station attachment,
 multiplayer and standalone login. The historical Giga remains paused. The current
-collaboration campaign is delivered except for its recorded Claude live outcome.
+collaboration campaign is delivered. Operator prioritizes owned provider login
+and credential lifecycle beyond Codex and Claude CLI authentication.

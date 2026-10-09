@@ -178,8 +178,9 @@ product deliveries rather than repeating account probes.
 
 ## Delivered state
 
-Orders1 and3 delivered. Order2's common surface delivered; its one live Claude
-call timed out unknown, so that live heterogeneous outcome remains open. Order4
+Orders1/2/3 delivered. The initial Claude call timed out unknown; the explicitly
+authorized360-second attempt completed in337.331s. Its findings await source
+triage. Order4
 used a live OpenAI participant and main model to repair tiny viewport rendering;
 physical checks, managed compaction/original repair and actual release restart
 preserved working state. The operator's process was not interrupted.
@@ -187,3 +188,20 @@ preserved working state. The operator's process was not interrupted.
 Read [campaign results](../papers/2026-10-08-collaboration-campaign.md) for actual
 checks, calls, interventions and limits. No further provider probe or broader
 comparison is implied. The historical Giga remains paused.
+
+## Operator follow-through: owned provider authentication
+
+Operator prioritizes graduating from other installed harnesses' auth lifecycle.
+Current OpenAI code reads Codex auth.json and asks Codex app-server for refresh;
+Claude uses the installed CLI and its own authentication. Own provider account
+selection, secret persistence, expiry/refresh and explicit login/logout/status;
+separate local credential state, actual provider rejection and transport timeout.
+Do not silently switch subscription traffic to separately billed API access.
+
+Before implementing, establish each provider's supported application login and
+inference path. OpenAI documents app-owned ChatGPT-plan OAuth tokens and renewal
+[here](https://developers.openai.com/siwc/token-sharing-open-source/codex-app-server).
+Claude's [authentication documentation](https://code.claude.com/docs/en/authentication)
+is the starting point for its own supported options; a working CLI credential
+is not evidence of a third-party app login entitlement. Existing arconaut-uaa.5
+is the owning design task. No credential files were printed or changed.
