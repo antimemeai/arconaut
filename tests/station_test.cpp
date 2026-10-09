@@ -17,12 +17,13 @@ void check(bool ok) {
 }
 Value event(std::string name) {
   return Value::object({{"source", Value{"repo"}},
-                        {"id", Value{name}},
+                        {"id", Value{std::move(name)}},
                         {"cursor", Value{"commit-42"}},
                         {"prompt", Value{"inspect actual source"}}});
 }
 Value command(std::string name, std::string action) {
-  return Value::object({{"id", Value{name}}, {"action", Value{action}}});
+  return Value::object(
+      {{"id", Value{std::move(name)}}, {"action", Value{std::move(action)}}});
 }
 int main() {
   char name[] = "/tmp/arco-station-XXXXXX";

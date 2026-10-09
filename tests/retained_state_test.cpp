@@ -12,6 +12,12 @@
 #include <string>
 
 using namespace blackbird;
+template <class T> T present(std::optional<T> value) {
+  if (!value)
+    throw std::runtime_error("expected present optional in fixture");
+  return std::move(*value);
+}
+
 namespace {
 std::atomic<std::ptrdiff_t> allocation_cut{-1};
 std::atomic_bool measure_allocation{false};
@@ -777,16 +783,16 @@ void issuer_count_and_credit() {
     CHECK(std::get<IssuerReservationEvent>(state->committed_facts()[i].event.body)
               .counter == (i + 1) * 1024);
   const auto usage = state->journal_usage();
-  auto scope = require(
-      state->protect_settlement({*usage.remaining_bytes(), usage.remaining_records()}));
+  auto scope = require(state->protect_settlement(
+      {present(usage.remaining_bytes()), usage.remaining_records()}));
   const auto before = storage->bytes;
-  const auto credit = *state->protected_settlement();
+  const auto credit = present(state->protected_settlement());
   // Already durable IDs consume no audit capacity or protected credit.
   for (std::uint64_t i = 14611; i <= 15360; ++i)
     CHECK(identity_counter(require(state->issue<DecisionId>()).bytes()) == i);
   CHECK(storage->bytes == before && storage->sync_calls == syncs + 15);
-  CHECK(state->protected_settlement()->max_file_bytes == credit.max_file_bytes);
-  CHECK(state->protected_settlement()->max_records == credit.max_records);
+  CHECK(present(state->protected_settlement()).max_file_bytes == credit.max_file_bytes);
+  CHECK(present(state->protected_settlement()).max_records == credit.max_records);
   error_is(state->issue<DecisionId>(), ErrorCode::capacity);
   CHECK(storage->bytes == before);
   scope.reset();
@@ -1447,8 +1453,8 @@ void protected_settlement_faults() {
         error_is(state.protect_settlement({1, 1}), ErrorCode::busy);
         for (;;) {
           const auto usage = state.journal_usage();
-          const auto floor = *state.protected_settlement();
-          const auto normal = *usage.remaining_bytes() - floor.max_file_bytes;
+          const auto floor = present(state.protected_settlement());
+          const auto normal = present(usage.remaining_bytes()) - floor.max_file_bytes;
           const auto overhead = 56 + journal_frame_header_size;
           // Exactly fill available bytes, unless record room runs out first.
           const auto length =
@@ -1479,11 +1485,12 @@ void protected_settlement_faults() {
     CHECK(report.dispatched && capture.calls == 1 && !capture.retained.empty());
     error_is(report.effect, ErrorCode::capacity);
     require(report.recording);
-    CHECK(state->protected_settlement()->max_file_bytes == transaction_cost(terminal));
-    CHECK(state->protected_settlement()->max_records == 1);
+    CHECK(present(state->protected_settlement()).max_file_bytes ==
+          transaction_cost(terminal));
+    CHECK(present(state->protected_settlement()).max_records == 1);
     require(state->submit_settlement(terminal));
-    CHECK(state->protected_settlement()->max_file_bytes == 0);
-    CHECK(state->protected_settlement()->max_records == 0);
+    CHECK(present(state->protected_settlement()).max_file_bytes == 0);
+    CHECK(present(state->protected_settlement()).max_records == 0);
     const auto before = state->cursor().end_offset;
     CHECK(require(state->submit_settlement(terminal)).existing);
     CHECK(state->cursor().end_offset == before);
@@ -1503,7 +1510,7 @@ void protected_settlement_faults() {
     prepare(*state);
     const auto usage = state->journal_usage();
     auto scope = require(state->protect_settlement(
-        {*usage.remaining_bytes(), usage.remaining_records()}));
+        {present(usage.remaining_bytes()), usage.remaining_records()}));
     Counter counter;
     const auto before = storage->bytes;
     error_is(state->dispatch(id<OperationAttemptId>(11), counter), ErrorCode::capacity);
@@ -1543,7 +1550,7 @@ void protected_settlement_faults() {
     const auto before = storage->bytes;
     error_is(state->submit_settlement(terminal), ErrorCode::capacity);
     CHECK(storage->bytes == before && state->state() == JournalWriterState::live);
-    CHECK(state->protected_settlement()->max_file_bytes == 1);
+    CHECK(present(state->protected_settlement()).max_file_bytes == 1);
     scope.reset();
     require(state->submit_settlement(terminal));
   }
@@ -1560,7 +1567,7 @@ void protected_settlement_faults() {
     CHECK(report.dispatched && counter.calls == 1);
     error_is(report.recording, ErrorCode::capacity);
     CHECK(state->state() == JournalWriterState::blocked);
-    CHECK(state->protected_settlement()->max_file_bytes == 1);
+    CHECK(present(state->protected_settlement()).max_file_bytes == 1);
     error_is(state->submit_settlement(terminal), ErrorCode::audit_unavailable);
   }
   // Write and sync failures in reserved receipt remain unknown/unpublished/poisoned.
@@ -1578,7 +1585,8 @@ void protected_settlement_faults() {
     CHECK(report.dispatched && counter.calls == 1 && report.effect.has_value());
     CHECK(!report.recording.has_value());
     CHECK(state->state() == JournalWriterState::poisoned);
-    CHECK(state->protected_settlement()->max_file_bytes == credit.max_file_bytes);
+    CHECK(present(state->protected_settlement()).max_file_bytes ==
+          credit.max_file_bytes);
     CHECK(state->pending_proposal().has_value());
     CHECK(require(state->attempt(id<OperationAttemptId>(11))).evidence ==
           RetainedEvidence::uncertain);

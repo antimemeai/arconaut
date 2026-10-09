@@ -28,6 +28,15 @@ provider_http(const ProviderHttpRequest &request, const ProviderAuthConfig &conf
               const std::function<void(std::string_view)> &observer = {});
 void require_provider_success(int status);
 
+struct OAuthExpected {
+  std::int64_t account_revision = -2;
+  std::int64_t selection_revision = -1;
+};
+struct OpenAIIdentity {
+  std::string_view token;
+  std::string_view client;
+  std::string_view nonce;
+};
 class ProviderAuth {
 public:
   explicit ProviderAuth(ProviderAuthConfig config = {});
@@ -38,8 +47,8 @@ public:
   void set_key(std::string_view provider, std::string_view account, std::string key);
   void use(std::string_view provider, std::string_view account);
   void logout(std::string_view provider, std::string_view account);
-  void add_provider(std::string id, std::string base_url, std::string protocol,
-                    std::string environment);
+  void add_provider(const std::string &id, std::string base_url,
+                    const std::string &protocol, const std::string &environment);
   Value descriptor(std::string_view provider) const;
   Value registration(std::string_view provider, std::string_view account) const;
   Value binding(std::string_view provider) const;
@@ -53,9 +62,7 @@ public:
   // Browser flow implemented separately; commits only a complete token record.
   void save_oauth(std::string_view provider, std::string_view account,
                   const Value &tokens, std::string client_id, std::string token_url,
-                  Value metadata = Value::object({}),
-                  std::int64_t expected_revision = -2,
-                  std::int64_t expected_selection = -1);
+                  Value metadata = Value::object({}), OAuthExpected expected = {});
   ProviderHttpResponse
   request(std::string_view provider, std::string_view route, const Value &body,
           int timeout_seconds,
@@ -72,8 +79,7 @@ int provider_auth_cli(int argc, char **argv);
 // Direct deterministic checks of PKCE/JWT validation use these owning helpers.
 std::string auth_pkce_challenge(std::string_view verifier,
                                 const ProviderAuthConfig &config = {});
-Value auth_validate_openai_identity(std::string_view id_token,
-                                    std::string_view client_id, std::string_view nonce,
-                                    const Value &jwks, std::int64_t now,
+Value auth_validate_openai_identity(OpenAIIdentity identity, const Value &jwks,
+                                    std::int64_t now,
                                     const ProviderAuthConfig &config = {});
 } // namespace blackbird

@@ -1,3 +1,4 @@
+local helper_path = assert(rawget(_G, "helper_path"), "runner must supply helper_path")
 local captured, attempts, calls, now, fail, policies
 local function run(policy, provider_fail)
   captured = nil

@@ -32,8 +32,8 @@ public:
   virtual Result<void> synchronize_directory(SyncStrength strength) = 0;
   // Caller must hold this journal's exclusive writer lease, with no publication
   // in flight. Only reserved numeric publication scratch names are eligible.
-  virtual Result<ScratchCleanup> reclaim_publication_scratch(
-      std::string_view, std::size_t = 128, std::size_t = 16) {
+  virtual Result<ScratchCleanup>
+  reclaim_publication_scratch(std::string_view, std::size_t = 128, std::size_t = 16) {
     return Result<ScratchCleanup>::failure({ErrorCode::unsupported});
   }
   virtual Result<void> store_diagnostic(std::string_view, ByteView, std::uint64_t) {
@@ -87,8 +87,9 @@ public:
   Result<std::vector<std::byte>> read_diagnostic(std::string_view name,
                                                  std::uint64_t now) override;
   Result<ScratchCleanup> expire_diagnostics(std::uint64_t now) override;
-  Result<ScratchCleanup> reclaim_publication_scratch(std::string_view journal,
-      std::size_t max_scan = 128, std::size_t max_remove = 16) override;
+  Result<ScratchCleanup>
+  reclaim_publication_scratch(std::string_view journal, std::size_t max_scan = 128,
+                              std::size_t max_remove = 16) override;
 
 public:
   const ScratchCleanup &scratch_cleanup_status() const noexcept {

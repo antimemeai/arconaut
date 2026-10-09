@@ -16,39 +16,34 @@ function M.configure(c)
 end
 function M.fetch(config, api)
   local c = M.configure(config)
-  assert(api and api.call and api.json, "native API required")
-  local r = api.call(
-    "exec",
-    {
-      argv = {
-        "curl",
-        "--disable",
-        "--fail",
-        "--silent",
-        "--show-error",
-        "--proto",
-        "=https",
-        "--max-time",
-        "25",
-        "--max-filesize",
-        "524288",
-        "-H",
-        "Accept: application/vnd.github+json",
-        "-H",
-        "X-GitHub-Api-Version: 2026-03-10",
-        "https://api.github.com/repos/"
-          .. c.repository
-          .. "/releases?per_page="
-          .. c.limit,
-      },
-      timeout_seconds = 30,
-      output_max_bytes = 524288,
-    }
-  )
+  assert(api and api.call and api.json and api.format, "native API required")
+  local r = api.call("exec", {
+    argv = {
+      "curl",
+      "--disable",
+      "--fail",
+      "--silent",
+      "--show-error",
+      "--proto",
+      "=https",
+      "--max-time",
+      "25",
+      "--max-filesize",
+      "524288",
+      "-H",
+      "Accept: application/vnd.github+json",
+      "-H",
+      "X-GitHub-Api-Version: 2026-03-10",
+      "https://api.github.com/repos/"
+        .. c.repository
+        .. "/releases?per_page="
+        .. c.limit,
+    },
+    timeout_seconds = 30,
+    output_max_bytes = 524288,
+  })
   assert(
-    api.json.encode(r.exit_code) == "0"
-      and not r.timed_out
-      and api.json.encode(r.omitted_bytes) == "0",
+    r.exit_code == 0 and not r.timed_out and r.omitted_bytes == 0,
     "GitHub fetch failed/unknown/truncated; output_ref="
       .. tostring(r.output_ref)
       .. "; no automatic retry"
@@ -59,8 +54,8 @@ function M.fetch(config, api)
   local items = {}
   for _, v in ipairs(releases) do
     assert(type(v) == "table", "release object required")
-    -- Native decode preserves JSON numeric lexemes as tagged tables.
-    local id = api.json.encode(v.id)
+    -- Render the native numeric identity without another JSON conversion.
+    local id = api.format(v.id)
     assert(
       type(id) == "string"
         and #id <= 20

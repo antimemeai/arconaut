@@ -78,8 +78,8 @@ int main(int argc, char **) {
                 sprite_grid.cells[3].width == 1,
             "overlapping wide-cell blit leaves stale continuation");
     for (const auto &[width, height] :
-         std::array<std::pair<std::size_t, std::size_t>, 4>{{{40, 12}, {80, 18},
-                                                          {80, 30}, {120, 20}}}) {
+         std::array<std::pair<std::size_t, std::size_t>, 4>{
+             {{40, 12}, {80, 18}, {80, 30}, {120, 20}}}) {
       const auto startup = blackbird_startup(width, height);
       require(startup.size() <= height, "startup art exceeds viewport height");
       for (const auto &line : startup)

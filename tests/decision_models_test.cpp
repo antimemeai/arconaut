@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
               args.find("=https") != std::string::npos &&
               args.find("--location") == std::string::npos,
           "curl controls missing");
-    const auto before = args;
+    const auto &before = args;
     rejects([&] { (void)adapter.evaluate(credentials); }, ErrorCode::invalid_range);
     check(read_file(base / "argv") == before, "invalid request dispatched");
     observed.clear();

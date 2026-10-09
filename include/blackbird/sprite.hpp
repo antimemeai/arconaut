@@ -15,7 +15,7 @@ inline constexpr std::size_t blackbird_lettering_width = 67;
 inline constexpr std::size_t blackbird_lettering_height = 6;
 // Local startup art only; never added to provider context or the audit.
 std::vector<std::string> blackbird_startup(std::size_t columns, std::size_t rows,
-                                         bool mascot = true);
+                                           bool mascot = true);
 } // namespace blackbird
 
 namespace blackbird {

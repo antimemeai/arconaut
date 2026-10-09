@@ -308,3 +308,8 @@ Blackbird's original software and documentation are released under the
 [MIT License](LICENSE). Copyright © 2026 Patrick Beam.
 
 Third-party material retains its original license.
+
+
+Before committing in a new clone, run `scripts/install-hooks`. The tracked
+pre-commit hook requires full debug tests and owned C++/Lua lint to pass; see
+[development tooling](tooling/README.md#required-pre-commit-checks).

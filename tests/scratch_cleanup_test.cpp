@@ -124,6 +124,7 @@ int main() {
     CHECK(child >= 0);
     if (child == 0) {
       auto opened = unwrap(FramedJournal::open(directory, "audit", h, capacity));
+      CHECK(opened != nullptr);
       create("audit.state.1.tmp.300");
       _exit(0);
     }

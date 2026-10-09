@@ -1,3 +1,4 @@
+local helper_path = assert(rawget(_G, "helper_path"), "runner must supply helper_path")
 -- Standalone M.record regression. Run with useful_work_test and helper_path.
 -- No real writes or subprocesses: all helper effects are mocked below.
 assert(type(helper_path) == "string", "runner must provide helper_path")

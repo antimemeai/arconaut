@@ -16,7 +16,8 @@ std::string value(const Value &j, std::string_view k) {
   return v->string();
 }
 Value failed(std::string status, std::string message) {
-  return Value::object({{"status", Value{status}}, {"message", Value{message}}});
+  return Value::object(
+      {{"status", Value{std::move(status)}}, {"message", Value{std::move(message)}}});
 }
 bool issue(const Value &j) {
   if (!object(j) || j.find("error"))

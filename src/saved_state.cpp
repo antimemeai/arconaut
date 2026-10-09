@@ -178,8 +178,10 @@ load_saved_state(JournalDirectory &directory, std::string_view name,
     auto second = load_slot(directory, name, journal, capacity, 1, before_scan);
     if (!second.has_value())
       return second;
-    if (second.value() && (!first.value() || second.value()->boundary.sequence >
-                                                 first.value()->boundary.sequence))
+    const auto &primary = first.value();
+    const auto &alternate = second.value();
+    if (alternate &&
+        (!primary || alternate->boundary.sequence > primary->boundary.sequence))
       return second;
     return first;
   } catch (const std::bad_alloc &) {

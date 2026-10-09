@@ -346,26 +346,30 @@ EditorResult edit_terminal_draft(std::string_view draft) {
   constexpr std::size_t limit = 1024 * 1024;
   if (draft.size() > limit)
     return {false, {}, "Draft exceeds editor limit."};
-  std::string path;
-  int fd = -1;
-  bool owned = false;
   struct Cleanup {
-    std::string &path;
-    int &fd;
-    bool &owned;
-    ~Cleanup() {
-      if (fd >= 0)
+    std::string path;
+    int fd = -1;
+    bool owned = false;
+    void close() {
+      if (fd >= 0) {
         (void)::close(fd);
+        fd = -1;
+      }
+    }
+    ~Cleanup() {
+      close();
       if (owned)
         (void)::unlink(path.c_str());
     }
-  } cleanup{path, fd, owned};
+  } cleanup;
+  auto &path = cleanup.path;
+  auto &fd = cleanup.fd;
   try {
     path = (std::filesystem::temp_directory_path() / "arco-draft-XXXXXX").string();
     fd = ::mkstemp(path.data());
     if (fd < 0)
       throw std::runtime_error("Cannot create private editor draft");
-    owned = true;
+    cleanup.owned = true;
     if (::fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
       throw std::runtime_error("Cannot protect editor draft descriptor");
     auto remaining = draft;
@@ -377,8 +381,7 @@ EditorResult edit_terminal_draft(std::string_view draft) {
         throw std::runtime_error("Cannot write editor draft");
       remaining.remove_prefix(static_cast<std::size_t>(n));
     }
-    (void)::close(fd);
-    fd = -1;
+    cleanup.close();
     const char *editor = std::getenv("VISUAL");
     if (!editor || !*editor)
       editor = std::getenv("EDITOR");

@@ -7,6 +7,12 @@
 #include <source_location>
 #include <unistd.h>
 using namespace blackbird;
+template <class T> T present(std::optional<T> value) {
+  if (!value)
+    throw std::runtime_error("expected present optional in fixture");
+  return std::move(*value);
+}
+
 void check(bool good, std::source_location loc = std::source_location::current()) {
   if (!good)
     throw std::runtime_error("workflow oracle line " + std::to_string(loc.line()));
@@ -24,23 +30,24 @@ void set(Value &j, std::string_view key, Value value) {
     }
   j.object().emplace_back(key, std::move(value));
 }
-Value definition(std::string name = "research", std::string token = "ultracode",
+Value definition(const std::string &name = "research", std::string token = "ultracode",
                  std::string source = "return args") {
   return Value::object(
       {{"name", Value{name}},
        {"description", Value{"Research procedure"}},
-       {"source", Value{source}},
+       {"source", Value{std::move(source)}},
        {"aliases", Value{Value::Array{Value{name}, Value{name + "-alias"}}}},
        {"bare", Value{true}},
-       {"powerwords", Value{Value::Array{Value::object(
-                          {{"token", Value{token}}, {"color", Value{"keyword"}}})}}}});
+       {"powerwords",
+        Value{Value::Array{Value::object(
+            {{"token", Value{std::move(token)}}, {"color", Value{"keyword"}}})}}}});
 }
 Value config(Value::Array defs, std::string prefix = "wf-") {
   return Value::object({{"modules", Value{Value::Array{}}},
                         {"model", Value{""}},
                         {"effort", Value{""}},
                         {"workflows", Value{std::move(defs)}},
-                        {"workflow_prefix", Value{prefix}}});
+                        {"workflow_prefix", Value{std::move(prefix)}}});
 }
 std::string literal(const Value &j) {
   const auto json = unwrap(dump_json(j));
@@ -49,7 +56,7 @@ std::string literal(const Value &j) {
     delimiter += "=";
   return "blackbird.json.decode([" + delimiter + "[" + json + "]" + delimiter + "])";
 }
-Value eval(CodingEngine &engine, std::string code) {
+Value eval(CodingEngine &engine, const std::string &code) {
   engine.turn({"", code});
   return engine.workflow_result();
 }
@@ -81,9 +88,9 @@ int main() {
   std::setlocale(LC_ALL, "en_US.UTF-8");
   auto c = config({definition()});
   auto registry = std::make_shared<WorkflowRegistry>(c, "r1");
-  check(registry->select("/wf-research \tA\nB")->arguments == " \tA\nB");
-  check(registry->select("/wf-research-alias x")->definition == definition());
-  check(registry->select("research\tbare")->arguments == "\tbare");
+  check(present(registry->select("/wf-research \tA\nB")).arguments == " \tA\nB");
+  check(present(registry->select("/wf-research-alias x")).definition == definition());
+  check(present(registry->select("research\tbare")).arguments == "\tbare");
   check(!registry->select("/research"));
   for (const auto text : {"notultracode", "ULTRACODE", "ultracode_", "xultracode",
                           "éultracode", "ultracodeé"})
@@ -91,7 +98,7 @@ int main() {
   for (const auto text :
        {"ultracode", "(ultracode)", "a ultracode!", "ultracode ultracode"})
     check(registry->select(text).has_value());
-  check(registry->select("a ultracode!")->arguments == "a ultracode!");
+  check(present(registry->select("a ultracode!")).arguments == "a ultracode!");
   check(!registry->select("/unknown ultracode"));
   check(WorkflowRegistry{config({definition()}, ""), "r0"}
             .select("/research")
@@ -123,9 +130,9 @@ int main() {
     refused = e.code == ErrorCode::conflict;
   }
   check(refused);
-  check(conflict.select("/wf-research another")->trigger == "/wf-research");
+  check(present(conflict.select("/wf-research another")).trigger == "/wf-research");
   check(field(registry->discover(), "definitions").array().front() ==
-        registry->select("/wf-research")->definition);
+        present(registry->select("/wf-research")).definition);
   publish_workflows(registry);
   check(terminal_help().find("/wf-research") != std::string::npos);
   Composer composer;

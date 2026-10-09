@@ -29,7 +29,7 @@ public:
     return Value::object({{"output", Value{Value::Array{message}}}});
   }
 };
-Value variables(AuditLog &log, std::string name = "") {
+Value variables(AuditLog &log, const std::string &name = "") {
   auto query = Value::object({{"variables", Value{true}},
                               {"cursor", num(0)},
                               {"count", num(64)},

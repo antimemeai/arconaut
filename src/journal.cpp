@@ -110,10 +110,8 @@ std::uint32_t crc32c(ByteView bytes, std::uint32_t previous) noexcept {
     // Explicit byte loads work for unaligned input and either host byte order.
     for (unsigned i = 0; i < 4; ++i)
       state ^= std::to_integer<std::uint32_t>(bytes[i]) << (8 * i);
-    state = crc_tables[7][state & 255] ^
-            crc_tables[6][(state >> 8) & 255] ^
-            crc_tables[5][(state >> 16) & 255] ^
-            crc_tables[4][state >> 24] ^
+    state = crc_tables[7][state & 255] ^ crc_tables[6][(state >> 8) & 255] ^
+            crc_tables[5][(state >> 16) & 255] ^ crc_tables[4][state >> 24] ^
             crc_tables[3][std::to_integer<unsigned>(bytes[4])] ^
             crc_tables[2][std::to_integer<unsigned>(bytes[5])] ^
             crc_tables[1][std::to_integer<unsigned>(bytes[6])] ^
@@ -121,8 +119,8 @@ std::uint32_t crc32c(ByteView bytes, std::uint32_t previous) noexcept {
     bytes = bytes.subspan(8);
   }
   for (const auto byte : bytes)
-    state = (state >> 8) ^
-            crc_tables[0][(state ^ std::to_integer<unsigned>(byte)) & 255];
+    state =
+        (state >> 8) ^ crc_tables[0][(state ^ std::to_integer<unsigned>(byte)) & 255];
 #endif
   return state ^ UINT32_MAX;
 }

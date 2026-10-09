@@ -129,7 +129,8 @@ Result<void> NativeJournalFile::lock_writer() {
 
 void NativeJournalFile::release_writer() noexcept {
   // Keep the selected descriptor alive for readers, but not the writer lease.
-  while (::flock(descriptor_, LOCK_UN) == -1 && errno == EINTR) {}
+  while (::flock(descriptor_, LOCK_UN) == -1 && errno == EINTR) {
+  }
 }
 
 Result<NativeJournalDirectory> NativeJournalDirectory::open(std::string_view path) {
@@ -279,8 +280,9 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_publication_scratch(
 Result<ScratchCleanup> NativeJournalDirectory::reclaim_scratch_pass(
     std::string_view journal, std::size_t max_scan, std::size_t max_remove) {
   using Answer = Result<ScratchCleanup>;
-  if (!valid_component(journal) || max_scan == 0 || max_scan > 128 ||
-      max_remove == 0 || max_remove > 16) return Answer::failure({ErrorCode::invalid_range});
+  if (!valid_component(journal) || max_scan == 0 || max_scan > 128 || max_remove == 0 ||
+      max_remove > 16)
+    return Answer::failure({ErrorCode::invalid_range});
   try {
     const std::string base{journal};
     if (cleanup_journal_ != base) {
@@ -290,26 +292,35 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_scratch_pass(
       cleanup_journal_ = base;
     }
     const auto matches = [&](std::string_view name) {
-      if (!name.starts_with(base)) return false;
+      if (!name.starts_with(base))
+        return false;
       auto suffix = name.substr(base.size());
       unsigned fields = 0;
-      if (suffix.starts_with(".scan.tmp.")) { suffix.remove_prefix(10); fields = 3; }
-      else {
-        for (const auto prefix : {".state.0.tmp.", ".state.1.tmp.",
-                                  ".archive.0.tmp.", ".archive.1.tmp."}) {
+      if (suffix.starts_with(".scan.tmp.")) {
+        suffix.remove_prefix(10);
+        fields = 3;
+      } else {
+        for (const auto prefix :
+             {".state.0.tmp.", ".state.1.tmp.", ".archive.0.tmp.", ".archive.1.tmp."}) {
           if (suffix.starts_with(prefix)) {
-            suffix.remove_prefix(std::string_view{prefix}.size()); fields = 1; break;
+            suffix.remove_prefix(std::string_view{prefix}.size());
+            fields = 1;
+            break;
           }
         }
       }
-      if (fields == 0) return false;
+      if (fields == 0)
+        return false;
       for (unsigned i = 0; i < fields; ++i) {
         const auto dot = suffix.find('.');
         const auto number = suffix.substr(0, dot);
         if (number.empty() || number.size() > 20 ||
-            number.find_first_not_of("0123456789") != std::string_view::npos) return false;
-        if (i + 1 == fields) return dot == std::string_view::npos;
-        if (dot == std::string_view::npos) return false;
+            number.find_first_not_of("0123456789") != std::string_view::npos)
+          return false;
+        if (i + 1 == fields)
+          return dot == std::string_view::npos;
+        if (dot == std::string_view::npos)
+          return false;
         suffix.remove_prefix(dot + 1);
       }
       return false;
@@ -334,47 +345,63 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_scratch_pass(
       errno = 0;
       const auto *entry = ::readdir(stream);
       if (!entry) {
-        if (errno) return Answer::failure(native_error(errno));
+        if (errno)
+          return Answer::failure(native_error(errno));
         result.complete = true;
         ::closedir(stream);
         cleanup_stream_ = nullptr;
         break;
       }
       ++result.scanned;
-      if (!matches(entry->d_name)) continue;
+      if (!matches(entry->d_name))
+        continue;
       struct stat metadata{};
       if (::fstatat(descriptor_, entry->d_name, &metadata, AT_SYMLINK_NOFOLLOW) == -1) {
-        if (errno == ENOENT) continue;
+        if (errno == ENOENT)
+          continue;
         return Answer::failure(native_error(errno));
       }
       if (!S_ISREG(metadata.st_mode) || metadata.st_uid != ::geteuid() ||
-          (metadata.st_mode & 0077) != 0 || metadata.st_nlink != 1) continue;
-      const int candidate = ::openat(descriptor_, entry->d_name, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+          (metadata.st_mode & 0077) != 0 || metadata.st_nlink != 1)
+        continue;
+      const int candidate =
+          ::openat(descriptor_, entry->d_name, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
       if (candidate == -1) {
-        if (errno == ENOENT || errno == ELOOP) continue;
+        if (errno == ENOENT || errno == ELOOP)
+          continue;
         return Answer::failure(native_error(errno));
       }
-      struct Close { int fd; ~Close() { ::close(fd); } } close_candidate{candidate};
+      struct Close {
+        int fd;
+        ~Close() { ::close(fd); }
+      } close_candidate{candidate};
       if (::flock(candidate, LOCK_EX | LOCK_NB) == -1) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN) continue;
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+          continue;
         return Answer::failure(native_error(errno));
       }
       struct stat opened{}, current{};
-      if (::fstat(candidate, &opened) == -1) return Answer::failure(native_error(errno));
+      if (::fstat(candidate, &opened) == -1)
+        return Answer::failure(native_error(errno));
       if (::fstatat(descriptor_, entry->d_name, &current, AT_SYMLINK_NOFOLLOW) == -1) {
-        if (errno == ENOENT) continue;
+        if (errno == ENOENT)
+          continue;
         return Answer::failure(native_error(errno));
       }
       if (opened.st_dev != metadata.st_dev || opened.st_ino != metadata.st_ino ||
-          current.st_dev != opened.st_dev || current.st_ino != opened.st_ino) continue;
+          current.st_dev != opened.st_dev || current.st_ino != opened.st_ino)
+        continue;
       // A real journal is not debris, even if it occupies a reserved-looking
       // name. Preserve its signature without requiring a valid remainder/CRC.
       char signature[8]{};
       const auto read = ::pread(candidate, signature, sizeof(signature), 0);
-      if (read == -1) return Answer::failure(native_error(errno));
-      if (read == 8 && std::string_view{signature, sizeof(signature)} == "ARCOJ001") continue;
+      if (read == -1)
+        return Answer::failure(native_error(errno));
+      if (read == 8 && std::string_view{signature, sizeof(signature)} == "ARCOJ001")
+        continue;
       if (::unlinkat(descriptor_, entry->d_name, 0) == -1) {
-        if (errno == ENOENT) continue;
+        if (errno == ENOENT)
+          continue;
         return Answer::failure(native_error(errno));
       }
       ++result.removed;
@@ -383,7 +410,9 @@ Result<ScratchCleanup> NativeJournalDirectory::reclaim_scratch_pass(
     // foreground path. Authoritative/selected files are never candidates.
     cleanup_status_ = result;
     return Answer::success(result);
-  } catch (const std::bad_alloc &) { return Answer::failure({ErrorCode::allocation}); }
+  } catch (const std::bad_alloc &) {
+    return Answer::failure({ErrorCode::allocation});
+  }
 }
 
 } // namespace blackbird

@@ -100,7 +100,7 @@ std::string unb64(std::string_view s) {
     throw Error{ErrorCode::corrupt};
   return out;
 }
-std::string random() {
+std::string secure_nonce() {
   std::array<char, 32> bytes{};
   if (::getentropy(bytes.data(), bytes.size()) != 0)
     throw Error{ErrorCode::io, errno};
@@ -399,9 +399,11 @@ std::string auth_pkce_challenge(std::string_view verifier,
     throw Error{ErrorCode::corrupt};
   return b64(digest);
 }
-Value auth_validate_openai_identity(std::string_view token, std::string_view client,
-                                    std::string_view nonce, const Value &jwks,
+Value auth_validate_openai_identity(OpenAIIdentity identity, const Value &jwks,
                                     std::int64_t clock, const ProviderAuthConfig &c) {
+  const auto token = identity.token;
+  const auto client = identity.client;
+  const auto nonce = identity.nonce;
   const auto first = token.find('.'),
              second = token.find('.', first == std::string_view::npos ? 0 : first + 1);
   if (first == std::string_view::npos || second == std::string_view::npos ||
@@ -468,7 +470,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
     throw Error{ErrorCode::unsupported};
   const auto registration = this->registration(p, account);
   const auto expected = number(registration, "revision");
-  const auto verifier = random(), state = random(), nonce = random();
+  const auto verifier = secure_nonce(), state = secure_nonce(), nonce = secure_nonce();
   auto client = p == "openai" ? text(registration, "client_id", text(d, "client_id"))
                               : text(d, "client_id");
   const bool new_registration = client == "dynamic_agent_client";
@@ -513,7 +515,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
     if (got > 0)
       host.assign(bytes, static_cast<std::size_t>(got));
     else {
-      host = random();
+      host = secure_nonce();
       if (::write(fd, host.data(), host.size()) != static_cast<ssize_t>(host.size()) ||
           ::fsync(fd) != 0)
         throw Error{ErrorCode::io, errno};
@@ -595,9 +597,9 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
                            : std::chrono::duration_cast<std::chrono::seconds>(
                                  std::chrono::system_clock::now().time_since_epoch())
                                  .count();
-    const auto claims =
-        auth_validate_openai_identity(text(tokens, "id_token"), client, nonce,
-                                      unwrap(parse_json(keys.body)), clock, config_);
+    const auto claims = auth_validate_openai_identity(
+        {.token = text(tokens, "id_token"), .client = client, .nonce = nonce},
+        unwrap(parse_json(keys.body)), clock, config_);
     if (const auto *old = registration.find("metadata");
         old && !text(*old, "sub").empty() && text(*old, "sub") != text(claims, "sub"))
       throw Error{ErrorCode::provider_auth};
@@ -611,7 +613,7 @@ void ProviderAuth::browser_login(std::string_view p, std::string_view account,
     metadata.object().emplace_back("id_token", Value{text(tokens, "id_token")});
   }
   save_oauth(p, account, tokens, client, text(d, "token_url"), std::move(metadata),
-             expected);
+             {.account_revision = expected});
   notice("Sign-in saved. Blackbird owns this account's credentials.\n");
 }
 int provider_auth_cli(int argc, char **argv) {

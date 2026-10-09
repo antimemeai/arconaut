@@ -17,11 +17,15 @@ template <class T> T id(unsigned char n) {
   return unwrap(T::from_bytes(b));
 }
 Value issue(std::string target = "-task;$()") {
-  return Value::object(
-      {{"id", Value{target}}, {"title", Value{"fake"}}, {"status", Value{"open"}}});
+  return Value::object({{"id", Value{std::move(target)}},
+                        {"title", Value{"fake"}},
+                        {"status", Value{"open"}}});
 }
 int fake(int argc, char **argv) {
-  std::string dir = std::getenv("BEADS_DIR");
+  const auto *environment = std::getenv("BEADS_DIR");
+  if (!environment)
+    return 2;
+  std::string dir = environment;
   auto project = std::filesystem::path(dir).parent_path();
   std::string mode = read_file(project / "mode");
   Value::Array a;

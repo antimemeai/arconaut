@@ -1,3 +1,4 @@
+local helper_path = assert(rawget(_G, "helper_path"), "runner must supply helper_path")
 -- Standalone M.feedback regression. Runner supplies helper_path.
 -- Sources: programs/useful_work.lua:4-9,38-50;
 -- tests/useful_work_test.lua:18,27-28; tests/useful_work_test.cpp:5-18;

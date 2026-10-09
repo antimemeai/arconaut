@@ -7,6 +7,12 @@
 #include <set>
 #include <unistd.h>
 using namespace blackbird;
+template <class T> T present(std::optional<T> value) {
+  if (!value)
+    throw std::runtime_error("expected present optional in fixture");
+  return std::move(*value);
+}
+
 template <class T> T id(unsigned char n) {
   IdentityBytes b{};
   b[0] = std::byte{n};
@@ -293,9 +299,9 @@ void atomic_admission_test(const std::string &path, int mode) {
         // Leave only the untimed decision/invocation footprint, less than the
         // complete timed three-record batch. No effect may start with a partial batch.
         const auto room = 2 * (56 + journal_frame_header_size) + decision + invocation;
-        if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
+        if (!usage.remaining_bytes() || present(usage.remaining_bytes()) <= room)
           throw Error{ErrorCode::corrupt};
-        credit = {*usage.remaining_bytes() - room, 1};
+        credit = {present(usage.remaining_bytes()) - room, 1};
       }
       unwrap(root->refresh_settlement(credit));
     }
@@ -593,7 +599,8 @@ void capacity_warning_test(const std::string &path) {
   FlakyProvider provider;
   provider.failures = 0;
   CodingEngine engine{log, context, provider, "test"};
-  const std::string filler(*root->journal_usage().remaining_bytes() - 24576, 'x');
+  const std::string filler(present(root->journal_usage().remaining_bytes()) - 24576,
+                           'x');
   log.original({"capacity diagnostic filler", filler, Value::object({})});
   unsigned warnings = 0;
   engine.status = [&](std::string_view s) {
@@ -613,7 +620,8 @@ void capacity_warning_test(const std::string &path) {
       !std::get<bool>(field(field(engine.stats(), "audit"), "approaching").value())) {
     std::cerr << "capacity warning refused=" << refused << " warnings=" << warnings
               << " provider=" << provider.calls
-              << " remaining=" << *root->journal_usage().remaining_bytes() << '\n';
+              << " remaining=" << present(root->journal_usage().remaining_bytes())
+              << '\n';
     throw Error{ErrorCode::corrupt};
   }
 }
@@ -1036,8 +1044,9 @@ void workflow_interruption_budget_test(const std::string &path) {
     if (context.items().size() < 2000)
       return false;
     if (!filled) {
-      const auto floor = *root->protected_settlement();
-      auto remove = *root->journal_usage().remaining_bytes() - floor.max_file_bytes;
+      const auto floor = present(root->protected_settlement());
+      auto remove =
+          present(root->journal_usage().remaining_bytes()) - floor.max_file_bytes;
       const auto overhead = 56 + journal_frame_header_size;
       // Leave less than one further frame's room, never raise the physical cap.
       while (remove >= overhead) {

@@ -153,3 +153,10 @@ and justified by useful capability or measured performance. Do not impose arbitr
 RSS ceilings or optimize for byte minimalism. Avoid legalistic terminology; describe
 actual behavior, rules and invariants directly. Archived history must not force
 resident payloads or full replay merely because it exists.
+
+
+Operator2026-10-09 requires a clean lint slate before every commit. Run
+`scripts/install-hooks` in each clone; the tracked pre-commit hook runs full debug
+checks and owned C++/Lua lint. Fix all findings before committing/pushing. Do not
+bypass the hook or add rule-suppression annotations; future exceptions must first
+be discussed with the operator. See tooling/README.md for the exact gate.

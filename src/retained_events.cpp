@@ -38,7 +38,8 @@ public:
   }
   void blob(const ImmutableBytes &bytes) {
     auto owned = bytes.read();
-    if (!owned.has_value()) throw owned.error();
+    if (!owned.has_value())
+      throw owned.error();
     blob(ByteView{owned.value()});
   }
   Result<std::vector<std::byte>> finish() && {

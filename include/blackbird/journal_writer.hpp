@@ -101,7 +101,7 @@ public:
        JournalCapacity capacity, SyncStrength strength = SyncStrength::full,
        bool use_scan_checkpoint = false,
        std::optional<JournalResume> resume = std::nullopt,
-       ResumeSelector selector = {});
+       const ResumeSelector &selector = {});
   // Optional physical hint only: no semantic snapshot or admission permission.
   Result<void> publish_scan_checkpoint();
   using PayloadReader = std::function<Result<std::vector<std::byte>>()>;

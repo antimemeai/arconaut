@@ -29,10 +29,12 @@ bool read_all(Storage &file, std::uint64_t offset, MutableByteView bytes) {
   while (done < bytes.size()) {
     auto read = file.read_at(offset + done, bytes.subspan(done));
     if (!read.has_value()) {
-      if (read.error().code == ErrorCode::interrupted && ++interruptions < 8) continue;
+      if (read.error().code == ErrorCode::interrupted && ++interruptions < 8)
+        continue;
       return false;
     }
-    if (read.value() == 0 || read.value() > bytes.size() - done) return false;
+    if (read.value() == 0 || read.value() > bytes.size() - done)
+      return false;
     done += read.value();
   }
   return true;
@@ -42,7 +44,8 @@ Result<void> write_all(Storage &file, ByteView bytes) {
   while (done < bytes.size()) {
     auto written = file.write_at(done, bytes.subspan(done));
     // A failed write/sync/publication is reported, never retried here.
-    if (!written.has_value()) return Result<void>::failure(written.error());
+    if (!written.has_value())
+      return Result<void>::failure(written.error());
     if (written.value() == 0 || written.value() > bytes.size() - done)
       return Result<void>::failure({ErrorCode::incomplete});
     done += written.value();
@@ -58,31 +61,37 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
   try {
     auto opened = directory_.open_existing(name_ + ".scan." + std::to_string(slot),
                                            FileAccess::read_only);
-    if (!opened.has_value()) return ignored();
+    if (!opened.has_value())
+      return ignored();
     auto file = std::move(opened).value();
     auto extent = file->extent();
     if (!extent.has_value() || extent.value() < prefix_size + 4 ||
         (extent.value() - prefix_size - 4) % entry_size != 0 ||
         (extent.value() - prefix_size - 4) / entry_size > capacity_.max_records ||
-        extent.value() > std::numeric_limits<std::size_t>::max()) return ignored();
+        extent.value() > std::numeric_limits<std::size_t>::max())
+      return ignored();
     std::vector<std::byte> bytes(static_cast<std::size_t>(extent.value()));
-    if (!read_all(*file, 0, bytes)) return ignored();
+    if (!read_all(*file, 0, bytes))
+      return ignored();
     const ByteView view{bytes};
     if (get(view.first(8)) != magic || get(view.subspan(8, 8)) != 1 ||
-        get(view.last(4)) != crc32c(view.first(view.size() - 4))) return ignored();
+        get(view.last(4)) != crc32c(view.first(view.size() - 4)))
+      return ignored();
     const auto canonical = encode_journal_header(header_);
     if (!canonical.has_value() ||
-        !std::equal(canonical.value().begin(), canonical.value().end(), bytes.begin() + 16))
+        !std::equal(canonical.value().begin(), canonical.value().end(),
+                    bytes.begin() + 16))
       return ignored();
     const auto sequence = get(view.subspan(128, 8));
     const auto end = get(view.subspan(136, 8));
     const auto count = get(view.subspan(144, 8));
     const auto anchor_crc = get(view.subspan(152, 8));
     auto journal_extent = file_->extent();
-    if (!journal_extent.has_value() ||
-        end < journal_header_size + commit_size || sequence == 0 ||
-        count == 0 || count != (bytes.size() - prefix_size - 4) / entry_size ||
-        anchor_crc > UINT32_MAX) return ignored();
+    if (!journal_extent.has_value() || end < journal_header_size + commit_size ||
+        sequence == 0 || count == 0 ||
+        count != (bytes.size() - prefix_size - 4) / entry_size ||
+        anchor_crc > UINT32_MAX)
+      return ignored();
     ScanCheckpoint checkpoint{{header_.journal, sequence, end}, {}, slot};
     checkpoint.records.reserve(static_cast<std::size_t>(count));
     std::uint64_t next_sequence = 1;
@@ -100,7 +109,8 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
       const auto checksum = get(item.subspan(40, 8));
       if (first != batch_first) {
         if (i == 0 || batch_bytes + commit_size > header_.limits.max_batch_bytes ||
-            next_sequence == UINT64_MAX || next_offset > end - commit_size) return ignored();
+            next_sequence == UINT64_MAX || next_offset > end - commit_size)
+          return ignored();
         ++next_sequence; // preceding batch commit
         next_offset += commit_size;
         batch_first = next_sequence;
@@ -108,33 +118,43 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
         last_batch_count = 0;
       }
       if ((kind != 1 && kind != 2) || seq != next_sequence || first != batch_first ||
-          seq == UINT64_MAX || next_offset > end || end - next_offset < journal_frame_header_size ||
-          offset != next_offset + journal_frame_header_size || size > header_.limits.max_payload ||
-          size > end - offset || checksum > UINT32_MAX) return ignored();
+          seq == UINT64_MAX || next_offset > end ||
+          end - next_offset < journal_frame_header_size ||
+          offset != next_offset + journal_frame_header_size ||
+          size > header_.limits.max_payload || size > end - offset ||
+          checksum > UINT32_MAX)
+        return ignored();
       const auto encoded = size + journal_frame_header_size;
       batch_bytes += encoded;
-      if (batch_bytes + commit_size > header_.limits.max_batch_bytes) return ignored();
-      checkpoint.records.push_back({header_.environment, header_.journal, static_cast<FrameKind>(kind),
-                                    seq, first, offset, static_cast<std::uint32_t>(size),
+      if (batch_bytes + commit_size > header_.limits.max_batch_bytes)
+        return ignored();
+      checkpoint.records.push_back({header_.environment, header_.journal,
+                                    static_cast<FrameKind>(kind), seq, first, offset,
+                                    static_cast<std::uint32_t>(size),
                                     static_cast<std::uint32_t>(checksum)});
       next_offset = offset + size;
       ++next_sequence;
       ++last_batch_count;
     }
-    if (next_sequence != sequence || next_offset > end || end - next_offset != commit_size)
+    if (next_sequence != sequence || next_offset > end ||
+        end - next_offset != commit_size)
       return ignored();
     // A correctly covered identity/boundary beyond EOF is evidence of lost data,
     // not permission to select a smaller prefix and reuse its IDs.
-    if (end > journal_extent.value()) return Answer::failure({ErrorCode::incomplete});
+    if (end > journal_extent.value())
+      return Answer::failure({ErrorCode::incomplete});
     std::array<std::byte, commit_size> anchor{};
-    if (!read_all(*file_, next_offset, anchor) || crc32c(anchor) != anchor_crc) return ignored();
+    if (!read_all(*file_, next_offset, anchor) || crc32c(anchor) != anchor_crc)
+      return ignored();
     const auto decoded = decode_journal_frame(anchor, header_.limits);
     if (!decoded.has_value() || decoded.value().kind != FrameKind::commit ||
-        decoded.value().sequence != sequence || decoded.value().batch_first != batch_first ||
+        decoded.value().sequence != sequence ||
+        decoded.value().batch_first != batch_first ||
         decoded.value().payload.size() != 24 ||
         get(decoded.value().payload.first(8)) != batch_first ||
         get(decoded.value().payload.subspan(8, 8)) != last_batch_count ||
-        get(decoded.value().payload.subspan(20, 4)) != 0) return ignored();
+        get(decoded.value().payload.subspan(20, 4)) != 0)
+      return ignored();
     return Answer::success(std::move(checkpoint));
   } catch (const std::bad_alloc &) {
     return Answer::failure({ErrorCode::allocation});
@@ -142,13 +162,16 @@ FramedJournal::load_scan_checkpoint(unsigned slot) {
 }
 
 Result<void> FramedJournal::publish_scan_checkpoint() {
-  if (in_restage_ || state_ != JournalWriterState::live || historical_ || archived_records_)
+  if (in_restage_ || state_ != JournalWriterState::live || historical_ ||
+      archived_records_)
     return Result<void>::failure({ErrorCode::audit_unavailable});
-  if (records_.empty()) return Result<void>::success();
+  if (records_.empty())
+    return Result<void>::success();
   (void)directory_.reclaim_publication_scratch(name_);
   try {
     auto extent = file_->extent();
-    if (!extent.has_value()) return Result<void>::failure(extent.error());
+    if (!extent.has_value())
+      return Result<void>::failure(extent.error());
     if (extent.value() != cursor_.end_offset)
       return Result<void>::failure({ErrorCode::conflict});
     auto a = load_scan_checkpoint(0);
@@ -160,24 +183,28 @@ Result<void> FramedJournal::publish_scan_checkpoint() {
     if (other && (!previous || other->cursor.sequence > previous->cursor.sequence))
       previous = std::move(other);
     if (previous && previous->cursor.sequence == cursor_.sequence &&
-        previous->cursor.end_offset == cursor_.end_offset && previous->records == records_)
+        previous->cursor.end_offset == cursor_.end_offset &&
+        previous->records == records_)
       return directory_.synchronize_directory(strength_);
     const unsigned slot = previous ? (previous->slot ^ 1U) : 0U;
-    if (records_.size() > (std::numeric_limits<std::size_t>::max() - prefix_size - 4) / entry_size)
+    if (records_.size() >
+        (std::numeric_limits<std::size_t>::max() - prefix_size - 4) / entry_size)
       return Result<void>::failure({ErrorCode::overflow});
     std::vector<std::byte> bytes(prefix_size + records_.size() * entry_size + 4);
     MutableByteView view{bytes};
     put(view.first(8), magic);
     put(view.subspan(8, 8), 1);
     const auto header = encode_journal_header(header_);
-    if (!header.has_value()) return Result<void>::failure(header.error());
+    if (!header.has_value())
+      return Result<void>::failure(header.error());
     std::copy(header.value().begin(), header.value().end(), bytes.begin() + 16);
     put(view.subspan(128, 8), cursor_.sequence);
     put(view.subspan(136, 8), cursor_.end_offset);
     put(view.subspan(144, 8), records_.size());
     std::array<std::byte, commit_size> anchor{};
     auto read = read_exact(cursor_.end_offset - commit_size, anchor);
-    if (!read.has_value()) return read;
+    if (!read.has_value())
+      return read;
     put(view.subspan(152, 8), crc32c(anchor));
     for (std::size_t i = 0; i < records_.size(); ++i) {
       auto item = view.subspan(prefix_size + i * entry_size, entry_size);
@@ -192,20 +219,26 @@ Result<void> FramedJournal::publish_scan_checkpoint() {
     put(view.last(4), crc32c(ByteView{bytes}.first(bytes.size() - 4)));
     // Journal bytes precede root bytes; rename never stands in for a sync.
     auto synced = file_->synchronize(strength_);
-    if (!synced.has_value()) return synced;
+    if (!synced.has_value())
+      return synced;
     const auto target = name_ + ".scan." + std::to_string(slot);
-    const auto temporary = name_ + ".scan.tmp." + std::to_string(cursor_.sequence) + "." +
-      std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "." +
-      std::to_string(++checkpoint_attempt_);
+    const auto temporary =
+        name_ + ".scan.tmp." + std::to_string(cursor_.sequence) + "." +
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) +
+        "." + std::to_string(++checkpoint_attempt_);
     auto created = directory_.create_exclusive(temporary);
-    if (!created.has_value()) return Result<void>::failure(created.error());
+    if (!created.has_value())
+      return Result<void>::failure(created.error());
     auto file = std::move(created).value();
     auto written = write_all(*file, bytes);
-    if (!written.has_value()) return written;
+    if (!written.has_value())
+      return written;
     synced = file->synchronize(strength_);
-    if (!synced.has_value()) return synced;
+    if (!synced.has_value())
+      return synced;
     const auto replaced = directory_.replace_file(temporary, target);
-    if (!replaced.has_value()) return replaced;
+    if (!replaced.has_value())
+      return replaced;
     return directory_.synchronize_directory(strength_);
   } catch (const std::bad_alloc &) {
     return Result<void>::failure({ErrorCode::allocation});

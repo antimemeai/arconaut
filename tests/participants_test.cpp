@@ -12,7 +12,7 @@ void check(bool good) {
   if (!good)
     throw Error{ErrorCode::corrupt};
 }
-Value request(std::string who) {
+Value request(const std::string &who) {
   auto value = unwrap(parse_json(
       R"({"request_id":"initial","from":"main","to":"alpha","provider":"openai","model":"fake","task":"source review","context":[{"id":"s1","text":"selected"}],"profile":{"name":"context-only","provenance":"test","timeout_seconds":3,"tools":"none","requests":1}})"));
   for (auto &[name, item] : value.object())
@@ -20,12 +20,12 @@ Value request(std::string who) {
       item = Value{who};
   return value;
 }
-Value args(std::string id) { return Value::object({{"run_id", Value{id}}}); }
+Value args(std::string id) { return Value::object({{"run_id", Value{std::move(id)}}}); }
 Value send(std::string run, std::string message, std::string text = "direction") {
-  return Value::object({{"run_id", Value{run}},
-                        {"message_id", Value{message}},
+  return Value::object({{"run_id", Value{std::move(run)}},
+                        {"message_id", Value{std::move(message)}},
                         {"from", Value{"operator"}},
-                        {"text", Value{text}}});
+                        {"text", Value{std::move(text)}}});
 }
 int main() {
   try {
@@ -38,7 +38,8 @@ int main() {
     bool alpha_release = false, beta_release = false;
     Participants pool{Value{},
                       [&](std::string_view label, std::string_view raw, const Value &) {
-                        check(std::this_thread::get_id() == owner && !raw.empty());
+                        check(std::this_thread::get_id() == owner && !label.empty() &&
+                              !raw.empty());
                         if (label == "participant.admission")
                           admissions.emplace_back(raw);
                       },

@@ -122,8 +122,8 @@ int main() {
       const auto header = encode(R"({"alg":"RS256","kid":"test"})");
       const auto claims = unwrap(
           dump_json(Value::object({{"iss", Value{"https://auth.openai.com"}},
-                                   {"aud", Value{client}},
-                                   {"nonce", Value{nonce}},
+                                   {"aud", Value{std::move(client)}},
+                                   {"nonce", Value{std::move(nonce)}},
                                    {"sub", Value{"subject"}},
                                    {"exp", Value{Number{std::to_string(expires)}}}})));
       const auto body = header + "." + encode(claims);
@@ -133,27 +133,34 @@ int main() {
                         body));
     };
     auto token = sign();
-    check(auth_validate_openai_identity(token, "issued", "nonce", jwks, 1000, config)
-                  .find("sub")
-                  ->string() == "subject",
-          "valid JWT failed");
+    check(
+        auth_validate_openai_identity(
+            {.token = token, .client = "issued", .nonce = "nonce"}, jwks, 1000, config)
+                .find("sub")
+                ->string() == "subject",
+        "valid JWT failed");
     rejects([&] {
-      (void)auth_validate_openai_identity(token, "wrong", "nonce", jwks, 1000, config);
+      (void)auth_validate_openai_identity(
+          {.token = token, .client = "wrong", .nonce = "nonce"}, jwks, 1000, config);
     });
     rejects([&] {
-      (void)auth_validate_openai_identity(token, "issued", "wrong", jwks, 1000, config);
+      (void)auth_validate_openai_identity(
+          {.token = token, .client = "issued", .nonce = "wrong"}, jwks, 1000, config);
     });
     rejects([&] {
-      (void)auth_validate_openai_identity(sign("nonce", "issued", 900), "issued",
-                                          "nonce", jwks, 1000, config);
+      (void)auth_validate_openai_identity(
+          {.token = sign("nonce", "issued", 900), .client = "issued", .nonce = "nonce"},
+          jwks, 1000, config);
     });
     token[token.size() - 10] = token[token.size() - 10] == 'A' ? 'B' : 'A';
     rejects([&] {
-      (void)auth_validate_openai_identity(token, "issued", "nonce", jwks, 1000, config);
+      (void)auth_validate_openai_identity(
+          {.token = token, .client = "issued", .nonce = "nonce"}, jwks, 1000, config);
     });
     rejects([&] {
-      (void)auth_validate_openai_identity("eyJhbGciOiJub25lIn0.e30.", "issued", "nonce",
-                                          jwks, 1000, config);
+      (void)auth_validate_openai_identity(
+          {.token = "eyJhbGciOiJub25lIn0.e30.", .client = "issued", .nonce = "nonce"},
+          jwks, 1000, config);
     });
     std::map<std::string, std::string> authorization;
     config.http = [&](const ProviderHttpRequest &r) {
@@ -194,6 +201,8 @@ int main() {
               const auto port = std::stoi(uri.substr(colon + 1, slash - colon - 1));
               for (const bool correct : {false, true}) {
                 const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+                if (fd < 0)
+                  throw Error{ErrorCode::io};
                 sockaddr_in addr{};
                 addr.sin_family = AF_INET;
                 addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -237,7 +246,8 @@ int main() {
           unwrap(parse_json(
               R"({"access_token":"a","refresh_token":"r","expires_in":3600})")),
           "issued", auth.descriptor("openai").find("token_url")->string(),
-          Value::object({}), std::stoll(saved.find("revision")->number().text()));
+          Value::object({}),
+          {.account_revision = std::stoll(saved.find("revision")->number().text())});
     });
     config.http = [&](const ProviderHttpRequest &r) {
       const auto fields = unwrap(parse_json(r.body));

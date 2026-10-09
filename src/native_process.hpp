@@ -74,7 +74,8 @@ public:
     close_input();
     if (output >= 0)
       (void)::close(output);
-    if (error_output >= 0) (void)::close(error_output);
+    if (error_output >= 0)
+      (void)::close(error_output);
     // Keep group custody even after collect() reaps the leader.
     if (group > 0)
       (void)::kill(-group, SIGKILL);
@@ -100,7 +101,8 @@ public:
     std::vector<char *> envp;
     if (!child_environment.empty()) {
       environment = child_environment;
-      for (auto &entry : environment) envp.push_back(entry.data());
+      for (auto &entry : environment)
+        envp.push_back(entry.data());
       envp.push_back(nullptr);
     } else if (!codex_home.empty()) {
       for (char **entry = environ; *entry != nullptr; ++entry)
@@ -132,11 +134,14 @@ public:
     pipe(in);
     try {
       pipe(out);
-      if (separate_error) pipe(err);
+      if (separate_error)
+        pipe(err);
     } catch (...) {
       for (int fd : in)
         (void)::close(fd);
-      for (int fd : out) if (fd >= 0) (void)::close(fd);
+      for (int fd : out)
+        if (fd >= 0)
+          (void)::close(fd);
       throw;
     }
     posix_spawn_file_actions_t actions;
@@ -151,12 +156,12 @@ public:
         if (rc == 0)
           rc = separate_error
                    ? ::posix_spawn_file_actions_adddup2(&actions, err[1], STDERR_FILENO)
-                   : merge_error
+               : merge_error
                    ? ::posix_spawn_file_actions_adddup2(&actions, out[1], STDERR_FILENO)
                    : ::posix_spawn_file_actions_addopen(&actions, STDERR_FILENO,
                                                         "/dev/null", O_WRONLY, 0);
         if (rc == 0 && !cwd.empty())
-          #ifdef __APPLE__
+#ifdef __APPLE__
           rc = ::posix_spawn_file_actions_addchdir(&actions, cwd.c_str());
 #else
           rc = ::posix_spawn_file_actions_addchdir_np(&actions, cwd.c_str());
@@ -174,11 +179,13 @@ public:
     }
     (void)::close(in[0]);
     (void)::close(out[1]);
-    if (err[1] >= 0) (void)::close(err[1]);
+    if (err[1] >= 0)
+      (void)::close(err[1]);
     if (rc != 0) {
       (void)::close(in[1]);
       (void)::close(out[0]);
-      if (err[0] >= 0) (void)::close(err[0]);
+      if (err[0] >= 0)
+        (void)::close(err[0]);
       pid = -1;
       fail(ErrorCode::io, rc);
     }
@@ -187,7 +194,8 @@ public:
     input = in[1];
     output = out[0];
     error_output = err[0];
-    if (error_output >= 0 && ::fcntl(error_output, F_SETFL, O_NONBLOCK) < 0) fail(ErrorCode::io, errno);
+    if (error_output >= 0 && ::fcntl(error_output, F_SETFL, O_NONBLOCK) < 0)
+      fail(ErrorCode::io, errno);
     // Socket-style SIGPIPE suppression exists for pipes on the qualified Mac profile.
 #ifdef F_SETNOSIGPIPE
     if (::fcntl(input, F_SETNOSIGPIPE, 1) < 0)
@@ -248,8 +256,8 @@ public:
         throw deadline_error;
       (void)::poll(nullptr, 0, 10);
     }
-    const int code = observed.si_code == CLD_EXITED ? observed.si_status
-                                                   : 128 + observed.si_status;
+    const int code =
+        observed.si_code == CLD_EXITED ? observed.si_status : 128 + observed.si_status;
     if (exit_code != nullptr) {
       *exit_code = code;
       return std::move(pending);
@@ -285,19 +293,29 @@ private:
   bool read(Clock::time_point deadline, std::size_t limit) {
     if (error_output >= 0) {
       wait(error_output, POLLIN, deadline);
-      char b[8192]; const auto n = ::read(error_output, b, sizeof(b));
-      if (n == 0) { (void)::close(error_output); error_output = -1; }
-      else if (n > 0) {
-        if (error_observer) error_observer(std::string_view{b, static_cast<std::size_t>(n)});
-        if (error_bytes.size() + static_cast<std::size_t>(n) > limit) fail(ErrorCode::capacity);
+      char b[8192];
+      const auto n = ::read(error_output, b, sizeof(b));
+      if (n == 0) {
+        (void)::close(error_output);
+        error_output = -1;
+      } else if (n > 0) {
+        if (error_observer)
+          error_observer(std::string_view{b, static_cast<std::size_t>(n)});
+        if (error_bytes.size() + static_cast<std::size_t>(n) > limit)
+          fail(ErrorCode::capacity);
         error_bytes.append(b, static_cast<std::size_t>(n));
-      } else if (errno != EAGAIN && errno != EINTR) fail(ErrorCode::io, errno);
+      } else if (errno != EAGAIN && errno != EINTR)
+        fail(ErrorCode::io, errno);
     }
-    if (stdout_done) return error_output >= 0;
+    if (stdout_done)
+      return error_output >= 0;
     wait(output, POLLIN, deadline);
     char bytes[8192];
     const auto n = ::read(output, bytes, sizeof(bytes));
-    if (n == 0) { stdout_done = true; return error_output >= 0; }
+    if (n == 0) {
+      stdout_done = true;
+      return error_output >= 0;
+    }
     if (n < 0) {
       if (errno != EAGAIN && errno != EINTR)
         fail(ErrorCode::io, errno);

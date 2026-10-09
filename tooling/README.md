@@ -13,7 +13,9 @@ Run from the repository root:
 
 ```sh
 scripts/rigor doctor
+scripts/install-hooks
 scripts/rigor check debug
+scripts/rigor lint
 scripts/rigor check release
 scripts/rigor check asan
 scripts/rigor check tsan
@@ -25,8 +27,8 @@ scripts/rigor qualify
 
 `check` verifies tool identities, configures/builds the selected profile, runs
 its direct CTest fixture (or the bounded fuzzer), and analyzes actual debug
-translation units plus owned C++/Lua sources. CTest has a fifteen-second probe
-timeout; individual development commands have a 120-second limit. A failed
+translation units plus owned C++/Lua sources. Native analysis uses two workers and
+CTest uses six; individual development commands have a 120-second limit. A failed
 command fails the gate. A missing tool, report, translation unit, header analysis
 path, mismatched compiler or preset/profile pin is an error. Owned directory
 symlinks are rejected until an explicit source policy is designed; research,
@@ -150,3 +152,20 @@ in Neuroses debug/release/ASan+UBSan profiles on 2026-10-03.
 macOS dSYM bundles. CPU, allocation and system captures use installed Instruments;
 readable sample stacks and Linux perf are also wired. See [Profiling](../docs/PROFILING.md).
 No profiler library is linked into the normal runtime.
+
+
+## Required pre-commit checks
+
+Run `scripts/install-hooks` after cloning to configure this repository's tracked
+`.githooks/pre-commit`. It is installed in the current checkout. Every commit runs
+`scripts/rigor check debug`: pinned tool verification, build, all debug tests,
+C++ formatting/static analysis, Lua formatting/syntax/type analysis and the Lua
+contract probe. Any failure blocks the commit. No acceptance cache or hook exception
+switch exists. Stage or restore tracked working changes first: the hook refuses
+unstaged tracked changes and verifies the index/tree did not change during checks.
+It leaves files and the index intact when a check fails.
+
+`scripts/rigor lint` runs the same lint gates after verifying tools and rebuilding
+the debug compilation database, without running CTest. Do not bypass the hook,
+weaken rules or add suppression annotations to land a change. Any future exception
+requires discussion with the operator first.

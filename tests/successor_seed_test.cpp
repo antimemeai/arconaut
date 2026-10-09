@@ -65,7 +65,7 @@ int main() {
       bad.object().emplace_back("extra", Value{std::string(1024 * 1024, 'x')});
       reject(bad);
       auto raw = unwrap(dump_json(original));
-      auto replace = [&](std::string from, std::string to) {
+      auto replace = [&](const std::string &from, const std::string &to) {
         auto text = raw;
         const auto at = text.find(from);
         check(at != std::string::npos);

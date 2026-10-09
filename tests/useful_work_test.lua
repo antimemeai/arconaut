@@ -1,5 +1,29 @@
+local helper_path = assert(rawget(_G, "helper_path"), "runner must supply helper_path")
 local writes, executions, requests = 0, 0, {}
 local watermark = 130
+local call_tool = function(name, args)
+  if name == "audit_inspect" then
+    requests[#requests + 1] = args.query
+    local cursor = type(args.query.cursor) == "table" and tonumber(args.query.cursor[1])
+      or args.query.cursor
+    cursor = cursor or 0
+    local next_cursor = math.min(cursor + 64, 130)
+    return {
+      ["end"] = watermark,
+      next = next_cursor,
+      records = { { label = "lua.error", record = cursor } },
+    }
+  elseif name == "write_file" then
+    writes = writes + 1
+    return { written = true }
+  elseif name == "exec" then
+    executions = executions + 1
+    return { timed_out = true, effect_outcome = "unknown" }
+  elseif name == "read_file" then
+    return { content = "next boundary steer" }
+  end
+  error("unexpected call")
+end
 blackbird = {
   binary = {
     encode = function()
@@ -21,28 +45,7 @@ blackbird = {
     }
   end,
   call = function(name, args)
-    if name == "audit_inspect" then
-      requests[#requests + 1] = args.query
-      local cursor = type(args.query.cursor) == "table"
-          and tonumber(args.query.cursor[1])
-        or args.query.cursor
-      cursor = cursor or 0
-      local next_cursor = math.min(cursor + 64, 130)
-      return {
-        ["end"] = watermark,
-        next = next_cursor,
-        records = { { label = "lua.error", record = cursor } },
-      }
-    elseif name == "write_file" then
-      writes = writes + 1
-      return { written = true }
-    elseif name == "exec" then
-      executions = executions + 1
-      return { timed_out = true, effect_outcome = "unknown" }
-    elseif name == "read_file" then
-      return { content = "next boundary steer" }
-    end
-    error("unexpected call")
+    return call_tool(name, args)
   end,
 }
 local M = assert(loadfile(helper_path))()
@@ -88,27 +91,23 @@ assert(
 )
 print("useful Lua fault checks passed")
 -- A failed request write must not execute a stale/missing request file.
-local prior = blackbird.call
-blackbird.call = function(name, args)
+local prior = call_tool
+call_tool = function(name, args)
   if name == "write_file" then
     return { error = "parent absent" }
   end
   return prior(name, args)
 end
 local before = executions
-local rejected = M.record(
-  "pool",
-  "absent/request.bbm",
-  {
-    question = "write failure",
-    action = "persist",
-    outcome = "unknown",
-    references = {},
-  }
-)
+local rejected = M.record("pool", "absent/request.bbm", {
+  question = "write failure",
+  action = "persist",
+  outcome = "unknown",
+  references = {},
+})
 assert(executions == before and rejected.error, "failed write must stop CLI dispatch")
 local ranges = {}
-blackbird.call = function(name, args)
+call_tool = function(name, args)
   assert(name == "read_file")
   ranges[#ranges + 1] = args
   return { content = "exact range" }

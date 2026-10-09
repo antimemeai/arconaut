@@ -73,15 +73,25 @@ assert(not pcall(function()
   G.configure({ repository = "bad/../../x" })
 end), "repository cannot inject argv/url")
 local cfg = G.configure({ repository = "llvm/llvm-project", limit = 2 })
+local fake_call = function(name, args)
+  assert(name == "exec" and args.argv[1] == "curl" and args.timeout_seconds == 30)
+  assert(
+    args.argv[#args.argv]
+      == "https://api.github.com/repos/llvm/llvm-project/releases?per_page=2"
+  )
+  return {
+    exit_code = 0,
+    output = "[]",
+    output_bytes = 4,
+    omitted_bytes = 0,
+    output_ref = "ref",
+  }
+end
 local fake = {
   call = function(name, args)
-    assert(name == "exec" and args.argv[1] == "curl" and args.timeout_seconds == 30)
-    assert(
-      args.argv[#args.argv]
-        == "https://api.github.com/repos/llvm/llvm-project/releases?per_page=2"
-    )
-    return { exit_code = 0, output = "[]", output_bytes = 4, omitted_bytes = 0, output_ref = "ref" }
+    return fake_call(name, args)
   end,
+  format = tostring,
   json = {
     encode = function(v)
       return tostring(v)
@@ -103,7 +113,7 @@ local fake = {
 }
 local r = G.fetch(cfg, fake)
 assert(r.items[1].id == "123" and r.original_ref == "ref")
-fake.call = function()
+fake_call = function()
   return { exit_code = 22, output = "rate limited", output_ref = "unknown" }
 end
 assert(not pcall(function()
@@ -119,7 +129,14 @@ refresh:install({
       error("unknown fetch")
     end
     return {
-      items = { { id = "a", revision = "v1", title = "safe\27[31m", link = "https://example.com" } },
+      items = {
+        {
+          id = "a",
+          revision = "v1",
+          title = "safe\27[31m",
+          link = "https://example.com",
+        },
+      },
       original_ref = "old",
       fetched_at = "unavailable",
     }
@@ -147,21 +164,19 @@ assert(not pcall(function()
   refresh:enable("refresh", cycle)
 end), "cycle refused")
 assert(refresh:status("refresh").enabled, "invalid configuration preserves effective")
--- Model native JSON representation: numbers are exact tagged lexeme tables.
-fake.json.encode = function(v)
-  if type(v) == "table" then
-    return v[1]
-  else
-    return tostring(v)
-  end
-end
-fake.call = function()
-  return { exit_code = { "0" }, output = "[]", omitted_bytes = { "0" }, output_ref = "native-ref" }
+-- External JSON decoding yields native numeric values.
+fake_call = function()
+  return {
+    exit_code = 0,
+    output = "[]",
+    omitted_bytes = 0,
+    output_ref = "native-ref",
+  }
 end
 fake.json.decode = function()
   return {
     {
-      id = { "123" },
+      id = 123,
       tag_name = "v1",
       html_url = "https://github.com/llvm/llvm-project/releases/tag/v1",
       draft = false,
@@ -169,8 +184,13 @@ fake.json.decode = function()
   }
 end
 assert(G.fetch(cfg, fake).items[1].id == "123", "native exact JSON id")
-fake.call = function()
-  return { exit_code = { "0" }, output = "{}", omitted_bytes = { "0" }, output_ref = "native-ref" }
+fake_call = function()
+  return {
+    exit_code = 0,
+    output = "{}",
+    omitted_bytes = 0,
+    output_ref = "native-ref",
+  }
 end
 assert(not pcall(function()
   G.fetch(cfg, fake)

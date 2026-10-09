@@ -136,7 +136,8 @@ void root_owner() {
       RetainedEnvironment::open(directory(temporary), root(), root_capacity, bounds));
   CHECK(owner->state() == JournalWriterState::recovery_pending);
   auto index_directory = directory(temporary);
-  require(owner->enable_indexed_queries(require(index_directory->create_exclusive("query.index")),4*1024*1024));
+  require(owner->enable_indexed_queries(
+      require(index_directory->create_exclusive("query.index")), 4 * 1024 * 1024));
   const auto pending_existing =
       require(owner->submit_proposal(owner->cursor(), {}, events));
   CHECK(pending_existing.existing && pending_existing.events[0].existing &&

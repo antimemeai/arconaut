@@ -549,8 +549,8 @@ void ProviderAuth::logout(std::string_view p, std::string_view a) {
   // a magic account label could accidentally select another stored account.
   s.save();
 }
-void ProviderAuth::add_provider(std::string id, std::string base, std::string protocol,
-                                std::string env) {
+void ProviderAuth::add_provider(const std::string &id, std::string base,
+                                const std::string &protocol, const std::string &env) {
   identifier(id);
   identifier(env);
   https_url(base);
@@ -581,8 +581,7 @@ void ProviderAuth::add_provider(std::string id, std::string base, std::string pr
 void ProviderAuth::save_oauth(std::string_view p, std::string_view a,
                               const Value &tokens, std::string client,
                               std::string token_url, Value metadata,
-                              std::int64_t expected_revision,
-                              std::int64_t expected_selection) {
+                              OAuthExpected expected) {
   identifier(p);
   identifier(a);
   secret(client);
@@ -591,12 +590,12 @@ void ProviderAuth::save_oauth(std::string_view p, std::string_view a,
   const auto d = blackbird::descriptor(s, p);
   if (token_url != str(d, "token_url"))
     throw Error{ErrorCode::conflict};
-  if (expected_selection >= 0 &&
-      number(s.field("selection_revision"), p) != expected_selection)
+  if (expected.selection_revision >= 0 &&
+      number(s.field("selection_revision"), p) != expected.selection_revision)
     throw Error{ErrorCode::conflict};
   const auto *prior = s.account(p, a);
-  if (expected_revision != -2 &&
-      (prior ? number(*prior, "revision") : -1) != expected_revision)
+  if (expected.account_revision != -2 &&
+      (prior ? number(*prior, "revision") : -1) != expected.account_revision)
     throw Error{ErrorCode::conflict};
   auto record = token_record(tokens, now(config_));
   put(record, "client_id", Value{std::move(client)});

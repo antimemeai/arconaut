@@ -636,7 +636,13 @@ void validate_tool_schema(const Value &schema) {
   if (std::get<bool>(field(schema, "additionalProperties").value()))
     throw Error{ErrorCode::invalid_range};
 }
-void validate_tool_arguments(const Value &schema, const Value &args) {
+struct ToolValidation {
+  const Value &schema;
+  const Value &arguments;
+};
+void validate_tool_arguments(ToolValidation input) {
+  const auto &schema = input.schema;
+  const auto &args = input.arguments;
   for (const auto &key : field(schema, "required").array())
     if (!args.find(key.string()))
       throw Error{ErrorCode::invalid_range};
@@ -1805,7 +1811,8 @@ Value CodingEngine::call(std::string name, Value arguments) {
     for (const auto &definition : lua_tools_.array()) {
       if (string_field(definition, "name") != name)
         continue;
-      validate_tool_arguments(field(definition, "parameters"), arguments);
+      validate_tool_arguments(
+          {.schema = field(definition, "parameters"), .arguments = arguments});
       log_.original(
           {"tool.source", string_field(definition, "source"),
            Value::object({{"name", Value{name}},

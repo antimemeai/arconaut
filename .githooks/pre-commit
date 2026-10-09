@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+if ! git diff --quiet --ignore-submodules --; then
+    echo 'Commit blocked: stage or restore tracked changes before running the clean-slate checks.' >&2
+    exit 1
+fi
+checked_tree=$(git write-tree)
+(
+    unset $(git rev-parse --local-env-vars)
+    ./scripts/rigor check debug
+)
+if ! git diff --quiet --ignore-submodules -- || [ "$checked_tree" != "$(git write-tree)" ]; then
+    echo 'Commit blocked: files or the index changed during checks; stage the intended result and retry.' >&2
+    exit 1
+fi

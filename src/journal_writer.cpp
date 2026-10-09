@@ -147,11 +147,10 @@ FramedJournal::create(JournalDirectory &directory, std::string_view name,
   return Result<std::unique_ptr<FramedJournal>>::success(std::move(journal));
 }
 
-Result<std::unique_ptr<FramedJournal>>
-FramedJournal::open(JournalDirectory &directory, std::string_view name,
-                    JournalHeader expected, JournalCapacity capacity,
-                    SyncStrength strength, bool use_scan_checkpoint,
-                    std::optional<JournalResume> resume, ResumeSelector selector) {
+Result<std::unique_ptr<FramedJournal>> FramedJournal::open(
+    JournalDirectory &directory, std::string_view name, JournalHeader expected,
+    JournalCapacity capacity, SyncStrength strength, bool use_scan_checkpoint,
+    std::optional<JournalResume> resume, const ResumeSelector &selector) {
   auto allocated = allocate(directory, expected, capacity, strength);
   if (!allocated.has_value()) {
     return allocated;

@@ -146,7 +146,8 @@ int main() {
     rejects(
         [&] {
           auth.save_oauth("openai", "never-signed-in", tokens(), "issued",
-                          d.find("token_url")->string(), Value::object({}), -1);
+                          d.find("token_url")->string(), Value::object({}),
+                          {.account_revision = -1});
         },
         ErrorCode::conflict);
     // Separate processes share the rotating token under the native file lock.

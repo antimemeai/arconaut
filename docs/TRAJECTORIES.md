@@ -374,3 +374,10 @@ the original lint machinery analyzed112 translation units;19 commands failed and
 the Lua formatting gate prevented later Lua checks. Existing schema argument-order
 and saved-state optional-guard patterns were verified in prior HEAD. Other findings
 require triage. No extra assurance layer or new unbounded hardening unit is implied.
+
+
+Operator2026-10-09 reopened arconaut-1qa and requires correcting all lint findings
+before commits. The source/format repairs and tracked pre-commit hook are described
+in JOURNAL.md and tooling/README.md. The hook runs the complete debug and owned lint
+gates, blocks every failure and is installed locally; new clones run
+`scripts/install-hooks`. No rule-suppression annotations or weakened rules were added.
