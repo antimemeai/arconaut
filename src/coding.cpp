@@ -384,6 +384,12 @@ struct CodingEngine::Runtime {
         "do "
         "blackbird.participants[n]=function(q) return "
         "blackbird.call('participant_'..n,q or {}) end end "
+        "blackbird.process={} "
+        "for _,op in "
+        "ipairs({'read','foreground','background','input','resize','signal','stop','"
+        "archive','configure'}) do "
+        "local operation=op; blackbird.process[operation]=function(q) q=q or {}; "
+        "q.op=operation; return blackbird.call('process',q) end end "
         "blackbird.tasks={} "
         "function blackbird.tasks.read(q) return blackbird.call('tasks_read',{query=q "
         "or {}}) end "
@@ -524,6 +530,15 @@ struct CodingEngine::Runtime {
   }
   static void interrupt_hook(lua_State *L, lua_Debug *) {
     auto *self = *static_cast<Runtime **>(lua_getextraspace(L));
+    try {
+      self->engine.poll_commands();
+    } catch (const Error &error) {
+      self->failure = error;
+    } catch (...) {
+      self->failure = Error{ErrorCode::external_unknown};
+    }
+    if (self->failure)
+      luaL_error(L, "Command owner failed");
     if (self->engine.cancelled && self->engine.cancelled()) {
       self->failure = Error{ErrorCode::interrupted};
       luaL_error(L, "Turn interrupted");
@@ -671,6 +686,19 @@ Value default_context_budget() {
        {"trigger_bytes", Value{Number{"262144"}}},
        {"target_bytes", Value{Number{"131072"}}},
        {"reason", Value{"opt-in; byte policy is not a provider token limit"}}});
+}
+std::uint64_t command_number(const Value &value, std::string_view key,
+                             std::uint64_t limit) {
+  const auto *item = value.find(key);
+  if (!item || !std::holds_alternative<Number>(item->value()))
+    throw Error{ErrorCode::invalid_range};
+  const auto text = item->number().text();
+  std::uint64_t number = 0;
+  const auto parsed = std::from_chars(text.data(), text.data() + text.size(), number);
+  if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() ||
+      number > limit)
+    throw Error{ErrorCode::invalid_range};
+  return number;
 }
 std::size_t budget_number(const Value &value, std::string_view key) {
   const auto &text = field(value, key).number().text();
@@ -912,6 +940,7 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
       model_(std::move(model)), decision_models_(std::move(decisions)),
       identity_(session_identity(log)),
       generation_(unwrap(log.root().issue<DefinitionGenerationId>())) {
+  command_jobs_ = std::make_shared<CommandJobs>();
   observations_ = std::make_unique<Observations>(log_);
   program_config_.object().emplace_back("workflows", default_workflows());
   program_config_.object().emplace_back("workflow_prefix", Value{""});
@@ -956,7 +985,142 @@ CodingEngine::CodingEngine(AuditLog &log, ContextStore &context,
   if (context_.head().empty())
     context_.append({}, "initial");
 }
-CodingEngine::~CodingEngine() = default;
+CodingEngine::~CodingEngine() { command_jobs_->shutdown(); }
+void CodingEngine::shutdown_commands() {
+  command_jobs_->shutdown();
+  std::optional<Error> error;
+  for (unsigned round = 0; round < 4 && command_jobs_->debt(); ++round) {
+    try {
+      poll_commands();
+    } catch (const Error &failure) {
+      error = failure;
+    }
+  }
+  if (error)
+    throw *error;
+}
+void CodingEngine::poll_commands() {
+  if (pumping_commands_)
+    return;
+  pumping_commands_ = true;
+  struct Reset {
+    bool &flag;
+    ~Reset() { flag = false; }
+  } reset{pumping_commands_};
+  try {
+    if (!command_failure_)
+      for (const auto &request : command_jobs_->requests())
+        (void)call("process", request);
+    for (unsigned drain_round = 0; drain_round < 4; ++drain_round) {
+      auto events = command_jobs_->drain();
+      for (auto &event : events) {
+        if (event.bytes) {
+          if (command_failure_) {
+            unretained_bytes_ += event.bytes->size();
+            continue;
+          }
+          try {
+            const auto before = command_jobs_->read(Value::object(
+                {{"job_id", Value{event.job_id}}, {"count", Value{Number{0}}}}));
+            if (field(before, "retained_bytes") != Value{Number{event.offset}})
+              throw Error{ErrorCode::conflict};
+            log_.original(
+                {"process.output", *event.bytes,
+                 Value::object({{"attempt", Value{event.job_id}},
+                                {"byte_start", Value{Number{event.offset}}}})});
+            command_jobs_->retained(event.job_id, event.offset + event.bytes->size());
+            if (process_output) {
+              try {
+                if (string_field(command_jobs_->foreground(), "job_id") == event.job_id)
+                  process_output(*event.bytes);
+                else
+                  process_output("\n[command " + event.job_id + "]\n" + *event.bytes);
+              } catch (...) {
+              } // Presentation cannot undo successfully retained bytes.
+            }
+          } catch (const Error &error) {
+            if (diagnostic)
+              diagnostic(
+                  "command capture failed: " + std::string{error_name(error.code)} +
+                  ":" + std::to_string(error.detail) + "\n");
+            command_failure_ = error;
+            capacity_stopped_ = error.code == ErrorCode::capacity;
+            command_jobs_->shutdown();
+            unretained_bytes_ += event.bytes->size();
+            const auto registry = command_jobs_->read(Value::object({}));
+            for (const auto &job : field(registry, "jobs").array())
+              if (string_field(job, "state") != "completed")
+                command_jobs_->capture_failed(string_field(job, "job_id"));
+          }
+          continue;
+        }
+        if (command_failure_) {
+          for (auto &[key, value] : event.result.object()) {
+            if (key == "effect_outcome")
+              value = Value{"unknown"};
+            if (key == "capture_complete")
+              value = Value{false};
+          }
+        }
+        const auto snapshot = command_jobs_->read(Value::object(
+            {{"job_id", Value{event.job_id}}, {"count", Value{Number{0}}}}));
+        event.result.object().emplace_back("retained_bytes",
+                                           field(snapshot, "retained_bytes"));
+        const auto encoded = unwrap(encode_packet(event.result));
+        const auto disposition =
+            string_field(event.result, "effect_outcome") == "unknown"
+                ? AttemptDisposition::unknown
+            : event.result.find("exit_code") &&
+                    field(event.result, "exit_code") == Value{Number{0}}
+                ? AttemptDisposition::success
+                : AttemptDisposition::failure;
+        (void)unwrap(log_.root().submit_settlement(
+            {{},
+             AttemptObservationEvent{parse_id<OperationAttemptId>(event.job_id),
+                                     AttemptPhase::terminal,
+                                     disposition,
+                                     {encoded.begin(), encoded.end()}}}));
+        command_jobs_->settled(event.job_id, event.result);
+        if (process_output && event.result.find("exit_code") &&
+            string_field(command_jobs_->foreground(), "job_id") == event.job_id)
+          try {
+            process_output("\n[exit " +
+                           field(event.result, "exit_code").number().text() + "]\n");
+          } catch (...) {
+          }
+        if (const auto task = command_tasks_.find(event.job_id);
+            task != command_tasks_.end()) {
+          if (task_activity) {
+            std::string phase = disposition == AttemptDisposition::success ? "finished"
+                                : disposition == AttemptDisposition::unknown
+                                    ? "outcome unknown"
+                                    : "failed";
+            if (event.result.find("exit_code"))
+              phase +=
+                  " (exit " + field(event.result, "exit_code").number().text() + ")";
+            task_activity(Value::object({{"task_id", Value{task->second}},
+                                         {"attempt", Value{event.job_id}},
+                                         {"operation", Value{"exec"}},
+                                         {"phase", Value{std::move(phase)}}}));
+          }
+          command_tasks_.erase(task);
+        }
+      }
+      if (!command_failure_)
+        break;
+    }
+    if (settlement_ && !turn_running_ && !operation_depth_ && !command_jobs_->debt())
+      settlement_.reset();
+  } catch (const Error &error) {
+    command_jobs_->stop_all();
+    command_failure_ = error;
+    if (error.code != ErrorCode::capacity)
+      log_.root().block_admission();
+    throw;
+  }
+  if (command_failure_)
+    throw *command_failure_;
+}
 void CodingEngine::poll_participants() { participants_->drain(); }
 void CodingEngine::shutdown_participants() { participants_->shutdown(); }
 void recover_coding_session(RetainedState &root) {
@@ -1061,8 +1225,8 @@ void CodingEngine::protect_workflow(const Value::Array &entries,
     credit.max_records = std::max(credit.max_records, existing.max_records);
     // One future admission plus each outstanding nested attempt. Error sources,
     // issuers, receipt and terminal are bounded per slot. Depth is limited below.
-    credit.max_file_bytes += (operation_depth_ + 1) * 8192;
-    credit.max_records += (operation_depth_ + 1) * 16;
+    credit.max_file_bytes += (operation_depth_ + 1 + command_jobs_->debt()) * 8192;
+    credit.max_records += (operation_depth_ + 1 + command_jobs_->debt()) * 16;
     unwrap(log_.root().refresh_settlement(credit));
   } catch (const Error &e) {
     if (e.code == ErrorCode::capacity)
@@ -1072,13 +1236,14 @@ void CodingEngine::protect_workflow(const Value::Array &entries,
 }
 Value CodingEngine::operation(std::string_view name, const Value &input,
                               const std::function<Value(OperationAttemptId)> &body) {
+  poll_commands();
   std::string task_id;
   if (const auto *binding = input.find("task_id"); name == "exec" && binding) {
     task_id = binding->string();
     if (!tasks_.state().item(task_id))
       throw Error{ErrorCode::invalid_range};
   }
-  if (cancelled && cancelled())
+  if (!pumping_commands_ && cancelled && cancelled())
     throw Error{ErrorCode::interrupted};
   if (effect_policy)
     effect_policy(name, input);
@@ -1236,9 +1401,15 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
               "titles512 bytes, notes2048 bytes. No changes accepted for an invalid "
               "batch."});
 
-  const bool timed_out = boundary.error && boundary.error->code == ErrorCode::io &&
-                         boundary.error->detail == ETIMEDOUT;
-  if (name == "exec") {
+  bool adapter_capacity = name == "process" && boundary.error &&
+                          boundary.error->code == ErrorCode::capacity;
+  const bool timed_out = (boundary.error && boundary.error->code == ErrorCode::io &&
+                          boundary.error->detail == ETIMEDOUT) ||
+                         (name == "exec" && result.find("timed_out") &&
+                          field(result, "timed_out") == Value{true});
+  const bool persistent_command =
+      name == "exec" && command_jobs_->contains(hex_identity(attempt.bytes()));
+  if (name == "exec" && !result.find("output_ref")) {
     result.object().emplace_back("output_ref", Value{hex_identity(attempt.bytes())});
     if (timed_out) {
       result.object().emplace_back("timed_out", Value{true});
@@ -1267,10 +1438,20 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
     capacity_stopped_ = true;
     unretained_bytes_ += output.size();
     boundary.error = e;
+    adapter_capacity = false;
+    if (command_jobs_->active()) {
+      command_failure_ = e;
+      const auto registry = command_jobs_->read(Value::object({}));
+      for (const auto &job : field(registry, "jobs").array())
+        if (string_field(job, "state") != "completed")
+          command_jobs_->capture_failed(string_field(job, "job_id"));
+      command_jobs_->shutdown();
+    }
     result = error_value(e);
     output = unwrap(encode_packet_string(result));
   }
-  if (boundary.error && boundary.error->code == ErrorCode::capacity) {
+  if (boundary.error && boundary.error->code == ErrorCode::capacity &&
+      !adapter_capacity) {
     capacity_stopped_ = true;
     RetainedState::MaintenanceScope maintenance{root};
     log_.original(
@@ -1289,7 +1470,7 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
                            {"result_record", Value{Number{result_record}}}})));
   auto disposition =
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
-  if (boundary.error &&
+  if (boundary.error && !adapter_capacity &&
       (boundary.error->code == ErrorCode::capacity || name == "provider" ||
        name == "exec" || name == "beads" || name == "colleague" ||
        name == "decision_model") &&
@@ -1302,9 +1483,12 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
     disposition = AttemptDisposition::unknown;
   if (boundary.error && name == "beads" && beads_.mutation_may_have_started())
     disposition = AttemptDisposition::unknown;
-  if (!boundary.error && name == "exec" &&
+  if (!boundary.error && name == "exec" && result.find("exit_code") &&
       field(result, "exit_code").number().text() != "0")
     disposition = AttemptDisposition::failure;
+  if (!boundary.error && persistent_command && result.find("effect_outcome") &&
+      string_field(result, "effect_outcome") == "unknown")
+    disposition = AttemptDisposition::unknown;
   if (!boundary.error && name == "beads") {
     const auto state = string_field(result, "status");
     disposition = state == "unknown" ? AttemptDisposition::unknown
@@ -1324,24 +1508,26 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
                                                  AttemptPhase::terminal,
                                                  disposition,
                                                  {observed.begin(), observed.end()}}};
-  auto recorded =
-      boundary.error ? root.submit_settlement(terminal) : root.submit(terminal);
-  if (!recorded.has_value() && recorded.error().code == ErrorCode::capacity) {
-    capacity_stopped_ = true;
-    boundary.error = recorded.error();
-    result = error_value(*boundary.error);
-    const std::string bounded =
-        "capacity stop after dispatch; outcome unknown; no replay";
-    const auto bounded_raw = std::as_bytes(std::span{bounded.data(), bounded.size()});
-    disposition = AttemptDisposition::unknown;
-    recorded = root.submit_settlement(
-        {{},
-         AttemptObservationEvent{attempt,
-                                 AttemptPhase::terminal,
-                                 disposition,
-                                 {bounded_raw.begin(), bounded_raw.end()}}});
+  if (!persistent_command) {
+    auto recorded =
+        boundary.error ? root.submit_settlement(terminal) : root.submit(terminal);
+    if (!recorded.has_value() && recorded.error().code == ErrorCode::capacity) {
+      capacity_stopped_ = true;
+      boundary.error = recorded.error();
+      result = error_value(*boundary.error);
+      const std::string bounded =
+          "capacity stop after dispatch; outcome unknown; no replay";
+      const auto bounded_raw = std::as_bytes(std::span{bounded.data(), bounded.size()});
+      disposition = AttemptDisposition::unknown;
+      recorded = root.submit_settlement(
+          {{},
+           AttemptObservationEvent{attempt,
+                                   AttemptPhase::terminal,
+                                   disposition,
+                                   {bounded_raw.begin(), bounded_raw.end()}}});
+    }
+    (void)unwrap(std::move(recorded));
   }
-  (void)unwrap(std::move(recorded));
   std::string task_phase = disposition == AttemptDisposition::unknown
                                ? "outcome unknown"
                            : disposition == AttemptDisposition::failure ? "failed"
@@ -1351,13 +1537,16 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
         exit && exit->number().text() != "0")
       task_phase = "failed (exit " + exit->number().text() + ")";
   task_run.ended = true;
-  task_run.emit(task_phase);
+  if (!persistent_command)
+    task_run.emit(task_phase);
   if (operation_completed || operation_outcome) {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::steady_clock::now() - began)
                              .count();
     const auto outcome =
-        timed_out && name == "exec"                  ? "timed out; outcome unknown"
+        persistent_command && !boundary.error && !result.find("exit_code")
+            ? "backgrounded"
+        : timed_out && name == "exec"                ? "timed out; outcome unknown"
         : disposition == AttemptDisposition::success ? "completed"
         : disposition == AttemptDisposition::unknown ? "stopped; outcome unknown"
         : boundary.error && boundary.error->code == ErrorCode::interrupted
@@ -1373,10 +1562,20 @@ Value CodingEngine::operation(std::string_view name, const Value &input,
   if (boundary.error && name != "provider" && process_output)
     process_output("\n[" + std::string{name} + ": " + error_name(boundary.error->code) +
                    "]\n");
-  if (boundary.error && (boundary.error->code == ErrorCode::capacity ||
-                         boundary.error->code == ErrorCode::interrupted ||
-                         (name == "provider" || name == "workflow_execute") ||
-                         root.state() != JournalWriterState::live))
+  if (command_failure_ && boundary.error &&
+      boundary.error->code == ErrorCode::capacity) {
+    try {
+      poll_commands();
+    } catch (const Error &error) {
+      if (error.code != ErrorCode::capacity)
+        throw;
+    }
+  }
+  if (boundary.error &&
+      ((boundary.error->code == ErrorCode::capacity && !adapter_capacity) ||
+       boundary.error->code == ErrorCode::interrupted ||
+       (name == "provider" || name == "workflow_execute") ||
+       root.state() != JournalWriterState::live))
     throw *boundary.error;
   if (name == "beads") {
     const auto *stopped = result.find("interrupted");
@@ -1592,7 +1791,10 @@ Value CodingEngine::request(Value options) {
   // One live request group; each failed attempt stays independently recorded.
   const auto retry_group =
       hex_identity(unwrap(log_.root().issue<OperationAttemptId>()).bytes());
-  provider_.cancelled = cancelled;
+  provider_.cancelled = [this] {
+    poll_commands();
+    return cancelled && cancelled();
+  };
   Value response;
   unsigned delay_ms = std::min(base_ms, cap_ms);
   for (unsigned ordinal = 1;; ++ordinal) {
@@ -1653,6 +1855,7 @@ Value CodingEngine::request(Value options) {
         Value result;
         try {
           result = provider_.respond(request, [&](std::string_view raw) {
+            poll_commands();
             capture.append(raw);
             // Preview follows transport delivery, not diagnostic flush cadence.
             for (const auto &delta : preview.feed(raw)) {
@@ -1747,6 +1950,49 @@ Value CodingEngine::call(std::string name, Value arguments) {
   if (name == "provider")
     throw Error{ErrorCode::invalid_range};
   return operation(name, arguments, [&](OperationAttemptId attempt) {
+    if (name == "exec") {
+      const auto id = hex_identity(attempt.bytes());
+      const auto limits = log_.root().journal_limits();
+      if (limits.max_payload < 2048 || limits.max_batch_bytes < 4096)
+        throw Error{ErrorCode::capacity};
+      auto credit = context_.cancellation_budget(
+          field(context_.view(), "entries").array(), context_.pending_proposal());
+      credit.max_file_bytes += (operation_depth_ + command_jobs_->debt() + 2) * 8192;
+      credit.max_records += (operation_depth_ + command_jobs_->debt() + 2) * 16;
+      if (!settlement_)
+        settlement_ = unwrap(log_.root().protect_settlement(credit));
+      else
+        unwrap(log_.root().refresh_settlement(credit));
+      JobWaitOptions options;
+      if (arguments.find("yield_ms"))
+        options.yield_ms = command_number(arguments, "yield_ms", 3600000);
+      if (arguments.find("output_max_bytes"))
+        options.max_output = static_cast<std::size_t>(
+            command_number(arguments, "output_max_bytes", 16 * 1024 * 1024));
+      options.stop_on_cancel = true;
+      if (const auto *task = arguments.find("task_id"))
+        command_tasks_.emplace(id, task->string());
+      try {
+        command_jobs_->start(id, arguments);
+      } catch (...) {
+        command_tasks_.erase(id);
+        throw;
+      }
+      return command_jobs_->wait(
+          id, options, [this] { poll_commands(); },
+          [this] { return cancelled && cancelled(); });
+    }
+    if (name == "process") {
+      if (string_field(arguments, "op") == "foreground") {
+        JobWaitOptions options;
+        if (arguments.find("yield_ms"))
+          options.yield_ms = command_number(arguments, "yield_ms", 3600000);
+        return command_jobs_->wait(
+            string_field(arguments, "job_id"), options, [this] { poll_commands(); },
+            [this] { return cancelled && cancelled(); });
+      }
+      return command_jobs_->control(arguments);
+    }
     if (name == "decision_model") {
       decision_models_.cancelled = cancelled;
       decision_models_.observer = [&](std::string_view label, std::string_view raw) {
@@ -2080,7 +2326,10 @@ Value CodingEngine::call(std::string name, Value arguments) {
       if (label == "process.output" && process_output)
         process_output(raw);
     }};
-    tools.cancelled = cancelled;
+    tools.cancelled = [this] {
+      poll_commands();
+      return cancelled && cancelled();
+    };
     auto result = tools.run(name, arguments);
     if (name == "exec" && process_output)
       process_output("\n[exit " + field(result, "exit_code").number().text() + "]\n");
@@ -2135,7 +2384,7 @@ Value CodingEngine::stats() const {
   return result;
 }
 void CodingEngine::validate_session_switch() const {
-  if (participants_->active())
+  if (participants_->active() || command_jobs_->active())
     throw Error{ErrorCode::busy};
 }
 void CodingEngine::validate_restart() const {
@@ -2249,9 +2498,19 @@ void CodingEngine::turn(TurnInput input) {
   auto &root = log_.root();
   auto credit =
       context_.cancellation_budget(field(context_.view(), "entries").array(), Value{});
-  credit.max_file_bytes += 8192;
-  credit.max_records += 16;
-  auto protected_workflow = unwrap(root.protect_settlement(credit));
+  credit.max_file_bytes += (1 + command_jobs_->debt()) * 8192;
+  credit.max_records += (1 + command_jobs_->debt()) * 16;
+  if (!settlement_)
+    settlement_ = unwrap(root.protect_settlement(credit));
+  else
+    unwrap(root.refresh_settlement(credit));
+  struct SettlementRelease {
+    CodingEngine &engine;
+    ~SettlementRelease() {
+      if (!engine.command_jobs_->debt())
+        engine.settlement_.reset();
+    }
+  } settlement_release{*this};
   context_.protect = [this](const Value::Array &entries, const Value &proposal) {
     protect_workflow(entries, proposal);
   };

@@ -1,6 +1,8 @@
 #include "blackbird/terminal.hpp"
+#include "blackbird/json.hpp"
 #include "blackbird/local_timing.hpp"
 #include "blackbird/packet.hpp"
+#include "blackbird/process_lifetime.hpp"
 #include "blackbird/sprite.hpp"
 #include "blackbird/task_view.hpp"
 #include "blackbird/tools.hpp"
@@ -88,6 +90,14 @@ const std::array builtin_commands{
                 "Programs"},
     ChatCommand{"/decision", "JSON", "Evaluate a native decision-model batch (Jev)",
                 "Tools"},
+    ChatCommand{"/exec", "JSON", "Launch a command; yield_ms releases its wait",
+                "Tools"},
+    ChatCommand{"/jobs", "", "Inspect owned commands immediately", "Tools"},
+    ChatCommand{"/fg", "JOB", "Wait for the same command; PTY text input", "Tools"},
+    ChatCommand{"/bg", "[JOB]",
+                "Release foreground wait immediately; keep command running", "Tools"},
+    ChatCommand{"/process", "JSON",
+                "Shared command read/input/signal/resize/stop controls", "Tools"},
     ChatCommand{"/runs", "[ID | configure JSON | archive ID]",
                 "Read observed participant runs, configure concurrency or archive a "
                 "settled run",
@@ -366,12 +376,22 @@ EditorResult edit_terminal_draft(std::string_view draft) {
   auto &fd = cleanup.fd;
   try {
     path = (std::filesystem::temp_directory_path() / "arco-draft-XXXXXX").string();
-    fd = ::mkstemp(path.data());
-    if (fd < 0)
-      throw std::runtime_error("Cannot create private editor draft");
-    cleanup.owned = true;
-    if (::fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-      throw std::runtime_error("Cannot protect editor draft descriptor");
+    {
+      const std::lock_guard lock{detail::process_spawn_mutex};
+      fd = ::mkstemp(path.data());
+      if (fd < 0)
+        throw std::runtime_error("Cannot create private editor draft");
+      cleanup.owned = true;
+      if (fd < 3) {
+        const auto replacement = ::fcntl(fd, F_DUPFD_CLOEXEC, 3);
+        if (replacement < 0)
+          throw std::runtime_error("Cannot normalize editor draft descriptor");
+        (void)::close(fd);
+        fd = replacement;
+      }
+      if (::fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+        throw std::runtime_error("Cannot protect editor draft descriptor");
+    }
     auto remaining = draft;
     while (!remaining.empty()) {
       const auto n = ::write(fd, remaining.data(), remaining.size());
@@ -395,8 +415,10 @@ EditorResult edit_terminal_draft(std::string_view draft) {
     std::array<char *, 4> args{const_cast<char *>("sh"), const_cast<char *>("-c"),
                                command.data(), nullptr};
     pid_t child{};
-    const auto launched =
-        ::posix_spawn(&child, "/bin/sh", nullptr, nullptr, args.data(), environ);
+    const auto launched = [&] {
+      const std::lock_guard lock{detail::process_spawn_mutex};
+      return ::posix_spawn(&child, "/bin/sh", nullptr, nullptr, args.data(), environ);
+    }();
     if (launched != 0)
       return {false, {}, "Editor could not start; draft retained."};
     int status{};
@@ -449,6 +471,8 @@ std::string terminal_key_help() {
          "  Ctrl-K / Y   Kill to line end / yank last deletion\n"
          "  Ctrl-U       Clear draft; Ctrl-Y restores it\n"
          "  Ctrl-C       Request stop and clear pending queue; keep unsent draft\n"
+         "  Ctrl-B       Background foreground command; preserve composer\n"
+         "  PTY input    Keys and Ctrl-C reach selected command; Ctrl-B returns\n"
          "  Ctrl-Q       Stop and exit; preserve unsent draft\n"
          "  PgUp / PgDn  Scroll transcript\n"
          "  Paste        Multiline text stays literal; Enter sends explicitly\n";
@@ -1201,17 +1225,37 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                      std::atomic_bool &cancelled,
                      const std::function<bool()> &exit_requested, std::string initial,
                      std::filesystem::path state_path,
-                     const std::function<void()> &idle_work) {
+                     const std::function<void()> &idle_work,
+                     std::shared_ptr<CommandJobs> commands) {
   (void)std::setlocale(LC_CTYPE, "");
   TerminalMode mode;
   ChatOutput output;
   output.attach(STDOUT_FILENO);
   int notifications[2];
-  if (::pipe(notifications) != 0)
-    throw std::runtime_error("cannot create terminal wakeup");
-  for (const auto fd : notifications) {
-    (void)::fcntl(fd, F_SETFD, FD_CLOEXEC);
-    (void)::fcntl(fd, F_SETFL, O_NONBLOCK);
+  {
+    const std::lock_guard lock{detail::process_spawn_mutex};
+    if (::pipe(notifications) != 0)
+      throw std::runtime_error("cannot create terminal wakeup");
+    for (auto &fd : notifications) {
+      if (fd < 3) {
+        const auto replacement = ::fcntl(fd, F_DUPFD_CLOEXEC, 3);
+        if (replacement < 0) {
+          const auto failure = errno;
+          ::close(notifications[0]);
+          ::close(notifications[1]);
+          throw Error{ErrorCode::io, failure};
+        }
+        ::close(fd);
+        fd = replacement;
+      }
+      if (::fcntl(fd, F_SETFD, FD_CLOEXEC) < 0 ||
+          ::fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
+        const auto failure = errno;
+        ::close(notifications[0]);
+        ::close(notifications[1]);
+        throw Error{ErrorCode::io, failure};
+      }
+    }
   }
   struct WakeCleanup {
     TerminalUI &ui;
@@ -1296,6 +1340,87 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
   bool pending_grid = false;
   auto escape_deadline = std::chrono::steady_clock::time_point::max();
   unsigned short old_rows = 0, old_columns = 0;
+  std::string foreground_job, foreground_epoch, detached_epoch, child_escape,
+      child_input, child_input_job, command_error;
+  auto child_escape_deadline = std::chrono::steady_clock::time_point::max();
+  bool foreground_pty = false, child_pasted = false;
+  unsigned short child_rows = 0, child_columns = 0;
+  std::size_t refused_child_bytes = 0;
+  auto append_child_input = [&](std::string_view bytes) {
+    // Keep admitted/pending bytes with their original job. Excess keyboard
+    // bytes are explicitly refused; lifecycle keys must remain readable.
+    if ((!child_input.empty() && child_input_job != foreground_job) ||
+        bytes.size() > 4096 - child_input.size()) {
+      refused_child_bytes += bytes.size();
+      return;
+    }
+    if (child_input.empty())
+      child_input_job = foreground_job;
+    child_input += bytes;
+  };
+  auto report_refused_input = [&] {
+    if (!refused_child_bytes)
+      return;
+    transcript += "\nPTY input refused: " + std::to_string(refused_child_bytes) +
+                  " excess bytes; pending bytes preserved. Ctrl-B still backgrounds.\n";
+    refused_child_bytes = 0;
+    redraw = true;
+  };
+  auto command_request = [&](Value request) {
+    try {
+      commands->request(std::move(request));
+      command_error.clear();
+      return true;
+    } catch (const Error &error) {
+      const std::string message{error_name(error.code)};
+      if (message != command_error)
+        transcript += "\nCommand control refused: " + message + "\n";
+      command_error = message;
+      redraw = true;
+      return false;
+    } catch (const std::exception &error) {
+      const std::string message{error.what()};
+      if (message != command_error)
+        transcript += "\nCommand control refused: " + message + "\n";
+      command_error = message;
+      redraw = true;
+      return false;
+    }
+  };
+  auto flush_child_input = [&] {
+    if (child_input.empty())
+      return true;
+    const bool accepted =
+        command_request(Value::object({{"op", Value{"input"}},
+                                       {"job_id", Value{child_input_job}},
+                                       {"bytes", Value{child_input}}}));
+    if (accepted) {
+      child_input.clear();
+      child_input_job.clear();
+    }
+    return accepted;
+  };
+  auto release_command = [&](std::string_view requested) {
+    if (!commands || foreground_job.empty()) {
+      transcript += "\nNo foreground command wait.\n";
+      return;
+    }
+    if (!requested.empty() && requested != foreground_job) {
+      transcript += "\nBackground requires the current foreground job ID.\n";
+      return;
+    }
+    if (command_request(
+            Value::object({{"op", Value{"background"}},
+                           {"job_id", Value{foreground_job}},
+                           {"wait_epoch", Value{Number{foreground_epoch}}}}))) {
+      detached_epoch = foreground_epoch;
+      foreground_job.clear();
+      foreground_pty = false;
+      child_pasted = false;
+      child_escape.clear();
+      redraw = true;
+    }
+  };
   const auto *mascot_setting = std::getenv("BLACKBIRD_MASCOT");
   const bool mascot_enabled =
       !mascot_setting || std::string_view{mascot_setting} != "0";
@@ -1506,6 +1631,36 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     }
     if (!busy && idle_work)
       idle_work();
+    if (commands) {
+      pollfd child_input_ready{STDIN_FILENO, POLLIN, 0};
+      if (foreground_pty && !child_escape.empty() &&
+          std::chrono::steady_clock::now() >= child_escape_deadline &&
+          poll(&child_input_ready, 1, 0) == 0) {
+        append_child_input(child_escape);
+        child_escape.clear();
+      }
+      (void)flush_child_input();
+      const auto lease = commands->foreground();
+      auto job = string_field(lease, "job_id");
+      const auto epoch = field(lease, "wait_epoch").number().text();
+      if (epoch == detached_epoch)
+        job.clear();
+      const bool pty = !job.empty() && std::get<bool>(field(lease, "pty").value());
+      if (job != foreground_job || epoch != foreground_epoch || pty != foreground_pty) {
+        if (!child_escape.empty()) {
+          append_child_input(child_escape);
+          (void)flush_child_input();
+        }
+        foreground_job = std::move(job);
+        foreground_epoch = epoch;
+        foreground_pty = pty;
+        child_rows = child_columns = 0;
+        child_escape.clear();
+        child_pasted = false;
+        redraw = true;
+      }
+      report_refused_input();
+    }
     if (!busy && exit_requested && exit_requested())
       break;
     if (!busy && quitting)
@@ -1529,6 +1684,16 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         dimensions.ws_row ? dimensions.ws_row : static_cast<unsigned short>(24);
     const auto columns =
         dimensions.ws_col ? dimensions.ws_col : static_cast<unsigned short>(80);
+    if (foreground_pty && (rows != child_rows || columns != child_columns)) {
+      if (command_request(Value::object(
+              {{"op", Value{"resize"}},
+               {"job_id", Value{foreground_job}},
+               {"rows", Value{Number{std::min<unsigned short>(rows, 512)}}},
+               {"columns", Value{Number{std::min<unsigned short>(columns, 512)}}}}))) {
+        child_rows = rows;
+        child_columns = columns;
+      }
+    }
     const auto now = std::chrono::steady_clock::now();
     if (now - second >= std::chrono::milliseconds{80}) {
       second = now;
@@ -1738,10 +1903,14 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
                     {{text, line.starts_with("Commands") ? Ink::heading : Ink::muted}});
         }
       }
-      auto hint = composer.palette_open() ? " command palette "
-                  : composer.slash_open() ? " commands "
-                  : busy                  ? " Enter queue · Ctrl-C stop "
-                                          : " Enter send · / commands · Ctrl-G editor ";
+      std::string hint = composer.palette_open() ? " command palette "
+                         : composer.slash_open() ? " commands "
+                         : busy ? " Enter queue · Ctrl-C stop "
+                                : " Enter send · / commands · Ctrl-G editor ";
+      if (!foreground_job.empty())
+        hint = std::string{foreground_pty ? " PTY input "
+                                          : " Enter queue · Foreground command "} +
+               foreground_job + " · Ctrl-B background ";
       auto border = [&](std::pair<std::string_view, std::string_view> corners,
                         std::string_view label) {
         std::string out{corners.first};
@@ -1828,9 +1997,9 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
          {notifications[0], POLLIN, 0},
          {STDOUT_FILENO, static_cast<short>(output.pending() ? POLLOUT : 0), 0}}};
     const auto ready = poll(inputs.data(), inputs.size(),
-                            composer.escape_pending() ? 50
-                            : busy                    ? 40
-                                                      : 1000);
+                            composer.escape_pending() || !child_escape.empty() ? 50
+                            : busy || commands                                 ? 40
+                                                                               : 1000);
     if (ready < 0) {
       if (errno == EINTR)
         continue;
@@ -1847,10 +2016,15 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         redraw = true;
       continue;
     }
-    char bytes[512];
+    char bytes[4096];
     LocalSpan input{"command.input-save", "src/terminal.cpp:input"};
     const auto count = read(STDIN_FILENO, bytes, sizeof(bytes));
-    if (count <= 0) {
+    if (count < 0) {
+      if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+        continue;
+      throw Error{ErrorCode::io, errno};
+    }
+    if (count == 0) {
       quitting = true;
       cancelled.store(true);
       persist();
@@ -1859,6 +2033,43 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
     bool saved_last_input = false;
     for (ssize_t i = 0; i < count; ++i) {
       saved_last_input = false; // Later bytes can change the submitted state.
+      if (foreground_pty) {
+        const char byte = bytes[i];
+        // The outer terminal's paste envelope is transport, not child input.
+        // Parse across reads; controls inside it remain literal child bytes.
+        if (byte == '\x02' && !child_pasted) {
+          append_child_input(child_escape);
+          child_escape.clear();
+          (void)flush_child_input();
+          release_command({});
+        } else if (!child_escape.empty() || byte == '\x1b') {
+          if (child_escape.empty())
+            child_escape_deadline =
+                std::chrono::steady_clock::now() + std::chrono::milliseconds(50);
+          child_escape += byte;
+          const std::string_view begin{"\x1b[200~"}, end{"\x1b[201~"};
+          if (child_escape == begin) {
+            child_pasted = true;
+            child_escape.clear();
+          } else if (child_escape == end) {
+            child_pasted = false;
+            child_escape.clear();
+          } else if (!begin.starts_with(child_escape) &&
+                     !end.starts_with(child_escape)) {
+            append_child_input(child_escape);
+            child_escape.clear();
+          }
+        } else {
+          append_child_input(std::string_view{&byte, 1});
+        }
+        redraw = true;
+        continue;
+      }
+      if (bytes[i] == '\x02' && !foreground_job.empty() && !composer.pasted() &&
+          !composer.escape_pending()) {
+        release_command({});
+        continue;
+      }
       const bool was_escape = composer.escape_pending();
       auto result = composer.feed(bytes[i]);
       welcoming = false; // First operator input reveals retained chat and the avatar.
@@ -1910,9 +2121,50 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         cancelled.store(true);
       }
       if (result.action == InputAction::submit && !result.text.empty() && !quitting) {
-        if (result.text == "/tasks up" || result.text == "/tasks down" ||
-            result.text == "/tasks expand" || result.text == "/tasks show" ||
-            result.text == "/tasks hide" || result.text.starts_with("/tasks fold ")) {
+        if (commands && result.text == "/jobs") {
+          try {
+            transcript.append(ChatKind::assistant,
+                              unwrap(dump_json(commands->read(Value::object({})))) +
+                                  "\n");
+          } catch (const Error &error) {
+            transcript += std::string{"\nCommand discovery refused: "} +
+                          error_name(error.code) + "\n";
+          }
+          scroll = 0;
+        } else if (commands &&
+                   (result.text == "/bg" || result.text.starts_with("/bg "))) {
+          release_command(result.text == "/bg"
+                              ? std::string_view{}
+                              : std::string_view{result.text}.substr(4));
+        } else if (commands && busy && result.text.starts_with("/fg ")) {
+          transcript +=
+              string_field(commands->foreground(), "job_id") == result.text.substr(4)
+                  ? "\nThat command is already foreground.\n"
+                  : "\nRelease the current turn before foregrounding another "
+                    "command.\n";
+        } else if (commands && busy && result.text.starts_with("/process ")) {
+          try {
+            auto request = unwrap(parse_json(std::string_view{result.text}.substr(9)));
+            const auto op = string_field(request, "op");
+            if (op == "read")
+              transcript.append(ChatKind::assistant,
+                                unwrap(dump_json(commands->read(request))) + "\n");
+            else if (op == "input" || op == "resize" || op == "signal" ||
+                     op == "stop" || op == "background")
+              (void)command_request(std::move(request));
+            else
+              transcript += "\nThat process operation requires an idle turn.\n";
+          } catch (const Error &error) {
+            transcript += std::string{"\nInvalid process control: "} +
+                          error_name(error.code) + "\n";
+          } catch (const std::exception &error) {
+            transcript +=
+                std::string{"\nInvalid process control: "} + error.what() + "\n";
+          }
+        } else if (result.text == "/tasks up" || result.text == "/tasks down" ||
+                   result.text == "/tasks expand" || result.text == "/tasks show" ||
+                   result.text == "/tasks hide" ||
+                   result.text.starts_with("/tasks fold ")) {
           const std::lock_guard lock{mutex_};
           task_anchor_.clear();
           if (result.text == "/tasks up")
@@ -2007,6 +2259,8 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
         }
       }
     }
+    (void)flush_child_input();
+    report_refused_input();
     // A final-byte submission already saved this exact state before dispatch.
     // Do not serialize/rename/fsync it again; trailing input still gets saved.
     if (!saved_last_input)

@@ -553,3 +553,20 @@ python3 scripts/ingest_zip.py ../quarantine_proj/archives/blackbird-trajectories
 
 Importer omits nested Git metadata, `.entire`, filesystem detritus, bytecode
 caches and symlinks; archive remains intact. This is a reference, not a dependency.
+
+## Running command jobs: platform references — 2026-10-09
+
+Pinned upstream tmux `82abcd175cca43c671af3690cd0af74c4c75621c` and primary
+POSIX/GNU/Darwin/Linux documents were acquired and studied for backgrounding and
+foregrounding the same running command. Intact ZIPs remain in
+`../quarantine_proj/archives/blackbird-command-jobs-platform-2026-10-09/`; clean
+ignored source is in `quarantine/command-jobs-tmux/` and
+`quarantine/command-jobs-platform-documents-2026-10-09/`. No dependency adopted or
+imported code executed; archived instructions are historical only. Exact URLs,
+revision/SDK identity, SHA-256, retained-byte comparisons and restoration limits:
+[platform report](papers/2026-10-09-command-jobs/platform.md),
+[source manifest](papers/2026-10-09-command-jobs/platform-references.json),
+[document manifest](papers/2026-10-09-command-jobs/platform-documents.json), and
+[restoration](papers/2026-10-09-command-jobs/PLATFORM_RESTORE.md). Five owned
+primitive probes ran separately on macOS 26.6 arm64 and Neuroses Linux 6.8/glibc
+2.39; these do not qualify Blackbird implementation.

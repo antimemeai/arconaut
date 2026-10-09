@@ -62,7 +62,8 @@ an explicit trim notice; full originals remain audited and A2 retrieval still wo
   until you send it. Left/right, Home/End, Backspace/Delete and Ctrl-A/E/U edit.
 - Up/down recall persisted submitted-prompt history. PgUp/PgDn scroll the view.
 - Type and submit during a turn to queue the next prompt. Commands queue too, so
-  configuration changes apply after the current turn.
+  configuration changes apply after the current turn. `/jobs` and `/bg` are immediate
+  local command controls, including while inference is busy.
 - Ctrl-Q exits while preserving draft and queued work as recoverable drafts.
 - Ctrl-C stops the active turn and clears the queue, preserving the draft you are
   editing. Ctrl-C also preserves the draft when idle; Ctrl-U clears it. `/quit`, `/exit` or Ctrl-D on an empty draft
@@ -72,6 +73,28 @@ Commands: `/help`, `/model NAME`, `/effort LEVEL`, `/context`, `/stats`, `/origi
 `/restore ENTRY`, `/lua CODE`, `/clear` (view only), `/drafts`, `/draft N`, `/quit`, `/exit`, `/session`, `/sessions`, `/workflow FILE`, `/restart NOTE`. Unknown slash commands report a local error without a model request.
 In plain mode `/paste` collects a block until `/send`.
 `--audit-last` inspects recent original records without a provider request.
+
+Running commands have stable job IDs. `/exec {"command":"sleep 30","yield_ms":0}`
+starts one command and releases its wait immediately. `/jobs` lists retained jobs;
+`/fg ID` waits on that same command; `/bg` or Ctrl-B releases the foreground wait.
+Backgrounding keeps the process and collector running. Output and the original
+exec attempt retain their identity across later turns. `/process` accepts a JSON
+object with `job_id` and an `op`: `read`, `foreground`, `background`, `input`,
+`resize`, `signal`, `stop`, or `archive`. Model tools and `blackbird.process` Lua
+helpers use the same controls. Input, resize and signal requests carry a stable
+`request_id`; repeating a request returns its receipt without repeating its effect.
+
+Use `"pty":true` for interactive text commands. While attached, keyboard input,
+Ctrl-C and resize go to that private terminal; Ctrl-B restores the composer without
+stopping the command. Split UTF-8 and bracketed paste retain exact input bytes.
+Output is escaped for display and retained exactly in originals; this interface
+does not emulate a full-screen terminal. Bounded input pressure reports refused
+bytes and keeps detachment available. `stop` performs owned cleanup. Deadlines
+remain relative to launch, across every background/foreground cycle. Actual exit,
+output closure and capture completeness are reported separately. Active or
+unsettled commands block restart and session switching. Quitting stops and joins
+owned jobs; reopening after a crash preserves unknown custody and never replays
+an old command or adopts a saved PID. See [the design](COMMAND_JOBS.md) for limits.
 
 This first TUI uses ANSI terminals with bracketed paste and at least 12 columns
 by 10 rows. Editing uses UTF-8 codepoints; terminal wcwidth determines wrapping.

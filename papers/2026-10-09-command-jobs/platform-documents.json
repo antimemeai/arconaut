@@ -1,0 +1,338 @@
+{
+  "recorded_at": "2026-10-09",
+  "apple_sdk_version": "26.2",
+  "documents": [
+    {
+      "name": "posix-terminal",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap11.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-terminal.html",
+      "sha256": "d5d4eaada506f1d2c6016383e7ae83c4010acd94a9cf4f93c5103c659dbae6ac",
+      "bytes": 63052,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-job-rationale",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/xrat/V4_xbd_chap01.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-job-rationale.html",
+      "sha256": "0561013c705ae4939ccf8d6aa816df3466ee903c1eab17cb83cd77c71fa3f284",
+      "bytes": 348951,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-tcsetpgrp",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/tcsetpgrp.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-tcsetpgrp.html",
+      "sha256": "372e9f416231301fa145db9b644988fc6083fea445966fab662cfcfb92d20efe",
+      "bytes": 7943,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-setpgid",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/setpgid.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-setpgid.html",
+      "sha256": "a3797124a54ffcc6ef8a183884290049c8b68e923303439cc2908fc170ac293f",
+      "bytes": 11038,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-setsid",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/setsid.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-setsid.html",
+      "sha256": "a04276d49f190110894216d635306e9c7fe72336784e65dcbf932c9a7e879678",
+      "bytes": 7877,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-fork",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/fork.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-fork.html",
+      "sha256": "ab97739ed39e8a21f7304a03d5efd039fc601d5744f5f6ac0e93d9ddd96a41c1",
+      "bytes": 24028,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-posix_spawn",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/posix_spawn.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-posix_spawn.html",
+      "sha256": "5c19a06b26754bc7c23567b0363b66dbaa24b9cabadb9d81f4ab866824a84ea6",
+      "bytes": 44390,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-poll",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/poll.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-poll.html",
+      "sha256": "f4a2d560a2523e4aa7acd2570283e16b4b479239b2b3059f8eb8e09fe52c1854",
+      "bytes": 20132,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-read",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/read.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-read.html",
+      "sha256": "af724071475054a17dde265a540bc39bd6e5d06da2373729141280adb8fdd744",
+      "bytes": 24752,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-kill",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/kill.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-kill.html",
+      "sha256": "779bf66b859e9d5f10c5adc4ccac0afb2b1088daa3eaaa81a22e40751f1a0cc2",
+      "bytes": 15293,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-wait",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/wait.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-wait.html",
+      "sha256": "8c9d5d9bf54b098e460832d466503567376fdd61d24cbef0d461389d113a36e5",
+      "bytes": 36271,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-write",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/write.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-write.html",
+      "sha256": "1b45e6a71f8bc9bff702da5633d42c88fd927c1d0efc5bafe7a939d23eb66e6a",
+      "bytes": 31921,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-exec",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/exec.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-exec.html",
+      "sha256": "48155c576661c580a239e2291190244a8e3145b0493cdcae62dc7a58b2d6b938",
+      "bytes": 57832,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-fg",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/utilities/fg.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-fg.html",
+      "sha256": "27889788d9d5cd6abcbcf9596e5cdbe3eb2bed73ab2a919ef805b6a5c40029b0",
+      "bytes": 11504,
+      "status": "acquired"
+    },
+    {
+      "name": "posix-bg",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/utilities/bg.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/posix-bg.html",
+      "sha256": "e238b2905a3d6c37df514ef9549db90b3ac76445dcb1b2fdfbf4c1e00e1c2a9f",
+      "bytes": 13222,
+      "status": "acquired"
+    },
+    {
+      "name": "gnu-shell",
+      "url": "https://sourceware.org/glibc/manual/2.44/html_node/Implementing-a-Shell.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/gnu-shell.html",
+      "sha256": "82fbecd98a4289c64888d7d2964a94784f615b789c70411cc7053667f0c1ccd7",
+      "bytes": 3579,
+      "status": "acquired",
+      "note": "Version-specific primary manual; initial GNU unversioned URL redirected to index, and version-specific GNU hostname became unreachable. Replaced with sourceware project host."
+    },
+    {
+      "name": "gnu-launch",
+      "url": "https://sourceware.org/glibc/manual/2.44/html_node/Launching-Jobs.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/gnu-launch.html",
+      "sha256": "9d529147548bd9c2d4eb1d70d1152988dc0b22a8543dc4e3108022df4c114c03",
+      "bytes": 11448,
+      "status": "acquired",
+      "note": "Version-specific primary manual; initial GNU unversioned URL redirected to index, and version-specific GNU hostname became unreachable. Replaced with sourceware project host."
+    },
+    {
+      "name": "gnu-fgbg",
+      "url": "https://sourceware.org/glibc/manual/2.44/html_node/Foreground-and-Background.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/gnu-fgbg.html",
+      "sha256": "85f79b9032098a3ac657a62561a41f38e4d3b8d29281d091c20d2d2180ee8d08",
+      "bytes": 7256,
+      "status": "acquired",
+      "note": "Version-specific primary manual; initial GNU unversioned URL redirected to index, and version-specific GNU hostname became unreachable. Replaced with sourceware project host."
+    },
+    {
+      "name": "gnu-status",
+      "url": "https://sourceware.org/glibc/manual/2.44/html_node/Stopped-and-Terminated-Jobs.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/gnu-status.html",
+      "sha256": "928250d3956828e68548fa893769eccf99e9618d1f369d5ed465c4a39f614634",
+      "bytes": 9600,
+      "status": "acquired",
+      "note": "Version-specific primary manual; initial GNU unversioned URL redirected to index, and version-specific GNU hostname became unreachable. Replaced with sourceware project host."
+    },
+    {
+      "name": "linux-pipe",
+      "url": "https://man7.org/linux/man-pages/man7/pipe.7.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-pipe.html",
+      "sha256": "22809fe16836722f0359b10b59b4c0971cf3edf6ffb26528c41bd1a383f2a58e",
+      "bytes": 21870,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-pty",
+      "url": "https://man7.org/linux/man-pages/man7/pty.7.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-pty.html",
+      "sha256": "cf6778c4459117f5e9846dad3697ea359c13ae3de973b5bf685f1fbb34f6a24f",
+      "bytes": 13283,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-pidfd",
+      "url": "https://man7.org/linux/man-pages/man2/pidfd_open.2.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-pidfd.html",
+      "sha256": "d34301a2f18869b774ad5c5dc3ef0e93988b903deb13bdc41cbbd60bce9c5bab",
+      "bytes": 18141,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-prctl-subreaper",
+      "url": "https://man7.org/linux/man-pages/man2/PR_SET_CHILD_SUBREAPER.2const.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-prctl-subreaper.html",
+      "sha256": "b805fe23c7251ad6c3d08a829ed755b80a8fa106929c67325c7122f3b126ef2c",
+      "bytes": 9879,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-setsid",
+      "url": "https://man7.org/linux/man-pages/man2/setsid.2.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-setsid.html",
+      "sha256": "52cbc1904742df69556104f71d3279f93581756579881c85cee8e37be37c7f30",
+      "bytes": 11555,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-wait",
+      "url": "https://man7.org/linux/man-pages/man2/wait.2.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-wait.html",
+      "sha256": "fe247c4fc91a2dafd978157a46fa2a91fa48b902e643d852e8352d78c4b32fd3",
+      "bytes": 31979,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-openpty",
+      "url": "https://man7.org/linux/man-pages/man3/openpty.3.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-openpty.html",
+      "sha256": "dc8728a9eea4d1b74af1b1106a0cb9ef9dfcd2dcc8fce7571847174972d62bb7",
+      "bytes": 12954,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-ioctl-tty",
+      "url": "https://man7.org/linux/man-pages/man2/ioctl_tty.2.html",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-ioctl-tty.html",
+      "sha256": "cf6a6b8ad53f7313e992ab83931c2fb08d9b6c6812256e25162431300809c07b",
+      "bytes": 13897,
+      "status": "acquired"
+    },
+    {
+      "name": "linux-tty-source",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.19/drivers/tty/pty.c",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/linux-tty-source.c",
+      "sha256": "cdac4aaf2288902734985a1a68c994a4197429eb22c423bfc256fc326bf97b5f",
+      "bytes": 24084,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-wait.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/wait.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-wait.2",
+      "sha256": "2178648ce5091cba439ca601216ec3f368ed64487f91385f68b65e7b5e5e5409",
+      "bytes": 8764,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-read.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/read.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-read.2",
+      "sha256": "abced071814b22402dd2e6886b38861153679ab6f1fa51f071579abd4a0bf38f",
+      "bytes": 8810,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-setpgid.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/setpgid.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-setpgid.2",
+      "sha256": "c0266df5531a862435f68e669f307f5fa0f37c9df5ab740fce37cd4ecb59fbe4",
+      "bytes": 4564,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-setsid.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/setsid.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-setsid.2",
+      "sha256": "b90521a68f707ec8e88f6e8c4fea9d745eaaa430b28eeddcebfb1db03ba5c722",
+      "bytes": 3253,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-sigaction.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/sigaction.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-sigaction.2",
+      "sha256": "5538ae92984c07616a250ebc73b52eaca60b27a231a67b2fbd1e6b9a85ab7097",
+      "bytes": 17057,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-kqueue.2",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man2/kqueue.2",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-kqueue.2",
+      "sha256": "48302f5a7c664d9323dca51593253a30e7263161a6ea514fcb89cdcedd03d2a4",
+      "bytes": 23602,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-forkpty.3",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man3/forkpty.3",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-forkpty.3",
+      "sha256": "daef53045ba32574e55fa64cbb96857858f84043ea1784914f046b6e8743256c",
+      "bytes": 5223,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-openpty.3",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man3/openpty.3",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-openpty.3",
+      "sha256": "daef53045ba32574e55fa64cbb96857858f84043ea1784914f046b6e8743256c",
+      "bytes": 5223,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-login_tty.3",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man3/login_tty.3",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-login_tty.3",
+      "sha256": "daef53045ba32574e55fa64cbb96857858f84043ea1784914f046b6e8743256c",
+      "bytes": 5223,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-tcsetpgrp.3",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man3/tcsetpgrp.3",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-tcsetpgrp.3",
+      "sha256": "79ffc2be35e5e896842ed660738c15c50d16fe415d0199f02936d2e5f299dc3b",
+      "bytes": 3616,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-pty.4",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man4/pty.4",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-pty.4",
+      "sha256": "c1130f922ac3e127a7f8fccb36ed86863fe3436b41cd6717f5c52b8ba90dfb9a",
+      "bytes": 6048,
+      "status": "acquired"
+    },
+    {
+      "name": "darwin-termios.4",
+      "source": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man/man4/termios.4",
+      "destination": "quarantine/command-jobs-platform-documents-2026-10-09/darwin-termios.4",
+      "sha256": "ed77bdc8665e708c2f4f879329ba8d19bd17cd3806c740a17ec8cb44b162971c",
+      "bytes": 40359,
+      "status": "acquired"
+    }
+  ],
+  "snapshot_archive": {
+    "archive": "../quarantine_proj/archives/blackbird-command-jobs-platform-2026-10-09/platform-documents-2026-10-09.zip",
+    "archive_root": "command-jobs-platform-documents-2026-10-09",
+    "destination": "quarantine/command-jobs-platform-documents-2026-10-09",
+    "sha256": "5d53be564ebe5aa56b8654410a02dda0888a209fdf952a04114b18357a3fc3b0",
+    "bytes": 307783,
+    "restoration": "Verify archive digest; use scripts/ingest_zip.py ARCHIVE DESTINATION --root command-jobs-platform-documents-2026-10-09 --skip-symlinks with absent destination. HTML pages are mutable upstream. Darwin manuals require stated installed Apple SDK for exact-source reacquisition."
+  }
+}

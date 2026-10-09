@@ -1,7 +1,8 @@
-# Current Blackbird stock 2026 10 08
+# Current Blackbird stock 2026 10 09
 
-The default main line is `master`. Consolidation `55cd85d` leaves it as the only
-local branch and only branch on origin. All former candidate work is included or
+The default main line is `master`. The October8 consolidation at `55cd85d` left
+it as the only branch at that checkpoint. New candidate branches below are
+separate from that published baseline. All former candidate work is included or
 already delivered separately; five clean historical worktrees are detached with
 captures/build products preserved. [Exact dispositions](BRANCH_INVENTORY.md).
 
@@ -14,6 +15,25 @@ updated; the running operator process is left alone. [Campaign results](../paper
 The initial Claude request timed out at90seconds. An operator-authorized new
 attempt completed in337.331s with a360-second limit; findings await source triage.
 The separate Giga stays paused.
+
+## Command jobs candidate
+
+The `command-jobs` branch owns running command identity and collection across
+background/foreground waits and later turns. Shared operator/model/Lua controls
+provide stable job IDs, bounded reads, ordered/deduplicated input, explicit signals,
+resize and stop. Native pipes and private PTYs keep exact originals; launch-relative
+deadlines and original exec settlement survive detachment. PTY attachment is a
+text interface with escaped output, not a full-screen terminal emulator. Active or
+unsettled commands block restart/session switching; shutdown joins owned jobs and
+crash recovery never adopts an old PID or replays an old command.
+
+The two reopened failing oracles have causal fixes. The single final profile
+recheck and mandatory full debug/C++/Lua checkpoint gate determine qualification;
+[results](../papers/2026-10-09-command-jobs/qualification.md) distinguish actual
+passes from historical failures. This candidate has not been merged into master
+or activated in the running operator executable. Steering and additional
+trajectory implementation remain deferred. [Design](COMMAND_JOBS.md) and
+[operator controls](USING_BLACKBIRD.md) describe the current limits.
 
 ## What is on master
 

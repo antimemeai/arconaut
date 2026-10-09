@@ -1,0 +1,50 @@
+#pragma once
+#include "blackbird/value.hpp"
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+namespace blackbird {
+struct JobWaitOptions {
+  std::optional<std::uint64_t> yield_ms;
+  std::size_t max_output = 16 * 1024 * 1024;
+  bool stop_on_cancel = false;
+};
+struct JobEvent {
+  std::string job_id;
+  std::shared_ptr<const std::string> bytes;
+  std::size_t offset = 0;
+  Value result;
+};
+// One process/collector owner per job. Only the engine drains into retained state.
+// Thread-safe request/read are the UI mailbox and projection, not engine access.
+class CommandJobs {
+public:
+  CommandJobs();
+  ~CommandJobs();
+  CommandJobs(const CommandJobs &) = delete;
+  CommandJobs &operator=(const CommandJobs &) = delete;
+  void start(const std::string &id, const Value &arguments);
+  Value wait(const std::string &id, JobWaitOptions options,
+             const std::function<void()> &tick, const std::function<bool()> &cancelled);
+  Value read(const Value &arguments) const;
+  Value control(const Value &arguments);
+  void request(Value arguments);
+  std::vector<Value> requests();
+  std::vector<JobEvent> drain();
+  void retained(const std::string &id, std::size_t end);
+  void capture_failed(const std::string &id);
+  void settled(const std::string &id, const Value &result);
+  bool contains(const std::string &id) const;
+  bool active() const;
+  std::size_t debt() const;
+  Value foreground() const;
+  void stop_all() noexcept;
+  void shutdown() noexcept;
+
+private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+};
+} // namespace blackbird

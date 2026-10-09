@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""Direct station owner idle/paused command collection, without provider calls."""
+import argparse
+import importlib.util
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import tempfile
+import time
+
+spec = importlib.util.spec_from_file_location("job_station_packet", Path(__file__).with_name("native-packet.py"))
+packet = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(packet)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("executable")
+parser.add_argument("--log-dir", type=Path)
+args = parser.parse_args()
+if args.log_dir:
+    args.log_dir.mkdir(parents=True, exist_ok=True)
+
+
+def put(path, value):
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(value))
+    temporary.replace(path)
+
+
+def wait(predicate, message):
+    deadline = time.monotonic() + 8
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        time.sleep(0.025)
+    raise AssertionError(message)
+
+
+with tempfile.TemporaryDirectory(prefix="blackbird-command-jobs-station-") as temporary:
+    root = Path(temporary)
+    adapter = root / "adapter"
+    adapter.mkdir()
+    session = root / "session"
+    fixture = root / "child.sh"
+    fixture.write_text("""#!/bin/sh
+root=$1
+printf '%s\\n' "$$" > "$root/child.pid"
+printf '%s\\n' "$$" >> "$root/launches"
+while [ ! -f "$root/release" ]; do sleep 0.05; done
+printf 'actual exit\\n' > "$root/effect"
+printf 'STATION_CHILD_FINAL\\n'
+exit 9
+""")
+    workflow = root / "workflow.lua"
+    workflow.write_text("local r=arco.call('exec',arco.json.decode([==[" + json.dumps(dict(
+        argv=["/bin/sh", str(fixture), str(root)], timeout_seconds=30, yield_ms=0,
+    )) + "]==])); arco.call('write_file',{path=" + json.dumps(str(root / "job")) + ",content=r.job_id})\n")
+    put(adapter / "events.json", [{"source": "owned-test", "id": "single-event", "cursor": "1", "prompt": "launch owned fixture"}])
+    output_path = root / "output"
+    output = output_path.open("wb")
+    child = subprocess.Popen([str(Path(args.executable).resolve()), "--session", str(session),
+                              "--station", str(adapter), "--workflow", str(workflow)],
+                             stdout=output, stderr=output, start_new_session=True)
+    owned_pid = None
+
+    def status():
+        try:
+            return packet.read_packet(session / "station-status.bbm")
+        except (OSError, ValueError):
+            return {}
+
+    def terminal():
+        # The terminal result is an independently encoded BBM2 payload in its
+        # native AttemptObservationEvent, not the earlier yielded launch result.
+        raw = (session / "audit").read_bytes()
+        job = (root / "job").read_text()
+        start = raw.rfind(b"BBM\x02")
+        while start >= 0:
+            for end in range(start + 5, min(len(raw), start + 4096) + 1):
+                try:
+                    value = packet.decode_packet(raw[start:end])
+                except (ValueError, UnicodeError, IndexError, KeyError):
+                    continue
+                if isinstance(value, dict) and value.get("job_id") == job and value.get("exit_code") == 9:
+                    assert value["capture_complete"] and value["retained_bytes"] == value["output_bytes"] > 0
+                    return True
+                break
+            start = raw.rfind(b"BBM\x02", 0, start)
+        return False
+
+    try:
+        wait(lambda: (root / "child.pid").exists() and (root / "job").exists(), "station launch did not create actual child/job")
+        owned_pid = int((root / "child.pid").read_text())
+        wait(lambda: (status().get("station", {}).get("events") or [{}])[0].get("outcome") == "workflow_returned", "zero-yield station workflow did not return")
+        before = status()
+        put(adapter / "control.json", {"id": "pause-before-release", "action": "pause"})
+        wait(lambda: status().get("phase") == "paused", "station did not pause at owner boundary")
+        (root / "release").touch()
+        wait(lambda: (root / "effect").exists(), "actual held child did not exit")
+        wait(lambda: b"STATION_CHILD_FINAL" in output_path.read_bytes(), "paused station without next event did not collect/display child output")
+        wait(terminal, "paused station did not retain native terminal receipt without another event")
+        assert b"STATION_CHILD_FINAL" in (session / "audit").read_bytes(), "child original was not retained"
+        assert (root / "launches").read_text().splitlines() == [str(owned_pid)], "station replayed yielded command"
+        after = status()
+        assert after["phase"] == "paused" and after["pid"] == before["pid"] == child.pid and after["actor"] == before["actor"]
+        assert len(after["station"]["events"]) == 1 and after["station"]["events"][0]["outcome"] == "workflow_returned"
+        # The sealed exit receipt retired this fixture; never signal its saved
+        # numeric process-group identity after the owner has reaped it.
+        owned_pid = None
+        put(adapter / "control.json", {"id": "stop-after-receipt", "action": "stop"})
+        assert child.wait(timeout=5) == 0 and status()["phase"] == "stopped"
+        print("Command jobs station: same idle/paused owner; no next event; actual final output/original; sealed native exit9 receipt; one launch; stop cleanup passed")
+    finally:
+        if child.poll() is None:
+            child.send_signal(signal.SIGINT)
+            try:
+                child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                os.killpg(child.pid, signal.SIGKILL)
+                child.wait(timeout=5)
+        output.close()
+        if owned_pid is not None:
+            try:
+                os.killpg(owned_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        if args.log_dir:
+            for source, name in ((output_path, "output.txt"), (session / "audit", "audit"),
+                                 (session / "station-status.bbm", "station-status.bbm"),
+                                 (root / "launches", "launches"), (root / "effect", "effect")):
+                if source.exists():
+                    (args.log_dir / name).write_bytes(source.read_bytes())

@@ -1,0 +1,8 @@
+WEXITED-only WNOWAIT after STOP flags=37 rc=0 errno=0 si_signo=20 si_code=5 si_pid=71525 actual_child=71525 si_status=17
+same WNOWAIT again flags=37 rc=0 errno=0 si_signo=20 si_code=5 si_pid=71525 actual_child=71525 si_status=17
+consume STOP flags=25 rc=0 errno=0 si_signo=20 si_code=5 si_pid=71525 actual_child=71525 si_status=17
+after STOP consumption flags=25 rc=0 errno=0 si_signo=0 si_code=0 si_pid=0 actual_child=71525 si_status=0
+exit-only after observed CONT flags=37 rc=0 errno=0 si_signo=0 si_code=0 si_pid=0 actual_child=71525 si_status=0
+consume CONT flags=25 rc=0 errno=0 si_signo=20 si_code=6 si_pid=40542 actual_child=71525 si_status=17
+real exit WNOWAIT flags=37 rc=0 errno=0 si_signo=0 si_code=0 si_pid=0 actual_child=71525 si_status=0
+real exit WNOWAIT flags=37 rc=0 errno=0 si_signo=20 si_code=1 si_pid=71525 actual_child=71525 si_status=0

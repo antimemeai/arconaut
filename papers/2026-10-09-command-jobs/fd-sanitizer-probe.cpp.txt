@@ -1,0 +1,21 @@
+#include <memory>
+#include <string>
+#include <sys/resource.h>
+#include <unistd.h>
+
+struct Live {
+  virtual ~Live() = default;
+  virtual int value() { return 7; }
+};
+int main(int argc, char **) {
+  Live *p = new Live;
+  rlimit saved{};
+  if (getrlimit(RLIMIT_NOFILE, &saved)) return 2;
+  auto low = saved;
+  low.rlim_cur = argc > 1 ? 3 : saved.rlim_cur;
+  if (setrlimit(RLIMIT_NOFILE, &low)) return 3;
+  const int actual = p->value();
+  if (setrlimit(RLIMIT_NOFILE, &saved)) return 4;
+  delete p;
+  return actual == 7 ? 0 : 5;
+}

@@ -792,7 +792,12 @@ Value tool_definitions() {
             Value{
                 "Execute a shell command or nonempty argv on the host. Nonempty argv "
                 "takes precedence; empty argv uses command. Captures combined "
-                "stdout/stderr and exit code. timeout_seconds defaults to 120. A "
+                "stdout/stderr; omitted yield_ms waits to completion, zero releases "
+                "immediately. "
+                "Background returns job_id without exit_code; process foreground waits "
+                "on the same job. "
+                "pty=true enables interactive text input. timeout_seconds defaults to "
+                "120 and never renews. A "
                 "deadline returns timed_out=true and effect_outcome=unknown after "
                 "local child-group cleanup, with output_ref for partial output; "
                 "inspect it and choose a distinct retry or another approach. Operator "
@@ -816,9 +821,48 @@ Value tool_definitions() {
                             {{"type", Value{"array"}},
                              {"items", Value::object({{"type", Value{"string"}}})}})},
                        {"timeout_seconds", Value::object({{"type", Value{"integer"}}})},
+                       {"yield_ms",
+                        Value::object({{"type", Value{"integer"}},
+                                       {"minimum", Value{Number{0}}},
+                                       {"maximum", Value{Number{3600000}}}})},
+                       {"pty", Value::object({{"type", Value{"boolean"}}})},
                        {"output_max_bytes",
                         Value::object({{"type", Value{"integer"}},
                                        {"minimum", Value{Number{0}}}})}})}})}}),
+      Value::object(
+          {{"type", Value{"function"}},
+           {"name", Value{"process"}},
+           {"description",
+            Value{"Inspect/control the original command job. op read lists jobs or "
+                  "reads a bounded absolute byte cursor; foreground waits without "
+                  "relaunch or deadline renewal, optional yield_ms. background "
+                  "releases only its current wait. input requires PTY, exact bytes and "
+                  "request_id; the same identity/content is never written twice, "
+                  "conflicting reuse fails. resize uses rows/columns. signal names "
+                  "stop/continue/interrupt/terminate/kill; acceptance differs from "
+                  "observed effect. stop requests cleanup; archive requires completed "
+                  "job. configure max_live/max_records only with no live jobs. Active "
+                  "jobs block restart/session switch; custody is process-lifetime "
+                  "only."}},
+           {"parameters",
+            Value::object(
+                {{"type", Value{"object"}},
+                 {"properties",
+                  Value::object(
+                      {{"op", Value::object({{"type", Value{"string"}}})},
+                       {"job_id", Value::object({{"type", Value{"string"}}})},
+                       {"request_id", Value::object({{"type", Value{"string"}}})},
+                       {"bytes", Value::object({{"type", Value{"string"}}})},
+                       {"signal", Value::object({{"type", Value{"string"}}})},
+                       {"yield_ms", Value::object({{"type", Value{"integer"}}})},
+                       {"offset", Value::object({{"type", Value{"integer"}}})},
+                       {"count", Value::object({{"type", Value{"integer"}}})},
+                       {"rows", Value::object({{"type", Value{"integer"}}})},
+                       {"columns", Value::object({{"type", Value{"integer"}}})},
+                       {"wait_epoch", Value::object({{"type", Value{"integer"}}})},
+                       {"max_live", Value::object({{"type", Value{"integer"}}})},
+                       {"max_records", Value::object({{"type", Value{"integer"}}})}})},
+                 {"required", Value{Value::Array{Value{"op"}}}}})}}),
       Value::object(
           {{"type", Value{"function"}},
            {"name", Value{"read_process_output"}},

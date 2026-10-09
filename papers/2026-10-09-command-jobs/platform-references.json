@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-10-09T10:57:52.202922+00:00",
+  "input": "context/command-jobs/platform-refs-input.json",
+  "references": [
+    {
+      "name": "command-jobs-tmux",
+      "repository": "https://github.com/tmux/tmux",
+      "destination": "quarantine/command-jobs-tmux",
+      "revision": "82abcd175cca43c671af3690cd0af74c4c75621c",
+      "download_url": "https://codeload.github.com/tmux/tmux/zip/82abcd175cca43c671af3690cd0af74c4c75621c",
+      "provenance": "immutable upstream source ZIP",
+      "archive": "../quarantine_proj/archives/blackbird-command-jobs-platform-2026-10-09/command-jobs-tmux-82abcd175cca.zip",
+      "archive_bytes": 1866883,
+      "sha256": "ad595312749fd809bf9f41ba32d196de9cb63fdc55a58ded3f0c4d354aff1c67",
+      "archive_root": "tmux-82abcd175cca43c671af3690cd0af74c4c75621c",
+      "retained_files": 637,
+      "retained_bytes": 5349281,
+      "omitted_entries": [],
+      "comparison": "Exact retained file set, file bytes, and executable bits compared directly with source ZIP",
+      "status": "acquired"
+    }
+  ]
+}

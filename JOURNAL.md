@@ -5820,3 +5820,127 @@ prefers blackbird-ui dated October8, while blackbird is dated October9; loaded
 generation and candidate activation must be explicit before claiming field
 behavior. Do not overwrite a running operator session or imply master integration.
 Record/backup this orientation and checkpoint through the installed hook.
+
+## 2026-10-09 — Command background/foreground research and design
+
+Operator redirects priority: running-command backgrounding and foregrounding need
+full literature/refimpl grounding, design, implementation and rigorous static and
+dynamic testing before steering or trajectories. Created command-jobs candidate
+and arconaut-st9. Research lanes own primary platform contracts, eight retained
+harness implementations/tests and exact current-source integration. Reports live
+in papers/2026-10-09-command-jobs; tmux source and40 primary document snapshots
+have intact archives, hashes and restoration instructions. Imported code remains
+study-only; no dependency adoption or provider/account use.
+
+Five owned platform primitives passed on Mac and Neuroses Linux: same child across
+released/resumed waits, leader-exit-before-EOF, EOF-before-exit, observed STOP/CONT,
+and private PTY identity/input/closure. Linux terminal-close EIO differs from Mac
+zero-byte EOF. These qualify primitive observations, not product behavior.
+
+Design and plan in docs/COMMAND_JOBS.md and COMMAND_JOBS_SUBPLAN.md are under
+adversarial review before code. One permanent native process/collector owner,
+original open exec attempt and aggregate terminal reservation follow a command
+across waits/turns. Background changes attachment, not process execution. Private
+PTY attachment preserves the operator terminal; exact raw capture stays continuous.
+Current first scope is process lifetime: active jobs block refit/session switch;
+death preserves unknown custody and no replay. No adopted steering design or new
+trajectory work. Optional operator PTY question remained unanswered; include PTY
+interactive commands as the stated working assumption while research proceeds.
+
+2026-10-09 command jobs implementation: owned permanent collector/job registry, fresh
+PTY exec helper, serialized descriptor/spawn paths, native process controls and
+engine aggregate settlement reserve are integrated. Original exec stays open
+across released waits; original terminal metadata is reserved directly. UI text
+PTY attachment preserves composer and exact input. Direct native/engine/coding
+tests pass; actual terminal trial passes identity, controls, input, resize, paste
+and cleanup. Test-driven corrections include Darwin STOP returned by exit-only
+waitid, strict optional discovery fields, actual cleanup before synchronous
+cancellation/retention failure, and reserved lifecycle mailbox slots under input
+pressure. No new dependency selected. Hardening begins11:48UTC,25minutes total
+through12:13UTC: one concrete Kimi review/fixes then one focused recheck/fixes,
+including mandatory clean-slate commit checks. All prior research/code allowance
+remains90minutes from11:13:27UTC. Mutation remains fleet-only/deferred.
+
+
+Command-jobs concrete review: the requested Kimi colleague tool was attempted,
+but subscription access returned403 before review. Captured run-hhfhvlp6 records
+that failure; no review was attributed to Kimi. A fresh independent native review
+filled the same review layer and found four consequential defects: signals queued
+behind blocked input; ordinary control-result capture failure not stopping owned
+jobs; irrelevant control fields retained without a bound; station idle paths not
+pumping original settlement. All four were corrected, with direct continuation,
+payload-rejection, control-capture and paused-station oracles. Findings and fixes
+are in papers/2026-10-09-command-jobs/code-review.md.
+
+The focused debug remediation suite passed command_jobs, command_jobs_engine,
+command_jobs_pty, command_jobs_station and coding (5/5). The last added engine
+oracle independently requires capacity refusal, child reaping before return,
+exact retained bytes, one UNKNOWN original settlement and no forbidden effect.
+One final recheck is running release, ASAN, TSAN and stable-snapshot Neuroses Linux
+debug/release/ASAN; captures remain in context/command-jobs. An earlier Linux
+archive overlapped UI edits and exposed the old input-pressure implementation;
+its failing release PTY trace is retained, not counted as a pass. Static checks
+already passed the fresh-exec runner and collector; the required full debug,
+C++/Lua clean-slate hook is the final checkpoint gate. No deadline extension,
+third review, dependency adoption, provider calls, main merge or activation.
+
+Final recheck exposed additional concrete integration regressions: task runtime
+lost exit-code wording, the new pipe foreground footer lost Enter-queue guidance,
+and expiring a split paste prefix before reading already-ready stdin detached on
+a literal pasted Ctrl-B under load. Corrected all three. Outer keyboard reads now
+batch up to the already-declared4KiB pending input limit. Pressure fixture uses
+actual raw terminal mode (Linux line discipline can otherwise accept/drop bytes)
+and sends512KiB against native/mailbox/presentation limits. Oracle now waits for
+complete stty output and drains shutdown PTY output before its existing assertions.
+These are fixes inside the single recheck, not an additional review layer.
+
+Final bounded state: hardening stopped before12:13UTC with candidate INACTIVE.
+Debug/release four command suites pass. Final isolated Mac ASAN native/PTY pass;
+engine/station passed on the same final product. Native saturation polling now
+uses count0 (no repeated64KiB output copying), and pressure writer allows30s with
+60s CTest bound. Final focused coding/terminal/native-test/engine-test static checks
+pass. Linux debug/release all four pass. Linux ASAN native failure is a reproducible
+invalid-vptr UBSan diagnostic plus closed-stdio subprocess oracle failure; earlier
+commentary incorrectly called it saturation timing and was corrected. TSAN native,
+engine/station pass but PTY real dimensions after resize remains unresolved.
+Full debug gate last completed83/84, with pressure writer failure; final focused
+pressure passes do not substitute for complete debug plus owned C++/Lua lint.
+Qualification report records exact captures and next direct work. arconaut-st9
+remains open and Beads backed up. No checkpoint commit/push was made because the
+required hook did not pass; no bypass, suppression, main merge, activation,
+steering or trajectory implementation. Retain staged work for the operator;
+explicit new scope is needed to reopen this bounded unit.
+
+
+2026-10-09 12:16:37UTC operator supplies explicit new scope: fix the bugs. Reopen
+arconaut-st9 on command-jobs. Retain earlier bound and all failure evidence; new
+scope is two concrete faults plus required completion gate. Budget60min total,
+including at most25min hardening, two layers. Root diagnoses Linux sanitizer and
+closed-stdio/resource interactions; PTY lane owns resize/input failure and direct
+actual-byte/effect oracle. No timing-only repair, suppression, skipped assertion,
+new review panel or operator activation. Plans precede product edits.
+
+
+Reopened fixes: Linux invalid-vptr occurs in resource_failure argument creation
+before spawn. A valid Live object under RLIMIT3 reproduces it; LLVM18 vptr reads
+need a temporary pipe. CTest additionally inherits LastTest.log.tmp atfd3. Prepare
+args before limit, use limit6 with direct two-slot pipe headroom check, joinworker
+before restoring/pumping, and require exact EMFILE. Actual Linux ASAN native suite
+now passes (linux-resource-green.log); mode-specific failures replace misleading
+closed-stdio generic wording. PTY actual audit contains complete size input and
+TTY echo but shell effects say OTHER:siz: signal/read fixture loss. EINTR-safe
+canonical reader with exact raw reader log fixes TSAN case. Screen oracle now
+recognizes CAN/SUB abort before actual complete shutdown recovery. No product
+bug was established by either retained diagnostic; no suppression/assertion skip.
+
+Final affected recheck/hardening starts12:27:21UTC, at most25minutes through
+12:52:21UTC. One recheck and fixes, no new tribunal. Recheck command suites and
+terminal parser on final Mac release/ASAN/TSAN and Linux debug/release/ASAN, then
+required full debug plus all owned C++/Lua lint via clean-slate checkpoint hook.
+Beads closure/results record follows actual gate success, within existing scope.
+
+Mac final release/ASAN five-case rechecks pass (38.91s/26.29s); TSAN and final
+stable-snapshot Linux recheck continue. All final fixture/parser source and causal
+notes are ready. Updated README/current stock to distinguish candidate behavior
+from master and the inhabited operator executable. Checkpoint the implementation
+through the mandatory full clean-staged-tree hook; no activation implied.

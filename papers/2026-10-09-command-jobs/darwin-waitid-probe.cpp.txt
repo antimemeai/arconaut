@@ -1,0 +1,113 @@
+#include <cerrno>
+#include <chrono>
+#include <iostream>
+#include <poll.h>
+#include <signal.h>
+#include <stdexcept>
+#include <string_view>
+#include <sys/wait.h>
+#include <unistd.h>
+namespace {
+int notification = -1;
+void continued(int) {
+  const char byte = 'C';
+  (void)::write(notification, &byte, 1);
+}
+char take(int descriptor) {
+  pollfd fd{descriptor, POLLIN, 0};
+  if (::poll(&fd, 1, 3000) <= 0)
+    throw std::runtime_error("probe child handshake expired");
+  char byte{};
+  if (::read(descriptor, &byte, 1) != 1)
+    throw std::runtime_error("probe child handshake closed");
+  return byte;
+}
+struct WaitCall {
+  const char *label;
+  int flags;
+};
+siginfo_t observe(pid_t child, WaitCall call) {
+  siginfo_t info{};
+  errno = 0;
+  const int rc = ::waitid(P_PID, static_cast<id_t>(child), &info, call.flags);
+  const int error = errno;
+  std::cout << call.label << " flags=" << call.flags << " rc=" << rc
+            << " errno=" << error << " si_signo=" << info.si_signo
+            << " si_code=" << info.si_code << " si_pid=" << info.si_pid
+            << " actual_child=" << child << " si_status=" << info.si_status << '\n';
+  if (rc != 0)
+    throw std::runtime_error("probe waitid failed");
+  return info;
+}
+} // namespace
+int main() {
+  int input[2]{-1, -1}, output[2]{-1, -1};
+  pid_t child = -1;
+  try {
+    if (::pipe(input) != 0 || ::pipe(output) != 0)
+      return 1;
+    child = ::fork();
+    if (child < 0)
+      return 2;
+    if (child == 0) {
+      ::close(input[1]);
+      ::close(output[0]);
+      notification = output[1];
+      struct sigaction action {};
+      action.sa_handler = continued;
+      sigemptyset(&action.sa_mask);
+      if (::sigaction(SIGCONT, &action, nullptr) != 0)
+        ::_exit(3);
+      const char ready = 'R';
+      (void)::write(output[1], &ready, 1);
+      char gate{};
+      ssize_t count;
+      do {
+        count = ::read(input[0], &gate, 1);
+      } while (count < 0 && errno == EINTR);
+      ::_exit(count == 1 ? 0 : 4);
+    }
+    ::close(input[0]);
+    ::close(output[1]);
+    if (take(output[0]) != 'R' || ::kill(child, SIGSTOP) != 0)
+      throw std::runtime_error("probe STOP setup failed");
+    const WaitCall exit_only{"WEXITED-only WNOWAIT after STOP", WEXITED | WNOHANG | WNOWAIT};
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{3};
+    siginfo_t first{};
+    do {
+      first = observe(child, exit_only);
+      if (std::chrono::steady_clock::now() > deadline)
+        throw std::runtime_error("probe never observed stop through exit-only mask");
+    } while (!first.si_pid);
+    (void)observe(child, {"same WNOWAIT again", exit_only.flags});
+    (void)observe(child, {"consume STOP", WSTOPPED | WCONTINUED | WNOHANG});
+    (void)observe(child, {"after STOP consumption", WSTOPPED | WCONTINUED | WNOHANG});
+    if (::kill(child, SIGCONT) != 0 || take(output[0]) != 'C')
+      throw std::runtime_error("probe CONT handshake failed");
+    (void)observe(child, {"exit-only after observed CONT", exit_only.flags});
+    (void)observe(child, {"consume CONT", WSTOPPED | WCONTINUED | WNOHANG});
+    const char finish = 'X';
+    (void)::write(input[1], &finish, 1);
+    siginfo_t exited{};
+    do {
+      exited = observe(child, {"real exit WNOWAIT", exit_only.flags});
+      if (std::chrono::steady_clock::now() > deadline)
+        throw std::runtime_error("probe exit expired");
+      (void)::poll(nullptr, 0, 2);
+    } while (!exited.si_pid);
+    int status{};
+    if (::waitpid(child, &status, 0) != child || !WIFEXITED(status) || WEXITSTATUS(status))
+      throw std::runtime_error("probe root status wrong");
+    child = -1;
+    ::close(input[1]);
+    ::close(output[0]);
+    return 0;
+  } catch (const std::exception &error) {
+    if (child > 0) {
+      (void)::kill(child, SIGKILL);
+      (void)::waitpid(child, nullptr, 0);
+    }
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}

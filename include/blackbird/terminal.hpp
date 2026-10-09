@@ -1,5 +1,6 @@
 #pragma once
 #include "blackbird/chat_view.hpp"
+#include "blackbird/command_jobs.hpp"
 #include "blackbird/tasks.hpp"
 #include <atomic>
 #include <filesystem>
@@ -55,6 +56,7 @@ public:
   bool palette_open() const noexcept { return palette_open_; }
   bool slash_open() const noexcept { return slash_open_; }
   bool escape_pending() const noexcept { return !escape_.empty(); }
+  bool pasted() const noexcept { return pasted_; }
   bool flush_escape();
   std::vector<std::string> palette_lines(std::size_t rows) const;
   const std::string &text() const noexcept { return text_; }
@@ -107,7 +109,8 @@ public:
            std::atomic_bool &cancelled,
            const std::function<bool()> &exit_requested = {}, std::string initial = {},
            std::filesystem::path state_path = {},
-           const std::function<void()> &idle_work = {});
+           const std::function<void()> &idle_work = {},
+           std::shared_ptr<CommandJobs> commands = {});
 
 private:
   enum class Kind {

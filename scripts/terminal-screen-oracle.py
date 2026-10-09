@@ -31,11 +31,22 @@ class Screen:
                     pos += 2;continue
                 if text[pos+1] == '_':
                     end = text.find('\x1b\\', pos+2)
+                    abort = re.search('[\x18\x1a]', text[pos+2:])
+                    if abort and (end < 0 or pos+2+abort.start() < end):
+                        pos += 3+abort.start();continue  # CAN/SUB return to ground.
                     if end < 0: break
                     pos = end+2;continue  # APC graphics does not occupy text cells.
                 if text[pos+1] == '[':
                     match = re.match(r'\x1b\[([0-9;?]*)([@-~])', text[pos:])
-                    if not match: break
+                    if not match:
+                        # libvterm parser.c treats CAN/SUB in CSI as an abort,
+                        # even when the control's bytes cross feed boundaries.
+                        # Only a syntactically incomplete supported prefix may
+                        # take this path; malformed/truncated input stays pending.
+                        abort = re.match(r'\x1b\[[0-9;?]*[\x18\x1a]', text[pos:])
+                        if abort:
+                            pos += len(abort.group(0));continue
+                        break
                     values, cmd = match.groups()
                     if cmd == 'H':
                         parts = values.split(';')
@@ -85,6 +96,23 @@ class Screen:
 
 if __name__ == '__main__':
     import subprocess, sys
+    # Direct parser cases: cancel a supported incomplete control, then execute
+    # recovery at a fixed cursor. Every feed split must reach the same cells.
+    for cancel in (b'\x18', b'\x1a'):
+        for prefix in (b'\x1b[1;38', b'\x1b_Ga=d'):
+            data = b'\x1b[1;1HOLD' + prefix + cancel + b'\x1b[2;3H\x1b[0mOK'
+            for split in range(len(data)+1):
+                screen = Screen()
+                screen.feed(data[:split])
+                screen.feed(data[split:])
+                assert not screen.pending, 'CAN/SUB did not cancel incomplete control'
+                assert screen.cells == {(0,0):'O', (0,1):'L', (0,2):'D',
+                                        (1,2):'O', (1,3):'K'}, 'cancel/recovery cells'
+                assert (screen.row,screen.col,screen.style) == (1,4,'0'), 'cancel/recovery cursor/style'
+    for data in (b'\x1b[12', b'\x1b[12:', b'\x1b_Gunfinished', b'\x1b[12:\x18'):
+        screen = Screen()
+        screen.feed(data)
+        assert screen.pending, 'malformed/truncated control was discarded'
     lines = subprocess.check_output([sys.argv[1], '--packets'], text=True).splitlines()
     incremental = Screen()
     for index in range(0, len(lines), 3):
@@ -98,4 +126,4 @@ if __name__ == '__main__':
         assert incremental.styles == cold.styles, ('delta/full style mismatch', index//3)
         assert (incremental.row,incremental.col) == (cold.row,cold.col), 'cursor mismatch'
         assert not incremental.pending, 'incomplete control packet'
-    print('Incremental/full styled VT cells agree: ASCII, CJK, combining, emoji, stale areas, resize, byte-fragment delivery')
+    print('Incremental/full styled VT cells agree: ASCII, CJK, combining, emoji, stale areas, resize, byte-fragment delivery, CAN/SUB recovery and malformed detection')

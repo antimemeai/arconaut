@@ -1,6 +1,7 @@
 #pragma once
 #include "blackbird/beads.hpp"
 #include "blackbird/colleague.hpp"
+#include "blackbird/command_jobs.hpp"
 #include "blackbird/decision_models.hpp"
 #include "blackbird/observations.hpp"
 #include "blackbird/openai.hpp"
@@ -50,6 +51,9 @@ public:
   Value operator_call(std::string_view name, const Value &arguments);
   ColleagueTransport colleague_transport;
   ParticipantTransport participant_transport;
+  std::shared_ptr<CommandJobs> command_jobs() const { return command_jobs_; }
+  void poll_commands();
+  void shutdown_commands();
   void poll_participants();
   void shutdown_participants();
   bool operator_turn(std::string_view prompt, std::string_view fallback);
@@ -92,6 +96,11 @@ private:
   std::optional<Error> failed_turn_;
   Value workflow_result_;
   std::optional<Value> operator_arguments_;
+  std::shared_ptr<CommandJobs> command_jobs_;
+  std::unique_ptr<RetainedState::SettlementScope> settlement_;
+  std::map<std::string, std::string> command_tasks_;
+  std::optional<Error> command_failure_;
+  bool pumping_commands_ = false;
   bool capacity_stopped_ = false;
   std::size_t operation_depth_ = 0;
   std::size_t unretained_bytes_ = 0;

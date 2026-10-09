@@ -76,23 +76,21 @@ public:
       (void)::close(output);
     if (error_output >= 0)
       (void)::close(error_output);
-    // Keep group custody even after collect() reaps the leader.
+    // collect() observes with WNOWAIT; pin the leader through the final group action.
     if (group > 0)
       (void)::kill(-group, SIGKILL);
     if (pid > 0) {
       while (::waitpid(pid, nullptr, 0) < 0 && errno == EINTR) {
       }
     }
-    if (group > 0) {
-      if (::kill(-group, 0) == 0 || errno != ESRCH)
-        uncontained_exec.store(true); // descendants not observed gone
+    if (group > 0)
       --owned_children;
-    }
   }
   void start(std::vector<std::string> args,
              const std::filesystem::path &codex_home = {}, bool merge_error = false) {
     if (cancelled && cancelled())
       fail(ErrorCode::interrupted);
+    const std::lock_guard spawn_lock{process_spawn_mutex};
     std::vector<char *> argv;
     for (auto &arg : args)
       argv.push_back(arg.data());
@@ -248,8 +246,16 @@ public:
       // until owned group cleanup. Never kill a possibly recycled PGID.
       const int rc = ::waitid(P_PID, static_cast<id_t>(pid), &observed,
                               WEXITED | WNOHANG | WNOWAIT);
-      if (rc == 0 && observed.si_pid == pid)
+      if (rc == 0 && observed.si_pid == pid &&
+          (observed.si_code == CLD_EXITED || observed.si_code == CLD_KILLED ||
+           observed.si_code == CLD_DUMPED))
         break;
+      if (rc == 0 && observed.si_pid != 0 &&
+          (observed.si_code == CLD_STOPPED || observed.si_code == CLD_CONTINUED)) {
+        siginfo_t state{};
+        (void)::waitid(P_PID, static_cast<id_t>(pid), &state,
+                       WSTOPPED | WCONTINUED | WNOHANG);
+      }
       if (rc < 0 && errno != EINTR)
         fail(ErrorCode::io, errno);
       if (Clock::now() >= deadline)

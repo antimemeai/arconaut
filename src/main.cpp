@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <poll.h>
 #include <sys/random.h>
 #include <sys/stat.h>
 #include <thread>
@@ -398,6 +399,10 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       CodingEngine &engine;
       ~ParticipantShutdown() {
         try {
+          engine.shutdown_commands();
+        } catch (...) {
+        }
+        try {
           engine.shutdown_participants();
         } catch (...) {
         }
@@ -487,6 +492,32 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       try {
         if (prompt == "/help") {
           emit(terminal_help());
+        } else if (prompt.starts_with("/exec ") || prompt.starts_with("/process ")) {
+          const bool execute = prompt.starts_with("/exec ");
+          emit(unwrap(dump_json(engine.operator_call(
+                   execute ? "exec" : "process",
+                   unwrap(parse_json(prompt.substr(execute ? 6 : 9)))))) +
+               "\n");
+        } else if (prompt.starts_with("/fg ")) {
+          emit(
+              unwrap(dump_json(engine.operator_call(
+                  "process",
+                  Value::object({{"op", Value{"foreground"}},
+                                 {"job_id", Value{std::string{prompt.substr(4)}}}})))) +
+              "\n");
+        } else if (prompt == "/jobs") {
+          emit(unwrap(dump_json(engine.command_jobs()->read(Value::object({})))) +
+               "\n");
+        } else if (prompt == "/bg" || prompt.starts_with("/bg ")) {
+          const auto lease = engine.command_jobs()->foreground();
+          const auto id = prompt == "/bg" ? string_field(lease, "job_id")
+                                          : std::string{prompt.substr(4)};
+          emit(unwrap(dump_json(engine.operator_call(
+                   "process",
+                   Value::object({{"op", Value{"background"}},
+                                  {"job_id", Value{id}},
+                                  {"wait_epoch", field(lease, "wait_epoch")}})))) +
+               "\n");
         } else if (prompt == "continue" && resume_turn) {
           resume_turn = false;
           engine.turn({"", read_file(workflow)});
@@ -869,6 +900,10 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
           }
           if (station.stopped())
             break;
+          // This owner boundary also advances jobs when no source event follows
+          // a yielded launch, including while station admission is paused.
+          // The existing outer failure path publishes blocked and shuts down.
+          engine.poll_commands();
           publish(station.paused() ? "paused" : "idle");
           if (!station.paused() && std::filesystem::exists(adapter / "events.json")) {
             const auto bytes = read_file(adapter / "events.json", 1024 * 1024);
@@ -927,8 +962,8 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       std::cout << '\n';
       return restart_pending.load() ? 75 : 0;
     }
+    bool participant_retention_failed = false, command_retention_failed = false;
     if (tui) {
-      bool participant_retention_failed = false;
       ui.notice("/help lists commands. Workflow reloads each turn.\n");
       for (const auto &item : context.items()) {
         const auto *role = item.find("role");
@@ -956,6 +991,14 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
           resume_turn ? "continue" : "", session / "ui-state.bbm",
           [&] {
             try {
+              engine.poll_commands();
+            } catch (const Error &error) {
+              if (!command_retention_failed)
+                ui.notice(std::string{"Command retention blocked: "} +
+                          error_name(error.code));
+              command_retention_failed = true;
+            }
+            try {
               engine.poll_participants();
               participant_retention_failed = false;
             } catch (const Error &error) {
@@ -964,7 +1007,8 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
                           error_name(error.code));
               participant_retention_failed = true;
             }
-          });
+          },
+          engine.command_jobs());
       return finish_interactive();
     }
     if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))
@@ -976,14 +1020,68 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
       perform("continue");
     if (restart_pending.load() || new_pending.load())
       return finish_interactive();
+    std::string pending_input;
+    bool input_eof = false;
+    auto read_line = [&](std::string &result) {
+      for (;;) {
+        if (const auto end = pending_input.find('\n'); end != std::string::npos) {
+          result = pending_input.substr(0, end);
+          pending_input.erase(0, end + 1);
+          return true;
+        }
+        if (input_eof) {
+          result = std::exchange(pending_input, {});
+          return !result.empty();
+        }
+        try {
+          engine.poll_commands();
+        } catch (const Error &error) {
+          if (!command_retention_failed)
+            emit(std::string{"Command retention blocked: "} + error_name(error.code) +
+                 "\n");
+          command_retention_failed = true;
+        }
+        try {
+          engine.poll_participants();
+        } catch (const Error &error) {
+          if (!participant_retention_failed)
+            emit(std::string{"Participant retention blocked: "} +
+                 error_name(error.code) + "\n");
+          participant_retention_failed = true;
+        }
+        pollfd input{STDIN_FILENO, POLLIN, 0};
+        const auto ready = ::poll(&input, 1, 40);
+        if (ready < 0) {
+          if (errno == EINTR)
+            continue;
+          throw Error{ErrorCode::io, errno};
+        }
+        if (!ready)
+          continue;
+        char bytes[512];
+        const auto count = ::read(STDIN_FILENO, bytes, sizeof(bytes));
+        if (count < 0) {
+          if (errno == EINTR)
+            continue;
+          throw Error{ErrorCode::io, errno};
+        }
+        if (!count)
+          input_eof = true;
+        else {
+          if (pending_input.size() + static_cast<std::size_t>(count) > 1024 * 1024)
+            throw Error{ErrorCode::capacity};
+          pending_input.append(bytes, static_cast<std::size_t>(count));
+        }
+      }
+    };
     std::string line;
-    while (std::cout << "\nblackbird> " && std::getline(std::cin, line)) {
+    while (std::cout << "\nblackbird> " << std::flush && read_line(line)) {
       if (line == "/quit" || line == "/exit")
         break;
       if (line == "/paste") {
         line.clear();
         std::string part;
-        while (std::getline(std::cin, part) && part != "/send") {
+        while (read_line(part) && part != "/send") {
           line += part;
           line += '\n';
         }
