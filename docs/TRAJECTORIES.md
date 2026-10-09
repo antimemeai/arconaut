@@ -256,3 +256,95 @@ This preserves output retrieval with clock/sample records present. Generic sampl
 selection ignores non-sample packets; malformed time metadata remains undated.
 The bare `/git-observe` usage path was checked locally after its small follow-up.
 No startup benchmark, certification or further assurance layer.
+
+
+## Compact persistence unit (2026-10-09)
+
+Operator requests tighter persistence because JSON metadata will cost at scale.
+Allowance75min total, at most20min for two-layer hardening. Keep the existing
+framed retained journal and exact original bytes; replace newly written log/program
+metadata and native operation continuation packets with an owned versioned binary
+value encoding. Fixed field/value dictionary IDs avoid recurring names, identities
+use raw16 bytes, integers/lengths use canonical varints, and arbitrary variable
+values remain tagged extensible data. JSON remains the tool/provider boundary and
+legacy read path. Context documents and original upstream request/output bytes
+are outside this metadata conversion; no destructive history rewrite.
+
+Written plan: define version/tag/dictionary rules and bounded codec; direct byte
+layout/round-trip/size/malformed/bounds checks; integrate all affected readers with
+legacy decoding; mixed-format retained fixture and exact source/recovery checks;
+scoped Mac/Linux recheck. Inspect existing retained encoder and lazy payload
+readers before changing the application packet format. No new dependency or
+compression library, new store, mutable authority or clock semantics.
+
+
+### BBM1 wire layout and compatibility
+
+Metadata payloads begin with bytes `42 42 4d 01` (`BBM`, version1), followed by
+one tagged value. The existing journal frame, batch commit/checksum and retained
+causal IDs remain unchanged. All integer lengths/counts use unsigned LEB128
+(canonical shortest representation, at most10 bytes, bounded to64 bits).
+
+| Tag | Value body |
+| --- | --- |
+| 0 | null, no body |
+| 1 / 2 | false / true, no body |
+| 3 | unsigned integer magnitude |
+| 4 | negative integer magnitude, nonzero |
+| 5 | length-prefixed exact decimal/exponent number text |
+| 6 | length-prefixed string bytes |
+| 7 |16 identity bytes, decoded as lowercase hex at the JSON boundary |
+| 8 | nonzero dictionary ID |
+| 9 | count followed by array values |
+|10 | count followed by string-key/value pairs, preserving member order |
+
+Dictionary IDs are one-based positions in `src/packet.cpp`'s fixed `words` table.
+Keys and recurring string values share that table. Never reorder/remove assigned
+entries within version1. Unknown IDs/tags, overflowing/noncanonical varints,
+truncation and trailing bytes fail decoding. Unknown packet versions are reported
+unsupported, not attempted as JSON. Encode/decode enforce byte/node/depth limits
+and validate lexical numbers without floating-point conversion. No runtime
+schema negotiation, external codec library or compression dependency.
+
+New log/program records, native operation continuation metadata and terminal result
+locators use BBM1. A terminal attempt references the already-retained result by
+record index and identity; it no longer duplicates the complete response. When
+result capture fails, settlement retains the bounded error instead. The retained
+native disposition still determines success/failure/unknown independently of that
+reference. Old terminal result bodies remain readable as original bytes.
+Existing JSON history stays readable and is not rewritten. Exact source payloads
+(including upstream JSON) and context documents retain their current formats.
+Pre-BBM executables cannot interpret new metadata; use the updated reader for
+sessions written by this candidate. JSON tool interfaces remain unchanged.
+For full metadata inspection, `audit_inspect({query={record=N,packet=true}})`
+returns a decoded JSON packet. `limit` bounds stored and expanded bytes; source,
+diagnostic and offset selectors are incompatible with decoded-packet mode.
+Raw exact-byte inspection remains available separately.
+
+
+Compact unit remediation found a second scaling cost: full operation results were
+retained again inside terminal attempt bodies. Replaced that copy with the result
+capture's exact locator. Direct262144-byte file-read fixture retains one262158-byte
+JSON result original and a29-byte binary settlement; after reopen, the locator's
+identity and source bytes match the actual returned result. This fixture also
+counts source frames to detect duplicate storage. Original results remain exact;
+large raw response bytes are not presented as a throughput claim.
+
+The doctrine metadata fixture measures524 JSON bytes versus162 BBM1 bytes with
+identical decoded values. Codec oracles cover fixed byte layouts, integer extrema,
+lexical numbers, arbitrary fields, truncation, overflowing/noncanonical lengths,
+unknown versions/tags/dictionary IDs, trailing data and byte/node/depth bounds.
+A mixed-format native journal is appended and reopened with exact source bytes
+(including NUL) and bounded decoded inspection. The admission byte-capacity oracle
+now uses the compact encoding for its allowance, preserving refusal before effects.
+
+
+Final compact-unit recheck:20 selected cases passed on Mac release
+(Clang23.1.2/Lua5.4.8) and Linux debug (Clang18.1.3/libstdc++13/Lua5.4.8).
+Affected Mac debug cases also passed after remediation. Cases: packet,
+observations/CLI, trajectory/CLI, audit, coding, request_storage, context,
+station/driver, session_store, program_config, colleague_engine,
+participant_recovery, workflows, context_delta, successor_seed, saved_state,
+and tasks. Local captures: context/compact-release-build.log,
+context/compact-release-checks.log; Linux: context/linux/run-6xvy3zgj.
+No additional assurance layer or live provider run.

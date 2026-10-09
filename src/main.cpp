@@ -293,9 +293,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
           const auto *decision = std::get_if<DecisionEvent>(&related.event.body);
           if (!decision || decision->decision != admission->decision)
             continue;
-          const auto metadata = parse_json(std::string_view{
-              reinterpret_cast<const char *>(decision->continuation.data()),
-              decision->continuation.size()});
+          const auto metadata = read_packet(decision->continuation);
           if (metadata.has_value())
             if (const auto *name = metadata.value().find("operation");
                 name && std::holds_alternative<std::string>(name->value()))
@@ -311,7 +309,7 @@ int run_session(int argc, char **argv, std::vector<std::string> &next_session,
         if (record == nullptr || record->channel != ApplicationChannel::log ||
             fact.event.dependencies.empty())
           continue;
-        const auto meta = read_text(record->payload);
+        const auto meta = unwrap(dump_json(unwrap(read_packet(record->payload))));
         std::cout << safe(meta) << '\n';
         for (const auto reference : fact.event.dependencies) {
           const auto bytes = unwrap(root->source(reference));

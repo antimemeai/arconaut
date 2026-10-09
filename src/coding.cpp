@@ -868,9 +868,7 @@ void recover_coding_session(RetainedState &root) {
         if (!recovered_decision.has_value())
           return Result<void>::failure(recovered_decision.error());
         const auto *decision = &recovered_decision.value();
-        const auto metadata = parse_json(std::string_view{
-            reinterpret_cast<const char *>(decision->continuation.data()),
-            decision->continuation.size()});
+        const auto metadata = read_packet(decision->continuation);
         if (!metadata.has_value())
           return Result<void>::failure({ErrorCode::external_unknown});
         const auto *operation = metadata.value().find("operation");
@@ -1024,9 +1022,7 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                     {"revision", Json{context_.head()}},
                     {"time", began_time},
                     {"generation", Json{hex_identity(generation_.bytes())}}});
-  const auto continuation = unwrap(dump_json(meta));
-  const auto continuation_bytes =
-      std::as_bytes(std::span{continuation.data(), continuation.size()});
+  const auto continuation_bytes = unwrap(encode_packet(meta));
   // Fresh identities: one ordered batch, no authoritative partial admission.
   const std::array<RetainedEvent, 3> admitted{
       RetainedEvent{
@@ -1149,13 +1145,16 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
   const auto duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
                                std::chrono::steady_clock::now() - began)
                                .count();
+  std::string result_id;
+  std::size_t result_record = 0;
   try {
-    log_.original(
+    result_id = log_.original(
         {"operation.result", output,
          Json::object({{"attempt", Json{hex_identity(attempt.bytes())}},
                        {"time", observed_time},
                        {"duration_ns", Json{JsonNumber{std::to_string(duration_ns)}}},
                        {"operation", Json{std::string{name}}}})});
+    result_record = root.fact_count() - 1;
   } catch (const Error &e) {
     if (e.code != ErrorCode::capacity)
       throw;
@@ -1176,7 +1175,11 @@ Json CodingEngine::operation(std::string_view name, const Json &input,
                        {"unretained_bytes",
                         Json{JsonNumber{std::to_string(unretained_bytes_)}}}})});
   }
-  const auto observed = std::as_bytes(std::span{output.data(), output.size()});
+  // The result original is already retained. Settlement carries its locator,
+  // not another complete response. On capture refusal retain the bounded error.
+  const auto observed = unwrap(encode_packet(result_id.empty() ? result :
+      Json::object({{"result_id", Json{result_id}},
+                    {"result_record", Json{JsonNumber{std::to_string(result_record)}}}})));
   auto disposition =
       boundary.error ? AttemptDisposition::failure : AttemptDisposition::success;
   if (boundary.error &&
@@ -1723,7 +1726,7 @@ Json CodingEngine::call(std::string name, Json arguments) {
         const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         if (!record || record->channel != ApplicationChannel::log)
           continue;
-        const auto packet = unwrap(parse_json(read_text(record->payload)));
+        const auto packet = unwrap(read_packet(record->payload));
         const auto &label = string_field(packet, "label");
         if (label != "operation.result" && label != "process.output")
           continue;

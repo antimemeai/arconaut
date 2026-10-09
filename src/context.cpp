@@ -8,6 +8,12 @@
 #include <set>
 
 namespace blackbird {
+Result<Json> read_packet(const ImmutableBytes &bytes, JsonLimits limits) {
+  if (bytes.size() > limits.bytes) return Result<Json>::failure({ErrorCode::capacity});
+  auto data = bytes.read();
+  if (!data.has_value()) return Result<Json>::failure(data.error());
+  return decode_packet(data.value(), limits);
+}
 std::string hex_identity(const IdentityBytes &bytes) {
   constexpr char digits[] = "0123456789abcdef";
   std::string out;
@@ -52,9 +58,10 @@ std::string AuditLog::record(ApplicationChannel channel, const Json &packet) {
 }
 void AuditLog::record(ApplicationRecordId identity, ApplicationChannel channel,
                       const Json &packet) {
-  const auto serialized = unwrap(dump_json(packet));
+  const auto serialized = channel == ApplicationChannel::context
+      ? bytes(unwrap(dump_json(packet))) : ImmutableBytes{unwrap(encode_packet(packet))};
   (void)unwrap(
-      root_.submit({{}, ApplicationRecordEvent{identity, channel, bytes(serialized)}}));
+      root_.submit({{}, ApplicationRecordEvent{identity, channel, serialized}}));
 }
 void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context_packet,
                                const Json &program_packet) {
@@ -70,7 +77,7 @@ void AuditLog::record_boundary(ApplicationRecordId identity, const Json &context
       RetainedEvent{{},
                     ApplicationRecordEvent{program_identity,
                                            ApplicationChannel::program,
-                                           bytes(unwrap(dump_json(program_packet)))}}};
+                                           unwrap(encode_packet(program_packet))}}};
   (void)unwrap(root_.append(root_.cursor(), {}, events));
 }
 void AuditLog::retain_program(std::string_view source,
@@ -90,10 +97,10 @@ void AuditLog::retain_program(std::string_view source,
   const std::array<RetainedEvent, 2> events{
       RetainedEvent{{SourceReference{cursor.journal, cursor.sequence + 1}},
                     ApplicationRecordEvent{original, ApplicationChannel::log,
-                                           bytes(unwrap(dump_json(capture)))}},
+                                           unwrap(encode_packet(capture))}},
       RetainedEvent{{},
                     ApplicationRecordEvent{activation, ApplicationChannel::program,
-                                           bytes(unwrap(dump_json(effective)))}}};
+                                           unwrap(encode_packet(effective))}}};
   (void)unwrap(root_.append(cursor, std::span{&raw, 1}, events));
 }
 std::string AuditLog::original(OriginalCapture capture) {
@@ -133,7 +140,7 @@ std::string AuditLog::original(OriginalCapture capture) {
   const auto source = std::as_bytes(std::span{raw.data(), raw.size()});
   RetainedEvent event{{reference},
                       ApplicationRecordEvent{identity, ApplicationChannel::log,
-                                             bytes(unwrap(dump_json(packet)))}};
+                                             unwrap(encode_packet(packet))}};
   (void)unwrap(root_.append(cursor, std::span{&source, 1}, std::span{&event, 1}));
   return hex_identity(identity.bytes());
 }
@@ -194,7 +201,7 @@ void visit_context_records(const RetainedState::FactHistory &history, Visitor vi
     for (const auto &fact : page)
       if (const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
           record && record->channel == ApplicationChannel::context)
-        visitor(unwrap(parse_json(read_text(record->payload))));
+        visitor(unwrap(read_packet(record->payload)));
   }
 }
 } // namespace
@@ -334,7 +341,7 @@ std::optional<Json> ContextStore::original_entry(std::string_view id) const {
   if (!record || record->identity != identity.value() ||
       record->channel != ApplicationChannel::context)
     return std::nullopt;
-  const auto packet = unwrap(parse_json(read_text(record->payload)));
+  const auto packet = unwrap(read_packet(record->payload));
   if (!accepted(packet))
     return std::nullopt;
   const auto *fresh = packet.find("originals");

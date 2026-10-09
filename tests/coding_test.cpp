@@ -261,7 +261,7 @@ void atomic_admission_test(const std::string &path, int mode) {
         if (!prior)
           throw Error{ErrorCode::corrupt};
         const auto input = unwrap(dump_json(args));
-        const auto metadata = unwrap(dump_json(Json::object(
+        const auto metadata = unwrap(encode_packet(Json::object(
             {{"operation", Json{"write_file"}},
              {"input_binding", Json{"invocation-v1"}},
              {"invocation", Json{hex_identity(id<InvocationId>(52).bytes())}},
@@ -286,8 +286,8 @@ void atomic_admission_test(const std::string &path, int mode) {
                                                               id<DecisionId>(51),
                                                               prior->definition,
                                                               {in.begin(), in.end()}}});
-        // Leave room for decision and invocation, but not the complete
-        // three-record admission batch. No effect may start with a partial batch.
+        // Leave only the untimed decision/invocation footprint, less than the
+        // complete timed three-record batch. No effect may start with a partial batch.
         const auto room =
             2 * (56 + journal_frame_header_size) + decision + invocation;
         if (!usage.remaining_bytes() || *usage.remaining_bytes() <= room)
@@ -425,9 +425,7 @@ void retained_output_test(const std::string &path) {
       const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
       if (!record || record->channel != ApplicationChannel::log)
         continue;
-      const auto packet = unwrap(parse_json(
-          std::string_view{reinterpret_cast<const char *>(record->payload.data()),
-                           record->payload.size()}));
+      const auto packet = unwrap(read_packet(record->payload));
       if (string_field(packet, "label") == "process.output")
         timed_reference = string_field(field(packet, "metadata"), "attempt");
     }
@@ -660,9 +658,7 @@ void retry_tests(const std::string &path) {
       const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
       if (!record || record->channel != ApplicationChannel::log)
         continue;
-      const auto original = unwrap(parse_json(
-          std::string_view{reinterpret_cast<const char *>(record->payload.data()),
-                           record->payload.size()}));
+      const auto original = unwrap(read_packet(record->payload));
       if (!original.find("label"))
         continue;
       if (string_field(original, "label") == "provider.request") {
@@ -834,8 +830,7 @@ void workflow_capacity_test(const std::string &path, bool records) {
         o->disposition == AttemptDisposition::unknown)
       ++unknown;
     if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
-      const auto packet = unwrap(parse_json(std::string_view{
-          reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
+      const auto packet = unwrap(read_packet(a->payload));
       if (const auto *label = packet.find("label")) {
         if (*label == Json{"provider.stream"}) {
           const auto bytes = diagnostic_bytes(*root, packet);
@@ -903,8 +898,7 @@ void workflow_process_capacity_test(const std::string &path) {
       unknown = true;
     if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         a && a->channel == ApplicationChannel::log) {
-      const auto p = unwrap(parse_json(std::string_view{
-          reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
+      const auto p = unwrap(read_packet(a->payload));
       if (field(p, "label") == Json{"process.output"})
         for (const auto ref : fact.event.dependencies) {
           const auto raw = unwrap(root->source(ref));
@@ -1157,7 +1151,7 @@ int main(int argc, char **argv) {
       for (std::size_t i = before; i < facts.size(); ++i) {
         const auto *record = std::get_if<ApplicationRecordEvent>(&facts[i].event.body);
         if (!record || record->channel != ApplicationChannel::log) continue;
-        const auto packet = unwrap(parse_json(read_text(record->payload)));
+        const auto packet = unwrap(read_packet(record->payload));
         if (string_field(packet, "label") != "provider.stream") continue;
         ++blocks;
         if (!facts[i].event.dependencies.empty())
@@ -1243,8 +1237,7 @@ int main(int argc, char **argv) {
     bool print_retained = false;
     for (const auto &fact : root->committed_facts()) {
       if (const auto *a = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
-        const auto packet = unwrap(parse_json(std::string_view{
-            reinterpret_cast<const char *>(a->payload.data()), a->payload.size()}));
+        const auto packet = unwrap(read_packet(a->payload));
         if (const auto *label = packet.find("label");
             label && std::holds_alternative<std::string>(label->value()) &&
             label->string() == "display") {

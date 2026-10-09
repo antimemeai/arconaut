@@ -134,7 +134,7 @@ int main() {
               std::get_if<AttemptObservationEvent>(&fact.event.body))
         saw_unknown |= observation->disposition == AttemptDisposition::unknown;
       if (const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body)) {
-        const auto packet = unwrap(parse_json(read_text(record->payload)));
+        const auto packet = unwrap(read_packet(record->payload));
         if (const auto *label = packet.find("label"))
           saw_raw |= label->string() == "colleague.raw";
       }

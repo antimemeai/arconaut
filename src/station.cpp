@@ -21,7 +21,7 @@ StationStore::StationStore(AuditLog &log) : log_(log) {
     const auto *r = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (!r || r->channel != ApplicationChannel::program)
       continue;
-    auto p = unwrap(parse_json(read_text(r->payload)));
+    auto p = unwrap(read_packet(r->payload));
     const auto *l = p.find("label");
     if (!l || !std::holds_alternative<std::string>(l->value()))
       continue;

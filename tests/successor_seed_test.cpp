@@ -103,8 +103,7 @@ int main() {
       check(context.items() == expected);
       const auto &event =
           std::get<ApplicationRecordEvent>(root->committed_facts()[1].event.body);
-      auto packet = unwrap(parse_json(std::string_view{
-          reinterpret_cast<const char *>(event.payload.data()), event.payload.size()}));
+      auto packet = unwrap(read_packet(event.payload));
       check(field(field(packet, "lineage"), "source") == field(original, "source"));
       const auto &mapping = field(field(packet, "lineage"), "source_entries").array();
       const auto &fresh = field(packet, "originals").array();

@@ -1967,7 +1967,7 @@ Json::Array RetainedState::current_programs() const {
     const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
     if (!record || record->channel != ApplicationChannel::program)
       continue;
-    auto packet = unwrap(parse_json(read_text(record->payload)));
+    auto packet = unwrap(read_packet(record->payload));
     const auto *label = packet.find("label");
     if (!label || !std::holds_alternative<std::string>(label->value()))
       continue;

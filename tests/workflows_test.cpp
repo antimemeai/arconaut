@@ -283,9 +283,7 @@ int main() {
   for (const auto &fact : root->committed_facts())
     if (const auto *event = std::get_if<ApplicationRecordEvent>(&fact.event.body);
         event && event->channel == ApplicationChannel::program) {
-      auto j = unwrap(parse_json(
-          std::string_view{reinterpret_cast<const char *>(event->payload.data()),
-                           event->payload.size()}));
+      auto j = unwrap(read_packet(event->payload));
       if (j.find("definition") && j.find("revision") && j.find("invocation"))
         source_retained = true;
     }

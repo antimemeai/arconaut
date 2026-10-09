@@ -12,7 +12,7 @@ std::filesystem::path default_session_directory(const std::filesystem::path &hom
 }
 namespace {
 Json packet(const ApplicationRecordEvent &record) {
-  return unwrap(parse_json(read_text(record.payload)));
+  return unwrap(read_packet(record.payload));
 }
 bool labelled(const Json &value, std::string_view label) {
   const auto *name = value.find("label");

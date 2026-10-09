@@ -49,7 +49,7 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           // demand.
           if (e.payload.size() <= 65536 && (e.channel == ApplicationChannel::log ||
                                             e.channel == ApplicationChannel::program)) {
-            const auto p = unwrap(parse_json(read_text(e.payload)));
+            const auto p = unwrap(read_packet(e.payload));
             if (const auto *t = p.find("time"))
               add("time", *t);
             if (const auto *variable = p.find("variable");
@@ -94,7 +94,7 @@ Json summary(const RetainedFact &fact, std::size_t i) {
           identity("revision", e.context);
           add("payload_bytes", number(e.continuation.size()));
           if (e.continuation.size() <= 4096) {
-            const auto packet = parse_json(read_text(e.continuation));
+            const auto packet = read_packet(e.continuation);
             if (packet.has_value())
               if (const auto *t = packet.value().find("time"))
                 add("time", *t);
@@ -122,6 +122,12 @@ Json summary(const RetainedFact &fact, std::size_t i) {
                                               "cancellation", "unknown"};
           add("outcome", Json{outcomes[static_cast<std::size_t>(e.disposition)]});
           add("payload_bytes", number(e.observation.size()));
+          if (e.observation.size() <= 4096) {
+            const auto packet = read_packet(e.observation);
+            if (packet.has_value())
+              for (const auto key : {"result_id", "result_record"})
+                if (const auto *v = packet.value().find(key)) add(key, *v);
+          }
         } else if constexpr (std::is_same_v<T, AttemptOpenEvent> ||
                              std::is_same_v<T, AdapterReceiptEvent>) {
           identity("attempt", e.attempt);
@@ -288,6 +294,31 @@ Json AuditLog::inspect(const Json &q) {
     auto result = summary(fact, i);
     std::vector<std::byte> original;
     auto raw = payload(fact.event.body);
+    if (const auto *requested = q.find("packet")) {
+      const auto *decode = std::get_if<bool>(&requested->value());
+      if (!decode)
+        throw Error{ErrorCode::invalid_range};
+      if (*decode) {
+        const auto *application = std::get_if<ApplicationRecordEvent>(&fact.event.body);
+        if ((!application && !std::holds_alternative<DecisionEvent>(fact.event.body) &&
+             !std::holds_alternative<AttemptObservationEvent>(fact.event.body)) ||
+            (application && application->channel == ApplicationChannel::context) ||
+            q.find("source") || q.find("diagnostic") || q.find("offset"))
+          throw Error{ErrorCode::invalid_range};
+        if (raw.size() > limit)
+          throw Error{ErrorCode::capacity};
+        JsonLimits limits;
+        limits.bytes = limit;
+        auto packet = unwrap(decode_packet(raw, limits));
+        const auto expanded = unwrap(dump_json(packet, limits));
+        result.object().emplace_back("end", number(end));
+        result.object().emplace_back("total_bytes", number(raw.size()));
+        result.object().emplace_back("decoded_bytes", number(expanded.size()));
+        result.object().emplace_back("encoding", Json{"decoded-metadata"});
+        result.object().emplace_back("packet", std::move(packet));
+        return result;
+      }
+    }
     if (q.find("source")) {
       const auto s = index(q, "source", 0);
       if (s >= fact.event.dependencies.size())
@@ -299,7 +330,7 @@ Json AuditLog::inspect(const Json &q) {
       const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
       if (!record || record->channel != ApplicationChannel::log)
         throw Error{ErrorCode::invalid_range};
-      const auto packet = unwrap(parse_json(read_text(record->payload)));
+      const auto packet = unwrap(read_packet(record->payload));
       if (string_field(packet, "label") != "provider.stream")
         throw Error{ErrorCode::invalid_range};
       const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
@@ -330,6 +361,8 @@ Json AuditLog::inspect(const Json &q) {
     result.object().emplace_back("hex", Json{std::move(hex)});
     return result;
   }
+  if (q.find("packet"))
+    throw Error{ErrorCode::invalid_range};
   const auto cursor = std::min(index(q, "cursor", 0), end);
   const auto next = cursor + std::min(count, end - cursor);
   Json::Array rows;

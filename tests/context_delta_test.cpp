@@ -44,7 +44,7 @@ int main() {
           const auto fact = unwrap(root->fact(j));
           const auto *record = std::get_if<ApplicationRecordEvent>(&fact.event.body);
           if (!record || record->channel != ApplicationChannel::context) continue;
-          const auto packet = unwrap(parse_json(read_text(record->payload)));
+          const auto packet = unwrap(read_packet(record->payload));
           CHECK(string_field(packet, "format") == "append-delta-v1" && !packet.find("entries"));
           CHECK(field(packet, "originals").array().size() == 1);
           current_bytes = record->payload.size();

@@ -5611,3 +5611,50 @@ broader clock alignment, commit metadata-time history lane, interval/outcome
 comparisons, reported usage/model/parent capture and integrated evaluations remain
 tracked. Save Beads backup and push the candidate branch, without implied main
 integration. Operator art files remain untracked and untouched.
+
+
+## 2026-10-09 — Compact trajectory metadata and single-copy results
+
+Operator requests tighter trajectory persistence because JSON costs at scale.
+Read current retained codecs, all application-packet readers, operation admission
+and settlement, original capture, context projections, saved program recovery
+and audit inspection. Written75min unit allowance, at most20min for two-layer
+hardening, in TRAJECTORIES. No dependency adopted and no historical data rewrite.
+
+Owned BBM1 packet codec replaces new log/program metadata and native operation
+continuation JSON. Stable dictionary IDs encode repeated names/values, identity
+strings become raw16 bytes, integer lengths/counts/times use canonical varints,
+and tagged extensible values preserve exact decimal/exponent representations.
+Bound bytes/nodes/depth and reject unsupported versions, malformed/truncated tags,
+unknown IDs, noncanonical/overflowing lengths and trailing bytes. Legacy JSON
+packets remain readable. Internal/tool JSON interfaces remain; exact upstream
+and context bytes are preserved in their owning formats. Updated every affected
+native metadata reader, including startup inspection and saved-program recovery.
+Optional audit_inspect record+packet mode returns bounded decoded JSON metadata;
+raw source byte inspection remains separate.
+
+Source review found another direct scaling cost: full operation results were
+copied into terminal attempts after original capture already retained them.
+Native terminal settlement now stores exact result record/identity locators;
+a refused result capture retains the bounded error instead. Disposition remains
+native typed state, independent of successful result capture. Large read-file
+fixture after reopen checks result locator/identity, exact source and one source
+copy:262158 result bytes,29 settlement bytes. Doctrine metadata fixture:
+524 JSON bytes versus162 BBM1 bytes; no throughput or general reduction claim.
+
+Direct codec byte-layout/lexical/limits/malformed oracles passed. Mixed legacy/new
+journal append/reopen preserves values and exact NUL-containing original source.
+Existing Mac debug affected paths passed, with the admission byte-refusal oracle
+updated to use compact metadata costs; smaller records had made its old JSON-based
+allowance large enough to admit. Its effect/atomicity assertions remain unchanged.
+Release and Linux scoped recheck records follow below. No provider traffic,
+startup trial, mutation campaign or extra assurance layer. Operator art untouched.
+
+
+Compact-unit final recheck:20 selected cases passed on Mac release and Linux
+debug; affected debug cases passed after remediation. Release capture
+context/compact-release-checks.log; Linux context/linux/run-6xvy3zgj. Selected
+codec/observations/trajectory/audit/coding/request-storage/context/station/session/
+program/colleague/participant/workflow/successor/saved-state/task paths exercise
+actual metadata consumers and recovery. Closed nls.7, backed up Beads, commit/push
+candidate to trajectories. Main integration remains an explicit subsequent action.

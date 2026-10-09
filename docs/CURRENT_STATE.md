@@ -115,3 +115,14 @@ The instruction representation is an observation proxy, with no doctrine registr
 or editing/activation API. Reported usage/model/parent-link audit review, integrated
 evaluation runs, measured clock alignment and richer inspect UI remain open.
 See [design and usage](TRAJECTORIES.md).
+
+
+The candidate now writes trajectory log/program metadata and native operation
+continuations in owned versioned BBM1 binary packets. Recurring fields use
+stable dictionary IDs; identities are16 raw bytes; counts/timestamps are integer
+varints. Terminal attempts reference their retained result instead of storing a
+second complete result. Existing JSON metadata remains readable; no history is
+rewritten. Context documents and exact original request/output bytes keep their
+current formats. Model/operator query results remain JSON, including optional
+bounded decoded metadata through audit_inspect. See the wire layout in
+[trajectory design](TRAJECTORIES.md).

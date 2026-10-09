@@ -1,5 +1,6 @@
 #pragma once
 #include "blackbird/json.hpp"
+#include "blackbird/packet.hpp"
 #include "blackbird/retained_state.hpp"
 #include <functional>
 #include <map>
@@ -15,6 +16,7 @@ inline void unwrap(Result<void> result) {
     throw result.error();
 }
 std::string read_text(const ImmutableBytes &bytes);
+Result<Json> read_packet(const ImmutableBytes &bytes, JsonLimits limits = {});
 std::string hex_identity(const IdentityBytes &bytes);
 const Json &field(const Json &value, std::string_view name);
 const std::string &string_field(const Json &value, std::string_view name);

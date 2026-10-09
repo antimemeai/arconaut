@@ -93,9 +93,7 @@ int main() {
       store.restart("Retain this note");
       const auto &fact = root->committed_facts().back();
       const auto &record = std::get<ApplicationRecordEvent>(fact.event.body);
-      const auto packet = unwrap(parse_json(
-          std::string_view{reinterpret_cast<const char *>(record.payload.data()),
-                           record.payload.size()}));
+      const auto packet = unwrap(read_packet(record.payload));
       const auto origin = "rrc:" + string_field(packet, "token");
       // Simulate a crash after the context append, before consuming the intent.
       context.append({Json::object({{"role", Json{"user"}},
