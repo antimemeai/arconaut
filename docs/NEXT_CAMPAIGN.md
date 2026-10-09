@@ -175,3 +175,15 @@ participant call may establish the usable local loop without pretending this is
 heterogeneous collaboration. If that account also fails, retain the attempt and
 specific outcome and leave the live demonstration outstanding; finish independent
 product deliveries rather than repeating account probes.
+
+## Delivered state
+
+Orders1 and3 delivered. Order2's common surface delivered; its one live Claude
+call timed out unknown, so that live heterogeneous outcome remains open. Order4
+used a live OpenAI participant and main model to repair tiny viewport rendering;
+physical checks, managed compaction/original repair and actual release restart
+preserved working state. The operator's process was not interrupted.
+
+Read [campaign results](../papers/2026-10-08-collaboration-campaign.md) for actual
+checks, calls, interventions and limits. No further provider probe or broader
+comparison is implied. The historical Giga remains paused.

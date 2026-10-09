@@ -195,6 +195,8 @@ The basic controls are intentionally ordinary:
 | Ctrl-Q | Exit with drafts and queued work preserved as recoverable drafts. |
 | `/exit` or `/quit` | Exit, stopping active work first. |
 | `/session`, `/stats`, `/context` | Inspect settings, sizes, or current context. |
+| `/name`, `/sessions`, `/resume DIRECTORY` | Name, select and return to saved working state. |
+| `/runs`, `/run`, `/send`, `/await`, `/join`, `/stop` | Observe and control bounded selected-context participants. |
 | `/new` | Create and enter a fresh saved session beside the current one, keeping model, effort and workflow settings. Waits behind active work; old context, tasks and drafts remain saved. |
 | `/workflow FILE` | Select the turn program. |
 | `/restart NOTE` | Arrange restart/resume/continue. |
@@ -241,9 +243,9 @@ The [pilot report](papers/2026-10-06-useful-work-pilot.md) retains measured outc
 
 ## Beyond one seat
 
-Blackbird is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The main coding connection is OpenAI. The separate native `blackbird-colleague` library/CLI supports bounded selected-context OpenAI/Claude calls; useful live heterogeneous collaboration and a shared model/Lua/operator participant surface remain unfinished. An integrated provider fleet has not shipped.
+Blackbird is designed toward heterogeneous colleagues: OpenAI, Kimi, MiMo, Claude, Grok, and whatever future providers make possible. The desired limit is upstream capability and explicitly configured operating policy. Cross-provider delegation and model limits belong in that design. The main coding connection is OpenAI. The native `blackbird-colleague` library/CLI and shared model/Lua/operator surface support bounded selected-context OpenAI/Claude calls. Native participants provide concurrent requests, addressed direction at request boundaries, observe/await/join, explicit cancellation requests and task badges. A live OpenAI colleague/main-model repair worked; the single Claude trial timed out unknown. Workers remain context-only; useful live heterogeneous coding and remote tool-using outposts remain unfinished. See the [campaign results](papers/2026-10-08-collaboration-campaign.md).
 
-Two operating styles are also on the road ahead. **Campaign mode** is the operator in the seat, steering sustained work. **Station mode** is an agent listening for an explicit feed or trigger and acting in the background. Campaigns have run with Lua and external supervision. An opt-in native local-file station is delivered, with retained event admission/deduplication and boundary inspect/steer/pause/resume/stop controls. General trigger connectors, live TUI attachment and asynchronous participants remain future work.
+Two operating styles are also on the road ahead. **Campaign mode** is the operator in the seat, steering sustained work. **Station mode** is an agent listening for an explicit feed or trigger and acting in the background. Campaigns have run with Lua and external supervision. An opt-in native local-file station is delivered, with retained event admission/deduplication and boundary inspect/steer/pause/resume/stop controls. Bounded local asynchronous participants are delivered separately. General trigger connectors and live TUI attachment remain future work.
 
 Common integrations should arrive as optional packages: GitHub, Linear, Slack, Discord, Hugging Face, and others according to actual need. A minimal installation should stay small. The proposed HUD is a thematic feed relevant to a project set: security advisories, research papers, financial events, or other selected sources. Receiving an event, displaying it, including it in context, and acting on it are separate operations.
 

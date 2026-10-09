@@ -1528,10 +1528,11 @@ void TerminalUI::run(const std::function<void(std::string_view)> &perform,
       const auto width = static_cast<std::size_t>(columns > 1 ? columns - 1 : 1);
       if (rows < 8 || columns < 12) {
         const auto draft = terminal_lines("> " + composer.text(), width);
-        small_frame = "\x1b[?2026h\x1b[H\x1b[2K" + draft.back();
-        small_frame +=
-            "\x1b[1;" +
-            std::to_string(std::min(width, display_width(draft.back()) + 1)) + "H";
+        small_frame = "\x1b[?2026h\x1b[H\x1b[2J" + draft.back();
+        small_frame += "\x1b[1;" +
+                       std::to_string(std::min(static_cast<std::size_t>(columns),
+                                               display_width(draft.back()) + 1)) +
+                       "H";
         if (graphics_enabled && image_placement[2]) {
           small_frame += blackbird_graphics_erase();
           image_placement = {};

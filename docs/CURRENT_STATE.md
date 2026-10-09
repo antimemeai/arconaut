@@ -5,38 +5,40 @@ local branch and only branch on origin. All former candidate work is included or
 already delivered separately; five clean historical worktrees are detached with
 captures/build products preserved. [Exact dispositions](BRANCH_INVENTORY.md).
 
-Delivered product source includes tasks/subtasks, slash-menu styling and `/new`
-through `44defd7`. The installed Release/OFF interactive generation contains those
-changes. Consolidation changes refs/documentation, not the executable or running
-operator sessions. [Assessment](../papers/2026-10-08-consolidation-and-field-assessment.md)
-and [proposed next campaign](NEXT_CAMPAIGN.md) are discussion input; no autonomous
-campaign is launched.
+The authorized collaboration campaign has delivered named session picking,
+shared operator/model/Lua colleague calls and bounded native participants. A live
+OpenAI colleague found a real tiny-viewport defect and Blackbird's main model
+edited it; physical PTY checks, compaction/original repair and actual launcher
+restart preserved the task/result/context. The current Release/OFF launcher is
+updated; the running operator process is left alone. [Campaign results](../papers/2026-10-08-collaboration-campaign.md).
+The single live Claude request timed out at90seconds with unknown remote outcome;
+its successful non-OpenAI answer remains outstanding. The separate Giga stays paused.
 
 ## What is on master
 
 | Area | Current behavior | Material limit |
 | --- | --- | --- |
-| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new` creates a fresh saved session with inherited settings; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
+| Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new`, bounded retained names, searchable `/sessions` and `/resume`; independent task/draft/context restoration; restart/resume/continue. | OpenAI authentication still uses installed Codex scaffolding. |
 | Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Read selector now has one lines/bytes mode; malformed calls return correction guidance. Historical Lua ranges stay compatible. |
 | Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
 | Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Callable registry/configuration staging is delivered; combined atomic interrupt/apply and live native reload remain deferred. |
-| Orchestration | Lua sequence, branch, explicit safe retry and selected join. | Synchronous composition; no native parallel participant scheduler or general cancellation/messaging. |
+| Orchestration | Native bounded process-lifetime participants, configured concurrency, observe/await/join, addressed direction/dedup, cancellation requests and task badges; existing synchronous Lua composition remains. | Context-only workers; no arbitrary heap/child resurrection or cross-session participant custody. Unknown remote effects stay unknown. |
 | Station | Durable-before-dispatch local source admission, duplicates, boundary inspect/steer/pause/resume/stop. | Local-file source; unknown effects remain unknown; no live TUI attachment or crash-containment claim. |
 | Integrations/HUD | Opt-in trusted Lua packages; public GitHub releases and thematic text feed used in real work. | Feed display/context/action are separate; no broad integration catalog or graphical HUD. |
 | Multiplexing | Supported external phux launcher, actual TUI turn, detach/reattach and RRC checked. | Shell run probe timed out; native lifecycle projection is backlog. Relay TLS does not establish application E2EE. |
 | Decision models | Native Jev model tool, Lua `blackbird.decide`, `/decision JSON`; batched Choice/Score/Noul, lazy credentials, audited requests/results. | Jev only; workflows compose judgments and explicit retries. |
 | Callable workflows | Retained Lua definitions, configurable slash prefix/aliases and bare invocation, operator POWERWORDS and terminal colors; model/Lua discovery/invocation. | Sequential same-turn execution; no parallel or durable scheduler. |
 | Local efficiency | Saved current-state and suffix recovery for settled single-segment sessions; paged checked archive queries and original repair; checkpoint renewal prunes resident history. Earlier wrap-up heavy TUI first-frame p90 93.355ms in100runs; not a new task-pane-generation measurement. | Unresolved/station/pending-restart/multisegment states fall back to full recovery; catalog disk renewal still follows total key count. See [delivery](../papers/2026-10-08-saved-state-delivery.md) and [measurements](../papers/2026-10-08-startup-300-wrapup.md). |
-| Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. | One synchronous context-only call; broader provider coverage and useful live collaboration remain unfinished. |
+| Colleagues | `blackbird-colleague` CLI/library, selected-context OpenAI/Claude requests, explicit captures/results and fake-transport tests. `arco-colleague` remains compatible. Common model tool, Lua and operator calls plus native concurrent workers. | Main coding loop remains OpenAI; workers are context-only. OpenAI live review/edit demonstration worked; one Claude call timed out unknown. |
 | Tasks | Durable session tasks/subtasks, typed model/Lua read/edit, below-sprite right pane, blockers/counts/version guards and explicit runtime bindings. | One owner/session; no cross-session synchronization, dependency scheduler or subsubtasks. See [tasks](TASKS.md). |
 | Presentation | MIT, Patrick Beam copyright, GitHub About, supported phux link; BLACKBIRD wordmark and supplied SR-71 startup/status image. | Ghostty/Kitty image support; terminal fallback. |
 
 ## Remaining design and delivery
 
-The colleague source is merged; this pass checked adapter behavior with existing
-fixtures, without another live provider campaign. Prior review/auth timeouts are
-historical evidence, not an integration gate. Kimi/MiMo/Grok are not implemented
-by this colleague adapter.
+Common colleague and participant machinery is delivered. The one Claude source
+review timed out without an answer; no account refusal or zero usage is inferred,
+and no retry was made. Live heterogeneous usefulness remains `arconaut-3sm.2`.
+Kimi/MiMo/Grok and remote tool-using colleagues are not implemented by this adapter.
 
 G9 is a security discussion only. Its original OpenSSL/TLS proposal is not a
 selected multiplayer architecture. Transport, room/message security, peer identity,
@@ -74,8 +76,9 @@ measurement was excluded by the operator. Catalog disk renewal still follows tot
 key count; arbitrary historical compatibility and linked-session reopening are not
 implemented by this launcher.
 
-Selected affected Mac/Linux checks cover delivered task/session/native units;
-they are not a fresh whole-system qualification. Other backlog: useful
-heterogeneous colleagues, session picking, tiny-window correctness, asynchronous
-participant orchestration, complaint follow-through and multiplayer design. Giga and autonomous development
-remain stopped. No new campaign is launched by this stock report.
+Scoped Mac debug/release, ASan/UBSan and Linux debug checks cover the changed native,
+retained-state and real PTY paths. The tiny-window repair clears stale rows and
+uses physical cursor bounds;20x8/9x90 cases pass. Other work: the live heterogeneous
+outcome, complaint follow-through, remote tool-using outposts, station attachment,
+multiplayer and standalone login. The historical Giga remains paused. The current
+collaboration campaign is delivered except for its recorded Claude live outcome.

@@ -340,6 +340,8 @@ add_test(NAME participant_recovery COMMAND participant_recovery_test)
 set_tests_properties(participants PROPERTIES TIMEOUT 15)
 add_test(NAME participants_pty COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/check-participants-pty $<TARGET_FILE:blackbird>)
 set_tests_properties(participants_pty PROPERTIES TIMEOUT 35)
+add_test(NAME tiny_terminal_pty COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/check-tiny-terminal-pty $<TARGET_FILE:blackbird>)
+set_tests_properties(tiny_terminal_pty PROPERTIES TIMEOUT 25)
 set_tests_properties(colleague PROPERTIES TIMEOUT 15)
 
 add_custom_target(arco-colleague DEPENDS blackbird-colleague

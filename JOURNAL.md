@@ -5400,3 +5400,28 @@ reverses key order and confirms one accepted delivery, with changed text still
 rejected; release participants passes. The UI-enabled flag is captured by value
 for worker callbacks through exit. These are scoped control fixes within the
 existing hardening work, no new assurance layer.
+
+## 2026-10-08 — Use the native collaboration loop for a real repair
+
+Order 4's live OpenAI participant reviewed selected tiny-viewport source and found
+stale lower rows plus the cursor cap. The native main coding model received that
+retained finding and made two edit_file changes (one source lookup command, four
+provider requests,16.205s). I wrote a direct physical-size PTY case independently:
+the old release binary fails stale-row clearing; the repaired binary passes Mac
+debug/release and Linux debug20x8/9x90 cases. No original dimension-clamp defect was
+reintroduced, no general coding-uplift or whole-harness claim.
+
+Managed compaction summarized the selected colleague entry, then restored its
+exact original. The native task was explicitly marked done after checks. A note
+retained the prior Claude unknown timeout without replay. The actual release
+launcher rebuilt/restarted/continued the same retained session, with an assertion
+program confirming conversation, done plan, completed participant, repaired source
+original and unknown-effect note. No provider call on continuation; the operator's
+existing process was not interrupted. The release UI is atomically published for
+normal restart. Source/request/result/program artifacts stay in ignored context.
+
+Updated current-state/use notes and saved papers/2026-10-08-collaboration-campaign.md
+with exact cases, versions, reported usage and operator interventions. Orders1/3/4
+complete; order2's shared interface complete but one live Claude answer outstanding
+after90s timeout. No repeat probe, zero-usage assumption, certificate or fresh
+startup/stream-measurement campaign. Historical Giga remains paused.

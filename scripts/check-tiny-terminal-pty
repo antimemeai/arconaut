@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Actual small PTY geometry, VT cell content and cursor; no provider calls."""
+import errno, fcntl, importlib.util, os, pty, select, signal, struct
+import subprocess, sys, tempfile, termios, time
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('screen',Path(__file__).with_name('terminal-screen-oracle.py'))
+oracle=importlib.util.module_from_spec(spec);spec.loader.exec_module(oracle)
+executable=str(Path(sys.argv[1]).resolve())
+with tempfile.TemporaryDirectory(prefix='blackbird-tiny-') as work:
+    root=Path(work);workflow=root/'local.lua';workflow.write_text("print('LOCAL_ONLY')\n")
+    master,slave=pty.openpty();before=termios.tcgetattr(slave)
+    fcntl.ioctl(slave,termios.TIOCSWINSZ,struct.pack('HHHH',32,120,0,0))
+    screen=oracle.Screen()
+    child=subprocess.Popen([executable,'--session',str(root/'session'),'--workflow',str(workflow)],stdin=slave,stdout=slave,stderr=slave,start_new_session=True,env=dict(os.environ,BLACKBIRD_GRAPHICS='off'))
+    def wait(predicate,label,seconds=5):
+        deadline=time.monotonic()+seconds
+        while time.monotonic()<deadline:
+            if select.select([master],[],[],0.02)[0]:
+                try:screen.feed(os.read(master,65536))
+                except OSError as error:
+                    if error.errno!=errno.EIO:raise
+            if predicate():return
+        raise AssertionError(label+'\n'+screen.text())
+    def resize(rows,cols):
+        # Crop the oracle to the physical viewport before the new frame arrives.
+        screen.cells={key:value for key,value in screen.cells.items() if key[0]<rows and key[1]<cols}
+        screen.styles={key:value for key,value in screen.styles.items() if key[0]<rows and key[1]<cols}
+        fcntl.ioctl(slave,termios.TIOCSWINSZ,struct.pack('HHHH',rows,cols,0,0));os.kill(child.pid,signal.SIGWINCH)
+    try:
+        wait(lambda:'Workflow reloads' in screen.text(),'initial frame')
+        os.write(master,b"/lua print('STALE_ONE\\nSTALE_TWO\\nSTALE_THREE')\r")
+        wait(lambda:'Turn completed' in screen.text() and 'STALE_THREE' in screen.text(),'populated normal frame')
+        os.write(master,'abc界'.encode())
+        wait(lambda:'> abc界' in screen.text(),'wide draft')
+        resize(20,8)
+        wait(lambda:screen.row==0 and '> abc界' in screen.text().splitlines()[0],'small frame emitted')
+        assert not any(row>0 and value.strip() for (row,col),value in screen.cells.items()), 'stale rows remain below small-frame composer'
+        assert screen.col==7, ('cursor must occupy physical column8',screen.col)
+        assert all(row<20 and col<8 for row,col in screen.cells), 'frame exceeds physical20x8'
+        os.write(master,b'\x15')
+        wait(lambda:screen.row==0 and screen.col==2 and screen.text().strip()=='>','small redraw clears draft and old wide cells')
+        resize(9,90)
+        wait(lambda:any(row>0 for row,col in screen.cells),'physical9x90 frame')
+        assert all(row<9 and col<90 for row,col in screen.cells),'fictitious minimum geometry'
+        assert screen.row<9 and screen.col<90,'cursor exceeds physical9x90'
+        resize(32,120)
+        wait(lambda:'Turn completed' in screen.text(),'normal frame restored')
+        os.write(master,b'/quit\r')
+        wait(lambda:child.poll() is not None,'normal exit')
+        assert child.returncode==0
+        after=termios.tcgetattr(slave);pending=getattr(termios,'PENDIN',0)
+        before[3]&=~pending;after[3]&=~pending
+        assert after==before,'terminal mode not restored'
+        print('Tiny terminal PTY: normal →20x8 →9x90 →normal, stale cells, wide cursor and clean exit pass')
+    finally:
+        if child.poll() is None:os.killpg(child.pid,signal.SIGKILL);child.wait(timeout=5)
+        os.close(master);os.close(slave)
