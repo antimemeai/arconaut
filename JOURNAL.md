@@ -5538,3 +5538,16 @@ fixes respected existing attempt invariants and JSON member-order independence.
 No startup trial, live provider probe, benchmark or certification. Campaign remains
 active: operational capture matrix, evaluations, Git checkpoint/explanation and
 integrated inspect/export are subsequent conceptual units.
+
+## 2026-10-09 — General checkpoints and central doctrine
+
+Operator clarifies that Git is one checkpoint target, not a commitment to a
+Git-shaped checkpoint model. Central doctrine will replace "system prompt" as
+the product concept and is another prospective target. Updated trajectory design,
+campaign/current-state notes and owning issue. Interface describes selected state,
+target/version and trajectory linkage with declared capture/inspect/compare/restore
+capabilities. Capture, activation, publication and restoration remain distinct;
+multi-target capture does not imply atomicity. Doctrine scope/composition/sharing
+and concrete target storage remain open. No runtime or capture format changed.
+Reopened the campaign epic, which Beads had auto-closed when its first child was
+closed before the remaining children were created; remaining work is still open.

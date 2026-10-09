@@ -35,6 +35,21 @@ The first useful interface should evaluate selected retained trajectories with a
 explicit bounded Lua evaluator, then compare two named runs. No automatic scoring,
 promotion, self-replay or model-judge ceremony.
 
+## Checkpoints are an interface
+
+Operator clarification: generalize Entire's checkpoint idea. Git is one target;
+central doctrine is another prospective target. The checkpoint interface must
+allow further targets without enumerating every variable or selecting their
+storage/restore mechanisms now.
+
+A checkpoint identifies selected state at a trajectory boundary: target identity,
+observed version, retained material or references, and capture outcome. Each target
+declares what it can capture, inspect, compare and, where supported, restore.
+Capture does not require a commit, publication, activation or restoration. A target
+may support inspection/comparison without restoration. A checkpoint containing
+several targets reports each one's result and consistency boundary; it does not
+pretend independently observed state was captured atomically.
+
 Git checkpoints join a trajectory prefix to repo/worktree identity, HEAD, index
 and observed file deltas. Exact mediated file writes can be causally attributed;
 an arbitrary exec or concurrent external edit cannot. Keep observed changes and
@@ -43,6 +58,18 @@ Initial checkpoints are local and explicit. Export is a derived, selected bundle
 with payload availability and exclusions listed; it never automatically pushes
 private audit/transcripts. Later restore must distinguish code restoration,
 conversation continuation and external-effect reconciliation.
+
+Introduce **central doctrine** as the product concept in place of "system prompt."
+Its content, revisions and effective use belong in retained work. Provider request
+roles/serialization remain adapter details. A doctrine checkpoint should identify
+the doctrine revision and connect it to its effective request representation;
+editing, activating and checkpointing doctrine are distinct acts. How doctrine is
+authored, scoped, composed and shared remains design work, rather than assumptions
+embedded in this checkpoint interface.
+
+Keep a shared checkpoint identity/trajectory link and target-specific capabilities.
+Git's commit/branch vocabulary must stay in its implementation. This is a design
+interface; no checkpoint target or central-doctrine runtime is implemented yet.
 
 ## Grounding and design review
 
@@ -91,8 +118,9 @@ explicit source drill-down. Later units own diagnostic/export and Git semantics.
    observations. Define a finite capture matrix before changing persistence.
 3. Retained evaluation definitions/runs, case results, comparison and annotation
    interfaces over explicit selected inputs. Exercise with useful real failures.
-4. Native Git checkpoint and change-explanation links, explicit local bundles,
-   then code/context restoration with concurrency and unknown effects exposed.
+4. General checkpoint interface and explanation links, with Git as one target
+   and central doctrine as another design case. Explicit local bundles; supported
+   restoration exposes concurrency and unknown effects per target.
 5. Integrated inspect/evaluate UI and optional interoperable trace export.
 
 First slice allowance45min including at most15min hardening/two layers. Direct
