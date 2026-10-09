@@ -5766,3 +5766,24 @@ complete source selection; its full output is retained in context/lint-clean-com
 Any remaining finding blocks that commit and must be corrected before push.
 Beads backup records the repaired lint unit and hook requirement. Operator art stays
 untracked and untouched; no main merge is implied.
+
+## 2026-10-09 — Steering pre-design investigation
+
+Operator requests a deep present-state investigation against Codex steering before
+design discussion. Traced terminal queue/worker, synchronous main and station paths,
+CodingEngine/runtime/context settlement, fixed provider request/HTTP streaming,
+Lua tool dispatch and participant directions. Current main input waits for the
+whole workflow; participant directions wait for a request; station direction applies
+at event boundaries. There is no active main-turn steering inbox or bidirectional
+provider transport. Cancellation loses Lua continuation despite retained context.
+
+Read current official Codex App Server and OpenAI steering/event documentation;
+studied retained Codex and oh-my-pi implementations/tests, with the Codex-derived
+openinterpreter source as corroboration. Read the mixed-initiative dialogue paper
+and relocated Rhizome representation research. Sources, revisions, consequences,
+direct experiment cases and open choices are in
+papers/2026-10-09-steering-pre-design.md. Public API live steering does not establish
+our subscription endpoint capability. No provider call, imported execution,
+production change, dependency selection or design adoption. Research is complete;
+runtime work awaits the requested discussion. Beads backed up. Commit/push this
+research through the installed clean-slate hook; operator art remains untouched.
