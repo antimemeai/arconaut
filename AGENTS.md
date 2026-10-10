@@ -167,3 +167,14 @@ lint for documentation alone. The installed hook still runs the full gate, so
 use a per-command hook override for a checked text-only commit. Keep the full
 source gate for source changes; do not rerun settled source checks for a
 fast-forward integration whose additional changes are only documentation.
+
+Operator2026-10-10 corrects instrumentation architecture: capture raw metric
+events and funnel them out of the main Blackbird processes as fast as physically
+possible, losslessly. A separate recorder preserves raw events on disk; a
+tertiary process performs all transformations. No writer-side duration calculation,
+filtering, sampling of emitted events, normalization, projection, aggregation,
+histogram, string formatting, compression or programmable metric processing.
+Blackbird owns minimal capture/transport only. Older systems literature and
+reference code precede transport design; OTel/Prometheus do not guide emission.
+Read docs/INSTRUMENTATION.md. Product implementation still awaits discussion and
+approval; instrumentation/eval scope is not expanded by this clarification.

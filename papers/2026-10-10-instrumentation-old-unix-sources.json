@@ -1,0 +1,34 @@
+[
+  {
+    "url": "https://www.tuhs.org/cgi-bin/utree.pl?file=V7/usr/sys/sys/pipe.c",
+    "identity": "Research Unix V7, 1979; TUHS historical path",
+    "original": "quarantine/instrumentation-2026-10-10/old-unix/originals/v7-pipe.html",
+    "sha256": "680b7482e908a34a85627763de034c2be88e4092bed69cfdf10a73fabe556d29",
+    "extracted": "quarantine/instrumentation-2026-10-10/old-unix/v7-pipe.c",
+    "extracted_sha256": "bd765f71d6bc75d1f08ed164b065e45d50cdc1062f383cbaf69fcae573d5a4e9"
+  },
+  {
+    "url": "https://www.tuhs.org/cgi-bin/utree.pl?file=4.3BSD-Reno/src/sys/kern/kern_ktrace.c",
+    "identity": "Berkeley kern_ktrace.c 7.9, June 28 1990; copyright 1989",
+    "original": "quarantine/instrumentation-2026-10-10/old-unix/originals/reno-kern_ktrace.html",
+    "sha256": "2ae1b6101f3caf4fa9b7ce1b97ecf5d0568d7334d2e039f79bd156a5e5bd3ed1",
+    "extracted": "quarantine/instrumentation-2026-10-10/old-unix/reno-kern_ktrace.c",
+    "extracted_sha256": "63e46327cb91c4c61034686ec0fdd10dd21cf33a93a494aa40c2028089149471"
+  },
+  {
+    "url": "https://www.tuhs.org/cgi-bin/utree.pl?file=4.3BSD-Reno/src/sys/sys/ktrace.h",
+    "identity": "Berkeley ktrace.h 7.3, June 28 1990; copyright 1988",
+    "original": "quarantine/instrumentation-2026-10-10/old-unix/originals/reno-ktrace-header.html",
+    "sha256": "9504b1875483490e99d590a71debe534771d528bada73b3e6f1f77b69eecde5d",
+    "extracted": "quarantine/instrumentation-2026-10-10/old-unix/reno-ktrace.h",
+    "extracted_sha256": "7ce2e5a55c7f2eb2ddb17688e47d5f9effaf766ada4ea39504d5d2be46581514"
+  },
+  {
+    "url": "https://www.tuhs.org/cgi-bin/utree.pl?file=4.3BSD-Reno/src/usr.bin/ktrace/kdump/kdump.c",
+    "identity": "Berkeley kdump.c 1.9, June 29 1990; copyright 1988",
+    "original": "quarantine/instrumentation-2026-10-10/old-unix/originals/reno-kdump-source.html",
+    "sha256": "6986c22bbf6206e859ac93be0277c1bc5fed765bc384e8dd7e6989a69ee65ac6",
+    "extracted": "quarantine/instrumentation-2026-10-10/old-unix/reno-kdump.c",
+    "extracted_sha256": "d02233602a7515bcbf4291a2149e31b473a2123bb7e005d7c3eb28e6b9b60184"
+  }
+]

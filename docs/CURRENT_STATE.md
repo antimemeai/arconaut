@@ -52,8 +52,12 @@ unapplied [draft overlay](../papers/2026-10-09-operational-instrumentation-draft
 Operator2026-10-10 rejected its design independently of the late lint finding:
 instrumentation means hooks/surfaces affording system/product metric emission;
 operations and evals consume them. Comprehensive source/reference/literature study
-now supports [the proposed per-surface design](INSTRUMENTATION.md), awaiting
-discussion and approval before implementation. nls.2 stays open; logical-clock
+located the source surfaces. The operator subsequently rejected producer-side
+transforms and the OTel/Prometheus architectural basis. The
+[revised direction](INSTRUMENTATION.md) is raw lossless emission out of Blackbird,
+a separate disk recorder and a tertiary transformer, grounded in older Unix,
+Multics, FIFO and logging work. Concrete transport/durability design and approval
+still precede implementation. nls.2 stays open; logical-clock
 system causality nls.9 and P0 audit completeness nls.10 are separate open work.
 The ordinary guarded checkpoint includes the independent bug fixes. No evaluator
 was selected or run. Runtime activation, multiplayer, steering and further

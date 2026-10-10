@@ -641,3 +641,45 @@ omission slides), exact source versions, hashes and restoration commands are in
 [the numeric literature report](papers/2026-10-10-instrumentation-literature.md).
 Existing harness source identities/restoration remain in the2026-09-30 known
 and discovered agent acquisition manifests; no duplicate archive was required.
+
+## Raw metric emission: older Unix references — 2026-10-10
+
+Study-only selected historical source under
+`quarantine/instrumentation-2026-10-10/old-unix/`: Research Unix V7 pipe.c (1979),
+Berkeley kern_ktrace.c7.9/ktrace.h7.3 (1990-06-28) and kdump.c1.9 (1990-06-29,
+1988 copyright). Preserve complete downloaded TUHS HTML responses in originals/;
+extract the single PRE block, decode HTML entities and retain the C source with
+its original notices. No full operating-system archive, nested Git metadata,
+third-party executable or dependency was acquired. A failed path response lives
+in ignored context, not the extracted reference set.
+
+[Exact URLs, original-response and extracted-source SHA-256 hashes](papers/2026-10-10-instrumentation-old-unix-sources.json)
+are tracked; ignored MANIFEST.json repeats them beside the references. Restore
+from the repository root with the following command; it verifies extracted
+source bytes because a future TUHS page wrapper may change. Original-response
+hashes preserve the exact acquisition identity.
+
+```sh
+python3 - <<'PYRESTORE'
+import hashlib, html, json, re, urllib.request
+from pathlib import Path
+for item in json.loads(Path('papers/2026-10-10-instrumentation-old-unix-sources.json').read_text()):
+    original = Path(item['original'])
+    extracted = Path(item['extracted'])
+    assert not original.exists() and not extracted.exists()
+    raw = urllib.request.urlopen(item['url'], timeout=30).read()
+    block = re.search(r'<pre>(.*?)</pre>', raw.decode('utf-8'), re.S)
+    assert block, item['url']
+    source = (html.unescape(block.group(1)).strip() + '\n').encode()
+    assert hashlib.sha256(source).hexdigest() == item['extracted_sha256']
+    original.parent.mkdir(parents=True, exist_ok=True)
+    original.write_bytes(raw)
+    extracted.write_bytes(source)
+PYRESTORE
+```
+
+Older literature, actual read sections, ignored PDF source/version/hash table,
+restoration and acquisition limits are in the
+[raw-emission study](papers/2026-10-10-instrumentation-raw-emission-study.md).
+No reference was built or executed. The previous producer-transform proposal is
+superseded, not approved by the existence of these references.

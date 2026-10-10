@@ -6086,3 +6086,31 @@ published ref identity. Preserve rejected instrumentation stash, user artwork,
 candidate refs and detached checkouts. Instrumentation implementation and evals
 remain awaiting operator discussion; nls.2/nls.9/nls.10 and historical05n residual
 stay open. Run supported Beads backup; snapshot unchanged.
+
+2026-10-10 operator rejects Prometheus/OTel as the instrumentation foundation and
+all transforms at or near the writer. The target is raw metric events moved out
+of Blackbird's main processes as fast as physically possible, losslessly; separate
+raw disk recorder; tertiary transforms only after preservation. Record this
+boundary in AGENTS, current state and nls.2. Archive the unapproved producer-
+transform proposal as historical input. Replace INSTRUMENTATION.md with the
+corrected boundary, raw per-surface mapping and concrete open transport/recorder
+questions. Retain the source census without importing its aggregation advice.
+
+Read older primary work: Saltzer/Gintell1969/1970 instrumentation, Unix1974/1978
+processes/pipes and V7 pipe.c, Lampson1983 background/batch/logging, Lamport1983
+FIFO publication/progress, Ousterhout1985 trace/analyzer separation via1993 reprint,
+Hagmann1987 group commit, and1988–1990 BSD ktrace/kdump source. Distinguish useful
+separation from overwriting buffers, omitted events, traced-path allocation/I/O,
+tracing shutdown on write failure and tolerated pre-flush crash loss. Preserve
+original downloaded source responses and hashes; no reference execution or
+adoption. PDFs/context/quarantine ignored. UCSD PDF contains Thoth plus only the
+opening Reed/Kanodia page; rename accurately and record full-paper access failure.
+Berkeley scan title OCR only; substantive tracing sections read in browser reprint.
+
+This is a research correction and initial mechanism sketch, not completed
+transport qualification or approved implementation. Compare raw OS stream with
+preallocated shared-memory handoff before selection; specify record ownership,
+full-buffer/backpressure, append/flush and process/host crash boundaries. No
+performance number or zero-instruction claim. No product source, benchmarks,
+evals or source gate. Relevant diff/link/source-identity checks and supported
+Beads backup precede a text-only commit/push under the operator's current rule.
