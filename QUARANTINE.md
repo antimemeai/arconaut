@@ -570,3 +570,74 @@ revision/SDK identity, SHA-256, retained-byte comparisons and restoration limits
 [restoration](papers/2026-10-09-command-jobs/PLATFORM_RESTORE.md). Five owned
 primitive probes ran separately on macOS 26.6 arm64 and Neuroses Linux 6.8/glibc
 2.39; these do not qualify Blackbird implementation.
+
+## Native instrumentation study — 2026-10-10
+
+Study-only snapshots under `quarantine/instrumentation-2026-10-10/`; source
+archives intact, extracted nested Git metadata and filesystem detritus removed.
+No library, SDK or source dependency adopted. See the local MANIFEST.md and
+`papers/2026-10-10-instrumentation-native-mechanisms.md` for use and exact source
+paths. Restoration downloads these pinned archives, checks SHA-256, extracts
+with Python3.14 tarfile data filtering, and renames NAME-COMMIT to NAME.
+
+| Reference | Commit | Archive URL | SHA-256 |
+| --- | --- | --- | --- |
+| lttng/lttng-ust | `5d11feb7dbd25862da163880f89acb6a6d88754c` | [archive](https://codeload.github.com/lttng/lttng-ust/tar.gz/5d11feb7dbd25862da163880f89acb6a6d88754c) | `c2d168abc8d8a2de917006ddc8c253ece97e03d5c77fd03a0d1966902bafd10e` |
+| google/perfetto | `977bd034d59e01de0d4d202a2431c36c6e0e5a74` | [archive](https://codeload.github.com/google/perfetto/tar.gz/977bd034d59e01de0d4d202a2431c36c6e0e5a74) | `a34689008bf4f7b5b426320f2d980f01d035e23c03b6ed187d61d6a424d3695b` |
+| wolfpld/tracy | `d55cee060180ad386aaa0b289880f5889cc5407d` | [archive](https://codeload.github.com/wolfpld/tracy/tar.gz/d55cee060180ad386aaa0b289880f5889cc5407d) | `2b793194bc4a27b4ef20e5dbfb5effff1c0521ff346a4869d0b5f87c240f14d2` |
+
+Numeric source snapshots remain under the same directory's `numeric/` subdirectory,
+with original tar.gz archives and extracted `NAME-COMMIT/` trees. Their local
+MANIFEST.md is supplemented here so an ordinary clone can restore them.
+
+| Reference | Commit | Archive URL | SHA-256 |
+| --- | --- | --- | --- |
+| HdrHistogram/HdrHistogram | `de84b0a7de2378abfc405da503bf4898e84ea98e` | [archive](https://codeload.github.com/HdrHistogram/HdrHistogram/tar.gz/de84b0a7de2378abfc405da503bf4898e84ea98e) | `9d2bb52abf1791e8bccd203b5e018c07c7da9043316911b100f1e7187d57ee10` |
+| HdrHistogram/HdrHistogram_c | `8885476fc83fa362fec2fb2b5e9cd9544514976e` | [archive](https://codeload.github.com/HdrHistogram/HdrHistogram_c/tar.gz/8885476fc83fa362fec2fb2b5e9cd9544514976e) | `5efe708b67065756aaca5940fd957538d986df60d3685e091895f7ae2f0abd19` |
+| giltene/wrk2 | `44a94c17d8e6a0bac8559b53da76848e430cb7a7` | [archive](https://codeload.github.com/giltene/wrk2/tar.gz/44a94c17d8e6a0bac8559b53da76848e430cb7a7) | `40fb577303ae83bfc211855880696b6e14daf1eaea2a684fe8cf2252c735b47e` |
+
+Restoration example for LTTng (substitute each table's URL, hash and tree name;
+numeric trees retain NAME-COMMIT rather than being renamed). Destination must
+be absent. The data extraction filter requires Python3.12+; ingestion used3.14.3.
+
+```sh
+mkdir -p quarantine/instrumentation-2026-10-10/archives
+curl -fL https://codeload.github.com/lttng/lttng-ust/tar.gz/5d11feb7dbd25862da163880f89acb6a6d88754c -o quarantine/instrumentation-2026-10-10/archives/lttng-ust-5d11feb7dbd25862da163880f89acb6a6d88754c.tar.gz
+python3 - <<'PY'
+from pathlib import Path
+import hashlib
+import shutil
+import tarfile
+base = Path('quarantine/instrumentation-2026-10-10')
+archive = base / 'archives/lttng-ust-5d11feb7dbd25862da163880f89acb6a6d88754c.tar.gz'
+assert hashlib.sha256(archive.read_bytes()).hexdigest() == 'c2d168abc8d8a2de917006ddc8c253ece97e03d5c77fd03a0d1966902bafd10e'
+extracted = base / 'lttng-ust-5d11feb7dbd25862da163880f89acb6a6d88754c'
+target = base / 'lttng-ust'
+assert not extracted.exists() and not target.exists()
+with tarfile.open(archive) as source:
+    source.extractall(base, filter='data')
+extracted.rename(target)
+for entry in sorted(target.rglob('*'), key=lambda p: len(p.parts), reverse=True):
+    if entry.name in {'.git', '.DS_Store', '__MACOSX'}:
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+PY
+```
+
+The DTrace2004 paper is ignored at
+`papers/instrumentation-2026-10-10/cantrill-dtrace-2004.pdf`, SHA-256
+`52fc73e3ef2acd778f86f067d59a2ddff3e80f76631f4bda8362990a50a59283`.
+Restore:
+
+```sh
+mkdir -p papers/instrumentation-2026-10-10
+curl -fL https://static.usenix.org/publications/library/proceedings/usenix04/tech/general/full_papers/cantrill/cantrill.pdf -o papers/instrumentation-2026-10-10/cantrill-dtrace-2004.pdf
+```
+
+Five additional acquired PDFs (Monarch, DDSketch, KLL, t-digest and coordinated
+omission slides), exact source versions, hashes and restoration commands are in
+[the numeric literature report](papers/2026-10-10-instrumentation-literature.md).
+Existing harness source identities/restoration remain in the2026-09-30 known
+and discovered agent acquisition manifests; no duplicate archive was required.

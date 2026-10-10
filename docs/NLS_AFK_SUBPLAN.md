@@ -1,5 +1,14 @@
 # AFK instrumentation and reliability unit — 2026-10-09
 
+Historical unit and results below. Operator2026-10-10 rejected the metadata
+overlay as an instrumentation design, independently of its final lint failure.
+Instrumentation means system-wide hooks/surfaces affording metric emission;
+operations and evals consume those metrics. The current
+[research-grounded proposal](INSTRUMENTATION.md) awaits discussion and approval
+before implementation. Audit completeness and logical-clock/system causality
+remain separate open work in arconaut-nls.10 and arconaut-nls.9. This old subplan
+does not authorize repairing or activating the preserved overlay.
+
 Operator attaches c54 and 05n to nls and authorizes instrumentation and bug work
 while AFK. Evaluation definitions, scoring, runs and comparisons wait for the
 operator discussion. Steering and further trajectory-view work remain deferred.

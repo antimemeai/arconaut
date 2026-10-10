@@ -46,12 +46,17 @@ Durable old command custody remains visible and fences restart/backstop across
 compact reopen. Historical bootstrap payloads remain unsupported and the exact
 original operator session/error is unidentified;05n stays open for that residual.
 
-Instrumentation implementation and direct/profile tests are preserved as an
+The old metadata implementation and direct/profile tests are preserved as an
 unapplied [draft overlay](../papers/2026-10-09-operational-instrumentation-draft.patch).
-The hardening bound ended with one new-test lint finding; nls.2 remains open.
-The ordinary guarded checkpoint includes the independent bug fixes, not that
-held implementation. No evaluator was selected or run. Main/runtime activation,
-multiplayer, steering and further trajectory views remain separate.
+Operator2026-10-10 rejected its design independently of the late lint finding:
+instrumentation means hooks/surfaces affording system/product metric emission;
+operations and evals consume them. Comprehensive source/reference/literature study
+now supports [the proposed per-surface design](INSTRUMENTATION.md), awaiting
+discussion and approval before implementation. nls.2 stays open; logical-clock
+system causality nls.9 and P0 audit completeness nls.10 are separate open work.
+The ordinary guarded checkpoint includes the independent bug fixes. No evaluator
+was selected or run. Main/runtime activation, multiplayer, steering and further
+trajectory views remain separate.
 [Disposition and evidence](NLS_AFK_SUBPLAN.md).
 
 ## What is on master

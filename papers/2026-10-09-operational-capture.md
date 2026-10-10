@@ -1,5 +1,31 @@
 # Operational capture matrix and implementation — 2026-10-09
 
+## Operator correction — 2026-10-10
+
+The operator rejected this draft's data model during the walkthrough. This is
+historical implementation work, not an approved instrumentation design. A lone
+parent-attempt overlay is not a selected causal model. Requests and responses
+must be distinct linked events; the main operation path already retains separate
+input/admission and result records, but complete boundary coverage needs review.
+
+Audit must record everything whether execution succeeds or fails. Counting lost
+bytes or marking an effect UNKNOWN does not satisfy that requirement. Existing
+participant queue refusal, post-dispatch result capture refusal, and expiring
+provider stream originals are concrete deficiencies. Track completeness repair
+as P0 arconaut-nls.10 and logical-clock audit/system upgrade as arconaut-nls.9.
+Both require source/literature-grounded design and direct failure-path oracles.
+arconaut-nls.2 now tracks redesign under these requirements. The earlier
+optional-originals/diagnostics framing does not authorize loss of required audit
+material. Evals remain deferred; no runtime source was changed by this correction.
+
+The operator subsequently clarified the intended instrumentation capability:
+hooks and surfaces throughout the system enabling system/product metrics
+emission for operations or evals. This draft narrowed that request to audit
+metadata and did not deliver the requested capability. nls.2 now owns the
+instrumentation hooks/surfaces design; nls.9 and nls.10 retain the separate
+logical-clock and audit-completeness work. Evaluator definitions and execution
+still await discussion. No hook schema, metric catalog or sink is selected here.
+
 This is nls.2's finite AFK unit. Evaluation semantics and execution wait for the
 operator. No SDK or second audit is adopted.
 

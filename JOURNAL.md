@@ -5986,3 +5986,75 @@ bug-only checkpoint. The source remains a command-jobs candidate, unmerged and
 inactive. Beads c54 closed, nls.2 reopened,05n open for historical residual; backup
 records actual dispositions. Evals, multiplayer, steering and further trajectory
 views remain deferred. docs/NLS_AFK_SUBPLAN.md records held scope and source limits.
+
+2026-10-10 operator rejects the instrumentation draft's data model and corrects
+the audit requirement: requests/responses are distinct events, logical clocks
+must support system causality, and all work is audited whether it succeeds or
+fails. Source inspection confirms separate main operation input/admission and
+result records, plus concrete completeness defects in participant queue refusal,
+post-dispatch result retention refusal and expiring provider stream originals.
+File arconaut-nls.9 for logical-clock audit/system upgrade and P0 arconaut-nls.10
+for complete capture across success/failure paths. Reframe nls.2 as redesign;
+record that bzn's earlier optional-originals/TTL scope cannot authorize loss of
+required audit evidence. The preserved draft remains unapplied and rejected as a
+design, not merely waiting on lint. No source changes, tests or evals in this
+discussion correction. Supported Beads backup follows.
+
+2026-10-10 further operator clarification: instrumentation means hooks/surfaces
+throughout the system affording system/product metric emission for operations or
+evals. The metadata draft missed that capability; reframing nls.2 solely around
+audit redesign also missed it. Correct nls.2 and the nls epic to that intended
+scope while retaining separate logical-clock nls.9 and audit-completeness nls.10
+work. Record candidate lifecycle coverage and design questions without selecting
+a hook schema, metric catalog, sink or evaluator. No implementation or tests;
+evaluation definitions/execution remain deferred. Run supported Beads backup.
+
+2026-10-10 10:28:52UTC operator 'send it' resumes corrected instrumentation work.
+Instrumentation emits metrics; operations/evals consume them. New unit owns
+system lifecycle hooks, native/Lua instruments and consumer surfaces rather than
+repairing the rejected metadata overlay. Whole90min through11:58:52UTC, max25min
+two-layer hardening,6build/2lint workers. OpenTelemetry metrics API, Prometheus
+instrumentation and quarantined NullClaw/OpenClaw ground the owned design in
+INSTRUMENTATION.md. No dependency, provider probe, evaluator or local mutant.
+
+2026-10-10 operator directs comprehensive research and proposed per-surface
+hook/emission design, with discussion and approval before implementation under
+BLACKBIRD.md. No source implementation was made. Retire premature documentation
+from docs to papers/2026-10-10-instrumentation-initial-sketch.md, explicitly
+unapproved. Literature, system and product surface frumentarii work in parallel
+as directed by the doctrine; root studies native probe/emission mechanisms and
+integrates the design. Original11:58:52UTC research allowance retained.
+
+2026-10-10 10:53UTC instrumentation research/proposal checkpoint. Three doctrine-
+directed research lanes plus root native mechanism study enumerate product,
+system and numeric surfaces. The integrated docs/INSTRUMENTATION.md maps all46
+current C++ source units, native helper/ownership boundaries and7 shipped Lua
+programs;60 detailed product rows and9 system domains remain in linked papers.
+Ten hook capabilities and eleven semantic capabilities are orthogonal to domains.
+Instrumentation emits; operations/evals consume. No source implementation,
+reference execution, dependency adoption, provider request or evaluation campaign.
+
+Read acquired primary literature and quarantined native/numeric/harness source,
+including actual hook and test call sites. Restore six new immutable source
+archives through QUARANTINE.md; retain archives intact, clean extracted metadata/
+detritus, ignore six acquired PDFs and parsed working text. Read Rhizome's rigor
+and oracle studies read-only at projects_old/inactive-2026-10-07/rhizome/papers:
+transfer explicit owner/borrow/publication contracts, checked numerical domains
+and independent model oracles; adopt no Rhizome dependency or scope decision.
+
+One system-source and one numeric/emission design review pressure-test the same
+proposal. Integrate actual corrections: unconditional custody of acquired evidence;
+handle/ByteBuffer surfaces; no retirement wait under producer-needed locks or
+inside the retiring invocation; sufficient mapping artifacts/inputs or retained
+produced outputs; emission expansion/cursor identity; numerical admission;
+histogram compatibility/rebinning/population; reported quantity revision/overlap.
+No review-of-review, implementation hardening or repeated qualification campaign.
+
+Proposal recommends typed release hooks, owned native instruments, independent
+readers and Lua custom measures; complete audit reuses authoritative custody.
+Concrete custody/crash/exhaustion, diagnostic selection, distributions and first
+consumer adapters remain operator discussion choices. Update current state and
+superseded AFK subplan so the rejected overlay cannot masquerade as pending lint
+repair. nls.2 stays open awaiting discussion/approval; nls.9/nls.10 separate open
+work. Supported Beads backup and required every-commit debug/C++/Lua hook precede
+the research checkpoint/push on command-jobs. Main/runtime remain unchanged.
