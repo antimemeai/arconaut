@@ -1,0 +1,79 @@
+// Research probe: raw retained bytes versus disk-sync/reclaim boundary.
+// Not the proposed audit format, recovery scanner, or production implementation.
+#include <atomic>
+#include <array>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <new>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/mman.h>
+#include <unistd.h>
+struct alignas(128) Cursor { std::atomic<unsigned long long> value{0}; };
+struct Control { Cursor p; Cursor d; };
+static_assert(std::atomic<unsigned long long>::is_always_lock_free);
+static constexpr std::size_t extent = 4096, length = 128;
+static void check(bool condition) { if (!condition) { std::perror("probe"); std::exit(2); } }
+static void sync_disk(int fd) {
+#ifdef __APPLE__
+  check(fcntl(fd, F_FULLFSYNC) == 0);
+#else
+  check(fsync(fd) == 0);
+#endif
+}
+static void checkpoint(const char *wanted, const char *stage) {
+  if (std::strcmp(wanted, stage)) return;
+  std::puts(stage); std::fflush(stdout); raise(SIGSTOP);
+}
+int main(int argc, char **argv) {
+  if (argc != 5) return 1;
+  const char *mode = argv[1], *name = argv[2], *file = argv[3], *stage = argv[4];
+  if (!std::strcmp(mode, "clean")) { shm_unlink(name); unlink(file); return 0; }
+  const bool create = !std::strcmp(mode, "prepare");
+  const int fd = shm_open(name, O_RDWR | (create ? O_CREAT | O_EXCL : 0), 0600);
+  check(fd >= 0); if (create) check(ftruncate(fd, extent) == 0);
+  void *mapping = mmap(nullptr, extent, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  check(mapping != MAP_FAILED); check(close(fd) == 0);
+  auto *control = static_cast<Control *>(mapping);
+  auto *raw = static_cast<unsigned char *>(mapping) + sizeof(Control);
+  if (create) { new (mapping) Control; std::memset(raw, 0, length); }
+  else if (!std::strcmp(mode, "publish")) {
+    for (std::size_t i = 0; i < length; ++i) raw[i] = static_cast<unsigned char>((i * 37 + 19) % 256);
+    control->p.value.store(length, std::memory_order_release);
+  } else if (!std::strcmp(mode, "inspect")) {
+    const auto p = control->p.value.load(std::memory_order_acquire);
+    const auto d = control->d.value.load(std::memory_order_acquire);
+    check(p == length && d <= p);
+    for (std::size_t i = 0; i < length; ++i) check(raw[i] == (i * 37 + 19) % 256);
+    std::printf("p=%llu d=%llu exact=1 address=%p\n", p, d, mapping);
+  } else if (!std::strcmp(mode, "record")) {
+    check(control->p.value.load(std::memory_order_acquire) == length);
+    std::array<unsigned char, length> private_bytes{};
+    std::memcpy(private_bytes.data(), raw, length);
+    checkpoint(stage, "drain");
+    const int out = open(file, O_WRONLY | O_CREAT | O_EXCL, 0600); check(out >= 0);
+    const auto amount = !std::strcmp(stage, "partial") ? length/2 : length;
+    check(write(out, private_bytes.data(), amount) == static_cast<ssize_t>(amount));
+    checkpoint(stage, "partial"); checkpoint(stage, "write");
+    sync_disk(out); checkpoint(stage, "sync");
+    control->d.value.store(length, std::memory_order_release);
+    checkpoint(stage, "ack"); check(close(out) == 0);
+  } else if (!std::strcmp(mode, "recover")) {
+    const int out = open(file, O_RDWR | O_CREAT, 0600); check(out >= 0);
+    const auto end = lseek(out, 0, SEEK_END); check(end >= 0);
+    if (end != 0 && end != static_cast<off_t>(length)) {
+      std::puts("partial-tail-preserved; no-ack"); close(out); munmap(mapping, extent); return 13;
+    }
+    if (end == 0) check(write(out, raw, length) == static_cast<ssize_t>(length));
+    else {
+      std::array<unsigned char, length> bytes{};
+      check(pread(out, bytes.data(), length, 0) == static_cast<ssize_t>(length));
+      check(std::memcmp(bytes.data(), raw, length) == 0);
+    }
+    sync_disk(out); // Visible bytes after a lost ack are resynced before reclaim.
+    control->d.value.store(length, std::memory_order_release); check(close(out) == 0);
+  } else return 1;
+  check(munmap(mapping, extent) == 0);
+}

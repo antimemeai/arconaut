@@ -1,0 +1,94 @@
+// Owned research probe, not Blackbird's proposed transport implementation.
+// Measures RAM publication/pipe handoff; neither mode performs durable recording.
+#include <atomic>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+#include <new>
+#include <vector>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+struct alignas(128) Cursor { std::atomic<unsigned long long> value{0}; };
+static_assert(std::atomic<unsigned long long>::is_always_lock_free);
+struct Control { Cursor published; Cursor reclaim; };
+
+// No clock, allocation, syscall, lock, RMW or interpretation in this primitive.
+extern "C" __attribute__((noinline)) bool publish_raw(
+    Control *control, unsigned char *data, unsigned long long capacity,
+    unsigned long long *position, const unsigned char *raw, unsigned long long size) {
+  const auto done = control->reclaim.value.load(std::memory_order_acquire);
+  if (size > capacity - (*position - done)) return false;
+  const auto offset = *position % capacity;
+  const auto first = size < capacity - offset ? size : capacity - offset;
+  std::memcpy(data + offset, raw, static_cast<std::size_t>(first));
+  if (first != size) std::memcpy(data, raw + first, static_cast<std::size_t>(size - first));
+  *position += size;
+  control->published.value.store(*position, std::memory_order_release);
+  return true;
+}
+
+static void exact_write(int fd, const unsigned char *data, std::size_t size) {
+  while (size) {
+    const auto n = ::write(fd, data, size);
+    if (n < 0 && errno == EINTR) continue;
+    if (n <= 0) { std::perror("write"); std::exit(2); }
+    data += n; size -= static_cast<std::size_t>(n);
+  }
+}
+static void exact_read(int fd, unsigned char *data, std::size_t size) {
+  while (size) {
+    const auto n = ::read(fd, data, size);
+    if (n < 0 && errno == EINTR) continue;
+    if (n <= 0) { std::perror("read"); std::exit(3); }
+    data += n; size -= static_cast<std::size_t>(n);
+  }
+}
+int main(int argc, char **argv) {
+  if (argc != 4) return 1;
+  const bool ring = std::strcmp(argv[1], "ring") == 0;
+  const auto size = static_cast<std::size_t>(std::strtoull(argv[2], nullptr, 10));
+  const auto count = static_cast<std::size_t>(std::strtoull(argv[3], nullptr, 10));
+  if (!size || size > 4096 || !count || count > 100000) return 1;
+  // Entire run fits, eliminating full-queue waits from ring producer measurement.
+  const auto capacity = size * (count + 1);
+  void *mapping = mmap(nullptr, sizeof(Control) + capacity, PROT_READ | PROT_WRITE,
+                       MAP_SHARED | MAP_ANON, -1, 0);
+  if (mapping == MAP_FAILED) return 2;
+  auto *control = new (mapping) Control;
+  auto *data = static_cast<unsigned char *>(mapping) + sizeof(Control);
+  std::memset(data, 0, capacity); // Fault pages before measured publication.
+  std::vector<unsigned char> raw(size, 0xa5), received(size);
+  int fds[2]; if (pipe(fds)) return 2;
+  const auto child = fork(); if (child < 0) return 2;
+  if (child == 0) {
+    close(fds[1]);
+    for (std::size_t i = 0; i < count; ++i) {
+      if (ring) {
+        const auto end = (i + 1) * size;
+        while (control->published.value.load(std::memory_order_acquire) < end) {}
+        std::memcpy(received.data(), data + i * size, size);
+      } else exact_read(fds[0], received.data(), size);
+      if (std::memcmp(raw.data(), received.data(), size)) _exit(4);
+    }
+    _exit(0);
+  }
+  close(fds[0]);
+  unsigned long long position = 0;
+  const auto start = std::chrono::steady_clock::now();
+  for (std::size_t i = 0; i < count; ++i) {
+    if (ring) {
+      if (!publish_raw(control, data, capacity, &position, raw.data(), size)) return 5;
+    } else exact_write(fds[1], raw.data(), size);
+  }
+  const auto end = std::chrono::steady_clock::now();
+  close(fds[1]);
+  int status{}; if (waitpid(child, &status, 0) != child || status != 0) return 6;
+  const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count();
+  std::printf("%s,%zu,%zu,%lld,%.2f\n", argv[1], size, count,
+              static_cast<long long>(ns), static_cast<double>(ns)/static_cast<double>(count));
+  munmap(mapping, sizeof(Control) + capacity);
+}

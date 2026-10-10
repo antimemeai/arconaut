@@ -1,0 +1,175 @@
+{
+  "date": "2026-10-10",
+  "scope": "Study-only separate raw recorder, no reference execution/build/dependency",
+  "references": [
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/daemontools-0.76.tar.gz",
+      "url": "https://cr.yp.to/daemontools/daemontools-0.76.tar.gz",
+      "pin": "0.76",
+      "bytes": 36975,
+      "sha256": "a55535012b2be7a52dcd9eccabb9a198b13be50d0384143bd3b32b8710df4c1f",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://cr.yp.to/daemontools/daemontools-0.76.tar.gz",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/daemontools-0.76.tar.gz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/man-pages-6.19.tar.xz",
+      "url": "https://cdn.kernel.org/pub/linux/docs/man-pages/man-pages-6.19.tar.xz",
+      "pin": "6.19",
+      "bytes": 1908136,
+      "sha256": "88a7c42ad2e03d8b96dc72d95e451f2d875ff0f43103a8eb8ac8242133bdcb05",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://cdn.kernel.org/pub/linux/docs/man-pages/man-pages-6.19.tar.xz",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/man-pages-6.19.tar.xz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/multilog.html",
+      "url": "https://cr.yp.to/daemontools/multilog.html",
+      "pin": null,
+      "bytes": 7186,
+      "sha256": "f812ce27c80e794c9992e7bd05055a701e4f960b06a27a74e9a03c64dc8762dd",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://cr.yp.to/daemontools/multilog.html",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/multilog.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/svscan-log-setup.html",
+      "url": "https://cr.yp.to/daemontools/faq/create.html",
+      "pin": null,
+      "bytes": 10558,
+      "sha256": "49755e3f6ac7e4dd0df1be0c9139cd981e292a1e079f36f3aa2ba15e0aa36b0c",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://cr.yp.to/daemontools/faq/create.html",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/svscan-log-setup.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/apple-fsync.html",
+      "url": "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html",
+      "pin": null,
+      "bytes": 15388,
+      "sha256": "6f2812ad0289bff54203ea3912be236d48f3aaf87db41bb3afe5af85aa7fd1f7",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/apple-fsync.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/apple-fcntl.html",
+      "url": "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html",
+      "pin": null,
+      "bytes": 32904,
+      "sha256": "7c307662cd92f2abbbcd47aa9a036e3d9d9ec88bbc9b177643dc331fd99d8577",
+      "restoration": [
+        "curl",
+        "--max-time",
+        "30",
+        "-fL",
+        "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html",
+        "-o",
+        "quarantine/raw-recorder-2026-10-10/apple-fcntl.html"
+      ],
+      "study_only": true
+    }
+  ],
+  "studied_source_hashes": [
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/multilog.c",
+      "sha256": "a90036de60095866c84f3ac43fff700e026f7fe61a7657b619b1a942bc62b533"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/svscan.c",
+      "sha256": "dd73013a6e7d179238e39250026b55b57b371230cc80182adc279bea0136e267"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/supervise.c",
+      "sha256": "819f78e3fd51c6501c5c06928ba8aa715857731a0cd4a93a1e38e0204efa43df"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/buffer.c",
+      "sha256": "5a3d298fd867fd03854d45145974b764944be4792683f75307d6a53e5c883b24"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/buffer_get.c",
+      "sha256": "52dd856a7823a76ea5ab16f42c3aefdbc46e1ed5520d8a4bdcb54f14cecf2266"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/admin/daemontools-0.76/src/buffer_put.c",
+      "sha256": "8e35e091df4f8946f5b9dbd0f4e46daedaf484253431c0f80cde9260e627e9ac"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/man-pages-6.19/man/man2/fsync.2",
+      "sha256": "1fca7b666dfb1bc4b840a5d1b36f010602abd2ad644b450c96cbaabf2461f5fb"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/man-pages-6.19/man/man2/write.2",
+      "sha256": "4bec21b46f12e201aa448bd637bdd2301f3a9a687462c21c6647e5a3c138e4d0"
+    },
+    {
+      "path": "quarantine/raw-recorder-2026-10-10/man-pages-6.19/man/man2/close.2",
+      "sha256": "e0c8f89f4339b77600a4da4466332de612fb4b54b98ff6051c469d1b7d62667e"
+    }
+  ],
+  "extraction": [
+    [
+      "tar",
+      "-xzf",
+      "quarantine/raw-recorder-2026-10-10/daemontools-0.76.tar.gz",
+      "-C",
+      "quarantine/raw-recorder-2026-10-10"
+    ],
+    [
+      "tar",
+      "-xf",
+      "quarantine/raw-recorder-2026-10-10/man-pages-6.19.tar.xz",
+      "-C",
+      "quarantine/raw-recorder-2026-10-10",
+      "man-pages-6.19/man/man2/fsync.2",
+      "man-pages-6.19/man/man2/write.2",
+      "man-pages-6.19/man/man2/close.2"
+    ]
+  ],
+  "failures": [
+    {
+      "url": "https://www.man7.org/linux/man-pages/man2/fsync.2.html",
+      "reason": "direct curl30/15sec timeout; official6.19 archive acquired instead; browser search supplied current page"
+    },
+    {
+      "url": "https://cr.yp.to/daemontools/multilog.html",
+      "reason": "web.open502; directcurl acquired intact author page"
+    }
+  ]
+}

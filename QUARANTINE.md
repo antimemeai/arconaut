@@ -683,3 +683,27 @@ restoration and acquisition limits are in the
 [raw-emission study](papers/2026-10-10-instrumentation-raw-emission-study.md).
 No reference was built or executed. The previous producer-transform proposal is
 superseded, not approved by the existence of these references.
+
+## Raw transport and recorder source study 2026-10-10
+
+`quarantine/raw-transport-2026-10-10/` preserves official qmail1.03,
+daemontools0.76, s6/skalibs2.15.1.0 archives, POSIX2024 shared-memory/I/O/send
+contracts, acquired C++ atomic rules, pinned Linux6.12 wait/pidfs source and
+Apple socket/kqueue documentation. [Acquisition manifest](papers/2026-10-10-raw-transport-acquisitions.json)
+records all16 original hashes, URLs and restoration arguments; the
+[transport study](papers/2026-10-10-raw-transport-design-study.md) records exact
+read source paths and extraction/restoration commands. qmail/daemontools paths
+were read end to end. s6 is comparison material, not an adopted supervisor.
+
+`quarantine/raw-recorder-2026-10-10/` independently preserves the daemontools
+archive, official Linux man-pages6.19 archive and acquired djb/Apple documentation.
+The [recorder manifest](papers/2026-10-10-raw-recorder-acquisitions.json) records
+six acquisitions, studied-source hashes and restoration; the
+[recorder study](papers/2026-10-10-raw-recorder-design-study.md) identifies the
+actual logging/flush/restart mechanisms and their loss boundaries. Existing
+SQLite/LevelDB remain comparison sources under their already recorded pins.
+
+Archives remain intact; extracted references contain no nested Git metadata or
+filesystem detritus. Nothing acquired was built, executed with operator accounts,
+or selected as a dependency. The isolated probes are owned research code,
+preserved with raw measurements in [their report](papers/2026-10-10-raw-emission-probes.md).

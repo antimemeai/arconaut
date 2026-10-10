@@ -54,10 +54,14 @@ instrumentation means hooks/surfaces affording system/product metric emission;
 operations and evals consume them. Comprehensive source/reference/literature study
 located the source surfaces. The operator subsequently rejected producer-side
 transforms and the OTel/Prometheus architectural basis. The
-[revised direction](INSTRUMENTATION.md) is raw lossless emission out of Blackbird,
-a separate disk recorder and a tertiary transformer, grounded in older Unix,
-Multics, FIFO and logging work. Concrete transport/durability design and approval
-still precede implementation. nls.2 stays open; logical-clock
+[concrete proposal](INSTRUMENTATION.md) specifies retained named-memory raw byte
+lanes, durable recorder acknowledgement, bidirectional wakeups, protected terminal
+and failure credit, a raw audit segment family and tertiary transforms. It includes
+the complete raw source census and direct implementation/test plan, older C/source
+studies, one design review with corrections, and small Mac/Linux producer/crash
+probes. These probes do not qualify a product implementation. Pending RAM at host
+failure remains an explicit losslessness-contract decision; no loss allowance is
+chosen. Discussion and approval still precede source changes. nls.2 stays open; logical-clock
 system causality nls.9 and P0 audit completeness nls.10 are separate open work.
 The ordinary guarded checkpoint includes the independent bug fixes. No evaluator
 was selected or run. Runtime activation, multiplayer, steering and further

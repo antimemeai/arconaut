@@ -6114,3 +6114,56 @@ full-buffer/backpressure, append/flush and process/host crash boundaries. No
 performance number or zero-instruction claim. No product source, benchmarks,
 evals or source gate. Relevant diff/link/source-identity checks and supported
 Beads backup precede a text-only commit/push under the operator's current rule.
+
+
+2026-10-10 operator "no time like the present" starts the concrete raw transport/
+recorder/design unit16:46:18UTC, bounded45min through17:31:18 including one
+adversarial design/plan attack and one finding-driven correction. BLACKBIRD's
+frumentarii workflow supplies two complete conceptual research lanes: transport
+and recorder. No new product implementation authorization; discussion/approval
+still applies. Study qmail1.03 and daemontools0.76 full producer/pipe/read-ahead/
+write/flush/supervise path, existing audit frame/write/recovery source, modern
+platform lifetime/sync/atomic/death contracts, and Rhizome C++ rigor findings
+read-only. Preserve archives and original docs, hashes/restoration in QUARANTINE
+and tracked acquisition manifests. No acquired source executed or dependency.
+
+Choose retained named shared-memory raw byte lanes: publication after complete
+copy, recorder disk acknowledgement before reuse. Derive actual native16-byte
+raw envelope, static site descriptions,32-byte disk origin prefix, exact per-lane
+recovery, raw audit segment/catalog integration, ready-prefix full sync and
+tertiary preserved-prefix consumption. Define bidirectional armed socket notices,
+retained launcher descriptors, death watches and explicit no-busy-poll rule.
+Separate physical reservation from held async terminal credit. No metrics
+transforms, dynamic registry, callback, genericValue construction or accumulator
+in the writer. CRC/framing are explicit recorder integrity work; actual copy/
+byte/RMW costs are described, not hidden as "zero moving parts".
+
+One adversarial review identifies source identity on disk, reverse credit waits,
+terminal capacity through yields, recovery after failure-capacity exhaustion and
+fair lane selection. Accept all five, correct design/plan; root rechecks those
+written invariants once. Add per-context reverse endpoints to avoid stolen wakes,
+source physical-format length limits and closure-before-unlink. No code qualified
+by paper review. Preserve a complete60-row raw product/nine-domain system census
+and implementation plan with independent byte/order/model/fault/crash/owner/
+static/performance oracles. nls.9/nls.10 remain substantive open work.
+
+Run small owned isolated producer probes on MacARM AppleClang17/LLVM23.1.2 and
+Neuroses Linuxx86 Clang18.1.3, three trials of64/256/4096B bodies. Selected armed
+RMW path64B ranges10.77–25.26ns on LLVM23 Mac and51.35–66.87ns Linux, excluding
+clock/doorbell/capacity/disk costs; report all raw results and limits. LLVM23's
+stale default SDK fails first; use actualxcrun SDK as current tooling requires.
+Focused warnings-as-errors builds and one1000-record MacASan/UBSan byte check
+pass. Named-memory probes reopen after all previous mappings exit, SIGKILL
+recorder after drain/partialwrite/write/sync/ack on bothhosts: exact128B preserved,
+D never early, visible validdiskprefix resynced,64B partialtail untouched and
+unacknowledged. These are primitive experiments, not a production conformance
+claim. Remove remote scratch/named objects; archive owned source text/raw results,
+keep binaries/assembly/context ignored. No heavy suite, mutation, eval, provider
+call, daemon activation or source gate.
+
+Pending RAM can be lost on host failure; acquisition-beforepublication can be
+interrupted. State these boundaries precisely and select no tolerated loss.
+Return the concrete proposal for discussion/approval, including durable-return
+versus async contract. Relevant diff/link/count/reference/artifact checks and
+supported Beads backup precede text/research-only checkpoint/push. nls.2 stays
+open, with evals/multiplayer/steering/trajectory implementation still deferred.

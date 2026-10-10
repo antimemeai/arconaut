@@ -1,0 +1,7 @@
+Homebrew clang version 23.1.2
+Target: arm64-apple-darwin25.6.0
+Thread model: posix
+InstalledDir: /opt/homebrew/Cellar/llvm/23.1.2/bin
+Configuration file: /opt/homebrew/Cellar/llvm/23.1.2/etc/clang/arm64-apple-darwin25.cfg
+SDK=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+flags=['-isysroot', '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk', '-std=c++20', '-Wall', '-Wextra', '-Wconversion', '-Werror']

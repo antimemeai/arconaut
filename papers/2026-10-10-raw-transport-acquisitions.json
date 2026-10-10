@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-10",
+  "scope": "Study-only raw transport; acquired implementations not built/executed/adopted",
+  "references": [
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/daemontools-0.76.tar.gz",
+      "url": "https://cr.yp.to/daemontools/daemontools-0.76.tar.gz",
+      "sha256": "a55535012b2be7a52dcd9eccabb9a198b13be50d0384143bd3b32b8710df4c1f",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://cr.yp.to/daemontools/daemontools-0.76.tar.gz",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/daemontools-0.76.tar.gz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/qmail-1.03.tar.gz",
+      "url": "https://cr.yp.to/software/qmail-1.03.tar.gz",
+      "sha256": "21ed6c562cbb55092a66197c35c8222b84115d1acab0854fdb1ad1f301626f88",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://cr.yp.to/software/qmail-1.03.tar.gz",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/qmail-1.03.tar.gz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/s6-2.15.1.0.tar.gz",
+      "url": "https://skarnet.org/software/s6/s6-2.15.1.0.tar.gz",
+      "sha256": "eab9c46e22b66b16135f9a05ec68a0ea287d9060b84d10defaaa2caad158ab52",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://skarnet.org/software/s6/s6-2.15.1.0.tar.gz",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/s6-2.15.1.0.tar.gz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/skalibs-2.15.1.0.tar.gz",
+      "url": "https://skarnet.org/software/skalibs/skalibs-2.15.1.0.tar.gz",
+      "sha256": "f9c905e74935c6fe911c7e344e3e89d5fbd2014c1a04650b524b15ce9b5635d1",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://skarnet.org/software/skalibs/skalibs-2.15.1.0.tar.gz",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/skalibs-2.15.1.0.tar.gz"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-write.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/write.html",
+      "sha256": "1b45e6a71f8bc9bff702da5633d42c88fd927c1d0efc5bafe7a939d23eb66e6a",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/write.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-write.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-read.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/read.html",
+      "sha256": "af724071475054a17dde265a540bc39bd6e5d06da2373729141280adb8fdd744",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/read.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-read.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-shm_open.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/shm_open.html",
+      "sha256": "63714034ef7a3eaa5d7858f791d0a22329b4182b1bb5bab66f85dc8d03b4255e",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/shm_open.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-shm_open.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-shm_unlink.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/shm_unlink.html",
+      "sha256": "62c11e8361fe36d2fef8d82f2daa07bc23cf551a22ad3d5ec874e4b14163110b",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/shm_unlink.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-shm_unlink.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-mmap.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/mmap.html",
+      "sha256": "6e78132f706b5ab3041414cbc98f597f12c5f851679841a9723b36b0fbe66414",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/mmap.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-mmap.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/cppdraft-atomics-lockfree.html",
+      "url": "https://eel.is/c++draft/atomics.lockfree",
+      "sha256": "9e1c2232dc4cc24b91b9d174adbf6ec13accd21d466ce6b82c7654201115de54",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://eel.is/c++draft/atomics.lockfree",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/cppdraft-atomics-lockfree.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/cppdraft-atomics-order.html",
+      "url": "https://eel.is/c++draft/atomics.order",
+      "sha256": "cb5189ec62b0448cf9fb803bd8db57455827065de4768d6c227d2944c11a153b",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://eel.is/c++draft/atomics.order",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/cppdraft-atomics-order.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/linux-v6.12-wait.h",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/linux/wait.h",
+      "sha256": "0433279c86b2f34d1a5dce39365f176a571ce8a44d935a542e90c3506b4fe627",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/linux/wait.h",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/linux-v6.12-wait.h"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/linux-v6.12-pidfs.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/fs/pidfs.c",
+      "sha256": "fae3fa65abd35998c65d111b73f4acd7aa3b2ecf6bea2a18f573dd93860e3334",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://raw.githubusercontent.com/torvalds/linux/v6.12/fs/pidfs.c",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/linux-v6.12-pidfs.c"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/posix2024-send.html",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/send.html",
+      "sha256": "c653e5014b769cb0ba2cd8f106437bf714cc9fbbb7c04b2cf4dd7d6ed6a5d922",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/send.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/posix2024-send.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/apple-setsockopt.html",
+      "url": "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/setsockopt.2.html",
+      "sha256": "2a215a3b64f031cdeb9ec93ebfc16854738131ee68ce16314d5ebd5b6d0512ae",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/setsockopt.2.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/apple-setsockopt.html"
+      ],
+      "study_only": true
+    },
+    {
+      "path": "quarantine/raw-transport-2026-10-10/archives/apple-kqueue.html",
+      "url": "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html",
+      "sha256": "89581e15d32ad4f9303241a39d5d8e63fd0fd88e4ea446a0d630c958d65c73ef",
+      "restoration": [
+        "curl",
+        "-fL",
+        "https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html",
+        "-o",
+        "quarantine/raw-transport-2026-10-10/archives/apple-kqueue.html"
+      ],
+      "study_only": true
+    }
+  ],
+  "extraction": "Preserve archives; extract .tar.gz under quarantine/raw-transport-2026-10-10/extracted; strip nested Git metadata and filesystem detritus; exact studied paths and mechanisms in accompanying report."
+}
