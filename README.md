@@ -18,10 +18,10 @@ This repository contains a **C++20 core, Lua 5.4.8 turn programs, a terminal int
 For current accepted capabilities, unfinished work and the development
 cycle, see [the project stock](docs/CURRENT_STATE.md).
 
-The `command-jobs` candidate adds running-command background/foreground ownership
+Master includes running-command background/foreground ownership
 and private PTY text input through shared operator/model/Lua controls. See the
 [command design](docs/COMMAND_JOBS.md) and [qualification record](papers/2026-10-09-command-jobs/qualification.md).
-Main integration and running-executable activation remain separate.
+Integrated on master; running-executable activation remains separate.
 
 Arconaut is now **Blackbird**. Old launch commands and the Lua `arco` API remain compatibility aliases; sessions and retained audit formats are preserved.
 
@@ -29,7 +29,7 @@ Startup carries a solid block BLACKBIRD wordmark and the operator-supplied SR-71
 in Ghostty/Kitty. First input moves the same image into a square status avatar,
 with an indicator: muted idle, cyan active, amber tool work, red failure.
 For native CPU/allocation investigation, see [Profiling](docs/PROFILING.md).
-The `trajectories` candidate adds `/trace`, `/variables`, `/correlate` and
+Master also includes `/trace`, `/variables`, `/correlate` and
 read-only `/git-observe`; see [trajectory usage and limits](docs/TRAJECTORIES.md).
 
 ## Come aboard
@@ -316,5 +316,6 @@ Third-party material retains its original license.
 
 
 Before committing in a new clone, run `scripts/install-hooks`. The tracked
-pre-commit hook requires full debug tests and owned C++/Lua lint to pass; see
+pre-commit hook runs full debug tests and owned C++/Lua lint. The operator's
+text-only exception uses relevant document checks instead; see
 [development tooling](tooling/README.md#required-pre-commit-checks).

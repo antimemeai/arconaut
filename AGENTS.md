@@ -160,3 +160,10 @@ Operator2026-10-09 requires a clean lint slate before every commit. Run
 checks and owned C++/Lua lint. Fix all findings before committing/pushing. Do not
 bypass the hook or add rule-suppression annotations; future exceptions must first
 be discussed with the operator. See tooling/README.md for the exact gate.
+
+Operator2026-10-10 supersedes that blanket gate for text-only changes: run
+relevant diff, document and link checks; do not run full debug tests or C++/Lua
+lint for documentation alone. The installed hook still runs the full gate, so
+use a per-command hook override for a checked text-only commit. Keep the full
+source gate for source changes; do not rerun settled source checks for a
+fast-forward integration whose additional changes are only documentation.

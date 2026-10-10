@@ -6058,3 +6058,31 @@ superseded AFK subplan so the rejected overlay cannot masquerade as pending lint
 repair. nls.2 stays open awaiting discussion/approval; nls.9/nls.10 separate open
 work. Supported Beads backup and required every-commit debug/C++/Lua hook precede
 the research checkpoint/push on command-jobs. Main/runtime remain unchanged.
+
+2026-10-10 operator centralizes the working doctrine at ~/projects/BLACKBIRD.md.
+Add Diction & style guidance: describe concrete components/actions, destinations
+and failure behavior; prefer emit/write/read over abstractions about evidence
+and custody. Replace this repository's BLACKBIRD.md copy with a relative symlink to that
+workspace file. Verify the link resolves and reads identical bytes; leave quarantined references
+and unrelated changes untouched.
+
+2026-10-10 operator rejects full-suite testing for text-file changes and explicitly
+directs overdue main integration before instrumentation discussion. Stop the
+symlink documentation gate: debug84/84 had already passed; interrupt the remaining
+static-analysis run. Its remaining subprocesses finish before the process check.
+Record the text-only exception in AGENTS, README and tooling documentation; use
+a per-command hook override, leaving the source gate installed.
+
+The default main line is master. Fetch and inspect all active branch tips:
+provider-auth59539d3 is already master; trajectoriesf8aa868 is an ancestor of
+command-jobs2ac0635. Integrate the full linear history by fast-forward after this
+text-only checkpoint, then publish master. Update current state and branch
+inventory to distinguish integrated source from unchanged running-executable
+activation. Existing source qualification covers the exact source tree: full
+debug84/84 and owned C++/Lua lint passed at2ac0635; command lifecycle qualification
+records scoped Mac/Linux release/sanitizer results. No new source or repeat suite.
+Check diffs, the doctrine symlink, affected document links, branch ancestry and
+published ref identity. Preserve rejected instrumentation stash, user artwork,
+candidate refs and detached checkouts. Instrumentation implementation and evals
+remain awaiting operator discussion; nls.2/nls.9/nls.10 and historical05n residual
+stay open. Run supported Beads backup; snapshot unchanged.

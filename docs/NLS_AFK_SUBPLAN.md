@@ -9,6 +9,11 @@ before implementation. Audit completeness and logical-clock/system causality
 remain separate open work in arconaut-nls.10 and arconaut-nls.9. This old subplan
 does not authorize repairing or activating the preserved overlay.
 
+Operator2026-10-10 subsequently directed master integration. The independent
+bug fixes and research proposal are included; the rejected overlay remains
+unapplied. Running-executable activation remains separate. The unit chronology
+below records its earlier candidate status.
+
 Operator attaches c54 and 05n to nls and authorizes instrumentation and bug work
 while AFK. Evaluation definitions, scoring, runs and comparisons wait for the
 operator discussion. Steering and further trajectory-view work remain deferred.

@@ -1,10 +1,11 @@
-# Current Blackbird stock 2026 10 09
+# Current Blackbird stock 2026 10 10
 
-The default main line is `master`. The October8 consolidation at `55cd85d` left
-it as the only branch at that checkpoint. New candidate branches below are
-separate from that published baseline. All former candidate work is included or
-already delivered separately; five clean historical worktrees are detached with
-captures/build products preserved. [Exact dispositions](BRANCH_INVENTORY.md).
+The default main line is `master`. On October10 the operator directed integration
+of the pending branches. Master fast-forwards through `command-jobs` at `2ac0635`,
+including the `trajectories` and `provider-auth` histories, plus the doctrine
+symlink and current documentation. No source conflict or history rewrite is
+needed. Candidate refs and five detached historical worktrees remain preserved.
+[Earlier dispositions and this integration](BRANCH_INVENTORY.md).
 
 The authorized collaboration campaign has delivered named session picking,
 shared operator/model/Lua colleague calls and bounded native participants. A live
@@ -13,12 +14,12 @@ edited it; physical PTY checks, compaction/original repair and actual launcher
 restart preserved the task/result/context. The current Release/OFF launcher is
 updated; the running operator process is left alone. [Campaign results](../papers/2026-10-08-collaboration-campaign.md).
 The initial Claude request timed out at90seconds. An operator-authorized new
-attempt completed in337.331s with a360-second limit; its source triage and confirmed fixes are on the command-jobs candidate.
+attempt completed in337.331s with a360-second limit; its source triage and confirmed fixes are integrated on master.
 The separate Giga stays paused.
 
-## Command jobs candidate
+## Running command jobs
 
-The `command-jobs` branch owns running command identity and collection across
+Master owns running command identity and collection across
 background/foreground waits and later turns. Shared operator/model/Lua controls
 provide stable job IDs, bounded reads, ordered/deduplicated input, explicit signals,
 resize and stop. Native pipes and private PTYs keep exact originals; launch-relative
@@ -31,14 +32,14 @@ The two reopened failing oracles have causal fixes. Final changed-case rechecks
 pass on Mac release/ASAN/TSAN and Linux debug/release/ASAN, and source checkpoint
 `6fa7c38` passes full debug84/84 and all owned C++/Lua lint.
 [Results](../papers/2026-10-09-command-jobs/qualification.md) distinguish actual
-passes from historical failures. This candidate has not been merged into master
-or activated in the running operator executable. Steering and additional
+passes from historical failures. The source is integrated on master; this merge
+does not activate a replacement in the running operator executable. Steering and additional
 trajectory implementation remain deferred. [Design](COMMAND_JOBS.md) and
 [operator controls](USING_BLACKBIRD.md) describe the current limits.
 
-## AFK bug candidate and held instrumentation
+## AFK bug fixes and proposed instrumentation
 
-On `command-jobs`, Claude reported errors without a success-only result field
+On master, Claude reported errors without a success-only result field
 remain known failures; allocation after effect-capable dispatch stays UNKNOWN.
 Explicit `--recover-unknown-effects` validates supported native file/command and
 Lua/workflow attempts as a whole and records UNKNOWN without replay/PID adoption.
@@ -55,7 +56,7 @@ now supports [the proposed per-surface design](INSTRUMENTATION.md), awaiting
 discussion and approval before implementation. nls.2 stays open; logical-clock
 system causality nls.9 and P0 audit completeness nls.10 are separate open work.
 The ordinary guarded checkpoint includes the independent bug fixes. No evaluator
-was selected or run. Main/runtime activation, multiplayer, steering and further
+was selected or run. Runtime activation, multiplayer, steering and further
 trajectory views remain separate.
 [Disposition and evidence](NLS_AFK_SUBPLAN.md).
 
@@ -65,7 +66,9 @@ trajectory views remain separate.
 | --- | --- | --- |
 | Native harness | C++20/Lua, terminal composer, command palette and external editor; retained sessions; `/new`, bounded retained names, searchable `/sessions` and `/resume`; independent task/draft/context restoration; restart/resume/continue. | Owned OpenAI auth available; installed Codex remains a compatibility route. |
 | Context | CLM edits, managed compaction, archived original recovery and context budget policy. | Read selector now has one lines/bytes mode; malformed calls return correction guidance. Historical Lua ranges stay compatible. |
-| Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
+| Recovery | Cooperative backstop, bounded provider recovery, workflow repair, retained unknown effects and explicit native unknown-effect recovery without replay. | Arbitrary exec and escaped/remote effects prevent automatic claims of containment; general crash recovery unfinished. |
+| Command jobs | Shared operator/model/Lua background/foreground waits, stable job IDs, bounded output, ordered input, signals, resize and stop; native pipes/private PTYs. | Text PTY interface; active/unsettled commands block restart/session switching; crash recovery never adopts old PIDs. |
+| Trajectories/native formats | Shared bounded audit queries, timed variable observations and point correlation; owned native values and BBM2 internal persistence/IPC. | Clock synchronization unknown; observation gaps; no legacy format reader; richer views remain deferred. |
 | Programmability | Retained dynamic tool definitions, named modules, staged model/effort defaults and effective/pending inspection. | Callable registry/configuration staging is delivered; combined atomic interrupt/apply and live native reload remain deferred. |
 | Orchestration | Native bounded process-lifetime participants, configured concurrency, observe/await/join, addressed direction/dedup, cancellation requests and task badges; existing synchronous Lua composition remains. | Context-only workers; no arbitrary heap/child resurrection or cross-session participant custody. Unknown remote effects stay unknown. |
 | Station | Durable-before-dispatch local source admission, duplicates, boundary inspect/steer/pause/resume/stop. | Local-file source; unknown effects remain unknown; no live TUI attachment or crash-containment claim. |
@@ -81,7 +84,7 @@ trajectory views remain separate.
 ## Remaining design and delivery
 
 Common colleague and participant machinery is delivered, including a live Claude
-source review. Its confirmed findings are repaired on command-jobs. The earlier timed-out request
+source review. Its confirmed findings are repaired on master. The earlier timed-out request
 remains unknown; the later answer does not resolve that earlier effect.
 Owned direct Kimi/MiMo/Grok colleagues are implemented; remote tool-using
 colleagues remain work.
@@ -124,8 +127,7 @@ implemented by this launcher.
 
 Scoped Mac debug/release, ASan/UBSan and Linux debug checks cover the changed native,
 retained-state and real PTY paths. The tiny-window repair clears stale rows and
-uses physical cursor bounds;20x8/9x90 cases pass. Other work: Claude finding triage,
-complaint follow-through, remote tool-using outposts, station attachment,
+uses physical cursor bounds;20x8/9x90 cases pass. Other work: historical recovery complaint follow-through, remote tool-using outposts, station attachment,
 multiplayer and standalone login. The historical Giga remains paused. The current
 collaboration campaign is delivered. Operator prioritizes owned provider login
 and credential lifecycle beyond Codex and Claude CLI authentication.
@@ -146,11 +148,11 @@ requested instrumentation/evaluation/audit/trace/trajectory/Entire-like work.
 
 ## Trajectory campaign first slice
 
-Candidate branch `trajectories` adds a shared committed metadata timeline with
+Master includes a shared committed metadata timeline with
 readable `/trace`, model `trajectory_read` and Lua calls. It bounds both examined
 facts and returned rows, pins historical prefixes and follows causal IDs to
 existing originals. Mac debug/release and Linux debug direct checks passed.
-The next candidate unit adds UTC/monotonic operation timing and bounded central
+It also includes UTC/monotonic operation timing and bounded central
 variable observations: effective request instructions and explicit read-only Git
 HEAD/history. `/variables` queries samples; `/correlate` plots work and sample
 points; `/git-observe` acquires Git samples. Operator, model and Lua use shared
@@ -161,7 +163,7 @@ evaluation runs, measured clock alignment and richer inspect UI remain open.
 See [design and usage](TRAJECTORIES.md).
 
 
-The candidate now writes trajectory log/program metadata and native operation
+Master writes trajectory log/program metadata and native operation
 continuations in owned BBM2 binary packets. Native values and typed numeric
 components replace internal JSON throughout context, saved state, sidecars and
 owned IPC. Lua transfers arguments/results directly. JSON remains external

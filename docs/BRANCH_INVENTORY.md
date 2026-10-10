@@ -1,4 +1,22 @@
-# Blackbird branch consolidation 2026 10 08
+# Blackbird branch integrations
+
+## Current integration — 2026-10-10
+
+The operator directed merging the pending work into the default main line,
+`master`. The ready branches form a single ancestry chain: `provider-auth`
+(`59539d3`) is already master; `trajectories` (`f8aa868`) is contained in
+`command-jobs` (`2ac0635`). Fast-forward master through that tip and the text-only
+doctrine/documentation checkpoint. No conflicting source, squash or forced
+history rewrite is needed. Existing source qualification is recorded in the
+command lifecycle report and journal; no new source is introduced by integration.
+
+This includes command lifecycle ownership, trajectory/native-format work,
+independent colleague/recovery bug fixes and the unimplemented instrumentation
+proposal. The rejected instrumentation stash stays unapplied. Candidate refs,
+user artwork, detached historical checkouts and the running executable remain
+preserved. The sections below are earlier inventories, not pending merge work.
+
+## Earlier consolidation — 2026-10-08
 
 Consolidation baseline: `44defd7`. The repository's default main line is `master`.
 All 42 other local heads have a disposition: 40 tips are ancestors of master;

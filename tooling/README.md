@@ -157,7 +157,7 @@ No profiler library is linked into the normal runtime.
 ## Required pre-commit checks
 
 Run `scripts/install-hooks` after cloning to configure this repository's tracked
-`.githooks/pre-commit`. It is installed in the current checkout. Every commit runs
+`.githooks/pre-commit`. It is installed in the current checkout. By default it runs
 `scripts/rigor check debug`: pinned tool verification, build, all debug tests,
 C++ formatting/static analysis, Lua formatting/syntax/type analysis and the Lua
 contract probe. Any failure blocks the commit. No acceptance cache or hook exception
@@ -166,6 +166,12 @@ unstaged tracked changes and verifies the index/tree did not change during check
 It leaves files and the index intact when a check fails.
 
 `scripts/rigor lint` runs the same lint gates after verifying tools and rebuilding
-the debug compilation database, without running CTest. Do not bypass the hook,
-weaken rules or add suppression annotations to land a change. Any future exception
-requires discussion with the operator first.
+the debug compilation database, without running CTest. Source changes retain
+this gate; do not weaken rules or add suppression annotations to land them.
+
+Operator2026-10-10 explicitly exempts text-only changes from full debug tests and
+C++/Lua lint. Check the intended diff, document content and affected links, then
+use `git -c core.hooksPath=/dev/null commit ...` for that text-only commit. This
+per-command override leaves the installed source gate unchanged. Fast-forward
+integration does not require repeating settled source checks when subsequent
+changes are only documentation. Other exceptions require operator discussion.
